@@ -1,5 +1,20 @@
+USE master;
+GO
+
+IF EXISTS (SELECT name FROM sys.databases WHERE name = 'CNY')
+BEGIN
+    -- Ngắt toàn bộ kết nối đang sử dụng database này để có thể xóa
+    ALTER DATABASE CNY SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE CNY;
+END
+GO
+
+CREATE DATABASE CNY;
+GO
+
 USE CNY;
 GO
+
 
 -- =============================================
 -- 1. USERS & AUTHENTICATION
