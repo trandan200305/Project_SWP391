@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Shield, Globe, ChevronDown } from 'lucide-react';
 
-export default function Navbar() {
+export default function Navbar({ onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -26,7 +26,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         {/* Brand Logo */}
         <div className="flex items-center gap-8">
-          <a href="#" className="flex items-center gap-2">
+          <a 
+            href="#" 
+            onClick={(e) => { 
+              e.preventDefault(); 
+              if (onNavigate) onNavigate('home'); 
+            }} 
+            className="flex items-center gap-2"
+          >
             <span className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-primary/20">L</span>
             <span className="font-display text-2xl font-extrabold tracking-tight text-primary">
               Lancer<span className="text-secondary">Pro</span>
@@ -35,10 +42,30 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex gap-8">
-            <a href="#find-work" className="font-medium text-body-md text-primary hover:text-secondary transition-colors duration-200">
+            <a 
+              href="#find-work" 
+              onClick={(e) => {
+                if (onNavigate) {
+                  onNavigate('home');
+                  setTimeout(() => {
+                    const el = document.getElementById('find-work');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
+              className="font-medium text-body-md text-primary hover:text-secondary transition-colors duration-200"
+            >
               Tìm việc làm
             </a>
-            <a href="#hire-freelancers" className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200">
+            <a 
+              href="#hire-freelancers" 
+              onClick={(e) => {
+                if (onNavigate) {
+                  onNavigate('home');
+                }
+              }}
+              className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200"
+            >
               Thuê Freelancer
             </a>
             <a href="#solutions" className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200">
@@ -49,10 +76,17 @@ export default function Navbar() {
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center gap-5">
-          <button className="text-body-md font-semibold text-muted hover:text-primary transition-colors duration-200">
+          <button 
+            onClick={() => { if (onNavigate) onNavigate('login'); }}
+            className="text-body-md font-semibold text-muted hover:text-primary transition-colors duration-200"
+          >
             Đăng nhập
           </button>
-          <a href="#register" className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-primary/10 hover:shadow-primary/20">
+          <a 
+            href="#register" 
+            onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('register'); }}
+            className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-primary/10 hover:shadow-primary/20"
+          >
             Đăng ký
           </a>
         </div>
@@ -71,14 +105,26 @@ export default function Navbar() {
         <div className="md:hidden absolute top-full left-0 w-full bg-surface border-b border-muted-light/80 shadow-lg py-6 px-6 flex flex-col gap-5 animate-fade-in">
           <a 
             href="#find-work" 
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              if (onNavigate) {
+                onNavigate('home');
+                setTimeout(() => {
+                  const el = document.getElementById('find-work');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }
+            }}
             className="font-medium text-lg text-primary py-2 border-b border-muted-light/30"
           >
             Tìm việc làm
           </a>
           <a 
             href="#hire-freelancers" 
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              if (onNavigate) onNavigate('home');
+            }}
             className="font-medium text-lg text-muted py-2 border-b border-muted-light/30"
           >
             Thuê Freelancer
@@ -91,10 +137,24 @@ export default function Navbar() {
             Giải pháp
           </a>
           <div className="flex flex-col gap-4 mt-4">
-            <button className="text-center py-3 font-semibold text-primary hover:bg-muted-light/20 rounded-large transition-colors">
+            <button 
+              onClick={() => {
+                setIsOpen(false);
+                if (onNavigate) onNavigate('login');
+              }}
+              className="text-center py-3 font-semibold text-primary hover:bg-muted-light/20 rounded-large transition-colors"
+            >
               Đăng nhập
             </button>
-            <a href="#register" className="text-center bg-primary hover:bg-primary-light text-white py-3 rounded-large font-bold transition-all shadow-md">
+            <a 
+              href="#register" 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                setIsOpen(false); 
+                if (onNavigate) onNavigate('register'); 
+              }}
+              className="text-center bg-primary hover:bg-primary-light text-white py-3 rounded-large font-bold transition-all shadow-md"
+            >
               Đăng ký
             </a>
           </div>
@@ -103,3 +163,4 @@ export default function Navbar() {
     </header>
   );
 }
+
