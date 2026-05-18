@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Chạy Spring Boot Backend",
+      "request": "launch",
+      "mainClass": "com.cny.backend.BackendApplication",
+      "projectName": "backend"
+    },
+    {
+      "name": "Mở Trình Duyệt xem Frontend (Cổng 3000)",
+      "request": "launch",
+      "type": "msedge",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend"
+    },
+    {
+      "name": "Mở Trình Duyệt xem Backend API (Cổng 8080)",
+      "request": "launch",
+      "type": "msedge",
+      "url": "http://localhost:8080/api/projects/latest",
+      "webRoot": "${workspaceFolder}/backend"
+    }
+  ]
+}
