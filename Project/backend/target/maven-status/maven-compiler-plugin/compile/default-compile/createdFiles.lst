@@ -1,13 +1,13 @@
 com\cny\backend\DataSeeder.class
-com\cny\backend\dto\RegisterRequest.class
 com\cny\backend\entity\Project.class
 com\cny\backend\repository\ProjectRepository.class
 com\cny\backend\controller\FreelancerController.class
-com\cny\backend\controller\ProjectController.class
 com\cny\backend\repository\UserRepository.class
 com\cny\backend\controller\AuthController.class
+main\java\com\cny\backend\controller\ProjectController.class
 com\cny\backend\repository\JobCategoryRepository.class
 com\cny\backend\entity\Project$ProjectBuilder.class
+com\cny\backend\controller\AdminController.class
 com\cny\backend\entity\FreelancerProfile$FreelancerProfileBuilder.class
 com\cny\backend\entity\JobCategory$JobCategoryBuilder.class
 com\cny\backend\controller\JobCategoryController.class

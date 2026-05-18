@@ -10,6 +10,7 @@ import com.cny.backend.repository.ProjectRepository;
 import com.cny.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +32,9 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private FreelancerProfileRepository freelancerProfileRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Override
     public void run(String... args) throws Exception {
         // Seed Categories
@@ -47,6 +51,9 @@ public class DataSeeder implements CommandLineRunner {
         if (projectRepository.count() == 0) {
             seedProjects();
         }
+
+        // Seed Admin system support logs & withdrawals
+        seedAdminEntities();
     }
 
     private void seedCategories() {
@@ -55,12 +62,12 @@ public class DataSeeder implements CommandLineRunner {
         
         for (int i = 0; i < catNames.length; i++) {
             JobCategory cat = JobCategory.builder()
-                    .categoryName(catNames[i])
-                    .description("Các dự án liên quan đến " + catNames[i])
-                    .iconUrl(icons[i])
-                    .displayOrder(i)
-                    .isActive(true)
-                    .build();
+                     .categoryName(catNames[i])
+                     .description("Các dự án liên quan đến " + catNames[i])
+                     .iconUrl(icons[i])
+                     .displayOrder(i)
+                     .isActive(true)
+                     .build();
             jobCategoryRepository.save(cat);
         }
     }
@@ -140,6 +147,7 @@ public class DataSeeder implements CommandLineRunner {
 
         List<Project> projects = new ArrayList<>();
 
+        // Seed 6 Published Projects for homepage
         projects.add(Project.builder()
                 .client(client)
                 .category(design != null ? design : tech)
@@ -191,32 +199,86 @@ public class DataSeeder implements CommandLineRunner {
                 .proposalCount(15)
                 .build());
 
+        // Seed 3 projects with status = 'PENDING_REVIEW' for admin moderation page
         projects.add(Project.builder()
                 .client(client)
-                .category(design != null ? design : tech)
-                .title("Thiết kế bộ nhận diện thương hiệu F&B")
-                .description("Cần thiết kế bộ nhận diện thương hiệu cơ bản bao gồm logo, menu, danh thiếp, bảng hiệu cho quán cà phê specialty mới mở tại Hồ Chí Minh.")
+                .category(tech)
+                .title("Tích hợp cổng thanh toán AI cho Mobile App")
+                .description("Yêu cầu tích hợp AI vào cổng thanh toán thông minh để tự động nhận dạng giao dịch.")
                 .projectType("FIXED_PRICE")
-                .budgetFixed(BigDecimal.valueOf(4000000))
-                .deadline(LocalDate.now().plusDays(20))
-                .status("PUBLISHED")
-                .proposalCount(19)
+                .budgetFixed(BigDecimal.valueOf(15000000))
+                .deadline(LocalDate.now().plusDays(10))
+                .status("PENDING_REVIEW")
+                .proposalCount(0)
                 .build());
 
         projects.add(Project.builder()
                 .client(client)
-                .category(admin != null ? admin : tech)
-                .title("Nhập liệu 500 sản phẩm lên sàn TMĐT")
-                .description("Cần nhập thông tin 500 sản phẩm thời trang lên các sàn Shopee, Lazada. Đã có sẵn hình ảnh và mô tả sản phẩm chi tiết trong file Excel.")
+                .category(design != null ? design : tech)
+                .title("Thiết kế bộ nhận diện thương hiệu Specialty Coffee")
+                .description("Thiết kế logo, menu, bao bì, bảng hiệu cho quán Specialty Coffee mới mở.")
                 .projectType("FIXED_PRICE")
-                .budgetFixed(BigDecimal.valueOf(2000000))
-                .deadline(LocalDate.now().plusDays(5))
-                .status("PUBLISHED")
-                .proposalCount(24)
+                .budgetFixed(BigDecimal.valueOf(6000000))
+                .deadline(LocalDate.now().plusDays(20))
+                .status("PENDING_REVIEW")
+                .proposalCount(0)
+                .build());
+
+        projects.add(Project.builder()
+                .client(client)
+                .category(marketing != null ? marketing : tech)
+                .title("Tối ưu hóa chiến dịch Google Ads cho thời trang")
+                .description("Chạy và tối ưu hóa quảng cáo chuyển đổi cho thương hiệu thời trang thiết kế.")
+                .projectType("MONTHLY")
+                .budgetFixed(BigDecimal.valueOf(4500000))
+                .deadline(LocalDate.now().plusDays(30))
+                .status("PENDING_REVIEW")
+                .proposalCount(0)
                 .build());
 
         for (Project p : projects) {
             projectRepository.save(p);
+        }
+    }
+
+    private void seedAdminEntities() {
+        try {
+            // Check if bank accounts are seeded
+            Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
+            if (bankCount != null && bankCount == 0) {
+                // Get user IDs
+                Integer clientUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'client@lancerpro.vn'", Integer.class);
+                Integer maUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'minhanh@gmail.com'", Integer.class);
+                Integer qhUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'quanghuy@gmail.com'", Integer.class);
+
+                if (clientUserId != null && maUserId != null && qhUserId != null) {
+                    // 1. Seed bank accounts
+                    jdbcTemplate.update("INSERT INTO bank_accounts (user_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            maUserId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
+                    jdbcTemplate.update("INSERT INTO bank_accounts (user_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            qhUserId, "Techcombank", "190345129", "TRAN QUANG HUY");
+
+                    // Get bank account IDs
+                    Integer maBankId = jdbcTemplate.queryForObject("SELECT bank_account_id FROM bank_accounts WHERE user_id = ?", Integer.class, maUserId);
+                    Integer qhBankId = jdbcTemplate.queryForObject("SELECT bank_account_id FROM bank_accounts WHERE user_id = ?", Integer.class, qhUserId);
+
+                    if (maBankId != null && qhBankId != null) {
+                        // 2. Seed withdrawal requests
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (user_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
+                                maUserId, maBankId);
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (user_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
+                                qhUserId, qhBankId);
+                    }
+
+                    // 3. Seed initial admin audit logs
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer Minh Anh', GETDATE())",
+                            clientUserId);
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
+                            clientUserId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error seeding admin data: " + e.getMessage());
         }
     }
 }

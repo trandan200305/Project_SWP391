@@ -19,8 +19,7 @@ public class FreelancerController {
     // Get all active freelancers
     @GetMapping
     public ResponseEntity<List<FreelancerProfile>> getAllFreelancers() {
-        List<FreelancerProfile> freelancers = freelancerProfileRepository
-                .findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
+        List<FreelancerProfile> freelancers = freelancerProfileRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         return ResponseEntity.ok(freelancers);
     }
 

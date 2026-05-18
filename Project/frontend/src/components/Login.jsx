@@ -1,29 +1,69 @@
 import React, { useState } from 'react';
 import { Star, Eye, EyeOff, Chrome, ArrowLeft, X } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
-export default function Login({ onClose, onSwitchToRegister }) {
+export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [role, setRole] = useState('freelancer'); // 'freelancer' or 'employer'
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const processBackendLogin = async (payload) => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLoading(false);
+        setSuccess(true);
+        setTimeout(() => {
+          if (onLoginSuccess) {
+            onLoginSuccess(data.user);
+          }
+        }, 1200);
+      } else {
+        setLoading(false);
+        setErrorMsg(data.message || 'Đăng nhập thất bại.');
+      }
+    } catch (error) {
+      setLoading(false);
+      setErrorMsg('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
 
-    setLoading(true);
-    // Mock login connection sequence
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      setTimeout(() => {
-        if (onClose) {
-          onClose();
-        }
-      }, 1200);
-    }, 1500);
+    processBackendLogin({
+      email: email,
+      name: email.split('@')[0], // Fallback name
+      requestedRole: role.toUpperCase(),
+      avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
+    });
+  };
+
+  const handleGoogleSuccess = (credentialResponse) => {
+    const decoded = jwtDecode(credentialResponse.credential);
+    
+    processBackendLogin({
+      email: decoded.email,
+      name: decoded.name,
+      googleId: decoded.sub,
+      avatar: decoded.picture,
+      requestedRole: role.toUpperCase()
+    });
   };
 
   return (
@@ -73,11 +113,9 @@ export default function Login({ onClose, onSwitchToRegister }) {
                 <Star key={i} className="w-4 h-4 text-secondary fill-secondary" />
               ))}
             </div>
-            
             <p className="text-white/95 text-[13px] italic leading-relaxed mb-4 font-medium">
               "LancerPro has completely transformed how we scale our engineering teams. The caliber of talent is unmatched."
             </p>
-            
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/15 border border-white/20 rounded-full flex items-center justify-center font-extrabold text-white text-[12px] shadow-sm">
                 JD
@@ -99,6 +137,13 @@ export default function Login({ onClose, onSwitchToRegister }) {
             <p className="font-sans text-muted text-[13px] mb-4">
               Log in to manage your professional ecosystem.
             </p>
+
+            {/* Error Message Display */}
+            {errorMsg && (
+              <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
+                {errorMsg}
+              </div>
+            )}
 
             {/* Role Switcher Tabs */}
             <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
@@ -127,13 +172,19 @@ export default function Login({ onClose, onSwitchToRegister }) {
             </div>
 
             {/* Social Google Sign-In */}
-            <div className="mb-3.5">
-              <button 
-                type="button"
-                className="w-full flex items-center justify-center gap-2 border border-muted-light/60 hover:bg-muted-light/10 py-2 px-3 rounded-lg font-bold text-primary text-[12px] transition-colors"
-              >
-                <Chrome className="w-3.5 h-3.5 text-rose-500" /> Google
-              </button>
+            <div className="mb-3.5 flex justify-center w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  setErrorMsg('Đăng nhập Google thất bại');
+                }}
+                useOneTap
+                theme="outline"
+                size="large"
+                shape="rectangular"
+                width="320"
+                text="continue_with"
+              />
             </div>
 
             {/* Divider */}

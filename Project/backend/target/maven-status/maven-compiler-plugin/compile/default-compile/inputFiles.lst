@@ -4,6 +4,7 @@ E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\entit
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\entity\JobCategory.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\controller\AuthController.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\entity\FreelancerProfile.java
+E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\controller\AdminController.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\BackendApplication.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\repository\UserRepository.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\controller\FreelancerController.java
@@ -11,5 +12,4 @@ E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\repos
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\repository\FreelancerProfileRepository.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\entity\User.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\repository\ProjectRepository.java
-E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\dto\RegisterRequest.java
 E:\Ky5\SWP391\Project_SWP391\Project\backend\src\main\java\com\cny\backend\DataSeeder.java
