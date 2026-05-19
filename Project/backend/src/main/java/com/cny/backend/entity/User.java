@@ -46,7 +46,7 @@ public class User {
     @Builder.Default
     private Boolean emailVerified = false;
 
-    @Column(name = "google_id", length = 100, unique = true)
+    @Column(name = "google_id", length = 100)
     private String googleId;
 
     @Column(length = 10)

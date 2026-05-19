@@ -246,10 +246,16 @@ public class DataSeeder implements CommandLineRunner {
             // Check if bank accounts are seeded
             Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
             if (bankCount != null && bankCount == 0) {
+                // Helper to safely get ID
+                java.util.function.Function<String, Integer> getUserId = email -> {
+                    List<Integer> ids = jdbcTemplate.queryForList("SELECT user_id FROM users WHERE email = '" + email + "'", Integer.class);
+                    return ids.isEmpty() ? null : ids.get(0);
+                };
+
                 // Get user IDs
-                Integer clientUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'client@lancerpro.vn'", Integer.class);
-                Integer maUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'minhanh@gmail.com'", Integer.class);
-                Integer qhUserId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'quanghuy@gmail.com'", Integer.class);
+                Integer clientUserId = getUserId.apply("client@lancerpro.vn");
+                Integer maUserId = getUserId.apply("minhanh@gmail.com");
+                Integer qhUserId = getUserId.apply("quanghuy@gmail.com");
 
                 if (clientUserId != null && maUserId != null && qhUserId != null) {
                     // 1. Seed bank accounts
@@ -259,8 +265,11 @@ public class DataSeeder implements CommandLineRunner {
                             qhUserId, "Techcombank", "190345129", "TRAN QUANG HUY");
 
                     // Get bank account IDs
-                    Integer maBankId = jdbcTemplate.queryForObject("SELECT bank_account_id FROM bank_accounts WHERE user_id = ?", Integer.class, maUserId);
-                    Integer qhBankId = jdbcTemplate.queryForObject("SELECT bank_account_id FROM bank_accounts WHERE user_id = ?", Integer.class, qhUserId);
+                    List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE user_id = " + maUserId, Integer.class);
+                    List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE user_id = " + qhUserId, Integer.class);
+                    
+                    Integer maBankId = maBankIds.isEmpty() ? null : maBankIds.get(0);
+                    Integer qhBankId = qhBankIds.isEmpty() ? null : qhBankIds.get(0);
 
                     if (maBankId != null && qhBankId != null) {
                         // 2. Seed withdrawal requests

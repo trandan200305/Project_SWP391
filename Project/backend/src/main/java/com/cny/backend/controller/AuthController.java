@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.SimpleMailMessage;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +18,12 @@ public class AuthController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    private static final Map<String, String> verificationCodes = new HashMap<>();
+    private static final Map<String, Long> codeTimestamps = new HashMap<>();
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> payload) {
@@ -140,6 +148,118 @@ public class AuthController {
             response.put("success", false);
             response.put("message", "Database error: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String name = payload.get("name");
+        String password = payload.get("password");
+        String requestedRole = payload.get("requestedRole");
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        if (email == null || email.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email is required");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        try {
+            List<Map<String, Object>> existingUsers = jdbcTemplate.queryForList("SELECT * FROM users WHERE email = ?", email);
+            if (!existingUsers.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Email đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            String pwdHash = "HASHED_" + password; // Giả lập hash password
+            jdbcTemplate.update(
+                "INSERT INTO users (email, password_hash, display_name, full_name, status, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, 'ACTIVE', 1, GETDATE(), GETDATE())",
+                email, pwdHash, name, name
+            );
+            
+            int userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('users')", Integer.class);
+            
+            if (requestedRole == null) requestedRole = "FREELANCER";
+            ensureRoleExists(requestedRole);
+            int roleId = jdbcTemplate.queryForObject("SELECT role_id FROM roles WHERE role_name = ?", Integer.class, requestedRole);
+            
+            jdbcTemplate.update("INSERT INTO user_roles (user_id, role_id, assigned_at) VALUES (?, ?, GETDATE())", userId, roleId);
+            
+            if ("FREELANCER".equals(requestedRole)) {
+                jdbcTemplate.update("INSERT INTO freelancer_profiles (user_id, created_at, updated_at) VALUES (?, GETDATE(), GETDATE())", userId);
+            } else if ("EMPLOYER".equals(requestedRole)) {
+                jdbcTemplate.update("INSERT INTO client_profiles (user_id, created_at, updated_at) VALUES (?, GETDATE(), GETDATE())", userId);
+            }
+            
+            response.put("success", true);
+            response.put("message", "Đăng ký thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Database error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        Map<String, Object> response = new HashMap<>();
+        
+        if (email == null || email.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email is required");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        verificationCodes.put(email, code);
+        codeTimestamps.put(email, System.currentTimeMillis());
+        
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("[LancerPro] Mã xác nhận đặt lại mật khẩu");
+        
+        String emailContent = "Chào bạn,\n\n"
+            + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại LancerPro.\n\n"
+            + "Mã xác nhận của bạn là: " + code + "\n\n"
+            + "Mã này có hiệu lực trong vòng 60 giây. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
+            + "Trân trọng,\n"
+            + "Đội ngũ LancerPro";
+            
+        message.setText(emailContent);
+        mailSender.send(message);
+        
+        response.put("success", true);
+        response.put("message", "Mã xác nhận đã được gửi về email của bạn!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-code")
+    public ResponseEntity<Map<String, Object>> verifyCode(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String code = payload.get("code");
+        Map<String, Object> response = new HashMap<>();
+        
+        Long timestamp = codeTimestamps.get(email);
+        if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 60 giây)!");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String savedCode = verificationCodes.get(email);
+        if (savedCode != null && savedCode.equals(code)) {
+            response.put("success", true);
+            response.put("message", "Xác nhận mã thành công!");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận không chính xác!");
+            return ResponseEntity.badRequest().body(response);
         }
     }
 

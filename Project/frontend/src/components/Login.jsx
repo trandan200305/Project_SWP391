@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Eye, EyeOff, Chrome, ArrowLeft, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
@@ -11,6 +11,24 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [timer, setTimer] = useState(0);
+
+  useEffect(() => {
+    let interval = null;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const processBackendLogin = async (payload) => {
     setLoading(true);
@@ -133,9 +151,13 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           {/* Main content container */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
             {/* Header Title */}
-            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
+            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+              {!isForgotPassword ? "Welcome back" : "Reset Password"}
+            </h2>
             <p className="font-sans text-muted text-[13px] mb-4">
-              Log in to manage your professional ecosystem.
+              {!isForgotPassword 
+                ? "Log in to manage your professional ecosystem."
+                : "Enter your email to receive a password reset link."}
             </p>
 
             {/* Error Message Display */}
@@ -145,150 +167,403 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
               </div>
             )}
 
-            {/* Role Switcher Tabs */}
-            <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
-              <button
-                type="button"
-                onClick={() => setRole('freelancer')}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'freelancer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
-                }`}
-              >
-                Freelancer
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('employer')}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'employer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
-                }`}
-              >
-                Employer
-              </button>
-            </div>
-
-            {/* Social Google Sign-In */}
-            <div className="mb-3.5 flex justify-center w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  setErrorMsg('Đăng nhập Google thất bại');
-                }}
-                useOneTap
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                width="320"
-                text="continue_with"
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="relative flex items-center justify-center mb-3.5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-muted-light/60"></div>
+            {successMsg && (
+              <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
+                {successMsg}
               </div>
-              <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
-                OR CONTINUE WITH EMAIL
-              </span>
-            </div>
+            )}
 
-            {/* Input Form */}
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {/* Email */}
-              <div>
-                <label className="block text-[11px] font-bold text-primary mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  required
-                  className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] font-bold text-primary">
-                    Password
-                  </label>
-                  <a href="#forgot" className="text-secondary font-bold text-[11px] hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
-                  />
+            {!isForgotPassword ? (
+              <>
+                {/* Role Switcher Tabs */}
+                <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                    onClick={() => setRole('freelancer')}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === 'freelancer'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-muted hover:text-primary'
+                    }`}
                   >
-                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    Freelancer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('employer')}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === 'employer'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-muted hover:text-primary'
+                    }`}
+                  >
+                    Employer
                   </button>
                 </div>
-              </div>
 
-              {/* Remember */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
-                />
-                <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
-                  Keep me logged in for 30 days
-                </label>
-              </div>
+                {/* Social Google Sign-In */}
+                <div className="mb-3.5 flex justify-center w-full">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                      setErrorMsg('Đăng nhập Google thất bại');
+                    }}
+                    useOneTap
+                    theme="outline"
+                    size="large"
+                    shape="rectangular"
+                    width="320"
+                    text="continue_with"
+                  />
+                </div>
 
-              {/* Sign In CTA */}
-              <button
-                type="submit"
-                disabled={loading || success}
-                className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                  success 
-                    ? 'bg-emerald-600 text-white shadow-lg animate-pulse' 
-                    : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
-                }`}
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : success ? (
-                  'Đăng nhập thành công!'
-                ) : (
-                  `Sign In to LancerPro`
-                )}
-              </button>
-            </form>
+                {/* Divider */}
+                <div className="relative flex items-center justify-center mb-3.5">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted-light/60"></div>
+                  </div>
+                  <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
+                    OR CONTINUE WITH EMAIL
+                  </span>
+                </div>
 
-            {/* Link to Register */}
-            <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
-              Don't have an account?{' '}
-              <a 
-                href="#register" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (onSwitchToRegister) onSwitchToRegister();
-                }}
-                className="text-secondary font-bold hover:underline"
-              >
-                Create a free profile
-              </a>
-            </div>
+                {/* Input Form */}
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  {/* Email */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-primary">
+                        Password
+                      </label>
+                      <a 
+                        href="#forgot" 
+                        onClick={(e) => { e.preventDefault(); setIsForgotPassword(true); }}
+                        className="text-secondary font-bold text-[11px] hover:underline"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Remember */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
+                    />
+                    <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
+                      Keep me logged in for 30 days
+                    </label>
+                  </div>
+
+                  {/* Sign In CTA */}
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
+                      success 
+                        ? 'bg-emerald-600 text-white shadow-lg animate-pulse' 
+                        : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      'Đăng nhập thành công!'
+                    ) : (
+                      `Sign In to LancerPro`
+                    )}
+                  </button>
+                </form>
+
+                {/* Link to Register */}
+                <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
+                  Don't have an account?{' '}
+                  <a 
+                    href="#register" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onSwitchToRegister) onSwitchToRegister();
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    Create a free profile
+                  </a>
+                </div>
+              </>
+            ) : isChangingPassword ? (
+              <>
+                {/* Change Password Form */}
+                <form 
+                  onSubmit={async (e) => { 
+                    e.preventDefault(); 
+                    // MOCK: Giả lập đổi mật khẩu thành công
+                    setSuccessMsg('Mật khẩu đã được cập nhật thành công! Vui lòng đăng nhập lại.');
+                    setIsForgotPassword(false);
+                    setIsChangingPassword(false);
+                    setCodeSent(false);
+                    setOtp(['', '', '', '', '', '']);
+                  }} 
+                  className="space-y-4"
+                >
+                  {/* New Password */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200"
+                  >
+                    Update Password
+                  </button>
+                </form>
+
+                {/* Back to Login */}
+                <div className="mt-4 text-center text-[12px] text-muted font-medium">
+                  <a 
+                    href="#login" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsForgotPassword(false);
+                      setIsChangingPassword(false);
+                      setCodeSent(false);
+                      setOtp(['', '', '', '', '', '']);
+                      setSuccessMsg('');
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    Back to Sign In
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Forgot Password Form */}
+                <form 
+                  onSubmit={async (e) => { 
+                    e.preventDefault(); 
+                    if (!codeSent) {
+                      try {
+                        const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          setCodeSent(true);
+                          setErrorMsg('');
+                          setSuccessMsg('Mã xác nhận đã được gửi về mail của bạn!');
+                          setTimer(60);
+                        } else {
+                          setErrorMsg(data.message);
+                          setSuccessMsg('');
+                        }
+                      } catch (error) {
+                        setErrorMsg('Lỗi kết nối server');
+                      }
+                    } else {
+                      try {
+                        const response = await fetch('http://localhost:8080/api/auth/verify-code', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email, code: otp.join('') })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          setSuccessMsg('Xác nhận thành công! Vui lòng nhập mật khẩu mới.');
+                          setIsChangingPassword(true);
+                          setErrorMsg('');
+                        } else {
+                          setErrorMsg(data.message);
+                        }
+                      } catch (error) {
+                        setErrorMsg('Lỗi kết nối server');
+                      }
+                    }
+                  }} 
+                  className="space-y-4"
+                >
+                  {/* Email */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      disabled={codeSent}
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium disabled:opacity-70"
+                    />
+                  </div>
+
+                  {/* Verification Code Input */}
+                  {/* Verification Code Input */}
+                  {codeSent && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-primary mb-1">
+                        Verification Code
+                      </label>
+                      <div className="flex gap-2 justify-between">
+                        {[...Array(6)].map((_, index) => (
+                          <input
+                            key={index}
+                            id={`otp-${index}`}
+                            type="text"
+                            maxLength={1}
+                            value={otp[index]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (/^[0-9]$/.test(value) || value === '') {
+                                const newOtp = [...otp];
+                                newOtp[index] = value;
+                                setOtp(newOtp);
+                                
+                                // Auto focus next
+                                if (value !== '' && index < 5) {
+                                  document.getElementById(`otp-${index + 1}`).focus();
+                                }
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
+                                const newOtp = [...otp];
+                                newOtp[index - 1] = '';
+                                setOtp(newOtp);
+                                document.getElementById(`otp-${index - 1}`).focus();
+                              }
+                            }}
+                            className="w-11 h-11 text-center bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg text-[16px] font-bold focus:outline-none transition-all text-primary"
+                          />
+                        ))}
+                      </div>
+
+                      {/* Timer or Resend */}
+                      <div className="mt-2 text-center text-[11px] font-semibold">
+                        {timer > 0 ? (
+                          <span className="text-muted">Gửi lại mã sau {timer}s</span>
+                        ) : (
+                          <span className="text-muted">
+                            Bạn không nhận được mã?{' '}
+                            <a 
+                              href="#resend" 
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email })
+                                  });
+                                  const data = await response.json();
+                                  if (data.success) {
+                                    setSuccessMsg('Mã mới đã được gửi!');
+                                    setTimer(60);
+                                    setOtp(['', '', '', '', '', '']);
+                                  } else {
+                                    setErrorMsg(data.message);
+                                    setSuccessMsg('');
+                                  }
+                                } catch (error) {
+                                  setErrorMsg('Lỗi kết nối server');
+                                  setSuccessMsg('');
+                                }
+                              }}
+                              className="text-secondary hover:underline"
+                            >
+                              Gửi lại mã
+                            </a>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200"
+                  >
+                    {!codeSent ? "Send Verification Code" : "Verify Code"}
+                  </button>
+                </form>
+
+                {/* Back to Login */}
+                <div className="mt-4 text-center text-[12px] text-muted font-medium">
+                  <a 
+                    href="#login" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsForgotPassword(false);
+                      setCodeSent(false);
+                      setOtp(['', '', '', '', '', '']);
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    Back to Sign In
+                  </a>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Footer copyright */}
