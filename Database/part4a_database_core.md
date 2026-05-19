@@ -12,8 +12,9 @@
 ```mermaid
 erDiagram
     users ||--o{ user_roles : has
-    users ||--o| freelancer_profiles : has
-    users ||--o| client_profiles : has
+    users ||--o| freelancers : reified_as
+    users ||--o| employers : reified_as
+    users ||--o| admins : reified_as
     users ||--|| wallets : has
     users ||--o{ login_history : logs
     users ||--o{ notifications : receives
@@ -22,17 +23,26 @@ erDiagram
     roles ||--o{ role_permissions : has
     permissions ||--o{ role_permissions : granted
 
-    users ||--o{ projects : posts
+    employers ||--o{ projects : posts
+    freelancers ||--o{ freelancer_skills : possesses
+    freelancers ||--o{ educations : has
+    freelancers ||--o{ experiences : has
+    freelancers ||--o{ portfolios : has
+    
     projects ||--o{ project_skills : requires
     projects ||--o{ project_attachments : has
     projects ||--o{ proposals : receives
     job_categories ||--o{ projects : categorizes
 
+    freelancers ||--o{ proposals : submits
     proposals ||--o| contracts : creates
     contracts ||--o{ milestones : has
     milestones ||--o{ deliverables : has
     milestones ||--o| disputes : may_have
     milestones ||--o{ escrow_transactions : holds
+
+    employers ||--o{ escrow_transactions : funds
+    freelancers ||--o{ escrow_transactions : receives_from
 
     wallets ||--o{ transactions : records
     users ||--o{ reviews : writes
@@ -40,6 +50,11 @@ erDiagram
     users ||--o{ kyc_requests : submits
     users ||--o{ support_tickets : creates
     users ||--o{ conversations : participates
+    
+    admins ||--o{ disputes : moderates
+    admins ||--o{ kyc_requests : reviews
+    admins ||--o{ support_tickets : resolves
+    admins ||--o{ admin_audit_logs : generates
 ```
 
 ---
