@@ -1,0 +1,35 @@
+# Dependencies
+**/node_modules/
+**/bower_components/
+
+# Build outputs
+**/target/
+**/dist/
+**/build/
+**/out/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.classpath
+.project
+.settings/
+.metadata/
+bin/
+
+# OS temporary files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary scripts
+**/replace.py
+**/replace_final.py
+**/replace_multiline.py
+**/pdf_content.txt

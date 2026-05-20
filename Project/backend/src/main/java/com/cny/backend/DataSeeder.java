@@ -1,27 +1,27 @@
 package com.cny.backend;
 
-import com.cny.backend.entity.FreelancerProfile;
+import com.cny.backend.entity.Freelancer;
+import com.cny.backend.entity.Employer;
+import com.cny.backend.entity.Admin;
 import com.cny.backend.entity.JobCategory;
 import com.cny.backend.entity.Project;
-import com.cny.backend.entity.User;
-import com.cny.backend.repository.FreelancerProfileRepository;
+import com.cny.backend.repository.FreelancerRepository;
+import com.cny.backend.repository.EmployerRepository;
+import com.cny.backend.repository.AdminRepository;
 import com.cny.backend.repository.JobCategoryRepository;
 import com.cny.backend.repository.ProjectRepository;
-import com.cny.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
@@ -30,7 +30,13 @@ public class DataSeeder implements CommandLineRunner {
     private ProjectRepository projectRepository;
 
     @Autowired
-    private FreelancerProfileRepository freelancerProfileRepository;
+    private FreelancerRepository freelancerRepository;
+
+    @Autowired
+    private EmployerRepository employerRepository;
+
+    @Autowired
+    private AdminRepository adminRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -42,9 +48,9 @@ public class DataSeeder implements CommandLineRunner {
             seedCategories();
         }
 
-        // Seed Users and Freelancers
-        if (userRepository.count() == 0) {
-            seedUsersAndFreelancers();
+        // Seed Freelancers, Employers, and Admins directly into their own tables
+        if (employerRepository.count() == 0 && freelancerRepository.count() == 0) {
+            seedActors();
         }
 
         // Seed Projects
@@ -72,19 +78,58 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedUsersAndFreelancers() {
-        // Create an admin/client user
-        User clientUser = User.builder()
+    private void seedActors() {
+        // 1. Create a dedicated Employer (Client) directly in the employers table
+        Employer employer = Employer.builder()
                 .email("client@lancerpro.vn")
-                .passwordHash("$2a$10$xyz...") // Mock crypt hash
+                .passwordHash("OAUTH_GOOGLE_LOGGED")
                 .displayName("Doanh Nghiệp Việt")
                 .fullName("Công Ty TNHH Lancer Việt Nam")
                 .phone("0901234567")
                 .avatarUrl("client_avatar.png")
                 .status("ACTIVE")
                 .emailVerified(true)
+                .googleId("google_employer_mock")
+                .language("vi")
+                .timezone("Asia/Ho_Chi_Minh")
+                .companyName("Công Ty TNHH Lancer Việt Nam")
+                .companyLogoUrl("client_avatar.png")
+                .companyDescription("Chúng tôi là doanh nghiệp công nghệ đi đầu trong việc số hóa quy trình chuyển dịch lao động tự do.")
+                .website("https://lancerpro.vn")
+                .address("Quận 1")
+                .city("Hồ Chí Minh")
+                .country("Việt Nam")
+                .companySize("11-50")
+                .industry("Công nghệ thông tin")
+                .profileCompleteness(100)
+                .projectsPosted(6)
+                .totalSpent(BigDecimal.valueOf(45000000))
+                .averageRating(BigDecimal.valueOf(5.0))
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
-        userRepository.save(clientUser);
+        employerRepository.save(employer);
+
+        // 2. Create a dedicated Admin directly in the admins table
+        Admin admin = Admin.builder()
+                .email("admin@lancerpro.com")
+                .passwordHash("OAUTH_GOOGLE_LOGGED")
+                .displayName("Hệ Thống Admin")
+                .fullName("Administrator LancerPro")
+                .phone("0911223344")
+                .avatarUrl("https://ui-avatars.com/api/?name=Admin")
+                .status("ACTIVE")
+                .emailVerified(true)
+                .googleId("google_admin_mock")
+                .language("vi")
+                .timezone("Asia/Ho_Chi_Minh")
+                .adminLevel("SUPER_ADMIN")
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        adminRepository.save(admin);
 
         // Top Freelancers matching the vLance screenshot
         String[] names = {"Minh Anh", "Quang Huy", "Phương Linh", "Tùng Dương"};
@@ -100,20 +145,18 @@ public class DataSeeder implements CommandLineRunner {
         int[] earnings = {150000000, 190000000, 95000000, 120000000};
 
         for (int i = 0; i < names.length; i++) {
-            User user = User.builder()
+            Freelancer freelancer = Freelancer.builder()
                     .email(emails[i])
-                    .passwordHash("$2a$10$mock...")
+                    .passwordHash("OAUTH_GOOGLE_LOGGED")
                     .displayName(names[i])
                     .fullName(names[i])
                     .phone("098765432" + i)
                     .avatarUrl("avatar_" + i + ".png")
                     .status("ACTIVE")
                     .emailVerified(true)
-                    .build();
-            userRepository.save(user);
-
-            FreelancerProfile profile = FreelancerProfile.builder()
-                    .user(user)
+                    .googleId("google_freelancer_mock_" + i)
+                    .language("vi")
+                    .timezone("Asia/Ho_Chi_Minh")
                     .professionalTitle(titles[i])
                     .bio("Tôi là chuyên gia về " + titles[i] + ". Đã thực hiện nhiều dự án cho các startup lớn nhỏ.")
                     .hourlyRate(BigDecimal.valueOf(200000 + (i * 50000)))
@@ -125,13 +168,18 @@ public class DataSeeder implements CommandLineRunner {
                     .projectsCompleted(reviews[i])
                     .averageRating(BigDecimal.valueOf(ratings[i]))
                     .isAvailable(true)
+                    .isDeleted(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
                     .build();
-            freelancerProfileRepository.save(profile);
+            freelancerRepository.save(freelancer);
         }
     }
 
     private void seedProjects() {
-        User client = userRepository.findByEmail("client@lancerpro.vn").orElse(null);
+        Employer client = employerRepository.findAll().stream()
+                .filter(e -> e.getEmail().equals("client@lancerpro.vn")).findFirst().orElse(null);
+        
         JobCategory tech = jobCategoryRepository.findAll().stream()
                 .filter(c -> c.getCategoryName().equals("Lập trình")).findFirst().orElse(null);
         JobCategory design = jobCategoryRepository.findAll().stream()
@@ -140,8 +188,6 @@ public class DataSeeder implements CommandLineRunner {
                 .filter(c -> c.getCategoryName().equals("Marketing")).findFirst().orElse(null);
         JobCategory translation = jobCategoryRepository.findAll().stream()
                 .filter(c -> c.getCategoryName().equals("Dịch thuật")).findFirst().orElse(null);
-        JobCategory admin = jobCategoryRepository.findAll().stream()
-                .filter(c -> c.getCategoryName().equals("Hành chính")).findFirst().orElse(null);
 
         if (client == null) return;
 
@@ -246,44 +292,42 @@ public class DataSeeder implements CommandLineRunner {
             // Check if bank accounts are seeded
             Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
             if (bankCount != null && bankCount == 0) {
-                // Helper to safely get ID
-                java.util.function.Function<String, Integer> getUserId = email -> {
-                    List<Integer> ids = jdbcTemplate.queryForList("SELECT user_id FROM users WHERE email = '" + email + "'", Integer.class);
-                    return ids.isEmpty() ? null : ids.get(0);
-                };
+                // Get freelancer and admin IDs safely from separate tables
+                List<Integer> adminIds = jdbcTemplate.queryForList("SELECT admin_id FROM admins WHERE email = 'admin@lancerpro.com'", Integer.class);
+                List<Integer> maIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'minhanh@gmail.com'", Integer.class);
+                List<Integer> qhIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'quanghuy@gmail.com'", Integer.class);
 
-                // Get user IDs
-                Integer clientUserId = getUserId.apply("client@lancerpro.vn");
-                Integer maUserId = getUserId.apply("minhanh@gmail.com");
-                Integer qhUserId = getUserId.apply("quanghuy@gmail.com");
+                if (!adminIds.isEmpty() && !maIds.isEmpty() && !qhIds.isEmpty()) {
+                    Integer adminId = adminIds.get(0);
+                    Integer maFreelancerId = maIds.get(0);
+                    Integer qhFreelancerId = qhIds.get(0);
 
-                if (clientUserId != null && maUserId != null && qhUserId != null) {
                     // 1. Seed bank accounts
-                    jdbcTemplate.update("INSERT INTO bank_accounts (user_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
-                            maUserId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
-                    jdbcTemplate.update("INSERT INTO bank_accounts (user_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
-                            qhUserId, "Techcombank", "190345129", "TRAN QUANG HUY");
+                    jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            maFreelancerId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
+                    jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            qhFreelancerId, "Techcombank", "190345129", "TRAN QUANG HUY");
 
                     // Get bank account IDs
-                    List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE user_id = " + maUserId, Integer.class);
-                    List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE user_id = " + qhUserId, Integer.class);
-                    
-                    Integer maBankId = maBankIds.isEmpty() ? null : maBankIds.get(0);
-                    Integer qhBankId = qhBankIds.isEmpty() ? null : qhBankIds.get(0);
+                    List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, maFreelancerId);
+                    List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, qhFreelancerId);
 
-                    if (maBankId != null && qhBankId != null) {
+                    if (!maBankIds.isEmpty() && !qhBankIds.isEmpty()) {
+                        Integer maBankId = maBankIds.get(0);
+                        Integer qhBankId = qhBankIds.get(0);
+
                         // 2. Seed withdrawal requests
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (user_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
-                                maUserId, maBankId);
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (user_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
-                                qhUserId, qhBankId);
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
+                                maFreelancerId, maBankId);
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
+                                qhFreelancerId, qhBankId);
                     }
 
-                    // 3. Seed initial admin audit logs
+                    // 3. Seed initial admin audit logs using the concrete admin ID
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer Minh Anh', GETDATE())",
-                            clientUserId);
+                            adminId);
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
-                            clientUserId);
+                            adminId);
                 }
             }
         } catch (Exception e) {

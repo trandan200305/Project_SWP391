@@ -4,6 +4,7 @@ import { Menu, X, Shield, LogOut, User } from 'lucide-react';
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,36 +84,74 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center gap-5">
-          {/* Admin Panel Entry Trigger Button - Only visible if user has ADMIN role */}
-          {user && user.role === 'ADMIN' && (
-            <button 
-              onClick={onNavigateToAdmin}
-              className="text-body-sm font-bold bg-blue-50 text-blue-600 border border-blue-200 px-4.5 py-2.5 rounded-large hover:bg-blue-100 transition-all flex items-center gap-1.5 shadow-sm shadow-blue-600/5 hover:scale-105"
-            >
-              <Shield className="w-4 h-4" /> Admin Control
-            </button>
-          )}
-          
           {user ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 py-1.5 px-3 rounded-xl transition-colors border border-transparent hover:border-slate-200">
+            <div className="relative">
+              <div 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className={`flex items-center gap-2 cursor-pointer py-1.5 px-3 rounded-xl transition-colors border ${showProfileMenu ? 'bg-slate-50 border-slate-200' : 'border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
+              >
                 <img 
                   src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`} 
                   alt={user.name}
-                  className="w-8 h-8 rounded-full border border-slate-200"
+                  className="w-8 h-8 rounded-full border border-slate-200 object-cover"
                 />
                 <div className="flex flex-col">
                   <span className="text-[13px] font-bold text-primary leading-tight">{user.name}</span>
                   <span className="text-[10px] font-bold text-secondary">{user.role}</span>
                 </div>
               </div>
-              <button 
-                onClick={onLogout}
-                className="text-muted hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-rose-50"
-                title="Đăng xuất"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+
+              {/* Click outside overlay */}
+              {showProfileMenu && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowProfileMenu(false)} 
+                />
+              )}
+
+              {/* Premium Dropdown Menu */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-2 border-b border-slate-50 mb-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Tài khoản</p>
+                    <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email || user.name}</p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      if (onNavigate) onNavigate('coming_soon');
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                  >
+                    <User className="w-4 h-4" /> Sửa thông tin cá nhân
+                  </button>
+
+                  {user.role === 'ADMIN' && (
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onNavigateToAdmin();
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                    >
+                      <Shield className="w-4 h-4" /> Dashboard Admin
+                    </button>
+                  )}
+
+                  <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                  <button 
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      onLogout();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                  >
+                    <LogOut className="w-4 h-4" /> Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <>

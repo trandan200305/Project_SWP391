@@ -13,8 +13,8 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
 
-// Client ID thật từ Google Cloud Console (Dự án LancerPro)
-const GOOGLE_CLIENT_ID = "712200295620-j0aon2hp05i0qmd21v24s56luvsfmv49.apps.googleusercontent.com";
+// Client ID thật từ Google Cloud Console (Dự án LancerPro - illyasviel1252004@gmail.com)
+const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'admin' | 'login' | 'register' | 'coming_soon'
@@ -65,7 +65,7 @@ export default function App() {
 
   // Render Admin Dashboard
   if (currentPage === 'admin') {
-    return <AdminDashboard onNavigateToHome={() => handleNavigate('home')} />;
+    return <AdminDashboard user={user} onNavigateToHome={() => handleNavigate('home')} />;
   }
 
   // Render Coming Soon page for unfinished protected features

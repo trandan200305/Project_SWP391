@@ -17,5 +17,5 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword);
     
-    List<Project> findByClientUserIdAndIsDeletedFalse(Integer userId);
+    List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
 }

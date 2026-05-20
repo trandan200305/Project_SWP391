@@ -1,52 +1,39 @@
-# Hướng dẫn Khởi chạy Dự án vLance & Sử dụng Tính năng Đăng nhập/Đăng ký Mới
+# LancerPro - Tối ưu hóa kiến trúc Backend (JPA) và Khởi động Tự động
 
-Mình đã tải thành công toàn bộ thư mục **`Project`** từ GitHub của bạn về máy tính tại thư mục làm việc:
-👉 **`C:\Users\admin\Downloads\Project_SWP391\Project_SWP391\Project`**
-
-Đồng thời, mình đã **tích hợp thành công các cập nhật mới nhất từ commit `0721d10` của bạn**, bao gồm hai modal **Đăng nhập (Login)** và **Đăng ký (Register)** cực kỳ chuyên nghiệp và hiện đại trực tiếp lên trang chủ.
-
-Dưới đây là các bước chi tiết để bạn khởi chạy và trải nghiệm:
+Hệ thống đã được tối ưu hóa toàn diện nhằm đáp ứng mô hình chuẩn Spring Boot (MVC) sạch đẹp và giải quyết triệt để lỗi kết nối mỗi khi khởi động lại dự án.
 
 ---
 
-## 🛠️ Bước 1: Thiết lập Database SQL Server
-1. Mở phần mềm **SQL Server Management Studio (SSMS)** trên máy của bạn.
-2. Tạo một cơ sở dữ liệu mới đặt tên là: **`CNY`**
-3. Mở file script SQL có sẵn trong dự án: **`C:\Users\admin\Downloads\Project_SWP391\Project_SWP391\Project\CNY.sql`**
-4. Chạy (Execute) file script này để khởi tạo cấu trúc bảng.
+## 1. Tối ưu hóa Kiến trúc Backend & Dùng JPA Repository
+
+Thay vì để tầng Controller trực tiếp kết nối và truy vấn SQL thô thông qua `JdbcTemplate` như trước, hệ thống đã được tái cấu trúc thành mô hình 3 lớp sạch sẽ: **Controller $\to$ Service $\to$ Repository**.
+
+### 🛠️ Các thay đổi đã thực hiện:
+1. **Tạo tầng Service (`AdminService.java` & `AuthService.java`)**:
+   - Chuyển toàn bộ logic nghiệp vụ, các câu lệnh truy vấn từ Controller sang Service.
+   - Định nghĩa transaction điều phối an toàn qua annotation `@Transactional`.
+2. **Chuyển đổi sang JPA Repository**:
+   - Sử dụng `UserRepository`, `ProjectRepository`, và `JobCategoryRepository` để fetch dữ liệu từ Database thay thế hoàn toàn cho các câu lệnh SQL thô phức tạp trước đây.
+   - Đảm bảo giữ nguyên cấu trúc JSON trả về để tương thích hoàn toàn với giao diện Frontend hiện có mà không gây lỗi giao diện.
+3. **Tách biệt Controller (`AdminController.java` & `AuthController.java`)**:
+   - Tối giản các Controller. Giờ đây Controller chỉ đóng vai trò nhận Request, gọi Service xử lý và điều phối dữ liệu trả về cho client.
 
 ---
 
-## ☕ Bước 2: Chạy Backend (Spring Boot)
-1. Mở thư mục dự án **`Project`** trên **VS Code** (chọn `File` > `Open Folder` > chọn thư mục `Project`).
-2. Mở file cấu hình database của backend tại đường dẫn:
-   `Project/backend/src/main/resources/application.properties`
-3. Thay thế password SQL Server của bạn tại dòng 12:
-   ```properties
-   spring.datasource.password=MậtKhẩuSQLServerCủaBạn
-   ```
-4. Mở Terminal mới trong VS Code (`Ctrl + ~`) và chạy lệnh sau để khởi động Backend:
-   ```powershell
-   cd backend; cmd.exe /c "mvnw spring-boot:run"
-   ```
-   *(Backend sẽ khởi chạy ở cổng `8080`. Khi chạy lần đầu, Spring Boot sẽ tự động chạy file `DataSeeder.java` để nạp toàn bộ dữ liệu mẫu tuyệt đẹp gồm danh mục công việc, 6 dự án mẫu và 4 freelancers xuất sắc vào cơ sở dữ liệu SQL Server của bạn).*
+## 2. Tối ưu hóa Trình khởi động tự động (`START_ALL.bat`)
+
+Lỗi *"Không thể kết nối đến máy chủ"* thường xảy ra do các cổng dịch vụ (`8080` của Backend và `3000` của Frontend) bị chiếm dụng hoặc treo bởi các tiến trình nền chạy từ phiên trước đó.
+
+### 🚀 Trình khởi động cải tiến tự động:
+- **Tự động quét và giải phóng cổng 3000 & 8080**: Sử dụng lệnh hệ thống quét cổng và buộc tắt tiến trình đang chiếm dụng trước khi bắt đầu dịch vụ mới.
+- **Buộc tắt Java Process cũ**: Tắt sạch mọi tiến trình `java.exe` bị treo nền để đảm bảo kết nối Database sạch sẽ.
+- **Tạo khoảng trễ khởi chạy (Delay Buffer)**: Đợi 5 giây cho Spring Boot hoàn thành kết nối Database an toàn trước khi tự động kích hoạt Frontend.
 
 ---
 
-## ⚛️ Bước 3: Chạy Frontend (React Vite)
-1. Mở một **Terminal mới** song song trong VS Code (nhấn dấu `+` ở góc cửa sổ Terminal).
-2. Chạy lệnh sau để khởi động Frontend:
-   ```powershell
-   cd frontend; cmd.exe /c "npm run dev"
-   ```
-3. Mở trình duyệt và truy cập: `http://localhost:3001/` (hoặc cổng hiển thị trong terminal của bạn).
+## 3. Cách chạy dự án an toàn mỗi lần mở máy
 
----
-
-## 🎉 Trải nghiệm Tính năng Đăng nhập & Đăng ký Mới:
-- **Đăng nhập (Login Modal):** Click nút **Đăng nhập** ở thanh Menu. Giao diện modal kính mờ (glassmorphic backdrop blur) cao cấp sẽ xuất hiện. Bạn có thể chọn vai trò (Freelancer hoặc Employer), điền email/mật khẩu và trải nghiệm hiệu ứng loading kết nối cực kỳ mượt mà.
-- **Chuyển đổi Linh hoạt:** Nhấp vào **"Create a free profile"** ở góc dưới modal đăng nhập để chuyển ngay sang giao diện **Đăng ký (Register Modal)** với đầy đủ các trường thông tin chuẩn chỉ, bảo mật.
-- **Đăng ký (Register Modal):** Điền các trường thông tin (Họ tên, Tên hiển thị, Email, Số điện thoại, Mật khẩu), đồng ý điều khoản dịch vụ và nhấp tạo hồ sơ để hoàn thành quy trình một cách trơn tru.
-
----
-*Hãy khởi chạy dự án và tận hưởng giao diện chuyên nghiệp LancerPro nhé! Nếu gặp bất kỳ vấn đề gì, bạn cứ nhắn trực tiếp tại đây để mình hỗ trợ ngay lập tức!*
+Mỗi khi bạn mở dự án để chạy, chỉ cần thực hiện 1 bước duy nhất:
+1. Double-click chạy file `START_ALL.bat` tại thư mục gốc dự án.
+2. Trình khởi động sẽ tự động dọn dẹp các cổng bị treo, kích hoạt Backend, kết nối SQL Server và mở Frontend.
+3. Bạn có thể truy cập ngay tại: **`http://localhost:3000`**.
