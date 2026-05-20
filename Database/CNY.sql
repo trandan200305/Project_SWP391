@@ -6,6 +6,7 @@
 
 -- 1. AUTOMATIC DATABASE SETUP
 -- Checks if database 'CNY' exists; if not, creates it automatically.
+drop database CNY
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'CNY')
 BEGIN
     CREATE DATABASE CNY;

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Star, Eye, EyeOff, Chrome, ArrowLeft, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Eye, EyeOff, Chrome, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
@@ -11,7 +11,22 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [accountLocked, setAccountLocked] = useState(null); // { status, message }
+  const [accountLocked, setAccountLocked] = useState(null);
+
+  // --- Forgot Password State ---
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [timer, setTimer] = useState(0);
+
+  // Đếm ngược bộ đếm thời gian cho mã OTP
+  useEffect(() => {
+    if (timer <= 0) return;
+    const interval = setInterval(() => setTimer(t => t - 1), 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const processBackendLogin = async (payload) => {
     setLoading(true);
@@ -23,19 +38,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (data.success) {
         setLoading(false);
         setSuccess(true);
         setTimeout(() => {
-          if (onLoginSuccess) {
-            onLoginSuccess(data.user);
-          }
+          if (onLoginSuccess) onLoginSuccess(data.user);
         }, 1200);
       } else if (data.accountStatus === 'LOCKED' || data.accountStatus === 'BANNED') {
-        // Tài khoản bị khóa hoặc cấm bởi Admin
         setLoading(false);
         setAccountLocked({ status: data.accountStatus, message: data.message });
       } else {
@@ -51,10 +61,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
-
     processBackendLogin({
-      email: email,
-      name: email.split('@')[0], // Fallback name
+      email,
+      name: email.split('@')[0],
       requestedRole: role.toUpperCase(),
       avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
     });
@@ -62,7 +71,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
 
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
-    
     processBackendLogin({
       email: decoded.email,
       name: decoded.name,
@@ -72,18 +80,80 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
+  // Gửi mã OTP về email
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCodeSent(true);
+        setSuccessMsg('Mã xác nhận đã được gửi về email của bạn!');
+        setTimer(60);
+        setOtp(['', '', '', '', '', '']);
+      } else {
+        setErrorMsg(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
+      }
+    } catch (err) {
+      setErrorMsg('Lỗi kết nối đến máy chủ!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xác minh mã OTP
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    const code = otp.join('');
+    if (code.length < 6) return;
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, code })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSuccessMsg('✅ Xác nhận thành công! Mật khẩu mới đã được gửi vào email của bạn.');
+        setCodeSent(false);
+        setOtp(['', '', '', '', '', '']);
+        setTimeout(() => {
+          setIsForgotPassword(false);
+          setSuccessMsg('');
+          setForgotEmail('');
+        }, 3000);
+      } else {
+        setErrorMsg(data.message || 'Mã không chính xác!');
+      }
+    } catch (err) {
+      setErrorMsg('Lỗi kết nối đến máy chủ!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div 
-      onClick={onClose} 
+    <div
+      onClick={onClose}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-primary/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
-      {/* Centered Modal Card Container */}
-      <div 
-        onClick={(e) => e.stopPropagation()} 
+      <div
+        onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        {/* Floating Close Button at top-right */}
-        <button 
+        {/* Close Button */}
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
           title="Đóng"
@@ -91,28 +161,21 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL: Branding & Glass Testimonial (Hidden on small screens) */}
+        {/* LEFT PANEL */}
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
-          {/* Ambient Glow Orbs */}
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:2.5rem_2.5rem]" />
-
-          {/* Logo */}
           <div className="relative z-10">
             <span className="font-display text-2xl font-extrabold tracking-tight text-white block">
               Lancer<span className="text-secondary">Pro</span>
             </span>
           </div>
-
-          {/* Heading */}
           <div className="relative z-10 my-4 max-w-sm">
             <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-[1.2]">
               Connect with the world's most elite freelance talent.
             </h1>
           </div>
-
-          {/* Glass Testimonial card */}
           <div className="relative z-10 bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-lg">
             <div className="flex gap-0.5 mb-2.5">
               {[...Array(5)].map((_, i) => (
@@ -134,204 +197,361 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           </div>
         </div>
 
-        {/* RIGHT PANEL: Sleek Compact Form */}
+        {/* RIGHT PANEL */}
         <div className="w-full md:w-[52%] p-8 flex flex-col justify-between bg-white relative overflow-y-auto h-full">
-          {/* Main content container */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
-            {/* Header Title */}
-            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
-            <p className="font-sans text-muted text-[13px] mb-4">
-              Log in to manage your professional ecosystem.
-            </p>
 
-            {/* Account Locked/Banned Warning */}
-            {accountLocked && (
-              <div className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
-                accountLocked.status === 'BANNED' 
-                  ? 'bg-rose-50 border-rose-300' 
-                  : 'bg-amber-50 border-amber-300'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg`}>
-                    {accountLocked.status === 'BANNED' ? '🚫' : '⚠️'}
-                  </span>
-                  <h3 className={`font-bold text-[13px] ${
-                    accountLocked.status === 'BANNED' ? 'text-rose-800' : 'text-amber-800'
-                  }`}>
-                    {accountLocked.status === 'BANNED' 
-                      ? 'Tài khoản đã bị cấm vĩnh viễn' 
-                      : 'Tài khoản đang bị tạm khóa'}
-                  </h3>
-                </div>
-                <p className={`text-[11px] leading-relaxed ${
-                  accountLocked.status === 'BANNED' ? 'text-rose-700' : 'text-amber-700'
-                }`}>
-                  {accountLocked.message}
+            {/* ===================== FORGOT PASSWORD FLOW ===================== */}
+            {isForgotPassword ? (
+              <>
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  {codeSent ? 'Nhập mã xác nhận' : 'Quên mật khẩu'}
+                </h2>
+                <p className="font-sans text-muted text-[13px] mb-4">
+                  {codeSent
+                    ? `Mã 6 chữ số đã được gửi về ${forgotEmail}.`
+                    : 'Nhập email đã đăng ký để nhận mã xác nhận.'}
                 </p>
-                <div className={`text-[10px] font-bold pt-1 border-t ${
-                  accountLocked.status === 'BANNED' 
-                    ? 'border-rose-200 text-rose-500' 
-                    : 'border-amber-200 text-amber-500'
-                }`}>
-                  Mã trạng thái: {accountLocked.status} • Liên hệ: support@vlance.vn
-                </div>
-              </div>
-            )}
 
-            {/* Error Message Display */}
-            {errorMsg && !accountLocked && (
-              <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
-                {errorMsg}
-              </div>
-            )}
+                {/* Error / Success messages */}
+                {errorMsg && (
+                  <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center">
+                    {errorMsg}
+                  </div>
+                )}
+                {successMsg && (
+                  <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-[11px] font-semibold text-center">
+                    {successMsg}
+                  </div>
+                )}
 
-            {/* Role Switcher Tabs */}
-            <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
-              <button
-                type="button"
-                onClick={() => setRole('freelancer')}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'freelancer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
-                }`}
-              >
-                Freelancer
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('employer')}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'employer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
-                }`}
-              >
-                Employer
-              </button>
-            </div>
+                <form onSubmit={codeSent ? handleVerifyCode : handleSendCode} className="space-y-4">
+                  {/* Email input */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      disabled={codeSent}
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium disabled:opacity-60"
+                    />
+                  </div>
 
-            {/* Social Google Sign-In */}
-            <div className="mb-3.5 flex justify-center w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  setErrorMsg('Đăng nhập Google thất bại');
-                }}
-                useOneTap
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                width="320"
-                text="continue_with"
-              />
-            </div>
+                  {/* OTP input boxes (hiện ra khi đã gửi mã) */}
+                  {codeSent && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-primary mb-2">
+                        Mã xác nhận (6 chữ số)
+                      </label>
+                      <div className="flex gap-2 justify-between">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            id={`otp-${index}`}
+                            type="text"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/, '');
+                              const newOtp = [...otp];
+                              newOtp[index] = val;
+                              setOtp(newOtp);
+                              if (val && index < 5) {
+                                document.getElementById(`otp-${index + 1}`).focus();
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
+                                const newOtp = [...otp];
+                                newOtp[index - 1] = '';
+                                setOtp(newOtp);
+                                document.getElementById(`otp-${index - 1}`).focus();
+                              }
+                            }}
+                            className="w-11 h-11 text-center bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg text-[16px] font-bold focus:outline-none transition-all text-primary"
+                          />
+                        ))}
+                      </div>
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center mb-3.5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-muted-light/60"></div>
-              </div>
-              <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
-                OR CONTINUE WITH EMAIL
-              </span>
-            </div>
+                      {/* Đếm ngược và gửi lại mã */}
+                      <div className="mt-2 text-center text-[11px] font-semibold">
+                        {timer > 0 ? (
+                          <span className="text-muted">Gửi lại mã sau {timer}s</span>
+                        ) : (
+                          <span className="text-muted">
+                            Bạn không nhận được mã?{' '}
+                            <a
+                              href="#resend"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                setLoading(true);
+                                try {
+                                  const res = await fetch('http://localhost:8080/api/auth/forgot-password', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email: forgotEmail })
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    setSuccessMsg('Mã mới đã được gửi!');
+                                    setTimer(60);
+                                    setOtp(['', '', '', '', '', '']);
+                                    setErrorMsg('');
+                                  } else {
+                                    setErrorMsg(data.message);
+                                  }
+                                } catch {
+                                  setErrorMsg('Lỗi kết nối máy chủ');
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className="text-secondary hover:underline"
+                            >
+                              Gửi lại mã
+                            </a>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Input Form */}
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {/* Email */}
-              <div>
-                <label className="block text-[11px] font-bold text-primary mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  required
-                  className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
-                />
-              </div>
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : !codeSent ? (
+                      'Gửi mã xác nhận'
+                    ) : (
+                      'Xác nhận mã OTP'
+                    )}
+                  </button>
+                </form>
 
-              {/* Password */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] font-bold text-primary">
-                    Password
-                  </label>
-                  <a href="#forgot" className="text-secondary font-bold text-[11px] hover:underline">
-                    Forgot password?
+                {/* Quay lại đăng nhập */}
+                <div className="mt-4 text-center text-[12px] text-muted font-medium">
+                  <a
+                    href="#login"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsForgotPassword(false);
+                      setCodeSent(false);
+                      setOtp(['', '', '', '', '', '']);
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    ← Quay lại đăng nhập
                   </a>
                 </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
-                  />
+              </>
+            ) : (
+              /* ===================== LOGIN FORM ===================== */
+              <>
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
+                <p className="font-sans text-muted text-[13px] mb-4">
+                  Log in to manage your professional ecosystem.
+                </p>
+
+                {/* Account Locked/Banned Warning */}
+                {accountLocked && (
+                  <div className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
+                    accountLocked.status === 'BANNED'
+                      ? 'bg-rose-50 border-rose-300'
+                      : 'bg-amber-50 border-amber-300'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {accountLocked.status === 'BANNED' ? '🚫' : '⚠️'}
+                      </span>
+                      <h3 className={`font-bold text-[13px] ${
+                        accountLocked.status === 'BANNED' ? 'text-rose-800' : 'text-amber-800'
+                      }`}>
+                        {accountLocked.status === 'BANNED'
+                          ? 'Tài khoản đã bị cấm vĩnh viễn'
+                          : 'Tài khoản đang bị tạm khóa'}
+                      </h3>
+                    </div>
+                    <p className={`text-[11px] leading-relaxed ${
+                      accountLocked.status === 'BANNED' ? 'text-rose-700' : 'text-amber-700'
+                    }`}>
+                      {accountLocked.message}
+                    </p>
+                    <div className={`text-[10px] font-bold pt-1 border-t ${
+                      accountLocked.status === 'BANNED'
+                        ? 'border-rose-200 text-rose-500'
+                        : 'border-amber-200 text-amber-500'
+                    }`}>
+                      Mã trạng thái: {accountLocked.status} • Liên hệ: support@vlance.vn
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {errorMsg && !accountLocked && (
+                  <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
+                    {errorMsg}
+                  </div>
+                )}
+
+                {/* Role Switcher */}
+                <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                    onClick={() => setRole('freelancer')}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === 'freelancer' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary'
+                    }`}
                   >
-                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    Freelancer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('employer')}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === 'employer' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary'
+                    }`}
+                  >
+                    Employer
                   </button>
                 </div>
-              </div>
 
-              {/* Remember */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
-                />
-                <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
-                  Keep me logged in for 30 days
-                </label>
-              </div>
+                {/* Google Sign-In */}
+                <div className="mb-3.5 flex justify-center w-full">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setErrorMsg('Đăng nhập Google thất bại')}
+                    useOneTap
+                    theme="outline"
+                    size="large"
+                    shape="rectangular"
+                    width="320"
+                    text="continue_with"
+                  />
+                </div>
 
-              {/* Sign In CTA */}
-              <button
-                type="submit"
-                disabled={loading || success}
-                className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                  success 
-                    ? 'bg-emerald-600 text-white shadow-lg animate-pulse' 
-                    : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
-                }`}
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : success ? (
-                  'Đăng nhập thành công!'
-                ) : (
-                  `Sign In to LancerPro`
-                )}
-              </button>
-            </form>
+                {/* Divider */}
+                <div className="relative flex items-center justify-center mb-3.5">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted-light/60"></div>
+                  </div>
+                  <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
+                    OR CONTINUE WITH EMAIL
+                  </span>
+                </div>
 
-            {/* Link to Register */}
-            <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
-              Don't have an account?{' '}
-              <a 
-                href="#register" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (onSwitchToRegister) onSwitchToRegister();
-                }}
-                className="text-secondary font-bold hover:underline"
-              >
-                Create a free profile
-              </a>
-            </div>
+                {/* Email/Password Form */}
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-primary">Password</label>
+                      {/* Nút Forgot Password */}
+                      <a
+                        href="#forgot"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsForgotPassword(true);
+                          setErrorMsg('');
+                          setSuccessMsg('');
+                          setCodeSent(false);
+                          setOtp(['', '', '', '', '', '']);
+                          setForgotEmail(email); // Pre-fill email nếu đã nhập
+                        }}
+                        className="text-secondary font-bold text-[11px] hover:underline"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
+                    />
+                    <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
+                      Keep me logged in for 30 days
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
+                      success
+                        ? 'bg-emerald-600 text-white shadow-lg animate-pulse'
+                        : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      'Đăng nhập thành công!'
+                    ) : (
+                      'Sign In to LancerPro'
+                    )}
+                  </button>
+                </form>
+
+                {/* Switch to Register */}
+                <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
+                  Don't have an account?{' '}
+                  <a
+                    href="#register"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onSwitchToRegister) onSwitchToRegister();
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    Create a free profile
+                  </a>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Footer copyright */}
+          {/* Footer */}
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">
