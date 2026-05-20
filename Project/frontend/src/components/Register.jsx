@@ -12,22 +12,42 @@ export default function Register({ onClose, onSwitchToLogin }) {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!fullName || !displayName || !phoneNumber || !email || !password || !agreeTerms) return;
 
     setLoading(true);
-    // Mock user registration sequence
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name: fullName,
+          requestedRole: role.toUpperCase()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          if (onSwitchToLogin) onSwitchToLogin();
+        }, 1500);
+      } else {
+        setError(data.message || 'Đăng ký thất bại!');
+      }
+    } catch (err) {
+      setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => {
-        if (onSwitchToLogin) {
-          onSwitchToLogin();
-        }
-      }, 1500);
-    }, 1800);
+    }
   };
 
   return (
@@ -115,6 +135,14 @@ export default function Register({ onClose, onSwitchToLogin }) {
             <p className="font-sans text-muted text-[13px] mb-2.5">
               Start your professional ecosystem today.
             </p>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-2 p-2 bg-rose-50 border border-rose-200 text-rose-600 text-[11px] rounded-lg font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-rose-600 rounded-full flex-shrink-0"></span>
+                {error}
+              </div>
+            )}
 
             {/* Role Switcher */}
             <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-2">
