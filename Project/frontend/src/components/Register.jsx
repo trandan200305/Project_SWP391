@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Chrome, Eye, EyeOff, Sparkles, CheckCircle, X } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
-export default function Register({ onClose, onSwitchToLogin }) {
+export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [role, setRole] = useState('freelancer'); // 'freelancer' or 'employer'
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -13,6 +15,39 @@ export default function Register({ onClose, onSwitchToLogin }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState(''); // trường bị lỗi cụ thể
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError('');
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: decoded.email,
+          name: decoded.name,
+          googleId: decoded.sub,
+          avatar: decoded.picture,
+          requestedRole: role.toUpperCase()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          if (onLoginSuccess) onLoginSuccess(data.user);
+        }, 1200);
+      } else {
+        setError(data.message || 'Đăng ký bằng Google thất bại.');
+      }
+    } catch (err) {
+      setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +55,7 @@ export default function Register({ onClose, onSwitchToLogin }) {
 
     setLoading(true);
     setError('');
+    setErrorField('');
 
     try {
       const response = await fetch('http://localhost:8080/api/auth/register', {
@@ -29,6 +65,9 @@ export default function Register({ onClose, onSwitchToLogin }) {
           email,
           password,
           name: fullName,
+          fullName,
+          displayName,
+          phone: phoneNumber,
           requestedRole: role.toUpperCase()
         }),
       });
@@ -42,6 +81,7 @@ export default function Register({ onClose, onSwitchToLogin }) {
         }, 1500);
       } else {
         setError(data.message || 'Đăng ký thất bại!');
+        setErrorField(data.field || ''); // 'email' | 'phone' | 'displayName'
       }
     } catch (err) {
       setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
@@ -171,13 +211,17 @@ export default function Register({ onClose, onSwitchToLogin }) {
             </div>
 
             {/* Social Google Registration */}
-            <div className="mb-2">
-              <button 
-                type="button"
-                className="w-full flex items-center justify-center gap-2 border border-muted-light/60 hover:bg-muted-light/10 py-2 px-3 rounded-lg font-bold text-primary text-[12px] transition-colors"
-              >
-                <Chrome className="w-3.5 h-3.5 text-rose-500" /> Google
-              </button>
+            <div className="mb-2 flex justify-center w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Đăng ký bằng Google thất bại')}
+                useOneTap
+                theme="outline"
+                size="large"
+                shape="rectangular"
+                width="320"
+                text="signup_with"
+              />
             </div>
 
             {/* Divider */}
@@ -201,50 +245,80 @@ export default function Register({ onClose, onSwitchToLogin }) {
                   <input
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => { setFullName(e.target.value); }}
                     required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    className="w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium border-muted-light/60 focus:border-secondary focus:ring-secondary"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-primary mb-1">
+                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'displayName' ? 'text-rose-600' : 'text-primary'}`}>
                     Display Name
                   </label>
                   <input
                     type="text"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(e) => { setDisplayName(e.target.value); if (errorField === 'displayName') setErrorField(''); }}
                     required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                      errorField === 'displayName'
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
+                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                    }`}
                   />
+                  {errorField === 'displayName' && (
+                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                      Tên đã tồn tại
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Email & Phone Number (Dual Column) */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-primary mb-1">
+                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'email' ? 'text-rose-600' : 'text-primary'}`}>
                     Email Address
                   </label>
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); if (errorField === 'email') setErrorField(''); }}
                     required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                      errorField === 'email'
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
+                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                    }`}
                   />
+                  {errorField === 'email' && (
+                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                      Email đã tồn tại
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-primary mb-1">
+                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'phone' ? 'text-rose-600' : 'text-primary'}`}>
                     Phone Number
                   </label>
                   <input
                     type="tel"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => { setPhoneNumber(e.target.value); if (errorField === 'phone') setErrorField(''); }}
                     required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                      errorField === 'phone'
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
+                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                    }`}
                   />
+                  {errorField === 'phone' && (
+                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                      SĐT đã được dùng
+                    </p>
+                  )}
                 </div>
               </div>
 

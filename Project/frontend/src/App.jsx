@@ -122,6 +122,7 @@ export default function App() {
           <Register 
             onClose={() => handleNavigate('home')} 
             onSwitchToLogin={() => handleNavigate('login')} 
+            onLoginSuccess={handleLoginSuccess}
           />
         )}
       </div>

@@ -23,6 +23,13 @@ public class AuthService {
         String avatar = payload.get("avatar");
         String requestedRole = payload.get("requestedRole"); // FREELANCER or EMPLOYER
 
+        // Lấy thông tin chi tiết được truyền thêm từ trang đăng ký thủ công
+        String displayName = payload.getOrDefault("displayName", name);
+        String fullName = payload.getOrDefault("fullName", name);
+        String phone = payload.get("phone");
+        String password = payload.get("password");
+        String passwordHash = (password != null && !password.trim().isEmpty()) ? password : "OAUTH_GOOGLE_LOGGED";
+
         Map<String, Object> response = new HashMap<>();
 
         if (email == null || email.trim().isEmpty()) {
@@ -60,9 +67,9 @@ public class AuthService {
             if (existingAdmins.isEmpty()) {
                 // Đăng ký Admin lần đầu
                 jdbcTemplate.update(
-                    "INSERT INTO admins (email, password_hash, display_name, full_name, avatar_url, status, email_verified, google_id, admin_level, created_at, updated_at, is_deleted) " +
-                    "VALUES (?, ?, ?, ?, ?, 'ACTIVE', 1, ?, 'SUPER_ADMIN', GETDATE(), GETDATE(), 0)",
-                    email, "OAUTH_GOOGLE_LOGGED", name, name, avatar, googleId
+                    "INSERT INTO admins (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, admin_level, created_at, updated_at, is_deleted) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 1, ?, 'SUPER_ADMIN', GETDATE(), GETDATE(), 0)",
+                    email, passwordHash, displayName, fullName, phone, avatar, googleId
                 );
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('admins')", Integer.class);
             } else {
@@ -84,9 +91,9 @@ public class AuthService {
             if (existingEmployers.isEmpty()) {
                 // Đăng ký Employer lần đầu
                 jdbcTemplate.update(
-                    "INSERT INTO employers (email, password_hash, display_name, full_name, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_spent, projects_posted, average_rating, is_deleted) " +
-                    "VALUES (?, ?, ?, ?, ?, 'ACTIVE', 1, ?, GETDATE(), GETDATE(), 100, 0, 0, 5.0, 0)",
-                    email, "OAUTH_GOOGLE_LOGGED", name, name, avatar, googleId
+                    "INSERT INTO employers (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_spent, projects_posted, average_rating, is_deleted) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 1, ?, GETDATE(), GETDATE(), 100, 0, 0, 5.0, 0)",
+                    email, passwordHash, displayName, fullName, phone, avatar, googleId
                 );
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('employers')", Integer.class);
             } else {
@@ -108,9 +115,9 @@ public class AuthService {
             if (existingFreelancers.isEmpty()) {
                 // Đăng ký Freelancer lần đầu
                 jdbcTemplate.update(
-                    "INSERT INTO freelancers (email, password_hash, display_name, full_name, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_earnings, projects_completed, average_rating, is_available, is_deleted) " +
-                    "VALUES (?, ?, ?, ?, ?, 'ACTIVE', 1, ?, GETDATE(), GETDATE(), 95, 0, 0, 5.0, 1, 0)",
-                    email, "OAUTH_GOOGLE_LOGGED", name, name, avatar, googleId
+                    "INSERT INTO freelancers (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_earnings, projects_completed, average_rating, is_available, is_deleted) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 1, ?, GETDATE(), GETDATE(), 95, 0, 0, 5.0, 1, 0)",
+                    email, passwordHash, displayName, fullName, phone, avatar, googleId
                 );
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('freelancers')", Integer.class);
             } else {
@@ -157,5 +164,14 @@ public class AuthService {
             "avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name
         ));
         return response;
+    }
+
+    /**
+     * Kiểm tra xem một giá trị có đã tồn tại trong cột nhất định của bảng chỉ định hay chưa.
+     * Được dùng để validate trùng lặp email / phone / display_name khi đăng ký.
+     */
+    public Integer countBy(String table, String column, String value) {
+        String sql = "SELECT COUNT(*) FROM " + table + " WHERE " + column + " = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, value);
     }
 }

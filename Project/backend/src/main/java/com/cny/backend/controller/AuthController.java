@@ -46,28 +46,68 @@ public class AuthController {
     // ==========================================
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> payload) {
-        String email     = payload.get("email");
-        String password  = payload.get("password");
-        String name      = payload.get("name");
-        String role      = payload.getOrDefault("requestedRole", "FREELANCER").toUpperCase();
+        String email       = payload.get("email");
+        String password    = payload.get("password");
+        String fullName    = payload.get("name");
+        String displayName = payload.get("displayName");
+        String phone       = payload.get("phone");
+        String role        = payload.getOrDefault("requestedRole", "FREELANCER").toUpperCase();
 
         Map<String, Object> response = new HashMap<>();
 
+        // 1. Validate bắt buộc
         if (email == null || email.trim().isEmpty()) {
             response.put("success", false);
             response.put("message", "Email không được để trống!");
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 2. Kiểm tra trùng lặp tuỳ theo vai trò
         try {
-            // Dùng lại AuthService.login() để tự động tạo tài khoản theo role
-            // (AuthService tự INSERT nếu email chưa tồn tại trong bảng tương ứng)
+            String table        = role.equals("EMPLOYER") ? "employers" : "freelancers";
+            String idColumn     = role.equals("EMPLOYER") ? "employer_id"  : "freelancer_id";
+
+            // Kiểm tra Email đã tồn tại chưa
+            Integer emailCount = authService.countBy(table, "email", email);
+            if (emailCount != null && emailCount > 0) {
+                response.put("success", false);
+                response.put("field",   "email");
+                response.put("message", "Email này đã được đăng ký. Vui lòng dùng email khác hoặc đăng nhập!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra Số điện thoại đã tồn tại chưa
+            if (phone != null && !phone.trim().isEmpty()) {
+                Integer phoneCount = authService.countBy(table, "phone", phone);
+                if (phoneCount != null && phoneCount > 0) {
+                    response.put("success", false);
+                    response.put("field",   "phone");
+                    response.put("message", "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác!");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // Kiểm tra Tên hiển thị đã tồn tại chưa
+            if (displayName != null && !displayName.trim().isEmpty()) {
+                Integer displayNameCount = authService.countBy(table, "display_name", displayName);
+                if (displayNameCount != null && displayNameCount > 0) {
+                    response.put("success", false);
+                    response.put("field",   "displayName");
+                    response.put("message", "Tên hiển thị này đã được người khác sử dụng. Vui lòng chọn tên khác!");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // 3. Tất cả hợp lệ - tiến hành tạo tài khoản
             Map<String, String> loginPayload = new HashMap<>();
-            loginPayload.put("email", email);
-            loginPayload.put("name", name != null ? name : email.split("@")[0]);
-            loginPayload.put("password", password);
+            loginPayload.put("email",         email);
+            loginPayload.put("name",          fullName != null ? fullName : email.split("@")[0]);
+            loginPayload.put("fullName",      fullName != null ? fullName : email.split("@")[0]);
+            loginPayload.put("displayName",   displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+            loginPayload.put("phone",         phone);
+            loginPayload.put("password",      password);
             loginPayload.put("requestedRole", role);
-            loginPayload.put("googleId", null); // Đăng ký bằng email nên không có googleId
+            loginPayload.put("googleId",      null); // Đăng ký bằng email nên không có googleId
 
             Map<String, Object> result = authService.login(loginPayload);
             if ((Boolean) result.getOrDefault("success", false)) {
@@ -78,6 +118,7 @@ public class AuthController {
                 response.put("message", result.getOrDefault("message", "Đăng ký thất bại!"));
             }
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             e.printStackTrace();
             response.put("success", false);
@@ -85,6 +126,7 @@ public class AuthController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
 
     // ==========================================
     // QUÊN MẬT KHẨU - Gửi mã OTP về Email
