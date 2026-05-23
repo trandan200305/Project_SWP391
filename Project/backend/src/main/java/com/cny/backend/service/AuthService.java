@@ -125,7 +125,7 @@ public class AuthService {
             // Nếu đã thuộc role khác, cấm
             if (totalRoles > 0 && emailInEmployers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò Freelancer hoặc Admin. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message", "Email này đã được đăng ký dưới vai trò Freelancer. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
@@ -175,7 +175,7 @@ public class AuthService {
             // Nếu đã thuộc role khác, cấm
             if (totalRoles > 0 && emailInFreelancers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò Employer hoặc Admin. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message", "Email này đã được đăng ký dưới vai trò Employer. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
@@ -286,6 +286,39 @@ public class AuthService {
         List<String> pins = jdbcTemplate.queryForList("SELECT messenger_pin FROM " + table + " WHERE " + idCol + " = ?", String.class, userId);
         if (pins.isEmpty() || pins.get(0) == null) return false;
         return pins.get(0).equals(pin);
+    }
+
+    @Transactional
+    public String resetAndEmailMessengerPin(Integer userId, String role, org.springframework.mail.javamail.JavaMailSender mailSender) {
+        String table = getTableNameByRole(role);
+        String idCol = getIdColumnByRole(role);
+        if (table == null) return null;
+        
+        List<String> emails = jdbcTemplate.queryForList("SELECT email FROM " + table + " WHERE " + idCol + " = ?", String.class, userId);
+        if (emails.isEmpty()) return null;
+        String email = emails.get(0);
+        
+        String newPin = String.format("%04d", (int)(Math.random() * 10000));
+        
+        jdbcTemplate.update("UPDATE " + table + " SET messenger_pin = ? WHERE " + idCol + " = ?", newPin, userId);
+        
+        try {
+            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[LancerPro] Cap lai ma PIN bao mat tin nhan");
+            message.setText("Chào bạn,\n\n"
+                + "Bạn vừa yêu cầu lấy lại mã PIN bảo mật cho đoạn chat Messenger tại LancerPro.\n\n"
+                + "Mã PIN mới của bạn là: " + newPin + "\n\n"
+                + "Vui lòng đăng nhập và sử dụng mã này để truy cập tin nhắn của bạn.\n\n"
+                + "Trân trọng,\n"
+                + "Đội ngũ LancerPro");
+            mailSender.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        
+        return email;
     }
     
     private String getTableNameByRole(String role) {

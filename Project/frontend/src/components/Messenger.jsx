@@ -3,7 +3,8 @@ import {
   Search, Bell, HelpCircle, MessageSquare, Users, 
   FolderKanban, Settings, LifeBuoy, Plus, MessageCircle,
   MoreVertical, CheckCheck, Send, ArrowLeft, Shield, Clock,
-  ChevronRight, RefreshCw, AlertCircle
+  ChevronRight, RefreshCw, AlertCircle, Paperclip, Image, 
+  FileText, X, Download
 } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -22,6 +23,18 @@ export default function Messenger({ user, onNavigateHome }) {
   const messagesEndRef = useRef(null);
   const ticketSubscriptionRef = useRef(null);
   const activeTicketIdRef = useRef(null);
+
+  // States & Refs for file attachments
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  // States & Refs for system users filtering
+  const [navSection, setNavSection] = useState('chat'); // 'chat' | 'freelancer' | 'employer'
+  const [systemUsers, setSystemUsers] = useState([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
 
   // Keep ref updated to access latest active ticket in subscription callbacks
   useEffect(() => {
@@ -215,10 +228,58 @@ export default function Messenger({ user, onNavigateHome }) {
     setIsLoading(false);
   };
 
+  const handleFileChange = async (e, isImageOnly = false) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const newAttachments = [...attachedFiles];
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('http://localhost:8080/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            newAttachments.push({
+              fileUrl: data.fileUrl,
+              fileName: data.fileName,
+              fileSize: data.fileSize
+            });
+          } else {
+            alert(`Tải file thất bại: ${data.message || 'Lỗi không xác định'}`);
+          }
+        } else {
+          alert('Tải file thất bại. Vui lòng thử lại.');
+        }
+      } catch (err) {
+        console.error('Error uploading file:', err);
+        alert('Lỗi kết nối khi tải file.');
+      }
+    }
+
+    setAttachedFiles(newAttachments);
+    setUploading(false);
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const handleRemoveAttachment = (indexToRemove) => {
+    setAttachedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Handle sending chat message
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && attachedFiles.length === 0) return;
 
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     if (!ticketId) return;
@@ -228,13 +289,20 @@ export default function Messenger({ user, onNavigateHome }) {
       return;
     }
 
+    let msgText = inputText.trim();
+    if (!msgText && attachedFiles.length > 0) {
+      const allImages = attachedFiles.every(att => /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl));
+      msgText = allImages ? '[Hình ảnh]' : '[Tệp đính kèm]';
+    }
+
     const payload = {
       ticketId: ticketId,
       senderId: user.id,
       senderRole: user.role,
       senderName: user.name,
       senderAvatar: user.avatar || '',
-      messageText: inputText
+      messageText: msgText,
+      attachments: attachedFiles
     };
 
     stompClientRef.current.publish({
@@ -243,7 +311,72 @@ export default function Messenger({ user, onNavigateHome }) {
     });
 
     setInputText('');
+    setAttachedFiles([]);
   };
+
+  const fetchSystemUsers = async () => {
+    setIsUsersLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/admin/users');
+      if (response.ok) {
+        const data = await response.json();
+        setSystemUsers(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch system users', err);
+    } finally {
+      setIsUsersLoading(false);
+    }
+  };
+
+  const handleNavSectionChange = (section) => {
+    setNavSection(section);
+    setUserSearchQuery('');
+    if (section === 'freelancer' || section === 'employer') {
+      fetchSystemUsers();
+    }
+  };
+
+  const handleStartChatWithUser = async (clickedUser, role) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/chat/tickets/get-or-create?userId=${clickedUser.id}&role=${role}`);
+      if (response.ok) {
+        const data = await response.json();
+        const ticketId = data.ticketId;
+
+        const activeT = {
+          ticket_id: ticketId,
+          subject: 'Hỗ trợ kỹ thuật',
+          sender_name: clickedUser.name,
+          sender_avatar: clickedUser.avatarUrl || `https://ui-avatars.com/api/?name=${clickedUser.name || 'User'}&background=3b82f6&color=fff`,
+          sender_role: role.toUpperCase(),
+          sender_id: clickedUser.id,
+          status: 'OPEN'
+        };
+        
+        setActiveTicket(activeT);
+        await fetchMessages(ticketId);
+        subscribeToTicket(ticketId);
+        await fetchTickets();
+        setNavSection('chat');
+      }
+    } catch (err) {
+      console.error('Failed to start chat with user', err);
+      alert('Không thể tạo phòng chat với người dùng này.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const systemUsersList = systemUsers || [];
+  const filteredSystemUsers = systemUsersList.filter(u => {
+    const roleMatch = navSection === 'freelancer' ? u.role === 'FREELANCER' : u.role === 'EMPLOYER';
+    if (!roleMatch) return false;
+    
+    const query = userSearchQuery.toLowerCase();
+    return (u.name || '').toLowerCase().includes(query) || (u.email || '').toLowerCase().includes(query);
+  });
 
   // Split tickets into two groups based on whether admin has replied
   const matchesSearch = (ticket) =>
@@ -283,20 +416,54 @@ export default function Messenger({ user, onNavigateHome }) {
 
           {/* Nav Links */}
           <nav className="px-3 mt-6 flex flex-col gap-1.5">
-            <button className="flex items-center justify-between w-full px-4 py-3 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-xl font-semibold transition-all">
+            <button 
+              onClick={() => setNavSection('chat')}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold transition-all border ${
+                navSection === 'chat'
+                  ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+                  : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+              }`}
+            >
               <span className="flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 shrink-0" />
                 <span>Hỗ Trợ Trực Tuyến</span>
               </span>
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>
             </button>
-            <button 
-              onClick={onNavigateHome}
-              className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 rounded-xl font-medium hover:text-white transition-all text-slate-400"
-            >
-              <Users className="w-5 h-5 shrink-0" />
-              <span>{user?.role === 'FREELANCER' ? 'Tìm Employer' : 'Tìm Freelancer'}</span>
-            </button>
+            {user?.role === 'ADMIN' ? (
+              <>
+                <button 
+                  onClick={() => handleNavSectionChange('freelancer')}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
+                    navSection === 'freelancer'
+                      ? 'bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold'
+                      : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-5 h-5 shrink-0" />
+                  <span>Tìm Freelancer</span>
+                </button>
+                <button 
+                  onClick={() => handleNavSectionChange('employer')}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
+                    navSection === 'employer'
+                      ? 'bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold'
+                      : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-5 h-5 shrink-0" />
+                  <span>Tìm Employer</span>
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={onNavigateHome}
+                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 rounded-xl font-medium hover:text-white transition-all text-slate-400"
+              >
+                <Users className="w-5 h-5 shrink-0" />
+                <span>{user?.role === 'FREELANCER' ? 'Tìm Employer' : 'Tìm Freelancer'}</span>
+              </button>
+            )}
             <button 
               onClick={onNavigateHome}
               className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 rounded-xl font-medium hover:text-white transition-all text-slate-400"
@@ -380,13 +547,31 @@ export default function Messenger({ user, onNavigateHome }) {
             activeTicket && 'hidden md:flex'
           }`}>
             <div className="p-5 border-b border-slate-100">
-              <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Hộp thư hỗ trợ</h2>
-              <p className="text-xs text-slate-400 font-semibold mt-1">
-                {user?.role === 'ADMIN' 
-                  ? 'Quản lý các yêu cầu kỹ thuật trực tiếp'
-                  : 'Trò chuyện bảo mật trực tiếp với Kỹ thuật viên'
-                }
-              </p>
+              {navSection === 'chat' ? (
+                <>
+                  <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Hộp thư hỗ trợ</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    {user?.role === 'ADMIN' 
+                      ? 'Quản lý các yêu cầu kỹ thuật trực tiếp'
+                      : 'Trò chuyện bảo mật trực tiếp với Kỹ thuật viên'
+                    }
+                  </p>
+                </>
+              ) : navSection === 'freelancer' ? (
+                <>
+                  <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Tìm kiếm Freelancer</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    Chọn freelancer để bắt đầu cuộc trò chuyện mới
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Tìm kiếm Employer</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    Chọn employer để bắt đầu cuộc trò chuyện mới
+                  </p>
+                </>
+              )}
 
               {user?.role === 'ADMIN' && (
                 <>
@@ -395,51 +580,53 @@ export default function Messenger({ user, onNavigateHome }) {
                     <input 
                       type="text" 
                       placeholder="Tìm theo tên hoặc email..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={navSection === 'chat' ? searchQuery : userSearchQuery}
+                      onChange={(e) => navSection === 'chat' ? setSearchQuery(e.target.value) : setUserSearchQuery(e.target.value)}
                       className="pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl text-sm font-medium w-full transition-all outline-none"
                     />
                   </div>
 
-                  <div className="flex gap-2 mt-4">
-                    <button 
-                      onClick={() => setActiveTab('active')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
-                        activeTab === 'active'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' 
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      Đang xử lý
-                      {activeTickets.length > 0 && (
-                        <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                          activeTab === 'active' ? 'bg-white/25' : 'bg-blue-500 text-white'
-                        }`}>{activeTickets.length}</span>
-                      )}
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('pending')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
-                        activeTab === 'pending'
-                          ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20' 
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      Chờ phản hồi
-                      {pendingTickets.length > 0 && (
-                        <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                          activeTab === 'pending' ? 'bg-white/25 text-white' : 'bg-amber-500 text-white'
-                        }`}>{pendingTickets.length}</span>
-                      )}
-                    </button>
-                  </div>
+                  {navSection === 'chat' && (
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        onClick={() => setActiveTab('active')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                          activeTab === 'active'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đang xử lý
+                        {activeTickets.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeTab === 'active' ? 'bg-white/25' : 'bg-blue-500 text-white'
+                          }`}>{activeTickets.length}</span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('pending')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                          activeTab === 'pending'
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Chờ phản hồi
+                        {pendingTickets.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeTab === 'pending' ? 'bg-white/25 text-white' : 'bg-amber-500 text-white'
+                          }`}>{pendingTickets.length}</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             {/* Support list content */}
             <div className="flex-1 overflow-y-auto">
-              {user?.role === 'ADMIN' ? (
+              {user?.role === 'ADMIN' && navSection === 'chat' && (
                 <>
                   {/* ACTIVE TICKETS (admin đã reply) - Hiển thị trên giao diện chính */}
                   {activeTab === 'active' && (
@@ -520,7 +707,7 @@ export default function Messenger({ user, onNavigateHome }) {
                             <div className="relative shrink-0">
                               <img 
                                 src={ticket.sender_avatar || `https://ui-avatars.com/api/?name=${ticket.sender_name || 'Client'}&background=fff7ed&color=d97706`} 
-                                alt={ticket.sender_name} 
+                                  alt={ticket.sender_name} 
                                 className="w-11 h-11 rounded-xl object-cover border border-amber-200/80 shadow-sm"
                               />
                               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-400 rounded-full border-2 border-white animate-pulse"></div>
@@ -562,7 +749,83 @@ export default function Messenger({ user, onNavigateHome }) {
                     </div>
                   )}
                 </>
-              ) : (
+              )}
+
+              {user?.role === 'ADMIN' && navSection === 'freelancer' && (
+                <div className="flex flex-col">
+                  {isUsersLoading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-slate-400 gap-2">
+                      <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                      <p className="text-xs font-semibold">Đang tải danh sách...</p>
+                    </div>
+                  ) : filteredSystemUsers.length > 0 ? (
+                    <div>
+                      {filteredSystemUsers.map(u => (
+                        <div 
+                          key={u.id}
+                          onClick={() => handleStartChatWithUser(u, 'FREELANCER')}
+                          className="flex gap-3.5 p-4 cursor-pointer hover:bg-slate-50 transition-all border-b border-slate-100"
+                        >
+                          <img 
+                            src={`https://ui-avatars.com/api/?name=${u.name}&background=eff6ff&color=3b82f6`}
+                            alt={u.name}
+                            className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-extrabold text-slate-900 truncate text-sm">{u.name}</h4>
+                            <p className="text-xs text-slate-400 truncate font-semibold mb-1">{u.email}</p>
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-blue-50 text-blue-600 border-blue-100">FREELANCER</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-slate-400">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Không tìm thấy freelancer nào</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {user?.role === 'ADMIN' && navSection === 'employer' && (
+                <div className="flex flex-col">
+                  {isUsersLoading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-slate-400 gap-2">
+                      <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                      <p className="text-xs font-semibold">Đang tải danh sách...</p>
+                    </div>
+                  ) : filteredSystemUsers.length > 0 ? (
+                    <div>
+                      {filteredSystemUsers.map(u => (
+                        <div 
+                          key={u.id}
+                          onClick={() => handleStartChatWithUser(u, 'EMPLOYER')}
+                          className="flex gap-3.5 p-4 cursor-pointer hover:bg-slate-50 transition-all border-b border-slate-100"
+                        >
+                          <img 
+                            src={`https://ui-avatars.com/api/?name=${u.name}&background=fdf2f8&color=db2777`}
+                            alt={u.name}
+                            className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-extrabold text-slate-900 truncate text-sm">{u.name}</h4>
+                            <p className="text-xs text-slate-400 truncate font-semibold mb-1">{u.email}</p>
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-pink-50 text-pink-600 border-pink-100">EMPLOYER</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-slate-400">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Không tìm thấy employer nào</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {user?.role !== 'ADMIN' && (
                 /* Regular User view: Persistent support item */
                 <div 
                   onClick={() => {}}
@@ -681,13 +944,77 @@ export default function Messenger({ user, onNavigateHome }) {
                                 </span>
                               </p>
                             )}
-                            <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium ${
-                              isMe 
-                                ? 'bg-blue-600 text-white rounded-br-none border border-blue-500 shadow-blue-500/10' 
-                                : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none'
-                            }`}>
-                              {msg.messageText}
-                            </div>
+                            {/* Message text bubble */}
+                            {msg.messageText && msg.messageText.trim() !== '' && !(msg.attachments && msg.attachments.length > 0 && (msg.messageText === '[Hình ảnh]' || msg.messageText === '[Tệp đính kèm]')) && (
+                              <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium ${
+                                isMe 
+                                  ? 'bg-blue-600 text-white rounded-br-none border border-blue-500 shadow-blue-500/10' 
+                                  : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none'
+                              }`}>
+                                {msg.messageText}
+                              </div>
+                            )}
+
+                            {/* Message attachments rendering */}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className={`mt-2 flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'}`}>
+                                {msg.attachments.map((att, attIdx) => {
+                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl);
+                                  if (isImg) {
+                                    return (
+                                      <a 
+                                        key={attIdx} 
+                                        href={att.fileUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="group relative block overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 max-w-xs md:max-w-md border border-slate-200 bg-slate-100"
+                                      >
+                                        <img 
+                                          src={att.fileUrl} 
+                                          alt={att.fileName || "Image"} 
+                                          className="max-h-60 object-cover w-full group-hover:scale-[1.03] transition-all duration-300 rounded-2xl"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
+                                          <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full transition-all duration-300">Xem ảnh gốc</span>
+                                        </div>
+                                      </a>
+                                    );
+                                  } else {
+                                    return (
+                                      <a 
+                                        key={attIdx} 
+                                        href={att.fileUrl} 
+                                        download={att.fileName}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center gap-3 p-3 rounded-2xl border text-sm max-w-xs sm:max-w-sm transition-all shadow-sm ${
+                                          isMe 
+                                            ? 'bg-blue-700/35 border-blue-500/50 text-white hover:bg-blue-700/50' 
+                                            : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                          isMe ? 'bg-blue-500/25 text-white' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                          <FileText className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="font-semibold truncate text-xs">{att.fileName}</p>
+                                          <p className={`text-[10px] ${isMe ? 'text-blue-200/80' : 'text-slate-400'} font-medium`}>
+                                            {att.fileSize ? `${(att.fileSize / 1024).toFixed(1)} KB` : 'Tệp tin'}
+                                          </p>
+                                        </div>
+                                        <div className={`p-1.5 rounded-lg shrink-0 ${
+                                          isMe ? 'hover:bg-blue-600/30 text-white' : 'hover:bg-slate-100 text-slate-500'
+                                        }`}>
+                                          <Download className="w-4 h-4" />
+                                        </div>
+                                      </a>
+                                    );
+                                  }
+                                })}
+                              </div>
+                            )}
                             <p className={`text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1 ${
                               isMe ? 'justify-end mr-1' : 'ml-1'
                             }`}>
@@ -716,11 +1043,85 @@ export default function Messenger({ user, onNavigateHome }) {
                   <div ref={messagesEndRef} />
                 </div>
 
+                {/* ATTACHMENT PREVIEW BAR */}
+                {(attachedFiles.length > 0 || uploading) && (
+                  <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2.5 items-center shrink-0">
+                    {attachedFiles.map((file, idx) => {
+                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.fileUrl);
+                      return (
+                        <div key={idx} className="relative flex items-center gap-2 bg-white pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 shadow-sm max-w-xs group">
+                          {isImg ? (
+                            <img src={file.fileUrl} alt="Preview" className="w-8 h-8 rounded-lg object-cover border border-slate-100" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-slate-700 truncate max-w-[120px]">{file.fileName}</p>
+                            <p className="text-[9px] text-slate-400 font-semibold">{file.fileSize ? `${(file.fileSize / 1024).toFixed(1)} KB` : 'Tệp tin'}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttachment(idx)}
+                            className="text-slate-400 hover:text-rose-500 transition-colors ml-1 shrink-0"
+                            title="Xóa tệp đính kèm"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {uploading && (
+                      <div className="flex items-center gap-2 bg-slate-100 text-slate-500 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 text-xs font-semibold animate-pulse">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500 shrink-0" />
+                        <span>Đang tải tệp lên...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* BOTTOM CHAT INPUT BOX */}
                 <form 
                   onSubmit={handleSendMessage}
                   className="p-4 bg-white border-t border-slate-200/80 flex items-center gap-3 shrink-0"
                 >
+                  {/* Hidden file inputs */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={(e) => handleFileChange(e, false)}
+                    className="hidden"
+                    multiple
+                  />
+                  <input 
+                    type="file" 
+                    ref={imageInputRef}
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, true)}
+                    className="hidden"
+                    multiple
+                  />
+
+                  <button 
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploading}
+                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                    title="Đính kèm hình ảnh"
+                  >
+                    <Image className="w-5 h-5 shrink-0" />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                    title="Đính kèm tệp tin"
+                  >
+                    <Paperclip className="w-5 h-5 shrink-0" />
+                  </button>
+
                   <input 
                     type="text" 
                     placeholder={user?.role === 'ADMIN' ? 'Trả lời yêu cầu kỹ thuật của khách hàng...' : 'Nhập tin nhắn gửi kỹ thuật hỗ trợ...'}
@@ -728,15 +1129,21 @@ export default function Messenger({ user, onNavigateHome }) {
                     onChange={(e) => setInputText(e.target.value)}
                     className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
                   />
-                  <button 
-                    type="submit"
-                    disabled={!inputText.trim()}
-                    className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                      !inputText.trim() && 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none'
-                    }`}
-                  >
-                    <Send className="w-5 h-5 shrink-0" />
-                  </button>
+                  
+                  {(() => {
+                    const canSend = (inputText.trim() !== '' || attachedFiles.length > 0) && !uploading;
+                    return (
+                      <button 
+                        type="submit"
+                        disabled={!canSend}
+                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                          !canSend ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
+                        }`}
+                      >
+                        <Send className="w-5 h-5 shrink-0" />
+                      </button>
+                    );
+                  })()}
                 </form>
               </>
             ) : (
