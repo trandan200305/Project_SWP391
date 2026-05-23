@@ -12,6 +12,7 @@ import AdminDashboard from './components/AdminDashboard.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
+import Messenger from './components/Messenger.jsx';
 
 // Client ID thật từ Google Cloud Console (Dự án LancerPro - illyasviel1252004@gmail.com)
 const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
@@ -36,7 +37,7 @@ export default function App() {
 
   const handleNavigate = (page) => {
     // Các tính năng cần bảo vệ (yêu cầu đăng nhập)
-    const protectedPages = ['admin', 'coming_soon'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger'];
     
     if (protectedPages.includes(page) && !user) {
       // Nếu chưa đăng nhập mà truy cập tính năng cần bảo vệ -> Mở form đăng nhập
@@ -71,6 +72,11 @@ export default function App() {
   // Render Coming Soon page for unfinished protected features
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  // Render Messenger page
+  if (currentPage === 'messenger') {
+    return <Messenger user={user} onNavigateHome={() => handleNavigate('home')} />;
   }
 
   return (

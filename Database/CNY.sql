@@ -96,6 +96,7 @@ CREATE TABLE freelancers (
     average_rating      DECIMAL(3,2) DEFAULT 0,
     is_available        BIT DEFAULT 1,
     is_deleted          BIT NOT NULL DEFAULT 0,
+    messenger_pin       NVARCHAR(10) NULL,  -- Mã PIN bảo mật Messenger (4 chữ số)
     created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
 );
@@ -132,6 +133,7 @@ CREATE TABLE employers (
     projects_posted     INT DEFAULT 0,
     average_rating      DECIMAL(3,2) DEFAULT 0,
     is_deleted          BIT NOT NULL DEFAULT 0,
+    messenger_pin       NVARCHAR(10) NULL,  -- Mã PIN bảo mật Messenger (4 chữ số)
     created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
 );
@@ -156,6 +158,7 @@ CREATE TABLE admins (
     last_login_at       DATETIME2,
     admin_level         NVARCHAR(50) DEFAULT 'SUPER_ADMIN',
     is_deleted          BIT NOT NULL DEFAULT 0,
+    messenger_pin       NVARCHAR(10) NULL,  -- Mã PIN bảo mật Messenger (4 chữ số)
     created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
 );
@@ -664,4 +667,18 @@ CREATE TABLE admin_audit_logs (
     description     NVARCHAR(MAX),
     created_at      DATETIME2 NOT NULL DEFAULT GETDATE()
 );
+GO
+
+-- =========================================================================
+-- PATCH: Thêm cột messenger_pin cho database đã tồn tại
+-- Chạy phần này nếu bạn KHÔNG muốn tạo lại database từ đầu
+-- =========================================================================
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'freelancers' AND COLUMN_NAME = 'messenger_pin')
+    ALTER TABLE freelancers ADD messenger_pin NVARCHAR(10) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'employers' AND COLUMN_NAME = 'messenger_pin')
+    ALTER TABLE employers ADD messenger_pin NVARCHAR(10) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'admins' AND COLUMN_NAME = 'messenger_pin')
+    ALTER TABLE admins ADD messenger_pin NVARCHAR(10) NULL;
 GO

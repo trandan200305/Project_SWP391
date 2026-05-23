@@ -1,10 +1,150 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinValues, setPinValues] = useState(['', '', '', '']);
+  const [confirmPinValues, setConfirmPinValues] = useState(['', '', '', '']);
+  const [pinError, setPinError] = useState('');
+  const [isConfirmingPin, setIsConfirmingPin] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleMessengerClick = () => {
+    setShowProfileMenu(false);
+    setIsOpen(false);
+    setShowPinModal(true);
+    setPinValues(['', '', '', '']);
+    setConfirmPinValues(['', '', '', '']);
+    setPinError('');
+    setIsConfirmingPin(false);
+  };
+
+  const handlePinSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (user?.hasMessengerPin) {
+      const pin = pinValues.join('');
+      if (pin.length !== 4) {
+        setPinError('Vui lòng nhập đủ 4 chữ số.');
+        return;
+      }
+      setIsSubmitting(true);
+      setPinError('');
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/verify-messenger-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, role: user.role, pin })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setShowPinModal(false);
+          if (onNavigate) onNavigate('messenger');
+        } else {
+          setPinError(data.message || 'Mã PIN không đúng.');
+          setPinValues(['', '', '', '']);
+          document.getElementById('pin-0')?.focus();
+        }
+      } catch (e) {
+        setPinError('Lỗi kết nối máy chủ.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    if (!isConfirmingPin) {
+      const pin = pinValues.join('');
+      if (pin.length !== 4) {
+        setPinError('Vui lòng nhập đủ 4 chữ số.');
+        return;
+      }
+      setIsConfirmingPin(true);
+      setPinError('');
+    } else {
+      const confirmPin = confirmPinValues.join('');
+      if (confirmPin.length !== 4) {
+        setPinError('Vui lòng nhập đủ 4 chữ số để xác nhận.');
+        return;
+      }
+      if (pinValues.join('') !== confirmPin) {
+        setPinError('Mã PIN không khớp. Vui lòng thử lại.');
+        setConfirmPinValues(['', '', '', '']);
+        const firstInput = document.getElementById('pin-confirm-0');
+        if (firstInput) firstInput.focus();
+        return;
+      }
+      
+      setIsSubmitting(true);
+      setPinError('');
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/set-messenger-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, role: user.role, pin: confirmPin })
+        });
+        const data = await response.json();
+        if (data.success) {
+          if (user) user.hasMessengerPin = true;
+          setShowPinModal(false);
+          setIsConfirmingPin(false);
+          if (onNavigate) {
+            onNavigate('messenger');
+          }
+        } else {
+          setPinError(data.message || 'Có lỗi xảy ra.');
+        }
+      } catch (e) {
+        setPinError('Lỗi kết nối máy chủ.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handlePinChange = (index, value) => {
+    if (!/^[0-9]*$/.test(value)) return;
+    
+    const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
+    const setValues = isConfirmingPin ? setConfirmPinValues : setPinValues;
+    const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
+
+    if (value.length > 1) {
+      const pasted = value.replace(/[^0-9]/g, '').slice(0, 4).split('');
+      const newPins = [...currentValues];
+      for (let i = 0; i < pasted.length; i++) newPins[i] = pasted[i];
+      setValues(newPins);
+      setPinError('');
+      const nextIndex = Math.min(pasted.length, 3);
+      const nextInput = document.getElementById(`${prefix}${nextIndex}`);
+      if(nextInput) nextInput.focus();
+      return;
+    }
+
+    const newPins = [...currentValues];
+    newPins[index] = value;
+    setValues(newPins);
+    setPinError('');
+
+    if (value && index < 3) {
+      const nextInput = document.getElementById(`${prefix}${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handlePinKeyDown = (index, e) => {
+    const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
+    const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
+
+    if (e.key === 'Backspace' && !currentValues[index] && index > 0) {
+      const prevInput = document.getElementById(`${prefix}${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,6 +267,13 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     <User className="w-4 h-4" /> Sửa thông tin cá nhân
                   </button>
 
+                  <button 
+                    onClick={handleMessengerClick}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
+                  >
+                    <MessageCircle className="w-4 h-4" /> Tin nhắn
+                  </button>
+
                   {user.role === 'ADMIN' && (
                     <button 
                       onClick={() => {
@@ -245,6 +392,15 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             </button>
           )}
 
+          {user && (
+            <button 
+              onClick={handleMessengerClick}
+              className="w-full text-center bg-indigo-50 text-indigo-600 border border-indigo-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+            >
+              <MessageCircle className="w-4 h-4" /> Tin nhắn
+            </button>
+          )}
+
           <div className="flex flex-col gap-4 mt-2">
             {user ? (
               <button 
@@ -276,6 +432,103 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 >
                   Đăng ký
                 </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PIN Modal Overlay */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in">
+            {!isConfirmingPin ? (
+              <>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Bảo mật Messenger</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  {user?.hasMessengerPin 
+                    ? 'Vui lòng nhập mã PIN để truy cập tin nhắn.' 
+                    : 'Vui lòng đặt mật khẩu cho đoạn chat của bạn (gồm 4 chữ số).'}
+                </p>
+                
+                <div className="flex justify-center gap-3 mb-4">
+                  {[0, 1, 2, 3].map((index) => (
+                    <input
+                      key={index}
+                      id={`pin-${index}`}
+                      type="password"
+                      maxLength={4}
+                      value={pinValues[index]}
+                      onChange={(e) => handlePinChange(index, e.target.value)}
+                      onKeyDown={(e) => handlePinKeyDown(index, e)}
+                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </div>
+                
+                {pinError && <p className="text-rose-500 text-sm mb-2 text-center">{pinError}</p>}
+                
+                <div className="flex gap-3 mt-4">
+                  <button 
+                    onClick={() => setShowPinModal(false)}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    onClick={handlePinSubmit}
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-70"
+                  >
+                    {isSubmitting ? 'Đang xử lý...' : (user?.hasMessengerPin ? 'Xác nhận' : 'Tiếp tục')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Xác nhận mật khẩu</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  Vui lòng nhập lại mã PIN gồm 4 chữ số để xác nhận.
+                </p>
+                
+                <div className="flex justify-center gap-3 mb-4">
+                  {[0, 1, 2, 3].map((index) => (
+                    <input
+                      key={`confirm-${index}`}
+                      id={`pin-confirm-${index}`}
+                      type="password"
+                      maxLength={4}
+                      value={confirmPinValues[index]}
+                      onChange={(e) => handlePinChange(index, e.target.value)}
+                      onKeyDown={(e) => handlePinKeyDown(index, e)}
+                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </div>
+                
+                {pinError && <p className="text-rose-500 text-sm mb-2 text-center">{pinError}</p>}
+                
+                <div className="flex gap-3 mt-4">
+                  <button 
+                    onClick={() => {
+                      setIsConfirmingPin(false);
+                      setConfirmPinValues(['', '', '', '']);
+                      setPinError('');
+                    }}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    Quay lại
+                  </button>
+                  <button 
+                    onClick={handlePinSubmit}
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-70"
+                  >
+                    {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+                  </button>
+                </div>
               </>
             )}
           </div>

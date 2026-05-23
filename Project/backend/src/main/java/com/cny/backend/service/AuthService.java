@@ -69,6 +69,7 @@ public class AuthService {
         int userId = -1;
         String assignedRole = requestedRole;
         String userStatus = "ACTIVE";
+        boolean hasMessengerPin = false;
 
         if ("ADMIN".equals(assignedRole)) {
             // Nếu đã thuộc role khác, cấm
@@ -112,6 +113,11 @@ public class AuthService {
                 
                 if (googleId != null && dbAdmin.get("google_id") == null) {
                     jdbcTemplate.update("UPDATE admins SET google_id = ?, avatar_url = ? WHERE admin_id = ?", googleId, avatar, userId);
+                }
+                
+                String dbPin = (String) dbAdmin.get("messenger_pin");
+                if (dbPin != null && !dbPin.trim().isEmpty()) {
+                    hasMessengerPin = true;
                 }
             }
         } 
@@ -158,6 +164,11 @@ public class AuthService {
                 if (googleId != null && dbEmployer.get("google_id") == null) {
                     jdbcTemplate.update("UPDATE employers SET google_id = ?, avatar_url = ? WHERE employer_id = ?", googleId, avatar, userId);
                 }
+                
+                String dbPin = (String) dbEmployer.get("messenger_pin");
+                if (dbPin != null && !dbPin.trim().isEmpty()) {
+                    hasMessengerPin = true;
+                }
             }
         } 
         else {
@@ -203,6 +214,11 @@ public class AuthService {
                 if (googleId != null && dbFreelancer.get("google_id") == null) {
                     jdbcTemplate.update("UPDATE freelancers SET google_id = ?, avatar_url = ? WHERE freelancer_id = ?", googleId, avatar, userId);
                 }
+                
+                String dbPin = (String) dbFreelancer.get("messenger_pin");
+                if (dbPin != null && !dbPin.trim().isEmpty()) {
+                    hasMessengerPin = true;
+                }
             }
         }
 
@@ -231,13 +247,16 @@ public class AuthService {
         }
 
         response.put("success", true);
-        response.put("user", Map.of(
-            "id", userId,
-            "email", email,
-            "name", name,
-            "role", assignedRole,
-            "avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name
-        ));
+        
+        Map<String, Object> userObj = new HashMap<>();
+        userObj.put("id", userId);
+        userObj.put("email", email);
+        userObj.put("name", name);
+        userObj.put("role", assignedRole);
+        userObj.put("avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name);
+        userObj.put("hasMessengerPin", hasMessengerPin);
+        
+        response.put("user", userObj);
         return response;
     }
 
@@ -248,5 +267,38 @@ public class AuthService {
     public Integer countBy(String table, String column, String value) {
         String sql = "SELECT COUNT(*) FROM " + table + " WHERE " + column + " = ?";
         return jdbcTemplate.queryForObject(sql, Integer.class, value);
+    }
+
+    public boolean setMessengerPin(Integer userId, String role, String pin) {
+        String table = getTableNameByRole(role);
+        String idCol = getIdColumnByRole(role);
+        if (table == null) return false;
+        
+        int rows = jdbcTemplate.update("UPDATE " + table + " SET messenger_pin = ? WHERE " + idCol + " = ?", pin, userId);
+        return rows > 0;
+    }
+
+    public boolean verifyMessengerPin(Integer userId, String role, String pin) {
+        String table = getTableNameByRole(role);
+        String idCol = getIdColumnByRole(role);
+        if (table == null) return false;
+        
+        List<String> pins = jdbcTemplate.queryForList("SELECT messenger_pin FROM " + table + " WHERE " + idCol + " = ?", String.class, userId);
+        if (pins.isEmpty() || pins.get(0) == null) return false;
+        return pins.get(0).equals(pin);
+    }
+    
+    private String getTableNameByRole(String role) {
+        if ("ADMIN".equalsIgnoreCase(role)) return "admins";
+        if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) return "employers";
+        if ("FREELANCER".equalsIgnoreCase(role)) return "freelancers";
+        return null;
+    }
+    
+    private String getIdColumnByRole(String role) {
+        if ("ADMIN".equalsIgnoreCase(role)) return "admin_id";
+        if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) return "employer_id";
+        if ("FREELANCER".equalsIgnoreCase(role)) return "freelancer_id";
+        return null;
     }
 }
