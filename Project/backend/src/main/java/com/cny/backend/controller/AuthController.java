@@ -67,12 +67,17 @@ public class AuthController {
             String table        = role.equals("EMPLOYER") ? "employers" : "freelancers";
             String idColumn     = role.equals("EMPLOYER") ? "employer_id"  : "freelancer_id";
 
-            // Kiểm tra Email đã tồn tại chưa
-            Integer emailCount = authService.countBy(table, "email", email);
-            if (emailCount != null && emailCount > 0) {
+            // Kiểm tra Email trên toàn bộ hệ thống (chỉ 1 email 1 vai trò duy nhất)
+            Integer emailInEmployers = authService.countBy("employers", "email", email);
+            Integer emailInFreelancers = authService.countBy("freelancers", "email", email);
+            Integer emailInAdmins = authService.countBy("admins", "email", email);
+            
+            if ((emailInEmployers != null && emailInEmployers > 0) || 
+                (emailInFreelancers != null && emailInFreelancers > 0) ||
+                (emailInAdmins != null && emailInAdmins > 0)) {
                 response.put("success", false);
                 response.put("field",   "email");
-                response.put("message", "Email này đã được đăng ký. Vui lòng dùng email khác hoặc đăng nhập!");
+                response.put("message", "Email này đã được đăng ký trên hệ thống. Vui lòng dùng email khác hoặc đăng nhập đúng vai trò!");
                 return ResponseEntity.badRequest().body(response);
             }
 
@@ -99,17 +104,18 @@ public class AuthController {
             }
 
             // 3. Tất cả hợp lệ - tiến hành tạo tài khoản
-            Map<String, String> loginPayload = new HashMap<>();
-            loginPayload.put("email",         email);
-            loginPayload.put("name",          fullName != null ? fullName : email.split("@")[0]);
-            loginPayload.put("fullName",      fullName != null ? fullName : email.split("@")[0]);
-            loginPayload.put("displayName",   displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
-            loginPayload.put("phone",         phone);
-            loginPayload.put("password",      password);
-            loginPayload.put("requestedRole", role);
-            loginPayload.put("googleId",      null); // Đăng ký bằng email nên không có googleId
+            Map<String, String> registerPayload = new HashMap<>();
+            registerPayload.put("email",         email);
+            registerPayload.put("name",          fullName != null ? fullName : email.split("@")[0]);
+            registerPayload.put("fullName",      fullName != null ? fullName : email.split("@")[0]);
+            registerPayload.put("displayName",   displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+            registerPayload.put("phone",         phone);
+            registerPayload.put("password",      password);
+            registerPayload.put("requestedRole", role);
+            registerPayload.put("googleId",      null);
+            registerPayload.put("isRegistration", "true"); // Đánh dấu đây là luồng đăng ký chủ động
 
-            Map<String, Object> result = authService.login(loginPayload);
+            Map<String, Object> result = authService.login(registerPayload);
             if ((Boolean) result.getOrDefault("success", false)) {
                 response.put("success", true);
                 response.put("message", "Đăng ký thành công! Bạn có thể đăng nhập ngay.");
