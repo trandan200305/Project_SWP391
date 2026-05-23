@@ -619,6 +619,7 @@ CREATE TABLE ticket_messages (
     sender_employer_id      INT REFERENCES employers(employer_id),
     sender_admin_id         INT REFERENCES admins(admin_id),
     message_text            NVARCHAR(MAX) NOT NULL,
+    is_read                 BIT DEFAULT 0,
     sent_at                 DATETIME2 NOT NULL DEFAULT GETDATE()
 );
 GO
@@ -682,3 +683,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'admins' AND COLUMN_NAME = 'messenger_pin')
     ALTER TABLE admins ADD messenger_pin NVARCHAR(10) NULL;
 GO
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ticket_messages' AND COLUMN_NAME = 'is_read')
+    ALTER TABLE ticket_messages ADD is_read BIT NOT NULL DEFAULT 0;
+GO
+

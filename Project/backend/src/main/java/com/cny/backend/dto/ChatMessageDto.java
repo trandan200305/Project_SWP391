@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -22,6 +24,8 @@ public class ChatMessageDto {
     
     private String messageText;
     private LocalDateTime sentAt;
+    private Boolean isRead;
+    private List<Map<String, Object>> attachments;
     
     // Recipient details (optional, for routing confirmation)
     private Integer recipientId;

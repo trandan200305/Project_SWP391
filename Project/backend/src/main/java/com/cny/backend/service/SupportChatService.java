@@ -56,7 +56,10 @@ public class SupportChatService {
     }
 
     public List<ChatMessageDto> getChatHistory(Integer ticketId) {
-        String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.sent_at, " +
+        // Mark all user messages in this ticket as read when loaded by Admin or User
+        jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL", ticketId);
+
+        String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.is_read, tm.sent_at, " +
                      "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, " +
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, " +
                      "a.display_name as admin_name, a.avatar_url as admin_avatar " +
@@ -81,6 +84,15 @@ public class SupportChatService {
                 msg.setSentAt(sentAt.toLocalDateTime());
             }
 
+            Object isReadObj = row.get("is_read");
+            if (isReadObj instanceof Boolean) {
+                msg.setIsRead((Boolean) isReadObj);
+            } else if (isReadObj instanceof Number) {
+                msg.setIsRead(((Number) isReadObj).intValue() == 1);
+            } else {
+                msg.setIsRead(false);
+            }
+
             // Determine Sender
             if (row.get("sender_freelancer_id") != null) {
                 msg.setSenderId((Integer) row.get("sender_freelancer_id"));
@@ -99,6 +111,13 @@ public class SupportChatService {
                 msg.setSenderAvatar((String) row.get("admin_avatar"));
             }
 
+            // Fetch attachments from ticket_attachments
+            List<Map<String, Object>> attachments = jdbcTemplate.queryForList(
+                "SELECT file_url AS fileUrl, file_name AS fileName, file_size AS fileSize FROM ticket_attachments WHERE message_id = ?",
+                msg.getMessageId()
+            );
+            msg.setAttachments(attachments);
+
             messages.add(msg);
         }
 
@@ -111,6 +130,8 @@ public class SupportChatService {
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, " +
                      "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
                      "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND is_read = 0) as unread_count, " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id) as total_messages, " +
                      "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE '👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
                      "FROM support_tickets t " +
                      "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
@@ -154,6 +175,13 @@ public class SupportChatService {
             Object hasReplied = row.get("has_admin_replied");
             ticket.put("has_admin_replied", hasReplied != null && ((Number) hasReplied).intValue() == 1);
 
+            // Pass unread_count and total_messages
+            Object unreadCount = row.get("unread_count");
+            ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
+
+            Object totalMessages = row.get("total_messages");
+            ticket.put("total_messages", totalMessages != null ? ((Number) totalMessages).intValue() : 0);
+
             tickets.add(ticket);
         }
 
@@ -172,8 +200,8 @@ public class SupportChatService {
             messageDto.setTicketId(ticketId);
         }
 
-        String sql = "INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, sent_at) " +
-                     "VALUES (?, ?, ?, ?, ?, GETDATE())";
+        String sql = "INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, GETDATE())";
 
         Integer freelancerId = null;
         Integer employerId = null;
@@ -188,10 +216,22 @@ public class SupportChatService {
             adminId = messageDto.getSenderId();
         }
 
-        jdbcTemplate.update(sql, ticketId, freelancerId, employerId, adminId, messageDto.getMessageText());
+        int isReadValue = (adminId != null) ? 1 : 0;
+        jdbcTemplate.update(sql, ticketId, freelancerId, employerId, adminId, messageDto.getMessageText(), isReadValue);
         Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
         messageDto.setMessageId(messageId);
         messageDto.setSentAt(LocalDateTime.now());
+        messageDto.setIsRead(isReadValue == 1);
+
+        // Save attachments in ticket_attachments
+        if (messageDto.getAttachments() != null) {
+            for (Map<String, Object> att : messageDto.getAttachments()) {
+                jdbcTemplate.update(
+                    "INSERT INTO ticket_attachments (message_id, file_url, file_name, file_size, created_at) VALUES (?, ?, ?, ?, GETDATE())",
+                    messageId, att.get("fileUrl"), att.get("fileName"), att.get("fileSize")
+                );
+            }
+        }
 
         // Update ticket updated_at
         jdbcTemplate.update("UPDATE support_tickets SET updated_at = GETDATE() WHERE ticket_id = ?", ticketId);
@@ -270,12 +310,13 @@ public class SupportChatService {
             adminId = 1; // Fallback
         }
 
-        String sql = "INSERT INTO ticket_messages (ticket_id, sender_admin_id, message_text, sent_at) " +
-                     "VALUES (?, ?, ?, GETDATE())";
+        String sql = "INSERT INTO ticket_messages (ticket_id, sender_admin_id, message_text, is_read, sent_at) " +
+                     "VALUES (?, ?, ?, 1, GETDATE())";
         jdbcTemplate.update(sql, autoReply.getTicketId(), adminId, autoReply.getMessageText());
         Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
         autoReply.setMessageId(messageId);
         autoReply.setSentAt(LocalDateTime.now());
+        autoReply.setIsRead(true);
         return autoReply;
     }
 }

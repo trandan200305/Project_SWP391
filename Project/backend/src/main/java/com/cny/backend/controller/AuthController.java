@@ -250,4 +250,27 @@ public class AuthController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/forgot-messenger-pin")
+    public ResponseEntity<Map<String, Object>> forgotMessengerPin(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String role = (String) payload.get("role");
+        
+        Map<String, Object> response = new HashMap<>();
+        if (userId == null || role == null) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        String resetEmail = authService.resetAndEmailMessengerPin(userId, role, mailSender);
+        if (resetEmail != null) {
+            response.put("success", true);
+            response.put("message", "Mã PIN mới đã được gửi về email: " + resetEmail);
+        } else {
+            response.put("success", false);
+            response.put("message", "Không thể gửi email đặt lại mã PIN.");
+        }
+        return ResponseEntity.ok(response);
+    }
 }

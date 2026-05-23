@@ -12,6 +12,8 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   const [pinError, setPinError] = useState('');
   const [isConfirmingPin, setIsConfirmingPin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pinAttempts, setPinAttempts] = useState(0);
+  const [resetPinSuccess, setResetPinSuccess] = useState('');
 
   const handleMessengerClick = () => {
     setShowProfileMenu(false);
@@ -21,6 +23,33 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     setConfirmPinValues(['', '', '', '']);
     setPinError('');
     setIsConfirmingPin(false);
+    setPinAttempts(0);
+    setResetPinSuccess('');
+  };
+
+  const handleForgotPin = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setPinError('');
+    setResetPinSuccess('');
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/forgot-messenger-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, role: user.role })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setResetPinSuccess(data.message || 'Mã PIN mới đã được gửi về email của bạn.');
+        setPinAttempts(0);
+      } else {
+        setPinError(data.message || 'Không thể gửi yêu cầu khôi phục.');
+      }
+    } catch (e) {
+      setPinError('Lỗi kết nối máy chủ.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePinSubmit = async () => {
@@ -34,6 +63,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
       }
       setIsSubmitting(true);
       setPinError('');
+      setResetPinSuccess('');
       try {
         const response = await fetch('http://localhost:8080/api/auth/verify-messenger-pin', {
           method: 'POST',
@@ -46,6 +76,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           if (onNavigate) onNavigate('messenger');
         } else {
           setPinError(data.message || 'Mã PIN không đúng.');
+          setPinAttempts(prev => prev + 1);
           setPinValues(['', '', '', '']);
           document.getElementById('pin-0')?.focus();
         }
@@ -468,6 +499,20 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 </div>
                 
                 {pinError && <p className="text-rose-500 text-sm mb-2 text-center">{pinError}</p>}
+                
+                {pinAttempts >= 1 && (
+                  <p className="text-xs text-slate-500 mb-3 text-center">
+                    Bạn quên mã PIN?{' '}
+                    <button
+                      type="button"
+                      onClick={handleForgotPin}
+                      className="text-indigo-600 hover:text-indigo-700 font-bold underline focus:outline-none"
+                    >
+                      nhấn vào đây để lấy lại
+                    </button>
+                  </p>
+                )}
+                {resetPinSuccess && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">{resetPinSuccess}</p>}
                 
                 <div className="flex gap-3 mt-4">
                   <button 
