@@ -63,6 +63,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     if (!email || !password) return;
     processBackendLogin({
       email,
+      password,
       name: email.split('@')[0],
       requestedRole: role.toUpperCase(),
       avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`

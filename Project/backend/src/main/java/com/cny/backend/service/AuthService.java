@@ -54,18 +54,41 @@ public class AuthService {
             requestedRole = requestedRole.toUpperCase();
         }
 
+        // Ký hiệu loại hình đăng nhập
+        boolean isOAuthLogin = "OAUTH_GOOGLE_LOGGED".equals(passwordHash);
+
+        // Kiểm tra xem email này đã tồn tại ở vai trò nào khác chưa
+        Integer emailInAdmins = countBy("admins", "email", email);
+        Integer emailInEmployers = countBy("employers", "email", email);
+        Integer emailInFreelancers = countBy("freelancers", "email", email);
+
+        int totalRoles = (emailInAdmins != null ? emailInAdmins : 0) +
+                         (emailInEmployers != null ? emailInEmployers : 0) +
+                         (emailInFreelancers != null ? emailInFreelancers : 0);
+
         int userId = -1;
         String assignedRole = requestedRole;
         String userStatus = "ACTIVE";
 
         if ("ADMIN".equals(assignedRole)) {
-            // 1. Phân quyền ADMIN: Tra cứu trực tiếp trong bảng admins
+            // Nếu đã thuộc role khác, cấm
+            if (totalRoles > 0 && emailInAdmins == 0) {
+                response.put("success", false);
+                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                return response;
+            }
+
             List<Map<String, Object>> existingAdmins = jdbcTemplate.queryForList(
                 "SELECT * FROM admins WHERE email = ?", email
             );
 
             if (existingAdmins.isEmpty()) {
-                // Đăng ký Admin lần đầu
+                if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản không tồn tại!");
+                    return response;
+                }
+                // Đăng ký Admin lần đầu qua Google hoặc đăng ký thủ công
                 jdbcTemplate.update(
                     "INSERT INTO admins (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, admin_level, created_at, updated_at, is_deleted) " +
                     "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 1, ?, 'SUPER_ADMIN', GETDATE(), GETDATE(), 0)",
@@ -74,6 +97,16 @@ public class AuthService {
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('admins')", Integer.class);
             } else {
                 Map<String, Object> dbAdmin = existingAdmins.get(0);
+                // Xác thực mật khẩu
+                if (!isOAuthLogin) {
+                    String dbPasswordHash = (String) dbAdmin.get("password_hash");
+                    if (dbPasswordHash == null || !dbPasswordHash.equals(passwordHash)) {
+                        response.put("success", false);
+                        response.put("message", "Sai mật khẩu!");
+                        return response;
+                    }
+                }
+
                 userId = (Integer) dbAdmin.get("admin_id");
                 userStatus = (String) dbAdmin.get("status");
                 
@@ -83,12 +116,23 @@ public class AuthService {
             }
         } 
         else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {
-            // 2. Phân quyền EMPLOYER: Tra cứu trực tiếp trong bảng employers
+            // Nếu đã thuộc role khác, cấm
+            if (totalRoles > 0 && emailInEmployers == 0) {
+                response.put("success", false);
+                response.put("message", "Email này đã được đăng ký dưới vai trò Freelancer hoặc Admin. Vui lòng đăng nhập đúng vai trò!");
+                return response;
+            }
+
             List<Map<String, Object>> existingEmployers = jdbcTemplate.queryForList(
                 "SELECT * FROM employers WHERE email = ?", email
             );
 
             if (existingEmployers.isEmpty()) {
+                if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản không tồn tại!");
+                    return response;
+                }
                 // Đăng ký Employer lần đầu
                 jdbcTemplate.update(
                     "INSERT INTO employers (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_spent, projects_posted, average_rating, is_deleted) " +
@@ -98,6 +142,16 @@ public class AuthService {
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('employers')", Integer.class);
             } else {
                 Map<String, Object> dbEmployer = existingEmployers.get(0);
+                // Xác thực mật khẩu
+                if (!isOAuthLogin) {
+                    String dbPasswordHash = (String) dbEmployer.get("password_hash");
+                    if (dbPasswordHash == null || !dbPasswordHash.equals(passwordHash)) {
+                        response.put("success", false);
+                        response.put("message", "Sai mật khẩu!");
+                        return response;
+                    }
+                }
+
                 userId = (Integer) dbEmployer.get("employer_id");
                 userStatus = (String) dbEmployer.get("status");
                 
@@ -107,12 +161,23 @@ public class AuthService {
             }
         } 
         else {
-            // 3. Phân quyền FREELANCER: Tra cứu trực tiếp trong bảng freelancers
+            // Nếu đã thuộc role khác, cấm
+            if (totalRoles > 0 && emailInFreelancers == 0) {
+                response.put("success", false);
+                response.put("message", "Email này đã được đăng ký dưới vai trò Employer hoặc Admin. Vui lòng đăng nhập đúng vai trò!");
+                return response;
+            }
+
             List<Map<String, Object>> existingFreelancers = jdbcTemplate.queryForList(
                 "SELECT * FROM freelancers WHERE email = ?", email
             );
 
             if (existingFreelancers.isEmpty()) {
+                if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản không tồn tại!");
+                    return response;
+                }
                 // Đăng ký Freelancer lần đầu
                 jdbcTemplate.update(
                     "INSERT INTO freelancers (email, password_hash, display_name, full_name, phone, avatar_url, status, email_verified, google_id, created_at, updated_at, profile_completeness, total_earnings, projects_completed, average_rating, is_available, is_deleted) " +
@@ -122,6 +187,16 @@ public class AuthService {
                 userId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('freelancers')", Integer.class);
             } else {
                 Map<String, Object> dbFreelancer = existingFreelancers.get(0);
+                // Xác thực mật khẩu
+                if (!isOAuthLogin) {
+                    String dbPasswordHash = (String) dbFreelancer.get("password_hash");
+                    if (dbPasswordHash == null || !dbPasswordHash.equals(passwordHash)) {
+                        response.put("success", false);
+                        response.put("message", "Sai mật khẩu!");
+                        return response;
+                    }
+                }
+
                 userId = (Integer) dbFreelancer.get("freelancer_id");
                 userStatus = (String) dbFreelancer.get("status");
                 
