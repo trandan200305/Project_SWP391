@@ -205,4 +205,49 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    // ==========================================
+    // MESSENGER PIN
+    // ==========================================
+    @PostMapping("/set-messenger-pin")
+    public ResponseEntity<Map<String, Object>> setMessengerPin(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String role = (String) payload.get("role");
+        String pin = (String) payload.get("pin");
+        
+        Map<String, Object> response = new HashMap<>();
+        if (userId == null || role == null || pin == null || pin.length() != 4) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        boolean success = authService.setMessengerPin(userId, role, pin);
+        response.put("success", success);
+        response.put("message", success ? "Cài đặt mã PIN thành công." : "Có lỗi xảy ra.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-messenger-pin")
+    public ResponseEntity<Map<String, Object>> verifyMessengerPin(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String role = (String) payload.get("role");
+        String pin = (String) payload.get("pin");
+        
+        Map<String, Object> response = new HashMap<>();
+        if (userId == null || role == null || pin == null) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        boolean isValid = authService.verifyMessengerPin(userId, role, pin);
+        response.put("success", isValid);
+        response.put("message", isValid ? "Mã PIN chính xác." : "Mã PIN không khớp.");
+        
+        if (!isValid) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
 }

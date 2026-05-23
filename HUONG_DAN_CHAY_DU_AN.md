@@ -19,7 +19,7 @@ Project_SWP391/
 
 ## 🛠️ Bước 1: Thiết Lập Cơ Sở Dữ Liệu (SQL Server)
 
-Do cơ sở dữ liệu của nhánh `thanh` được tối ưu hóa và thay đổi cấu trúc bảng, bạn cần tạo mới lại database `CNY`.
+
 
 1. **Xóa Database cũ (nếu có):**
    * Mở SQL Server Management Studio (SSMS).
@@ -40,7 +40,7 @@ Do cơ sở dữ liệu của nhánh `thanh` được tối ưu hóa và thay đ
 2. Mở một **Terminal mới** (nhấn phím `Ctrl + \``).
 3. Di chuyển Terminal vào thư mục `backend`:
    ```powershell
-   cd Project/backend
+   cd backend
    ```
 4. Chạy Backend bằng lệnh sau để tự động vượt qua hàng rào bảo mật Windows (Execution Policy):
    ```powershell
@@ -58,7 +58,7 @@ Vì tab Terminal hiện tại đang chạy Backend, bạn cần mở một tab T
 1. Click vào biểu tượng **dấu cộng (`+`)** ở góc trên bên phải khung Terminal (hoặc nhấn `Ctrl + Shift + \``) để mở một tab Terminal mới.
 2. Di chuyển Terminal mới vào thư mục `frontend`:
    ```powershell
-   cd Project/frontend
+   cd frontend
    ```
 3. Khởi chạy dự án Frontend:
    ```powershell
