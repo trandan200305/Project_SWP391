@@ -1,16 +1,33 @@
 package com.cny.backend.service;
 
+import com.cny.backend.entity.Admin;
+import com.cny.backend.entity.Employer;
+import com.cny.backend.entity.Freelancer;
+import com.cny.backend.repository.AdminRepository;
+import com.cny.backend.repository.EmployerRepository;
+import com.cny.backend.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AuthService {
+
+    @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private EmployerRepository employerRepository;
+
+    @Autowired
+    private FreelancerRepository freelancerRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -21,7 +38,7 @@ public class AuthService {
         String name = payload.get("name");
         String googleId = payload.get("googleId");
         String avatar = payload.get("avatar");
-        String requestedRole = payload.get("requestedRole"); // FREELANCER or EMPLOYER
+        String requestedRole = payload.get("requestedRole");
 
         // Lấy thông tin chi tiết được truyền thêm từ trang đăng ký thủ công
         String displayName = payload.getOrDefault("displayName", name);
@@ -42,12 +59,19 @@ public class AuthService {
             googleId = "EMAIL_" + email;
         }
 
-        // Danh sách các Email được thiết lập làm quyền Admin tối cao
         boolean isSpecialAdmin = "admin@lancerpro.com".equalsIgnoreCase(email) || 
                                  "illyasviel1252004@gmail.com".equalsIgnoreCase(email);
                                  
-        if (isSpecialAdmin) {
+        Optional<Admin> existingAdmin = adminRepository.findByEmail(email);
+        Optional<Employer> existingEmployer = employerRepository.findByEmail(email);
+        Optional<Freelancer> existingFreelancer = freelancerRepository.findByEmail(email);
+                                 
+        if (isSpecialAdmin || existingAdmin.isPresent()) {
             requestedRole = "ADMIN";
+        } else if (existingEmployer.isPresent()) {
+            requestedRole = "EMPLOYER";
+        } else if (existingFreelancer.isPresent()) {
+            requestedRole = "FREELANCER";
         } else if (requestedRole == null) {
             requestedRole = "FREELANCER";
         } else {
@@ -220,9 +244,15 @@ public class AuthService {
                     hasMessengerPin = true;
                 }
             }
+            userId = freelancer.getProfileId();
+            userStatus = freelancer.getStatus();
+            
+            // Login History & Last Login
+            freelancer.setLastLoginAt(LocalDateTime.now());
+            freelancerRepository.save(freelancer);
+            jdbcTemplate.update("INSERT INTO login_history (freelancer_id, login_at, success) VALUES (?, GETDATE(), 1)", userId);
         }
 
-        // CHẶN ĐĂNG NHẬP NẾU TÀI KHOẢN BỊ KHÓA/BANNED
         if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus)) {
             String notifMessage = "LOCKED".equals(userStatus) 
                 ? "Tài khoản của bạn đã bị tạm khóa. Liên hệ support@vlance.vn để được hỗ trợ."
@@ -232,18 +262,6 @@ public class AuthService {
             response.put("accountStatus", userStatus);
             response.put("message", notifMessage);
             return response;
-        }
-
-        // Cập nhật lịch sử đăng nhập & thời điểm đăng nhập cuối cùng vào bảng chuyên biệt
-        if ("ADMIN".equals(assignedRole)) {
-            jdbcTemplate.update("INSERT INTO login_history (admin_id, login_at, success) VALUES (?, GETDATE(), 1)", userId);
-            jdbcTemplate.update("UPDATE admins SET last_login_at = GETDATE() WHERE admin_id = ?", userId);
-        } else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {
-            jdbcTemplate.update("INSERT INTO login_history (employer_id, login_at, success) VALUES (?, GETDATE(), 1)", userId);
-            jdbcTemplate.update("UPDATE employers SET last_login_at = GETDATE() WHERE employer_id = ?", userId);
-        } else {
-            jdbcTemplate.update("INSERT INTO login_history (freelancer_id, login_at, success) VALUES (?, GETDATE(), 1)", userId);
-            jdbcTemplate.update("UPDATE freelancers SET last_login_at = GETDATE() WHERE freelancer_id = ?", userId);
         }
 
         response.put("success", true);

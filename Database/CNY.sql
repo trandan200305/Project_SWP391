@@ -1,4 +1,4 @@
--- =========================================================================
+
 -- LANCERPRO (CNY) DATABASE SYSTEM DDL SCRIPT
 -- DESIGNED WITH ABSOLUTE CONCRETE ACTOR SEPARATION (TABLE PER CLASS)
 -- THERE IS NO SHARED "USERS" TABLE IN THIS SYSTEM.
