@@ -17,4 +17,7 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Integer>
     List<Freelancer> findTopRatedFreelancers();
 
     Optional<Freelancer> findByEmail(String email);
+    int countByEmail(String email);
+    int countByPhone(String phone);
+    int countByDisplayName(String displayName);
 }

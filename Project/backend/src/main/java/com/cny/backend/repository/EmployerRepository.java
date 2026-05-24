@@ -8,4 +8,7 @@ import java.util.Optional;
 @Repository
 public interface EmployerRepository extends JpaRepository<Employer, Integer> {
     Optional<Employer> findByEmail(String email);
+    int countByEmail(String email);
+    int countByPhone(String phone);
+    int countByDisplayName(String displayName);
 }
