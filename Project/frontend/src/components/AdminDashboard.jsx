@@ -3,13 +3,15 @@ import {
   LayoutDashboard, Users, ShieldAlert, BadgeDollarSign, Settings, 
   Search, Bell, UserCheck, AlertTriangle, CheckCircle2, Ban, 
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, 
-  ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download,
-  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight
+  ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
+  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function AdminDashboard({ user, onNavigateToHome }) {
-  // Tabs: 'dashboard' | 'users' | 'moderation' | 'finance' | 'cms'
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Tabs: 'home' | 'dashboard' | 'users' | 'moderation' | 'finance' | 'cms'
+  const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('30days'); // '7days' | '30days' | '365days'
   
@@ -18,11 +20,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [userTimeFilterType, setUserTimeFilterType] = useState('ALL'); // 'ALL' | '8HOURS' | 'CUSTOM'
   const [userTimeStart, setUserTimeStart] = useState('');
   const [userTimeEnd, setUserTimeEnd] = useState('');
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   const [activeOnlineChecked, setActiveOnlineChecked] = useState(true);
   const [activeOfflineChecked, setActiveOfflineChecked] = useState(true);
+  
+  const [filterEmployer, setFilterEmployer] = useState(true);
+  const [filterFreelancer, setFilterFreelancer] = useState(true);
+
   const [currentPage, setCurrentPage] = useState(1);
   
   // Real States fetched from SQL Server Database via Spring Boot API
@@ -65,15 +70,16 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingFee, setIsUpdatingFee] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  const [banReason, setBanReason] = useState('');
+  const [banReasons, setBanReasons] = useState([]);
+  const [adminPin, setAdminPin] = useState('');
   const [activeUserForAction, setActiveUserForAction] = useState(null);
   const [actionType, setActionType] = useState('');
 
   // Toast notification state
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState({ message: '', type: 'success', visible: false });
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    setToast({ message, type, visible: true });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2500);
   }; // 'lock' | 'ban'
 
   // 1. Fetch statistics based on period
@@ -212,28 +218,40 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
   // Handle User Security Status Action
   const handleUserStatusChange = (userId, role, newStatus) => {
-    const reasonParam = encodeURIComponent(banReason || 'Yêu cầu từ Admin');
+    if (newStatus !== 'ACTIVE') {
+      if (banReasons.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 lý do vi phạm.', 'error');
+        return;
+      }
+      if (!adminPin || adminPin.trim() === '') {
+        showToast('Vui lòng nhập mã PIN xác nhận.', 'error');
+        return;
+      }
+    }
+
+    const reasonStr = banReasons.length > 0 ? banReasons.join(', ') : 'Yêu cầu từ Admin';
+    const reasonParam = encodeURIComponent(reasonStr);
     const headers = {};
     if (user?.id) headers['X-Admin-Id'] = user.id.toString();
 
-    fetch(`http://localhost:8080/api/admin/users/${userId}/status?role=${role}&status=${newStatus}&reason=${reasonParam}`, {
+    fetch(`http://localhost:8080/api/admin/users/${userId}/status?role=${role}&status=${newStatus}&reason=${reasonParam}&pin=${adminPin}`, {
       method: 'PUT',
       headers: headers
     })
       .then(res => res.json())
       .then(data => {
         if (data.success === false) {
-          // Backend từ chối (VD: tài khoản Admin được bảo vệ)
           showToast(data.message || 'Hành động bị từ chối bởi hệ thống.', 'error');
         } else {
           showToast(data.message || 'Thao tác thành công!', 'success');
+          fetch('http://localhost:8080/api/admin/users')
+            .then(res => res.json())
+            .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
+          loadDashboardData();
+          setActiveUserForAction(null);
+          setBanReasons([]);
+          setAdminPin('');
         }
-        fetch('http://localhost:8080/api/admin/users')
-          .then(res => res.json())
-          .then(data => { if (Array.isArray(data)) setUsers(data); });
-        loadDashboardData();
-        setActiveUserForAction(null);
-        setBanReason('');
       })
       .catch(err => {
         console.error(err);
@@ -309,6 +327,162 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     }
   };
 
+  const handleDownloadUsers = async (format, usersList) => {
+    let fileHandle = null;
+    let fallbackMode = false;
+    const defaultFileName = `LancerPro_Users_${new Date().getTime()}.${format === 'PDF' ? 'pdf' : 'xls'}`;
+    const description = format === 'PDF' ? 'PDF Document' : 'Excel Document';
+    const mimeType = format === 'PDF' ? 'application/pdf' : 'application/vnd.ms-excel';
+    const ext = format === 'PDF' ? '.pdf' : '.xls';
+
+    try {
+      if (window.showSaveFilePicker) {
+        // Request the file handle IMMEDIATELY while we still have the user gesture token
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: defaultFileName,
+          types: [{ description, accept: { [mimeType]: [ext] } }],
+        });
+      } else {
+        fallbackMode = true;
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        setToast({ title: 'Lỗi', message: 'Không thể mở hộp thoại lưu file: ' + err.message, type: 'error' });
+      }
+      return; // User aborted or error
+    }
+
+    setToast({ title: 'Đang xử lý', message: `Đang khởi tạo file ${format}, vui lòng đợi...`, type: 'success' });
+
+    let finalBlob = null;
+
+    if (format === 'PDF') {
+      const doc = new jsPDF('landscape');
+      
+      try {
+        const fontUrl = "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf";
+        const fontRes = await fetch(fontUrl);
+        const fontBuffer = await fontRes.arrayBuffer();
+        const base64String = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(new Blob([fontBuffer]));
+        });
+        doc.addFileToVFS('Roboto-Regular.ttf', base64String);
+        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+        doc.setFont('Roboto');
+      } catch (e) {
+        console.warn("Could not load custom font, falling back to basic font.");
+      }
+
+      doc.setFontSize(16);
+      doc.text("DANH SÁCH TÀI KHOẢN NGƯỜI DÙNG - LancerPro", 14, 15);
+      
+      const tableColumn = ["ID", "Tên hiển thị", "Email", "Vai trò", "Trạng thái", "Đăng nhập cuối", "Ngày gia nhập"];
+      const tableRows = [];
+
+      usersList.forEach(user => {
+        let loginStr = 'Chưa đăng nhập';
+        if (user.lastLogin) {
+          const cleanStr = user.lastLogin.split('.')[0];
+          loginStr = new Date(cleanStr).toLocaleString('vi-VN');
+        }
+        tableRows.push([
+          user.id,
+          user.name || '',
+          user.email || '',
+          user.role,
+          user.status,
+          loginStr,
+          user.joined || ''
+        ]);
+      });
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: 'grid',
+        styles: { font: 'Roboto', fontSize: 9 },
+        headStyles: { fillColor: [51, 65, 85], textColor: 255, fontStyle: 'normal' }
+      });
+      
+      finalBlob = doc.output('blob');
+    } else {
+      // Excel HTML
+      let excelHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8">
+          <style>
+            table { border-collapse: collapse; font-family: Arial, sans-serif; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: middle; }
+            th { background-color: #f8fafc; font-weight: bold; color: #334155; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 180px;">Tên hiển thị</th>
+                <th style="width: 250px;">Email</th>
+                <th style="width: 120px;">Vai trò</th>
+                <th style="width: 100px;">Trạng thái</th>
+                <th style="width: 180px;">Đăng nhập cuối</th>
+                <th style="width: 120px;">Ngày gia nhập</th>
+              </tr>
+            </thead>
+            <tbody>`;
+      
+      usersList.forEach(user => {
+        let loginStr = 'Chưa đăng nhập';
+        if (user.lastLogin) {
+          const cleanStr = user.lastLogin.split('.')[0];
+          loginStr = new Date(cleanStr).toLocaleString('vi-VN');
+        }
+
+        excelHTML += `
+              <tr>
+                <td>${user.id}</td>
+                <td>${(user.name || '').replace(/</g, '&lt;')}</td>
+                <td>${(user.email || '').replace(/</g, '&lt;')}</td>
+                <td style="font-weight: bold;">${user.role}</td>
+                <td>${user.status}</td>
+                <td>${loginStr}</td>
+                <td>${user.joined || ''}</td>
+              </tr>`;
+      });
+
+      excelHTML += `
+            </tbody>
+          </table>
+        </body>
+      </html>`;
+      
+      finalBlob = new Blob([excelHTML], { type: 'application/vnd.ms-excel' });
+    }
+
+    try {
+      if (fileHandle) {
+        const writable = await fileHandle.createWritable();
+        await writable.write(finalBlob);
+        await writable.close();
+        setToast({ title: 'Thành công', message: `Đã lưu file vào máy: ${defaultFileName}`, type: 'success' });
+      } else if (fallbackMode) {
+        const url = URL.createObjectURL(finalBlob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', defaultFileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setToast({ title: 'Thành công', message: `Đã tải xuống file: ${defaultFileName}`, type: 'success' });
+      }
+    } catch (err) {
+      setToast({ title: 'Lỗi', message: 'Không thể lưu nội dung file. Chi tiết: ' + err.message, type: 'error' });
+    }
+  };
+
   return (
     <div className="h-screen bg-slate-100 flex font-sans antialiased text-slate-800 overflow-hidden">
       
@@ -327,60 +501,82 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Settings</p>
             
             <nav className="space-y-2">
+              {/* TAB 0: HOME CARD */}
+              <div 
+                onClick={() => setActiveTab('home')}
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
+                  activeTab === 'home' 
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
+                }`}
+              >
+                {activeTab === 'home' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-blue-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <Home className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-800'}`}>Home</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'home' ? 'text-blue-500 font-medium' : 'text-slate-500'}`}>Trang chủ trung tâm</p>
+                </div>
+              </div>
+
               {/* TAB 1: DASHBOARD CARD */}
               <div 
                 onClick={() => setActiveTab('dashboard')}
-                className={`rounded-xl p-3 flex items-center gap-3 transition-all cursor-pointer shadow-sm ${
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'dashboard' 
-                    ? 'bg-white border-2 border-blue-500 shadow-md scale-[1.02]' 
-                    : 'bg-white hover:bg-slate-50 border border-slate-200/75 hover:scale-[1.01]'
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
                 }`}
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-blue-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <LayoutDashboard className="w-4.5 h-4.5" />
+                {activeTab === 'dashboard' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-emerald-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <LayoutDashboard className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[12.5px]">Overview Dashboard</p>
-                  <p className="text-[10px] text-slate-400 truncate">Real-time stats and metrics</p>
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'dashboard' ? 'text-emerald-600' : 'text-slate-800'}`}>Dashboard</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'dashboard' ? 'text-emerald-500 font-medium' : 'text-slate-500'}`}>Báo cáo & Thống kê</p>
                 </div>
               </div>
 
               {/* TAB 2: USER MANAGEMENT CARD */}
               <div 
                 onClick={() => setActiveTab('users')}
-                className={`rounded-xl p-3 flex items-center gap-3 transition-all cursor-pointer shadow-sm ${
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'users' 
-                    ? 'bg-white border-2 border-indigo-500 shadow-md scale-[1.02]' 
-                    : 'bg-white hover:bg-slate-50 border border-slate-200/75 hover:scale-[1.01]'
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
                 }`}
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-indigo-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <Users className="w-4.5 h-4.5" />
+                {activeTab === 'users' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-rose-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-rose-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <Users className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[12.5px]">User Management</p>
-                  <p className="text-[10px] text-slate-400 truncate">Lock, ban, or unlock accounts</p>
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'users' ? 'text-rose-600' : 'text-slate-800'}`}>Users</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'users' ? 'text-rose-500 font-medium' : 'text-slate-500'}`}>Quản lý người dùng</p>
                 </div>
               </div>
 
               {/* TAB 3: PROJECT MODERATION CARD */}
               <div 
                 onClick={() => setActiveTab('moderation')}
-                className={`rounded-xl p-3 flex items-center gap-3 transition-all cursor-pointer relative shadow-sm ${
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'moderation' 
-                    ? 'bg-white border-2 border-emerald-500 shadow-md scale-[1.02]' 
-                    : 'bg-white hover:bg-slate-50 border border-slate-200/75 hover:scale-[1.01]'
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
                 }`}
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <ShieldAlert className="w-4.5 h-4.5" />
+                {activeTab === 'moderation' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#22c55e] rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-[#22c55e] flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[12.5px]">Project Moderation</p>
-                  <p className="text-[10px] text-slate-400 truncate">Review and approve jobs</p>
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'moderation' ? 'text-[#22c55e]' : 'text-slate-800'}`}>Moderation</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'moderation' ? 'text-[#22c55e] font-medium' : 'text-slate-500'}`}>Kiểm duyệt dự án</p>
                 </div>
                 {pendingProjects.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm animate-bounce">
+                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm animate-bounce z-10">
                     {pendingProjects.length}
                   </span>
                 )}
@@ -389,21 +585,22 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {/* TAB 4: FINANCE CONTROL CARD */}
               <div 
                 onClick={() => setActiveTab('finance')}
-                className={`rounded-xl p-3 flex items-center gap-3 transition-all cursor-pointer relative shadow-sm ${
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'finance' 
-                    ? 'bg-white border-2 border-amber-500 shadow-md scale-[1.02]' 
-                    : 'bg-white hover:bg-slate-50 border border-slate-200/75 hover:scale-[1.01]'
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
                 }`}
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <BadgeDollarSign className="w-4.5 h-4.5" />
+                {activeTab === 'finance' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-cyan-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <BadgeDollarSign className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[12.5px]">Finance Control</p>
-                  <p className="text-[10px] text-slate-400 truncate">Withdrawals & platform fees</p>
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'finance' ? 'text-cyan-600' : 'text-slate-800'}`}>Finance</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'finance' ? 'text-cyan-500 font-medium' : 'text-slate-500'}`}>Quản lý giao dịch</p>
                 </div>
                 {withdrawals.filter(w => w.status === 'PENDING').length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm">
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm z-10">
                     {withdrawals.filter(w => w.status === 'PENDING').length}
                   </span>
                 )}
@@ -412,18 +609,19 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {/* TAB 5: CMS SETTINGS CARD */}
               <div 
                 onClick={() => setActiveTab('cms')}
-                className={`rounded-xl p-3 flex items-center gap-3 transition-all cursor-pointer shadow-sm ${
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'cms' 
-                    ? 'bg-white border-2 border-cyan-500 shadow-md scale-[1.02]' 
-                    : 'bg-white hover:bg-slate-50 border border-slate-200/75 hover:scale-[1.01]'
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
                 }`}
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-cyan-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                  <Settings className="w-4.5 h-4.5" />
+                {activeTab === 'cms' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-violet-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <Settings className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[12.5px]">CMS Settings</p>
-                  <p className="text-[10px] text-slate-400 truncate">SEO and configurations</p>
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'cms' ? 'text-violet-600' : 'text-slate-800'}`}>CMS Settings</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'cms' ? 'text-violet-500 font-medium' : 'text-slate-500'}`}>Cấu hình & SEO</p>
                 </div>
               </div>
             </nav>
@@ -458,14 +656,16 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         {/* Main Header with dynamic control elements */}
         <header className="bg-white border-b border-slate-200 h-20 px-8 flex justify-between items-center shrink-0">
           <div>
-            <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-2">
-              {activeTab === 'dashboard' && 'Financial & Performance Dashboard'}
-              {activeTab === 'users' && 'User Account Control'}
-              {activeTab === 'moderation' && 'Job Escrow Moderation'}
-              {activeTab === 'finance' && 'Liquidation & Finance Control'}
-              {activeTab === 'cms' && 'SEO & Policy Config'}
+            <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-3">
+              {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hệ thống Quản trị LancerPro</>}
+              {activeTab === 'dashboard' && <><Settings className="w-6 h-6 text-blue-600" /> Báo cáo & Thống kê Tổng quan</>}
+              {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
+              {activeTab === 'moderation' && <><ShieldAlert className="w-6 h-6 text-emerald-600" /> Job Escrow Moderation</>}
+              {activeTab === 'finance' && <><BadgeDollarSign className="w-6 h-6 text-amber-600" /> Liquidation & Finance Control</>}
+              {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
             </h1>
-            <p className="text-body-sm text-muted">
+            <p className="text-body-sm text-muted mt-1 ml-9">
+              {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
               {activeTab === 'dashboard' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'moderation' && 'Approve or reject projects awaiting moderation.'}
@@ -478,7 +678,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             <div className="flex items-center gap-4 animate-in fade-in duration-200">
               <button 
                 onClick={loadDashboardData}
-                className="p-2.5 text-slate-400 hover:text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 bg-white shadow-sm"
+                className="p-2.5 text-slate-400 hover:text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 bg-white shadow-sm transition-all duration-200 active:scale-95 hover:shadow-md"
                 title="Refresh Data"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -490,75 +690,221 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         {/* Dynamic Panels */}
         <div className="flex-grow p-8 overflow-y-auto overflow-x-hidden space-y-8 min-w-0">
           
+          {/* TAB 0: HOME OVERVIEW */}
+          {activeTab === 'home' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Top Banner */}
+              <div className="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div className="relative z-10">
+                  <h2 className="text-3xl font-bold font-display mb-2">Hệ thống Quản trị LancerPro</h2>
+                  <p className="text-teal-50 mb-8 max-w-lg text-sm">Trung tâm điều hành nền tảng việc làm tự do. Vui lòng chọn phân hệ nghiệp vụ bên dưới để bắt đầu công việc hàng ngày.</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-3xl font-bold">{stats.totalUsers}</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Người dùng</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-3xl font-bold">{stats.activeProjects}</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dự án in-progress</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-3xl font-bold">{pendingProjects.length}</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dự án chờ duyệt</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="text-3xl font-bold">{stats.pendingWithdrawals}</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Yêu cầu rút tiền</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Decorative background circles */}
+                <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-400/20 rounded-full blur-2xl"></div>
+              </div>
+
+              {/* Service Grid */}
+              <div>
+                <div className="flex items-center gap-2 mb-6 text-slate-700">
+                  <LayoutDashboard className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-xl font-bold">Dịch vụ Quản lý Nghiệp vụ</h3>
+                  <span className="text-sm font-normal text-slate-500 ml-2">Chọn nghiệp vụ để bắt đầu công việc hàng ngày</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Dashboard Card */}
+                  <div 
+                    onClick={() => setActiveTab('dashboard')}
+                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <LayoutDashboard className="w-6 h-6" />
+                      </div>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Báo cáo & Thống kê</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Xem biểu đồ tăng trưởng, doanh thu GMV, tỷ lệ chuyển đổi và các chỉ số tài chính.</p>
+                    <p className="text-xs font-bold text-emerald-600">Dữ liệu theo thời gian thực</p>
+                  </div>
+
+                  {/* Users Card */}
+                  <div 
+                    onClick={() => setActiveTab('users')}
+                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Quản lý Người dùng</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Khóa/mở khóa tài khoản, ban vĩnh viễn, xem lịch sử truy cập của hệ thống.</p>
+                    <p className="text-xs font-bold text-rose-600">{stats.totalUsers} người dùng</p>
+                  </div>
+
+                  {/* Moderation Card */}
+                  <div 
+                    onClick={() => setActiveTab('moderation')}
+                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-green-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      {pendingProjects.length > 0 ? (
+                        <span className="bg-rose-50 text-rose-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">CẦN XỬ LÝ</span>
+                      ) : (
+                        <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                      )}
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Kiểm duyệt Dự án</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Phê duyệt dự án mới đăng, kiểm tra nội dung vi phạm chính sách nền tảng.</p>
+                    <p className="text-xs font-bold text-green-600">{pendingProjects.length} dự án chờ duyệt</p>
+                  </div>
+
+                  {/* Finance Card */}
+                  <div 
+                    onClick={() => setActiveTab('finance')}
+                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <BadgeDollarSign className="w-6 h-6" />
+                      </div>
+                      {stats.pendingWithdrawals > 0 ? (
+                        <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">CẦN XỬ LÝ</span>
+                      ) : (
+                        <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                      )}
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Quản lý Tài chính</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Phê duyệt lệnh rút tiền, kiểm soát giao dịch Escrow, giải quyết tranh chấp (Dispute).</p>
+                    <p className="text-xs font-bold text-cyan-600">{stats.pendingWithdrawals} yêu cầu rút tiền</p>
+                  </div>
+
+                  {/* CMS Card */}
+                  <div 
+                    onClick={() => setActiveTab('cms')}
+                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Settings className="w-6 h-6" />
+                      </div>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Cấu hình & SEO</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Quản lý danh mục kỹ năng, cấu hình nền tảng, tối ưu SEO và quản lý khiếu nại.</p>
+                    <p className="text-xs font-bold text-violet-600">Truy cập cấu hình</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: OVERVIEW DASHBOARD */}
           {activeTab === 'dashboard' && (
             <>
               {/* KPI metrics row */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <span className="text-body-sm text-muted font-bold">Tổng User mới</span>
+                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Users className="w-5 h-5" />
+                    </div>
                     <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
                       <ArrowUpRight className="w-3 h-3" /> +{stats.usersGrowthPercent}%
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-3xl font-extrabold text-primary font-mono">{stats.totalUsers}</p>
-                    <p className="text-[11px] text-muted mt-1">Đăng ký trong kỳ chọn</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.totalUsers}</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng người dùng</p>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-emerald-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <span className="text-body-sm text-muted font-bold">Dự án In Progress</span>
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
                     <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
                       <ArrowUpRight className="w-3 h-3" /> +{stats.projectsGrowthPercent}%
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-3xl font-extrabold text-primary font-mono">{stats.activeProjects}</p>
-                    <p className="text-[11px] text-muted mt-1">Hoạt động trong cơ sở dữ liệu</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeProjects}</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Dự án In Progress</p>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between ring-2 ring-emerald-500/20 bg-emerald-50/5">
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-cyan-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <span className="text-body-sm text-muted font-bold">Doanh thu tháng (GMV)</span>
+                    <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                      <BadgeDollarSign className="w-5 h-5" />
+                    </div>
                     <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
                       <ArrowUpRight className="w-3 h-3" /> +{stats.revenueGrowthPercent}%
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-3xl font-extrabold text-emerald-600 font-mono">
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue)}
                     </p>
-                    <p className="text-[11px] text-muted mt-1">Tổng hoa hồng & phí dịch vụ</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu tháng (GMV)</p>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-violet-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <span className="text-body-sm text-muted font-bold">Tranh chấp đang mở</span>
+                    <div className="w-10 h-10 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
                     <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
                       <ArrowDownRight className="w-3 h-3" /> -2%
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-3xl font-extrabold text-primary font-mono">{stats.activeDisputes}</p>
-                    <p className="text-[11px] text-muted mt-1">Chờ Admin hòa giải</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeDisputes}</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tranh chấp đang mở</p>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-amber-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <span className="text-body-sm text-muted font-bold">Yêu cầu rút tiền</span>
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5" />
+                    </div>
                     <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
                       Chờ duyệt
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-3xl font-extrabold text-primary font-mono">{stats.pendingWithdrawals}</p>
-                    <p className="text-[11px] text-muted mt-1">Yêu cầu thanh toán escrow</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingWithdrawals}</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Yêu cầu rút tiền</p>
                   </div>
                 </div>
               </div>
@@ -592,7 +938,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   <button 
                     onClick={() => handleUpdateFeeConfig(feeRate)}
                     disabled={isUpdatingFee}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl transition-all shadow-md shadow-blue-600/10 flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 flex items-center gap-2"
                   >
                     {isUpdatingFee ? 'Đang cập nhật...' : 'Áp Dụng Config'}
                   </button>
@@ -606,8 +952,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-bold text-primary text-body-md">Biểu đồ Tăng Trưởng Tài Khoản Mới</h3>
-                      <p className="text-[11px] text-slate-400">So sánh hiệu suất đăng ký thực tế với chu kỳ trước</p>
+                      <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
+                        <Users className="w-5 h-5 text-blue-500" /> Biểu đồ Tăng Trưởng Tài Khoản Mới
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-1">So sánh hiệu suất đăng ký thực tế với chu kỳ trước</p>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -621,7 +969,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         <span className="text-[12px] font-bold text-slate-500">So sánh chu kỳ trước</span>
                       </label>
 
-                      <button className="text-[12px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border border-slate-200 bg-slate-50 px-2.5 py-1 rounded-lg">
+                      <button className="text-[12px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border border-slate-200 bg-slate-50 px-2.5 py-1 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm hover:bg-white">
                         <Download className="w-3.5 h-3.5" /> CSV
                       </button>
                     </div>
@@ -742,8 +1090,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-bold text-primary text-body-md">Doanh Thu Theo Quý</h3>
-                      <p className="text-[11px] text-slate-400">Phí thu được tích hợp từ DB</p>
+                      <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
+                        <BadgeDollarSign className="w-5 h-5 text-emerald-500" /> Doanh Thu Theo Quý
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-1">Phí thu được tích hợp từ DB</p>
                     </div>
                     <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
                       Tối ưu Escrow
@@ -789,8 +1139,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
               {/* Recent System Activity Log List */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-                  <h3 className="font-bold text-primary text-body-md">Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)</h3>
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)
+                  </h3>
                   <div className="flex items-center gap-4">
                     <select 
                       value={auditLogFilter}
@@ -922,7 +1274,11 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 }
               }
 
-              return matchesSearch && matchesStatus && matchesTime;
+              let matchesRole = false;
+              if (filterEmployer && user.role === 'EMPLOYER') matchesRole = true;
+              if (filterFreelancer && user.role === 'FREELANCER') matchesRole = true;
+
+              return matchesSearch && matchesStatus && matchesTime && matchesRole;
             });
 
             // Email Suggestions Autocomplete matches
@@ -978,19 +1334,29 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   }
 
                   /* Checkbox morphing - NOT checked represents OPEN menu */
-                  .filter-inp:not(:checked) ~ .filter-main .filter-top {
+                  .filter-wrapper:hover .filter-top {
                     transform-origin: top right;
                     transform: translateY(-0.5px) rotate(-45deg) scaleX(0.9);
                   }
 
-                  .filter-inp:not(:checked) ~ .filter-main .filter-middle {
+                  .filter-wrapper:hover .filter-middle {
                     transform: translateX(-50%);
                     opacity: 0;
                   }
 
-                  .filter-inp:not(:checked) ~ .filter-main .filter-bottom {
+                  .filter-wrapper:hover .filter-bottom {
                     transform-origin: bottom right;
                     transform: translateY(0.5px) rotate(45deg) scaleX(0.9);
+                  }
+
+                  .filter-wrapper::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    height: 20px;
+                    z-index: 9998;
                   }
 
                   .filter-menu-container {
@@ -1002,27 +1368,313 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     position: absolute;
                     width: 48rem;
                     right: 0;
-                    top: 130%;
+                    top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
                     z-index: 9999 !important;
                     padding: 24px;
                     cursor: default;
+                    clip-path: inset(10% 50% 90% 50% round 16px);
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+
+                  .filter-wrapper:hover .filter-menu-container {
+                    clip-path: inset(0% 0% 0% 0% round 16px);
+                    opacity: 1;
+                    pointer-events: auto;
                   }
 
                   .filter-item-list {
                     --delay: 0.15s;
                     --trdelay: 0.08s;
+                    transform: translateY(30px);
+                    opacity: 0;
+                    transition: transform 0.4s ease, opacity 0.4s ease;
                   }
 
-                  .filter-item-list:nth-child(1) {
-                    transition-delay: var(--delay);
+                  .filter-wrapper:hover .filter-item-list {
+                    transform: translateY(0);
+                    opacity: 1;
                   }
-                  .filter-item-list:nth-child(2) {
-                    transition-delay: calc(var(--delay) + var(--trdelay));
+
+                  .filter-wrapper:hover .filter-item-list:nth-child(1) { transition-delay: var(--delay); }
+                  .filter-wrapper:hover .filter-item-list:nth-child(2) { transition-delay: calc(var(--delay) + var(--trdelay)); }
+                  .filter-wrapper:hover .filter-item-list:nth-child(3) { transition-delay: calc(var(--delay) + (var(--trdelay) * 2)); }
+
+                  @keyframes clipDown {
+                    0% {
+                      clip-path: inset(0 0 100% 0 round 12px);
+                      opacity: 0;
+                      transform: translateY(-5px);
+                    }
+                    100% {
+                      clip-path: inset(0 0 0 0 round 12px);
+                      opacity: 1;
+                      transform: translateY(0);
+                    }
                   }
-                  .filter-item-list:nth-child(3) {
-                    transition-delay: calc(var(--delay) + (var(--trdelay) * 2));
+
+                  .clip-down-animation {
+                    animation: clipDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                  }
+
+                  /* Fancy Date Input */
+                  .fancy-date-input {
+                    position: relative;
+                    background-color: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 8px 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #334155;
+                    width: 100%;
+                    outline: none;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                  }
+                  .fancy-date-input:focus, .fancy-date-input:hover {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                  }
+                  .fancy-date-input::-webkit-calendar-picker-indicator {
+                    cursor: pointer;
+                    opacity: 0.6;
+                    transition: opacity 0.2s;
+                    padding: 5px;
+                  }
+                  .fancy-date-input::-webkit-calendar-picker-indicator:hover {
+                    opacity: 1;
+                  }
+
+                  @media print {
+                    body * {
+                      visibility: hidden;
+                    }
+                    .print-section, .print-section * {
+                      visibility: visible;
+                    }
+                    .print-section {
+                      position: absolute;
+                      left: 0;
+                      top: 0;
+                      width: 100%;
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
+                    /* Hide the actions column in print */
+                    .print-section th:last-child,
+                    .print-section td:last-child {
+                      display: none !important;
+                    }
+                  }
+
+                  /* FANCY DOWNLOAD BUTTONS */
+                  .fancy-download-btn {
+                    --width: 90px;
+                    --height: 38px;
+                    --tooltip-height: 30px;
+                    --tooltip-width: 80px;
+                    --gap-between-tooltip-to-button: 10px;
+                    --button-color: #2563eb;
+                    --tooltip-color: #fff;
+                    width: var(--width);
+                    height: var(--height);
+                    background: var(--button-color);
+                    position: relative;
+                    text-align: center;
+                    border-radius: 0.5rem;
+                    font-family: inherit;
+                    transition: background 0.3s;
+                    cursor: pointer;
+                    box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.1);
+                  }
+                  .fancy-download-btn.pdf {
+                    --button-color: #e11d48;
+                    box-shadow: 0 4px 6px -1px rgb(225 29 72 / 0.1);
+                  }
+                  .fancy-download-btn.excel {
+                    --button-color: #059669;
+                    box-shadow: 0 4px 6px -1px rgb(5 150 105 / 0.1);
+                  }
+                  .fancy-download-btn::before {
+                    position: absolute;
+                    content: attr(data-tooltip);
+                    width: var(--tooltip-width);
+                    height: var(--tooltip-height);
+                    background-color: var(--tooltip-color);
+                    font-size: 0.75rem;
+                    font-weight: bold;
+                    color: #1e293b;
+                    border-radius: 0.375rem;
+                    line-height: var(--tooltip-height);
+                    bottom: calc(var(--height) + var(--gap-between-tooltip-to-button) + 10px);
+                    left: calc(50% - var(--tooltip-width) / 2);
+                    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                    z-index: 50;
+                  }
+                  .fancy-download-btn::after {
+                    position: absolute;
+                    content: '';
+                    width: 0;
+                    height: 0;
+                    border: 6px solid transparent;
+                    border-top-color: var(--tooltip-color);
+                    left: calc(50% - 6px);
+                    bottom: calc(100% + var(--gap-between-tooltip-to-button) - 6px);
+                    z-index: 50;
+                  }
+                  .fancy-download-btn::after, .fancy-download-btn::before {
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+                  .fancy-download-btn .text {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 13px;
+                    font-weight: 700;
+                  }
+                  .fancy-download-btn .button-wrapper, .fancy-download-btn .text, .fancy-download-btn .icon {
+                    overflow: hidden;
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    left: 0;
+                    color: #fff;
+                  }
+                  .fancy-download-btn .text { top: 0; }
+                  .fancy-download-btn .text, .fancy-download-btn .icon {
+                    transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+                  .fancy-download-btn .icon {
+                    top: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  }
+                  .fancy-download-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+                  .fancy-download-btn:active { transform: translateY(0) scale(0.95); }
+                  .fancy-download-btn:hover .text { top: -100%; }
+                  .fancy-download-btn:hover .icon { top: 0; }
+                  .fancy-download-btn:hover:before, .fancy-download-btn:hover:after {
+                    opacity: 1; visibility: visible;
+                  }
+                  .fancy-download-btn:hover:after {
+                    bottom: calc(var(--height) + var(--gap-between-tooltip-to-button) - 12px);
+                  }
+                  .fancy-download-btn:hover:before {
+                    bottom: calc(var(--height) + var(--gap-between-tooltip-to-button));
+                  }
+
+                  /* iOS Checkbox Styles */
+                  .ios-checkbox {
+                    --checkbox-size: 20px;
+                    --checkbox-color: #3b82f6;
+                    --checkbox-bg: #dbeafe;
+                    --checkbox-border: #93c5fd;
+
+                    position: relative;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    user-select: none;
+                    -webkit-tap-highlight-color: transparent;
+                  }
+
+                  .ios-checkbox input {
+                    display: none;
+                  }
+
+                  .checkbox-wrapper {
+                    position: relative;
+                    width: var(--checkbox-size);
+                    height: var(--checkbox-size);
+                    border-radius: 6px;
+                    transition: transform 0.2s ease;
+                  }
+
+                  .checkbox-bg {
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 6px;
+                    border: 2px solid var(--checkbox-border);
+                    background: white;
+                    transition: all 0.2s ease;
+                  }
+
+                  .checkbox-icon {
+                    position: absolute;
+                    inset: 0;
+                    margin: auto;
+                    width: 80%;
+                    height: 80%;
+                    color: white;
+                    transform: scale(0);
+                    transition: all 0.2s ease;
+                  }
+
+                  .check-path {
+                    stroke-dasharray: 40;
+                    stroke-dashoffset: 40;
+                    transition: stroke-dashoffset 0.3s ease 0.1s;
+                  }
+
+                  .ios-checkbox input:checked + .checkbox-wrapper .checkbox-bg {
+                    background: var(--checkbox-color);
+                    border-color: var(--checkbox-color);
+                  }
+
+                  .ios-checkbox input:checked + .checkbox-wrapper .checkbox-icon {
+                    transform: scale(1);
+                  }
+
+                  .ios-checkbox input:checked + .checkbox-wrapper .check-path {
+                    stroke-dashoffset: 0;
+                  }
+
+                  .ios-checkbox:hover .checkbox-wrapper {
+                    transform: scale(1.05);
+                  }
+
+                  .ios-checkbox:active .checkbox-wrapper {
+                    transform: scale(0.95);
+                  }
+
+                  .ios-checkbox input:focus + .checkbox-wrapper .checkbox-bg {
+                    box-shadow: 0 0 0 4px var(--checkbox-bg);
+                  }
+
+                  .ios-checkbox.blue {
+                    --checkbox-color: #3b82f6;
+                    --checkbox-bg: #dbeafe;
+                    --checkbox-border: #93c5fd;
+                  }
+
+                  .ios-checkbox.emerald {
+                    --checkbox-color: #10b981;
+                    --checkbox-bg: #d1fae5;
+                    --checkbox-border: #6ee7b7;
+                  }
+                  
+                  .ios-checkbox.purple {
+                    --checkbox-color: #8b5cf6;
+                    --checkbox-bg: #ede9fe;
+                    --checkbox-border: #c4b5fd;
+                  }
+
+                  @keyframes ios-bounce {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                  }
+
+                  .ios-checkbox input:checked + .checkbox-wrapper {
+                    animation: ios-bounce 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                   }
                 `}</style>
 
@@ -1034,7 +1686,28 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       <p className="text-[12px] text-slate-400 mt-1">Kết quả khớp điều kiện: <span className="font-bold text-blue-600">{filteredUsers.length}</span> / {users.length} tài khoản</p>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                      {/* Fancy Download Buttons */}
+                      <div className="flex items-center gap-2 mr-2">
+                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">Excel</div>
+                            <span className="icon">
+                              <Download className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">PDF</div>
+                            <span className="icon">
+                              <FileText className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Search Input with Autocomplete Suggestions */}
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
                         <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
@@ -1086,28 +1759,18 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       </div>
 
                       {/* Customized Filter Button with the morphing Hamburger animations from User Checkbox */}
-                      <div className="relative">
-                        {/* Checkbox placed outside label so section can be a sibling */}
-                        <input 
-                          className="filter-inp" 
-                          id="filter-toggle"
-                          type="checkbox" 
-                          checked={!showFilterMenu}
-                          onChange={e => setShowFilterMenu(!e.target.checked)}
-                          style={{ display: 'none' }}
-                        />
-                        <label className="filter-main" htmlFor="filter-toggle">
+                      <div className="relative filter-wrapper">
+                        <div className="filter-main">
                           Bộ lọc nâng cao
                           <div className="filter-bar">
                             <span className="filter-top filter-bar-list" />
                             <span className="filter-middle filter-bar-list" />
                             <span className="filter-bottom filter-bar-list" />
                           </div>
-                        </label>
+                        </div>
 
-                        {/* Slide down expandable filters panel - OUTSIDE label to prevent nested label conflicts */}
-                        {showFilterMenu && (
-                          <section className="filter-menu-container" style={{ clipPath: 'inset(0% 0% 0% 0% round 16px)', opacity: 1 }} onClick={e => e.stopPropagation()}>
+                        {/* Slide down expandable filters panel */}
+                        <section className="filter-menu-container" onClick={e => e.stopPropagation()}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
                               
                               {/* Item 1: Status selection */}
@@ -1142,26 +1805,37 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                       </button>
                                       
                                       {status.value === 'ACTIVE' && userStatusFilter === 'ACTIVE' && (
-                                        <div className="pl-6 pr-2 py-2 mt-1 bg-slate-50 border border-slate-100 rounded-xl space-y-2 animate-in slide-in-from-top-1 duration-200">
-                                          <label className="flex items-center gap-2.5 cursor-pointer text-[11px] font-bold text-slate-600 select-none">
+                                        <div className="pl-6 pr-2 py-3 mt-1 bg-slate-50 border border-slate-100 rounded-xl space-y-3 flex flex-col clip-down-animation">
+                                          <label className="ios-checkbox emerald" title="Đang trực tuyến">
                                             <input 
                                               type="checkbox"
                                               checked={activeOnlineChecked}
                                               onChange={e => setActiveOnlineChecked(e.target.checked)}
-                                              className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                                             />
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                            Đang trực tuyến (Online)
+                                            <div className="checkbox-wrapper">
+                                              <div className="checkbox-bg" />
+                                              <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                                <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                              </svg>
+                                            </div>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
+                                            <span className="text-[11px] font-bold text-slate-600 select-none">Đang trực tuyến (Online)</span>
                                           </label>
-                                          <label className="flex items-center gap-2.5 cursor-pointer text-[11px] font-bold text-slate-600 select-none">
+                                          
+                                          <label className="ios-checkbox blue" title="Ngoại tuyến">
                                             <input 
                                               type="checkbox"
                                               checked={activeOfflineChecked}
                                               onChange={e => setActiveOfflineChecked(e.target.checked)}
-                                              className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                                             />
-                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                                            Ngoại tuyến (Offline)
+                                            <div className="checkbox-wrapper">
+                                              <div className="checkbox-bg" />
+                                              <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                                <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                              </svg>
+                                            </div>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 ml-1" />
+                                            <span className="text-[11px] font-bold text-slate-600 select-none">Ngoại tuyến (Offline)</span>
                                           </label>
                                         </div>
                                       )}
@@ -1205,33 +1879,82 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                     ? 'bg-blue-50/20 border-blue-200'
                                     : 'bg-slate-50/50 border-slate-200 opacity-60 pointer-events-none'
                                 }`}>
-                                  <div className="space-y-3">
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[11px] font-bold text-slate-400">TỪ NGÀY</span>
-                                      <input 
-                                        type="date" 
-                                        value={userTimeStart}
-                                        onChange={e => setUserTimeStart(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-body-xs font-semibold outline-none focus:border-blue-500 w-full"
-                                      />
+                                  {userTimeFilterType === 'CUSTOM' ? (
+                                    <div className="space-y-3 clip-down-animation">
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-bold text-slate-400">TỪ NGÀY</span>
+                                        <input 
+                                          type="date" 
+                                          value={userTimeStart}
+                                          onChange={e => setUserTimeStart(e.target.value)}
+                                          className="fancy-date-input"
+                                        />
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-bold text-slate-400">ĐẾN NGÀY</span>
+                                        <input 
+                                          type="date" 
+                                          value={userTimeEnd}
+                                          onChange={e => setUserTimeEnd(e.target.value)}
+                                          className="fancy-date-input"
+                                        />
+                                      </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[11px] font-bold text-slate-400">ĐẾN NGÀY</span>
-                                      <input 
-                                        type="date" 
-                                        value={userTimeEnd}
-                                        onChange={e => setUserTimeEnd(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-body-xs font-semibold outline-none focus:border-blue-500 w-full"
-                                      />
+                                  ) : (
+                                    <div className="space-y-3">
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-bold text-slate-400">TỪ NGÀY</span>
+                                        <div className="fancy-date-input text-slate-300 flex items-center justify-between">
+                                          <span>mm/dd/yyyy</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-bold text-slate-400">ĐẾN NGÀY</span>
+                                        <div className="fancy-date-input text-slate-300 flex items-center justify-between">
+                                          <span>mm/dd/yyyy</span>
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
 
                             </div>
 
                             {/* Reset Button inside filters panel */}
-                            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-5">
+                            <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-5">
+                              <div className="flex gap-5 items-center pl-2">
+                                <label className="ios-checkbox blue" title="Tài khoản Doanh nghiệp">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={filterEmployer}
+                                    onChange={e => setFilterEmployer(e.target.checked)} 
+                                  />
+                                  <div className="checkbox-wrapper">
+                                    <div className="checkbox-bg" />
+                                    <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                      <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-[12px] font-bold text-slate-600 ml-1">Employer</span>
+                                </label>
+
+                                <label className="ios-checkbox purple" title="Tài khoản Freelancer">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={filterFreelancer}
+                                    onChange={e => setFilterFreelancer(e.target.checked)} 
+                                  />
+                                  <div className="checkbox-wrapper">
+                                    <div className="checkbox-bg" />
+                                    <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                      <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-[12px] font-bold text-slate-600 ml-1">Freelancer</span>
+                                </label>
+                              </div>
+
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1240,14 +1963,17 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   setUserTimeStart('');
                                   setUserTimeEnd('');
                                   setSearchQuery('');
+                                  setFilterEmployer(true);
+                                  setFilterFreelancer(true);
+                                  setActiveOnlineChecked(true);
+                                  setActiveOfflineChecked(true);
                                 }}
-                                className="px-4 py-2 hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-body-sm font-bold transition-all shadow-sm"
+                                className="px-4 py-2 hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-body-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm hover:shadow-md"
                               >
                                 Đặt lại bộ lọc
                               </button>
                             </div>
                           </section>
-                        )}
                       </div>
 
                     </div>
@@ -1255,7 +1981,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
 
                 {/* Users Table */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print-section">
                   <div className="overflow-x-auto min-w-0">
                     <table className="w-full text-left border-collapse table-fixed">
                       <thead>
@@ -1352,23 +2078,23 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                     <>
                                       <button 
                                         onClick={() => { setActiveUserForAction(user); setActionType('lock'); }}
-                                        className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-1 rounded-xl font-bold text-[11px] flex items-center gap-0.5 transition-all"
+                                        className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Lock className="w-3 h-3" /> Khóa
+                                        <Lock className="w-3.5 h-3.5" /> Khóa
                                       </button>
                                       <button 
                                         onClick={() => { setActiveUserForAction(user); setActionType('ban'); }}
-                                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-1 rounded-xl font-bold text-[11px] flex items-center gap-0.5 transition-all"
+                                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Ban className="w-3 h-3" /> Cấm
+                                        <Ban className="w-3.5 h-3.5" /> Cấm
                                       </button>
                                     </>
                                   ) : (
                                     <button 
                                       onClick={() => handleUserStatusChange(user.id, user.role, 'ACTIVE')}
-                                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all"
+                                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                     >
-                                      <Unlock className="w-3 h-3" /> Mở khóa
+                                      <Unlock className="w-3.5 h-3.5" /> Mở khóa
                                     </button>
                                   )}
                                 </div>
@@ -1398,7 +2124,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             <button
                               onClick={() => setCurrentPage(1)}
                               disabled={currentPage === 1}
-                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
                               title="Trang đầu (<<)"
                             >
                               <ChevronsLeft className="w-4 h-4" />
@@ -1406,7 +2132,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             <button
                               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                               disabled={currentPage === 1}
-                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
                               title="Trang trước (<)"
                             >
                               <ChevronLeft className="w-4 h-4" />
@@ -1419,7 +2145,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             <button
                               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                               disabled={currentPage === totalPages}
-                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
                               title="Trang sau (>)"
                             >
                               <ChevronRight className="w-4 h-4" />
@@ -1427,7 +2153,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             <button
                               onClick={() => setCurrentPage(totalPages)}
                               disabled={currentPage === totalPages}
-                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all shadow-sm flex items-center justify-center"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
                               title="Trang cuối (>>)"
                             >
                               <ChevronsRight className="w-4 h-4" />
@@ -1469,10 +2195,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         <p className="text-body-sm text-slate-600">Đăng bởi: <span className="font-bold text-slate-800">{project.clientName || 'N/A'}</span> • Ngân sách: <span className="font-bold text-emerald-600">{project.budget ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(project.budget) : 'Thỏa thuận'}</span></p>
                       </div>
 
-                      <div className="flex gap-2 w-full md:w-auto">
+                      <div className="flex gap-3 w-full md:w-auto">
                         <button 
                           onClick={() => handleProjectAction(project.id, true)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/10 flex-grow md:flex-grow-0 justify-center"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-300 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-emerald-600/30 shadow-emerald-600/10 flex-grow md:flex-grow-0 justify-center"
                         >
                           <Check className="w-4 h-4" /> Duyệt
                         </button>
@@ -1481,7 +2207,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             const reason = prompt('Nhập lý do từ chối kiểm duyệt dự án:');
                             if (reason !== null) handleProjectAction(project.id, false, reason);
                           }}
-                          className="border border-rose-200 text-rose-700 hover:bg-rose-50 px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all flex items-center gap-1.5 flex-grow md:flex-grow-0 justify-center"
+                          className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-300 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center gap-1.5 flex-grow md:flex-grow-0 justify-center hover:shadow-sm"
                         >
                           <X className="w-4 h-4" /> Từ chối
                         </button>
@@ -1542,13 +2268,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                 <div className="flex justify-center gap-2">
                                   <button 
                                     onClick={() => handleWithdrawalAction(w.id, true)}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all flex items-center gap-0.5"
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-1 shadow-sm hover:shadow-emerald-600/30"
                                   >
                                     <Check className="w-3.5 h-3.5" /> Approve
                                   </button>
                                   <button 
                                     onClick={() => handleWithdrawalAction(w.id, false)}
-                                    className="border border-rose-200 text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all flex items-center gap-0.5"
+                                    className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-1 shadow-sm"
                                   >
                                     <X className="w-3.5 h-3.5" /> Từ chối
                                   </button>
@@ -1584,10 +2310,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveCmsTab(tab.id)}
-                    className={`px-4 py-2 rounded-xl text-body-sm font-bold transition-all flex items-center gap-2 ${
+                    className={`px-4 py-2 rounded-xl text-body-sm font-bold transition-all duration-300 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 ${
                       activeCmsTab === tab.id 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:shadow-sm'
                     }`}
                   >
                     {tab.label}
@@ -1616,7 +2342,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Meta Description trang chủ</label>
                         <textarea rows="3" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_description : "Sàn thương mại điện tử về dịch vụ tự do..."} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500 resize-none" />
                       </div>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 py-2.5 rounded-xl shadow-md transition-all">Lưu cấu hình SEO</button>
+                      <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30">Lưu cấu hình SEO</button>
                     </div>
                   </div>
 
@@ -1643,7 +2369,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       </div>
                       <button 
                         onClick={() => handleUpdateFeeConfig(feeRate)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 py-2.5 rounded-xl shadow-md transition-all"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30"
                       >
                         Áp dụng phí mới
                       </button>
@@ -1710,126 +2436,178 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </main>
 
       {/* MODAL 1: AUDIT LOG DETAIL PREVIEW */}
-      {selectedActivity && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <h4 className="font-bold text-primary text-lg">Chi Tiết Hoạt Động Nhật Ký</h4>
-              <button 
-                onClick={() => setSelectedActivity(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedActivity ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${selectedActivity ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
+          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h4 className="font-bold text-primary text-lg">Chi Tiết Hoạt Động Nhật Ký</h4>
+            <button 
+              onClick={() => setSelectedActivity(null)}
+              className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-all duration-200 hover:rotate-90 active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Thời Gian</span>
+              <span className="text-body-md font-medium text-slate-800">{selectedActivity?.timestamp}</span>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Thời Gian</span>
-                <span className="text-body-md font-medium text-slate-800">{selectedActivity.timestamp}</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Nguồn Hoạt Động (Actor)</span>
-                <span className="text-body-md font-bold text-blue-600">{selectedActivity.source}</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Chi Tiết Nghiệp Vụ</span>
-                <span className="text-body-md text-slate-600 block bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
-                  {selectedActivity.detail}
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Trạng Thế Hệ Thống</span>
-                <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold mt-1 uppercase ${
-                  selectedActivity.status === 'Approved' || selectedActivity.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' :
-                  selectedActivity.status === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-800'
-                }`}>
-                  {selectedActivity.status}
-                </span>
-              </div>
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Nguồn Hoạt Động (Actor)</span>
+              <span className="text-body-md font-bold text-blue-600">{selectedActivity?.source}</span>
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Chi Tiết Nghiệp Vụ</span>
+              <span className="text-body-md text-slate-600 block bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
+                {selectedActivity?.detail}
+              </span>
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Trạng Thế Hệ Thống</span>
+              <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold mt-1 uppercase ${
+                selectedActivity?.status === 'Approved' || selectedActivity?.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' :
+                selectedActivity?.status === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-800'
+              }`}>
+                {selectedActivity?.status}
+              </span>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* MODAL 2: USER SECURE ACTION */}
-      {activeUserForAction && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <h4 className="font-bold text-primary text-lg">
-                {actionType === 'lock' ? 'Khóa Tài Khoản Người Dùng' : 'Cấm Tài Khoản Vĩnh Viễn'}
-              </h4>
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${activeUserForAction ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border-t-[6px] overflow-hidden transition-all duration-300 ease-out transform ${
+          activeUserForAction ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        } ${
+          actionType === 'lock' ? 'border-amber-500 shadow-amber-500/20' : 'border-rose-500 shadow-rose-500/20'
+        }`}>
+          <div className={`p-6 border-b flex justify-between items-center ${
+            actionType === 'lock' ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100'
+          }`}>
+            <h4 className={`font-bold text-lg flex items-center gap-2 ${
+              actionType === 'lock' ? 'text-amber-700' : 'text-rose-700'
+            }`}>
+              {actionType === 'lock' ? <Lock className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
+              {actionType === 'lock' ? 'Khóa Tài Khoản Người Dùng' : 'Cấm Tài Khoản Vĩnh Viễn'}
+            </h4>
+            <button 
+              onClick={() => { setActiveUserForAction(null); setBanReasons([]); setAdminPin(''); }}
+              className={`p-2 rounded-full transition-all duration-200 hover:rotate-90 active:scale-95 ${
+                actionType === 'lock' ? 'text-amber-500 hover:text-amber-700 hover:bg-amber-100' : 'text-rose-500 hover:text-rose-700 hover:bg-rose-100'
+              }`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 space-y-5">
+            <p className="text-body-sm text-slate-500">
+              Xác nhận thay đổi bảo mật cho tài khoản:<br/>
+              <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email}).
+            </p>
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">CHỌN LÝ DO BẢO MẬT (BẮT BUỘC)</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Gian lận thanh toán",
+                  "Spam tin nhắn / dự án",
+                  "Đăng nội dung phản cảm",
+                  "Lừa đảo chiếm đoạt tài sản",
+                  "Vi phạm điều khoản dịch vụ",
+                  "Khác"
+                ].map(reason => (
+                  <button
+                    key={reason}
+                    onClick={() => {
+                      if (banReasons.includes(reason)) {
+                        setBanReasons(banReasons.filter(r => r !== reason));
+                      } else {
+                        setBanReasons([...banReasons, reason]);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-[11.5px] font-bold transition-all duration-200 ${
+                      banReasons.includes(reason)
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 scale-105'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">MÃ PIN XÁC NHẬN CỦA ADMIN</label>
+              <input 
+                type="password" 
+                placeholder="Nhập mã PIN gồm 6 số" 
+                maxLength={6}
+                className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono tracking-[0.2em]"
+                value={adminPin}
+                onChange={e => setAdminPin(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end pt-3">
               <button 
-                onClick={() => setActiveUserForAction(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                onClick={() => { setActiveUserForAction(null); setBanReasons([]); setAdminPin(''); }}
+                className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
               >
-                <X className="w-5 h-5" />
+                Hủy
+              </button>
+              <button 
+                disabled={banReasons.length === 0 || !adminPin.trim()}
+                onClick={() => handleUserStatusChange(activeUserForAction?.id, activeUserForAction?.role, actionType === 'lock' ? 'LOCKED' : 'BANNED')}
+                className={`px-6 py-2.5 rounded-xl font-bold text-body-sm text-white transition-all duration-300 ${
+                  actionType === 'lock'
+                    ? (banReasons.length === 0 || !adminPin.trim() ? 'bg-amber-400 cursor-not-allowed opacity-70' : 'bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/10 hover:shadow-amber-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95')
+                    : (banReasons.length === 0 || !adminPin.trim() ? 'bg-rose-400 cursor-not-allowed opacity-70' : 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/10 hover:shadow-rose-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95')
+                }`}
+              >
+                Xác nhận {actionType === 'lock' ? 'Khóa' : 'Cấm'}
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-body-sm text-slate-500">
-                Xác nhận thay đổi bảo mật cho tài khoản của <span className="font-bold text-slate-800">{activeUserForAction.name}</span> ({activeUserForAction.email}).
-              </p>
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Nhập lý do bảo mật (Bắt buộc)</label>
-                <textarea 
-                  rows="3" 
-                  placeholder="Gian lận thanh toán, spam tin..." 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 resize-none"
-                  value={banReason}
-                  onChange={e => setBanReason(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 justify-end pt-2">
-                <button 
-                  onClick={() => setActiveUserForAction(null)}
-                  className="border border-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold text-body-sm hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-                <button 
-                  disabled={!banReason.trim()}
-                  onClick={() => handleUserStatusChange(activeUserForAction.id, activeUserForAction.role, actionType === 'lock' ? 'LOCKED' : 'BANNED')}
-                  className={`px-5 py-2 rounded-xl font-bold text-body-sm text-white shadow-md transition-all ${
-                    !banReason.trim() 
-                      ? 'bg-slate-300 cursor-not-allowed shadow-none' 
-                      : actionType === 'lock' 
-                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/10' 
-                        : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/10'
-                  }`}
-                >
-                  Xác nhận
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* TOAST NOTIFICATION */}
-      {toast && (
-        <div className={`fixed bottom-6 right-6 z-[100] max-w-md px-5 py-4 rounded-2xl shadow-2xl border flex items-start gap-3 animate-in slide-in-from-bottom-4 duration-300 ${
-          toast.type === 'success' 
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-            : 'bg-rose-50 border-rose-200 text-rose-800'
+      <div className={`fixed top-6 right-6 z-[100] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        toast.visible 
+          ? 'translate-x-0 opacity-100 visible' 
+          : 'translate-x-12 opacity-0 invisible pointer-events-none'
+      }`}>
+        {/* Left colored border accent */}
+        <div className={`absolute left-0 top-0 bottom-0 w-2 rounded-l-xl ${
+          toast?.type === 'success' ? 'bg-emerald-400' : 
+          toast?.type === 'warning' ? 'bg-amber-400' : 'bg-rose-400'
+        }`} />
+        
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+          toast?.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+          toast?.type === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-rose-50 text-rose-500'
         }`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-            toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'
-          }`}>
-            {toast.type === 'success' 
-              ? <CheckCircle2 className="w-4 h-4 text-white" />
-              : <AlertTriangle className="w-4 h-4 text-white" />
-            }
-          </div>
-          <div className="flex-grow">
-            <p className="font-bold text-[13px]">{toast.type === 'success' ? 'Thành công' : 'Thao tác bị từ chối'}</p>
-            <p className="text-[12px] opacity-80 mt-0.5 leading-relaxed">{toast.message}</p>
-          </div>
-          <button onClick={() => setToast(null)} className="text-current opacity-40 hover:opacity-100 shrink-0">
-            <X className="w-4 h-4" />
-          </button>
+          {toast?.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : 
+           toast?.type === 'warning' ? <AlertTriangle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />
+          }
         </div>
-      )}
+        
+        <div className="flex-grow pr-2">
+          <p className={`font-bold text-[14.5px] ${
+            toast?.type === 'success' ? 'text-emerald-600' : 
+            toast?.type === 'warning' ? 'text-amber-600' : 'text-rose-600'
+          }`}>
+            {toast?.type === 'success' ? 'Thành công' : 
+             toast?.type === 'warning' ? 'Cảnh báo' : 'Thao tác thất bại'}
+          </p>
+          <p className="text-[13px] text-slate-500 mt-0.5 leading-relaxed">{toast?.message}</p>
+        </div>
+        
+        <button onClick={() => setToast(prev => ({ ...prev, visible: false }))} className="text-slate-400 hover:text-slate-700 shrink-0 transition-all p-1.5 hover:bg-slate-100 rounded-full active:scale-95">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
     </div>
   );

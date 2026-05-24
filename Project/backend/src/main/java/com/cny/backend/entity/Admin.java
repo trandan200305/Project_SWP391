@@ -64,4 +64,7 @@ public class Admin {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "messenger_pin")
+    private String messengerPin;
 }

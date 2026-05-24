@@ -90,6 +90,9 @@ public class Freelancer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "messenger_pin")
+    private String messengerPin;
+
     // Transient user helper object for 100% frontend compatibility
     @Transient
     private TransientUser user;
