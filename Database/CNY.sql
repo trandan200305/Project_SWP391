@@ -687,3 +687,19 @@ IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tick
     ALTER TABLE ticket_messages ADD is_read BIT NOT NULL DEFAULT 0;
 GO
 
+
+-- 2. Tạo bảng ghi nhận lịch sử đăng nhập login_history (nếu chưa tồn tại)
+IF OBJECT_ID('dbo.login_history', 'U') IS NULL
+BEGIN
+    CREATE TABLE login_history (
+        id            INT PRIMARY KEY IDENTITY(1,1),
+        freelancer_id INT REFERENCES freelancers(freelancer_id),
+        employer_id   INT REFERENCES employers(employer_id),
+        admin_id      INT REFERENCES admins(admin_id),
+        ip_address    NVARCHAR(45),
+        user_agent    NVARCHAR(500),
+        login_at      DATETIME2 NOT NULL DEFAULT GETDATE(),
+        success       BIT NOT NULL DEFAULT 1
+    );
+END
+GO

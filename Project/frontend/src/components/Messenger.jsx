@@ -383,8 +383,8 @@ export default function Messenger({ user, onNavigateHome }) {
     (ticket.sender_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ticket.sender_email || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-  // Chờ phản hồi: admin chưa reply thực tế
-  const pendingTickets = tickets.filter(t => !t.has_admin_replied && matchesSearch(t));
+  // Chờ phản hồi: admin chưa reply thực tế VÀ user đã gửi ít nhất 1 tin nhắn
+  const pendingTickets = tickets.filter(t => !t.has_admin_replied && t.user_message_count > 0 && matchesSearch(t));
   // Đang xử lý: admin đã reply ít nhất 1 lần
   const activeTickets = tickets.filter(t => t.has_admin_replied && matchesSearch(t));
 
@@ -653,7 +653,25 @@ export default function Messenger({ user, onNavigateHome }) {
                                     alt={ticket.sender_name} 
                                     className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm"
                                   />
-                                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></div>
+                                  {(() => {
+                                    const status = ticket.sender_status;
+                                    const isLocked = status === 'LOCKED' || status === 'locked';
+                                    const isBanned = status === 'BANNED' || status === 'banned';
+                                    
+                                    const lastLoginStr = ticket.sender_last_login;
+                                    const lastLoginTime = lastLoginStr ? new Date(lastLoginStr).getTime() : 0;
+                                    const isOnline = lastLoginTime > 0 && (Date.now() - lastLoginTime < (5 * 60 * 1000));
+
+                                    if (isLocked) {
+                                      return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-white"></div>;
+                                    } else if (isBanned) {
+                                      return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>;
+                                    } else if (isOnline) {
+                                      return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>;
+                                    } else {
+                                      return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-slate-400 rounded-full border-2 border-white"></div>;
+                                    }
+                                  })()}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-center mb-0.5">
@@ -710,7 +728,25 @@ export default function Messenger({ user, onNavigateHome }) {
                                   alt={ticket.sender_name} 
                                 className="w-11 h-11 rounded-xl object-cover border border-amber-200/80 shadow-sm"
                               />
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-400 rounded-full border-2 border-white animate-pulse"></div>
+                              {(() => {
+                                const status = ticket.sender_status;
+                                const isLocked = status === 'LOCKED' || status === 'locked';
+                                const isBanned = status === 'BANNED' || status === 'banned';
+                                
+                                const lastLoginStr = ticket.sender_last_login;
+                                const lastLoginTime = lastLoginStr ? new Date(lastLoginStr).getTime() : 0;
+                                const isOnline = lastLoginTime > 0 && (Date.now() - lastLoginTime < (5 * 60 * 1000));
+
+                                if (isLocked) {
+                                  return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-white"></div>;
+                                } else if (isBanned) {
+                                  return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>;
+                                } else if (isOnline) {
+                                  return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>;
+                                } else {
+                                  return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-slate-400 rounded-full border-2 border-white"></div>;
+                                }
+                              })()}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-center mb-0.5">
@@ -887,15 +923,53 @@ export default function Messenger({ user, onNavigateHome }) {
                         alt="Active chat" 
                         className="w-10 h-10 rounded-xl object-cover border border-slate-200"
                       />
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>
+                      {(() => {
+                        if (user?.role !== 'ADMIN') {
+                          return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>;
+                        }
+                        const status = activeTicket.sender_status;
+                        const isLocked = status === 'LOCKED' || status === 'locked';
+                        const isBanned = status === 'BANNED' || status === 'banned';
+                        
+                        const lastLoginStr = activeTicket.sender_last_login;
+                        const lastLoginTime = lastLoginStr ? new Date(lastLoginStr).getTime() : 0;
+                        const isOnline = lastLoginTime > 0 && (Date.now() - lastLoginTime < (5 * 60 * 1000));
+
+                        if (isLocked) {
+                          return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-white"></div>;
+                        } else if (isBanned) {
+                          return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-white"></div>;
+                        } else if (isOnline) {
+                          return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>;
+                        } else {
+                          return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-slate-400 rounded-full border-2 border-white"></div>;
+                        }
+                      })()}
                     </div>
                     <div>
                       <h3 className="font-extrabold text-sm text-slate-900 leading-tight">
                         {user?.role === 'ADMIN' ? activeTicket.sender_name : 'Kỹ thuật viên LancerPro'}
                       </h3>
-                      <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                        Sẵn sàng giải đáp thắc mắc của bạn
-                      </p>
+                      {user?.role !== 'ADMIN' ? (
+                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                          Sẵn sàng giải đáp thắc mắc của bạn
+                        </p>
+                      ) : (() => {
+                        const status = activeTicket.sender_status;
+                        const isLocked = status === 'LOCKED' || status === 'locked';
+                        const isBanned = status === 'BANNED' || status === 'banned';
+                        
+                        const lastLoginStr = activeTicket.sender_last_login;
+                        const lastLoginTime = lastLoginStr ? new Date(lastLoginStr).getTime() : 0;
+                        const isOnline = lastLoginTime > 0 && (Date.now() - lastLoginTime < (5 * 60 * 1000));
+
+                        return (
+                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                            {activeTicket.sender_role === 'EMPLOYER' ? 'Nhà tuyển dụng' : 'Freelancer'}
+                            {isLocked ? ' • Tài khoản bị khóa' : isBanned ? ' • Tài khoản bị chặn' : isOnline ? ' • Đang trực tuyến' : ' • Ngoại tuyến'}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
 

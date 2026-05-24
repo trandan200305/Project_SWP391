@@ -8,4 +8,7 @@ import java.util.Optional;
 @Repository
 public interface AdminRepository extends JpaRepository<Admin, Integer> {
     Optional<Admin> findByEmail(String email);
+    int countByEmail(String email);
+    int countByPhone(String phone);
+    int countByDisplayName(String displayName);
 }

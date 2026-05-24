@@ -126,13 +126,14 @@ public class SupportChatService {
 
     public List<Map<String, Object>> getAllOpenTickets() {
         String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, " +
-                     "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, " +
-                     "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, " +
+                     "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, f.status as freelancer_user_status, f.last_login_at as freelancer_last_login, " +
+                     "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, e.status as employer_user_status, e.last_login_at as employer_last_login, " +
                      "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
                      "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
                      "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND is_read = 0) as unread_count, " +
                      "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id) as total_messages, " +
-                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE '👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL) as user_message_count, " +
+                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
                      "FROM support_tickets t " +
                      "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
                      "LEFT JOIN employers e ON t.employer_id = e.employer_id " +
@@ -163,12 +164,16 @@ public class SupportChatService {
                 ticket.put("sender_email", row.get("freelancer_email"));
                 ticket.put("sender_role", "FREELANCER");
                 ticket.put("sender_id", row.get("freelancer_id"));
+                ticket.put("sender_status", row.get("freelancer_user_status"));
+                ticket.put("sender_last_login", row.get("freelancer_last_login") != null ? row.get("freelancer_last_login").toString() : null);
             } else if (row.get("employer_id") != null) {
                 ticket.put("sender_name", row.get("employer_name"));
                 ticket.put("sender_avatar", row.get("employer_avatar"));
                 ticket.put("sender_email", row.get("employer_email"));
                 ticket.put("sender_role", "EMPLOYER");
                 ticket.put("sender_id", row.get("employer_id"));
+                ticket.put("sender_status", row.get("employer_user_status"));
+                ticket.put("sender_last_login", row.get("employer_last_login") != null ? row.get("employer_last_login").toString() : null);
             }
 
             // Pass has_admin_replied as boolean
@@ -181,6 +186,9 @@ public class SupportChatService {
 
             Object totalMessages = row.get("total_messages");
             ticket.put("total_messages", totalMessages != null ? ((Number) totalMessages).intValue() : 0);
+
+            Object userMsgCount = row.get("user_message_count");
+            ticket.put("user_message_count", userMsgCount != null ? ((Number) userMsgCount).intValue() : 0);
 
             tickets.add(ticket);
         }
@@ -295,7 +303,7 @@ public class SupportChatService {
     }
 
     public boolean hasAdminReplied(Integer ticketId) {
-        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND message_text NOT LIKE '👋 Xin chào! Cảm ơn bạn%'";
+        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%'";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, ticketId);
         return count != null && count > 0;
     }
