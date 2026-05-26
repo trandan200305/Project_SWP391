@@ -13,6 +13,7 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
 import Messenger from './components/Messenger.jsx';
+import EmployerProfileSettings from './components/EmployerProfileSettings.jsx';
 
 // Client ID thật từ Google Cloud Console (Dự án LancerPro - illyasviel1252004@gmail.com)
 const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
@@ -37,7 +38,7 @@ export default function App() {
 
   const handleNavigate = (page) => {
     // Các tính năng cần bảo vệ (yêu cầu đăng nhập)
-    const protectedPages = ['admin', 'coming_soon', 'messenger'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'employer_profile'];
     
     if (protectedPages.includes(page) && !user) {
       // Nếu chưa đăng nhập mà truy cập tính năng cần bảo vệ -> Mở form đăng nhập
@@ -47,6 +48,11 @@ export default function App() {
 
     if (page === 'admin' && user?.role !== 'ADMIN') {
       // Nếu đăng nhập rồi nhưng không phải ADMIN -> Hiển thị coming soon (hoặc báo lỗi access denied)
+      setCurrentPage('coming_soon');
+      return;
+    }
+
+    if (page === 'employer_profile' && user?.role !== 'EMPLOYER') {
       setCurrentPage('coming_soon');
       return;
     }
@@ -77,6 +83,16 @@ export default function App() {
   // Render Messenger page
   if (currentPage === 'messenger') {
     return <Messenger user={user} onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'employer_profile') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onUserUpdate={setUser}
+      />
+    );
   }
 
   return (
