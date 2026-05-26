@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Building2 } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -291,11 +291,12 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                   <button 
                     onClick={() => {
                       setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('coming_soon');
+                      if (onNavigate) onNavigate(user?.role === 'EMPLOYER' ? 'employer_profile' : 'coming_soon');
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                   >
-                    <User className="w-4 h-4" /> Sửa thông tin cá nhân
+                    {user?.role === 'EMPLOYER' ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    {user?.role === 'EMPLOYER' ? 'Thông tin công ty & thanh toán' : 'Sửa thông tin cá nhân'}
                   </button>
 
                   <button 
@@ -420,6 +421,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               className="w-full text-center bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
             >
               <Shield className="w-4 h-4" /> Admin Control Panel
+            </button>
+          )}
+
+          {user && user.role === 'EMPLOYER' && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                if (onNavigate) onNavigate('employer_profile');
+              }}
+              className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <Building2 className="w-4 h-4" /> Thông tin công ty & thanh toán
             </button>
           )}
 
