@@ -26,6 +26,9 @@ public class AuthController {
     private final Map<String, String> verificationCodes = new ConcurrentHashMap<>();
     private final Map<String, Long> codeTimestamps = new ConcurrentHashMap<>();
 
+    // Lưu trữ tạm thời danh sách các user sử dụng mã PIN tạm thời của hệ thống cấp
+    private final Map<String, Boolean> tempPinUsers = new ConcurrentHashMap<>();
+
     // ==========================================
     // ĐĂNG NHẬP (Hỗ trợ Google OAuth & Email)
     // ==========================================
@@ -223,6 +226,10 @@ public class AuthController {
         }
         
         boolean success = authService.setMessengerPin(userId, role, pin);
+        if (success) {
+            // Xóa user khỏi danh sách PIN tạm thời khi họ đặt PIN mới thành công
+            tempPinUsers.remove(role.toUpperCase() + ":" + userId);
+        }
         response.put("success", success);
         response.put("message", success ? "Cài đặt mã PIN thành công." : "Có lỗi xảy ra.");
         return ResponseEntity.ok(response);
@@ -248,6 +255,13 @@ public class AuthController {
         if (!isValid) {
             return ResponseEntity.badRequest().body(response);
         }
+        
+        // Kiểm tra xem mã PIN này có phải là mã tạm thời được cấp bởi hệ thống hay không
+        String key = role.toUpperCase() + ":" + userId;
+        if (tempPinUsers.getOrDefault(key, false)) {
+            response.put("isTemporary", true);
+        }
+        
         return ResponseEntity.ok(response);
     }
 
@@ -265,6 +279,8 @@ public class AuthController {
         
         String resetEmail = authService.resetAndEmailMessengerPin(userId, role, mailSender);
         if (resetEmail != null) {
+            // Đánh dấu user này đang sử dụng mã PIN tạm thời của hệ thống
+            tempPinUsers.put(role.toUpperCase() + ":" + userId, true);
             response.put("success", true);
             response.put("message", "Mã PIN mới đã được gửi về email: " + resetEmail);
         } else {

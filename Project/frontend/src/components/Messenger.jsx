@@ -36,10 +36,14 @@ export default function Messenger({ user, onNavigateHome }) {
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
-  // Keep ref updated to access latest active ticket in subscription callbacks
+  // Keep ref updated to access latest active ticket in subscription callbacks and ensure subscription is active
   useEffect(() => {
-    activeTicketIdRef.current = activeTicket?.ticket_id || activeTicket?.ticketId;
-  }, [activeTicket]);
+    const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
+    activeTicketIdRef.current = ticketId;
+    if (isConnected && ticketId) {
+      subscribeToTicket(ticketId);
+    }
+  }, [activeTicket, isConnected]);
 
   // Connect to WebSocket and initialize subscriptions
   useEffect(() => {

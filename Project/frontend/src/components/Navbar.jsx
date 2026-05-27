@@ -14,6 +14,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pinAttempts, setPinAttempts] = useState(0);
   const [resetPinSuccess, setResetPinSuccess] = useState('');
+  const [isResettingTempPin, setIsResettingTempPin] = useState(false);
 
   const handleMessengerClick = () => {
     setShowProfileMenu(false);
@@ -25,6 +26,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     setIsConfirmingPin(false);
     setPinAttempts(0);
     setResetPinSuccess('');
+    setIsResettingTempPin(false);
   };
 
   const handleForgotPin = async () => {
@@ -55,7 +57,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   const handlePinSubmit = async () => {
     if (isSubmitting) return;
 
-    if (user?.hasMessengerPin) {
+    if (user?.hasMessengerPin && !isResettingTempPin) {
       const pin = pinValues.join('');
       if (pin.length !== 4) {
         setPinError('Vui lòng nhập đủ 4 chữ số.');
@@ -72,8 +74,17 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         });
         const data = await response.json();
         if (data.success) {
-          setShowPinModal(false);
-          if (onNavigate) onNavigate('messenger');
+          if (data.isTemporary) {
+            // Nhập đúng PIN tạm thời, kích hoạt luồng đổi mã PIN cá nhân
+            setIsResettingTempPin(true);
+            setPinValues(['', '', '', '']);
+            setConfirmPinValues(['', '', '', '']);
+            setIsConfirmingPin(false);
+            setPinError('');
+          } else {
+            setShowPinModal(false);
+            if (onNavigate) onNavigate('messenger');
+          }
         } else {
           setPinError(data.message || 'Mã PIN không đúng.');
           setPinAttempts(prev => prev + 1);
@@ -123,6 +134,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           if (user) user.hasMessengerPin = true;
           setShowPinModal(false);
           setIsConfirmingPin(false);
+          setIsResettingTempPin(false);
           if (onNavigate) {
             onNavigate('messenger');
           }
@@ -475,11 +487,15 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in">
             {!isConfirmingPin ? (
               <>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Bảo mật Messenger</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  {isResettingTempPin ? 'Đặt lại mã PIN' : 'Bảo mật Messenger'}
+                </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  {user?.hasMessengerPin 
-                    ? 'Vui lòng nhập mã PIN để truy cập tin nhắn.' 
-                    : 'Vui lòng đặt mật khẩu cho đoạn chat của bạn (gồm 4 chữ số).'}
+                  {isResettingTempPin 
+                    ? 'Vui lòng thiết lập mã PIN mới gồm 4 chữ số theo ý bạn để sử dụng lâu dài.' 
+                    : (user?.hasMessengerPin 
+                        ? 'Vui lòng nhập mã PIN để truy cập tin nhắn.' 
+                        : 'Vui lòng đặt mật khẩu cho đoạn chat của bạn (gồm 4 chữ số).')}
                 </p>
                 
                 <div className="flex justify-center gap-3 mb-4">
@@ -500,7 +516,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 
                 {pinError && <p className="text-rose-500 text-sm mb-2 text-center">{pinError}</p>}
                 
-                {pinAttempts >= 1 && (
+                {isResettingTempPin && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">✓ Xác thực mã PIN hệ thống thành công!</p>}
+                
+                {!isResettingTempPin && pinAttempts >= 1 && (
                   <p className="text-xs text-slate-500 mb-3 text-center">
                     Bạn quên mã PIN?{' '}
                     <button
@@ -512,7 +530,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     </button>
                   </p>
                 )}
-                {resetPinSuccess && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">{resetPinSuccess}</p>}
+                {!isResettingTempPin && resetPinSuccess && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">{resetPinSuccess}</p>}
                 
                 <div className="flex gap-3 mt-4">
                   <button 
@@ -526,15 +544,17 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     disabled={isSubmitting}
                     className="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-70"
                   >
-                    {isSubmitting ? 'Đang xử lý...' : (user?.hasMessengerPin ? 'Xác nhận' : 'Tiếp tục')}
+                    {isSubmitting ? 'Đang xử lý...' : ((user?.hasMessengerPin && !isResettingTempPin) ? 'Xác nhận' : 'Tiếp tục')}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Xác nhận mật khẩu</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  {isResettingTempPin ? 'Xác nhận mã PIN mới' : 'Xác nhận mật khẩu'}
+                </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  Vui lòng nhập lại mã PIN gồm 4 chữ số để xác nhận.
+                  Vui lòng nhập lại mã PIN mới gồm 4 chữ số để xác nhận.
                 </p>
                 
                 <div className="flex justify-center gap-3 mb-4">
