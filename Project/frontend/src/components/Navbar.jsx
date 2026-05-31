@@ -75,7 +75,6 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         const data = await response.json();
         if (data.success) {
           if (data.isTemporary) {
-            // Nhập đúng PIN tạm thời, kích hoạt luồng đổi mã PIN cá nhân
             setIsResettingTempPin(true);
             setPinValues(['', '', '', '']);
             setConfirmPinValues(['', '', '', '']);

@@ -208,7 +208,6 @@ public class AdminService {
         return users;
     }
 
-    // 7. Update User Status (Kiểm tra và đổi trạng thái dựa trên Role)
     @Transactional
     public Map<String, Object> updateUserStatus(int id, String role, String status, String reason, int adminId) {
         Map<String, Object> response = new HashMap<>();

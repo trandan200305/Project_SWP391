@@ -10,7 +10,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 export default function Messenger({ user, onNavigateHome }) {
-  const [activeTab, setActiveTab] = useState('active'); // Mặc định hiển thị tab 'active' cho Admin
+  const [activeTab, setActiveTab] = useState('active'); 
   const [tickets, setTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -24,19 +24,16 @@ export default function Messenger({ user, onNavigateHome }) {
   const ticketSubscriptionRef = useRef(null);
   const activeTicketIdRef = useRef(null);
 
-  // State và Ref dùng cho việc đính kèm file
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
 
-  // State dùng cho chức năng lọc tìm kiếm người dùng (Freelancer/Employer)
   const [navSection, setNavSection] = useState('chat'); // 'chat' | 'freelancer' | 'employer'
   const [systemUsers, setSystemUsers] = useState([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
-  // Liên tục cập nhật ref để luôn có ID phòng chat mới nhất trong các callback của subscription
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -45,7 +42,6 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   }, [activeTicket, isConnected]);
 
-  // Kết nối đến WebSocket và khởi tạo các cổng lắng nghe (subscription)
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/api/ws');
     const client = new Client({
@@ -63,17 +59,14 @@ export default function Messenger({ user, onNavigateHome }) {
       setIsConnected(true);
 
       if (user?.role === 'ADMIN') {
-        // Admin lắng nghe kênh chung '/topic/admin' để cập nhật thông báo và trạng thái ticket mới
         client.subscribe('/topic/admin', (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log('Received on /topic/admin', receivedMessage);
 
-          // Cập nhật danh sách ticket một cách linh hoạt (real-time)
           setTickets(prevTickets => {
             const ticketIndex = prevTickets.findIndex(t => t.ticket_id === receivedMessage.ticketId);
             
             if (ticketIndex !== -1) {
-              // Cập nhật ticket hiện tại với tin nhắn mới nhất vừa nhận được
               const updatedTickets = [...prevTickets];
               const isAdminRealReply =
                 receivedMessage.senderRole === 'ADMIN' &&
@@ -84,19 +77,15 @@ export default function Messenger({ user, onNavigateHome }) {
                 last_message: receivedMessage.messageText,
                 last_message_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                // Nếu admin vừa trả lời thực sự lần đầu, đánh dấu là đã phản hồi
                 has_admin_replied: updatedTickets[ticketIndex].has_admin_replied || isAdminRealReply
               };
-              // Sắp xếp lại danh sách: ticket nào vừa có hoạt động sẽ nổi lên trên cùng
               return updatedTickets.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
             } else {
-              // Tải lại danh sách ticket để lấy đầy đủ thông tin của ticket mới nếu nó chưa có trong list
               fetchTickets();
               return prevTickets;
             }
           });
 
-          // Nối thêm tin nhắn vào khung chat nếu nó thuộc về phòng chat đang mở
           if (activeTicketIdRef.current === receivedMessage.ticketId) {
             setMessages(prev => {
               if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
@@ -105,7 +94,6 @@ export default function Messenger({ user, onNavigateHome }) {
           }
         });
       } else {
-        // Người dùng bình thường lắng nghe kênh cá nhân của họ để nhận phản hồi từ Admin
         client.subscribe(`/topic/user.${user?.id}`, (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log('Received on user private channel', receivedMessage);
@@ -128,7 +116,6 @@ export default function Messenger({ user, onNavigateHome }) {
     client.activate();
     stompClientRef.current = client;
 
-    // Tải dữ liệu ticket ban đầu dựa theo vai trò của người dùng
     if (user?.role === 'ADMIN') {
       fetchTickets();
     } else {
@@ -142,12 +129,10 @@ export default function Messenger({ user, onNavigateHome }) {
     };
   }, [user]);
 
-  // Tự động cuộn xuống dưới cùng khi có tin nhắn mới
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Lấy danh sách tất cả các ticket đang mở cho admin
   const fetchTickets = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/chat/tickets');
@@ -160,7 +145,6 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Lấy phòng chat hiện tại (hoặc tạo mới) cho người dùng thông thường (Freelancer/Employer)
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
@@ -178,7 +162,6 @@ export default function Messenger({ user, onNavigateHome }) {
         };
         setActiveTicket(activeT);
         
-        // Lấy lịch sử tin nhắn và đăng ký lắng nghe kênh của ticket này
         await fetchMessages(ticketId);
         subscribeToTicket(ticketId);
       }
@@ -189,7 +172,6 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Lấy lịch sử tin nhắn của một ticket cụ thể
   const fetchMessages = async (ticketId) => {
     try {
       const response = await fetch(`http://localhost:8080/api/chat/messages/${ticketId}`);
@@ -202,27 +184,22 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Đăng ký nhận tin nhắn (subscribe) cho một phòng chat cụ thể
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
 
-    // Hủy đăng ký kênh ticket cũ trước đó (nếu có) để tránh nhận tin nhắn trùng lặp
     if (ticketSubscriptionRef.current) {
       ticketSubscriptionRef.current.unsubscribe();
     }
 
-    // Đăng ký kênh ticket hiện tại
     ticketSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/ticket.${ticketId}`, (message) => {
       const receivedMessage = JSON.parse(message.body);
       setMessages(prev => {
-        // Ngăn chặn việc hiển thị tin nhắn trùng lặp
         if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
         return [...prev, receivedMessage];
       });
     });
   };
 
-  // Admin bấm chọn một ticket của khách hàng để bắt đầu chat
   const handleSelectTicket = async (ticket) => {
     setIsLoading(true);
     setActiveTicket(ticket);
@@ -280,7 +257,6 @@ export default function Messenger({ user, onNavigateHome }) {
     setAttachedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // Xử lý sự kiện gửi tin nhắn chat
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() && attachedFiles.length === 0) return;
@@ -382,26 +358,21 @@ export default function Messenger({ user, onNavigateHome }) {
     return (u.name || '').toLowerCase().includes(query) || (u.email || '').toLowerCase().includes(query);
   });
 
-  // Chia danh sách ticket thành 2 nhóm dựa trên việc admin đã phản hồi hay chưa
   const matchesSearch = (ticket) =>
     (ticket.sender_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ticket.sender_email || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-  // Chờ phản hồi: admin chưa reply thực tế VÀ user đã gửi ít nhất 1 tin nhắn
   const pendingTickets = tickets.filter(t => !t.has_admin_replied && t.user_message_count > 0 && matchesSearch(t));
-  // Đang xử lý: admin đã reply ít nhất 1 lần
   const activeTickets = tickets.filter(t => t.has_admin_replied && matchesSearch(t));
 
-  // Lọc danh sách theo tab hiện tại (Đang xử lý / Chờ phản hồi / Tất cả)
   const filteredTickets = activeTab === 'pending'
     ? pendingTickets
     : activeTab === 'active'
     ? activeTickets
-    : [...activeTickets, ...pendingTickets]; // tab 'tất cả' ưu tiên hiển thị ticket đang xử lý trước
+    : [...activeTickets, ...pendingTickets]; 
 
   return (
     <div className="flex h-screen bg-slate-50/50 text-slate-800 font-sans overflow-hidden">
-      {/* THANH ĐIỀU HƯỚNG BÊN TRÁI */}
       <div className="w-[260px] border-r border-slate-200 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
           {/* Logo */}
@@ -418,7 +389,6 @@ export default function Messenger({ user, onNavigateHome }) {
             </div>
           </div>
 
-          {/* Các liên kết điều hướng */}
           <nav className="px-3 mt-6 flex flex-col gap-1.5">
             <button 
               onClick={() => setNavSection('chat')}
@@ -478,7 +448,6 @@ export default function Messenger({ user, onNavigateHome }) {
           </nav>
         </div>
 
-        {/* Liên kết quay về trang chủ */}
         <div className="p-4 border-t border-slate-800/50">
           <button 
             onClick={onNavigateHome}
@@ -490,10 +459,8 @@ export default function Messenger({ user, onNavigateHome }) {
         </div>
       </div>
 
-      {/* KHU VỰC CHÍNH */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* THANH TIÊU ĐỀ TRÊN CÙNG */}
         <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4">
             <button 
@@ -509,7 +476,6 @@ export default function Messenger({ user, onNavigateHome }) {
               </h2>
             </div>
             
-            {/* Huy hiệu trạng thái kết nối */}
             <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
               isConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
             }`}>
@@ -543,10 +509,8 @@ export default function Messenger({ user, onNavigateHome }) {
           </div>
         </header>
 
-        {/* KHU VỰC LÀM VIỆC: DANH SÁCH + KHUNG CHAT */}
         <div className="flex-1 flex overflow-hidden">
           
-          {/* CỘT DANH SÁCH HỘI THOẠI */}
           <div className={`w-full md:w-[360px] border-r border-slate-200 flex flex-col bg-white shrink-0 ${
             activeTicket && 'hidden md:flex'
           }`}>
@@ -628,11 +592,9 @@ export default function Messenger({ user, onNavigateHome }) {
               )}
             </div>
 
-            {/* Nội dung danh sách */}
             <div className="flex-1 overflow-y-auto">
               {user?.role === 'ADMIN' && navSection === 'chat' && (
                 <>
-                  {/* TICKET ĐANG XỬ LÝ (admin đã reply) - Hiển thị trên giao diện chính */}
                   {activeTab === 'active' && (
                     <>
                       {activeTickets.length > 0 ? (
@@ -705,7 +667,6 @@ export default function Messenger({ user, onNavigateHome }) {
                     </>
                   )}
 
-                  {/* TICKET CHỜ PHẢN HỒI (admin chưa reply) - Danh sách chờ */}
                   {(activeTab === 'pending' || activeTab === 'all') && pendingTickets.length > 0 && (
                     <>
                       <div className="px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
@@ -773,7 +734,6 @@ export default function Messenger({ user, onNavigateHome }) {
                     </>
                   )}
 
-                  {/* Trạng thái trống cho tab Chờ phản hồi */}
                   {activeTab === 'pending' && pendingTickets.length === 0 && (
                     <div className="p-8 text-center text-slate-400">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -781,7 +741,6 @@ export default function Messenger({ user, onNavigateHome }) {
                     </div>
                   )}
 
-                  {/* Trạng thái trống cho tab Tất cả */}
                   {activeTab === 'all' && tickets.length === 0 && (
                     <div className="p-8 text-center text-slate-400">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -866,7 +825,6 @@ export default function Messenger({ user, onNavigateHome }) {
               )}
 
               {user?.role !== 'ADMIN' && (
-                /* Giao diện người dùng thường: Luôn hiển thị 1 mục Hỗ trợ */
                 <div 
                   onClick={() => {}}
                   className="flex gap-3.5 p-4.5 bg-blue-50/30 border-l-4 border-blue-600 cursor-default"
@@ -903,13 +861,11 @@ export default function Messenger({ user, onNavigateHome }) {
             </div>
           </div>
 
-          {/* KHUNG HIỂN THỊ CHAT */}
           <div className={`flex-1 bg-slate-50/50 flex flex-col h-full overflow-hidden ${
             !activeTicket && 'hidden md:flex'
           }`}>
             {activeTicket ? (
               <>
-                {/* TIÊU ĐỀ KHUNG CHAT */}
                 <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <button 
@@ -986,7 +942,6 @@ export default function Messenger({ user, onNavigateHome }) {
                   </div>
                 </div>
 
-                {/* KHU VỰC HIỂN THỊ TIN NHẮN */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
@@ -1022,7 +977,6 @@ export default function Messenger({ user, onNavigateHome }) {
                                 </span>
                               </p>
                             )}
-                            {/* Khung nội dung tin nhắn dạng văn bản */}
                             {msg.messageText && msg.messageText.trim() !== '' && !(msg.attachments && msg.attachments.length > 0 && (msg.messageText === '[Hình ảnh]' || msg.messageText === '[Tệp đính kèm]')) && (
                               <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium ${
                                 isMe 
@@ -1033,7 +987,6 @@ export default function Messenger({ user, onNavigateHome }) {
                               </div>
                             )}
 
-                            {/* Render các tệp đính kèm của tin nhắn */}
                             {msg.attachments && msg.attachments.length > 0 && (
                               <div className={`mt-2 flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'}`}>
                                 {msg.attachments.map((att, attIdx) => {
@@ -1121,7 +1074,6 @@ export default function Messenger({ user, onNavigateHome }) {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* THANH XEM TRƯỚC TỆP ĐÍNH KÈM */}
                 {(attachedFiles.length > 0 || uploading) && (
                   <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2.5 items-center shrink-0">
                     {attachedFiles.map((file, idx) => {
@@ -1159,12 +1111,10 @@ export default function Messenger({ user, onNavigateHome }) {
                   </div>
                 )}
 
-                {/* KHUNG NHẬP LIỆU BÊN DƯỚI */}
                 <form 
                   onSubmit={handleSendMessage}
                   className="p-4 bg-white border-t border-slate-200/80 flex items-center gap-3 shrink-0"
                 >
-                  {/* Các input file ẩn dùng cho đính kèm */}
                   <input 
                     type="file" 
                     ref={fileInputRef}
@@ -1175,57 +1125,7 @@ export default function Messenger({ user, onNavigateHome }) {
                   <input 
                     type="file" 
                     ref={imageInputRef}
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, true)}
-                    className="hidden"
-                    multiple
-                  />
-
-                  <button 
-                    type="button"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={uploading}
-                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
-                    title="Đính kèm hình ảnh"
-                  >
-                    <Image className="w-5 h-5 shrink-0" />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
-                    title="Đính kèm tệp tin"
-                  >
-                    <Paperclip className="w-5 h-5 shrink-0" />
-                  </button>
-
-                  <input 
-                    type="text" 
-                    placeholder={user?.role === 'ADMIN' ? 'Trả lời yêu cầu kỹ thuật của khách hàng...' : 'Nhập tin nhắn gửi kỹ thuật hỗ trợ...'}
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
-                  />
-                  
-                  {(() => {
-                    const canSend = (inputText.trim() !== '' || attachedFiles.length > 0) && !uploading;
-                    return (
-                      <button 
-                        type="submit"
-                        disabled={!canSend}
-                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                          !canSend ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
-                        }`}
-                      >
-                        <Send className="w-5 h-5 shrink-0" />
-                      </button>
-                    );
-                  })()}
-                </form>
-              </>
-            ) : (
-              /* TRẠNG THÁI TRỐNG (DÀNH CHO ADMIN KHI CHƯA CHỌN TICKET NÀO) */
+                    accept="image
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
                 <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
                   <Shield className="w-8 h-8" />
@@ -1237,7 +1137,6 @@ export default function Messenger({ user, onNavigateHome }) {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

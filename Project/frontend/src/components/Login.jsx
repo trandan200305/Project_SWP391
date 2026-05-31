@@ -24,43 +24,34 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Đếm ngược bộ đếm thời gian cho mã OTP
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // --- HÀM LÕI XỬ LÝ ĐĂNG NHẬP ---
-  // Hàm này được thiết kế để dùng chung cho cả Login bằng Form tay và Login bằng Google.
-  // Nhận vào một "payload" (chứa email, password, googleId...) và gửi xuống Backend.
   const processBackendLogin = async (payload) => {
-    setLoading(true); // Bật hiệu ứng loading để chặn người dùng spam nút bấm
+    setLoading(true); 
     setErrorMsg('');
     setAccountLocked(null);
     try {
-      // 1. Gọi API /login của Backend
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) // Gói dữ liệu thành chuỗi JSON
+        body: JSON.stringify(payload) 
       });
       const data = await response.json();
       
-      // 2. Xử lý logic theo kết quả trả về
       if (data.success) {
-        // TRƯỜNG HỢP 1: THÀNH CÔNG -> Lưu state, đợi 1.2s rồi gọi hàm onLoginSuccess (chuyển trang)
         setLoading(false);
         setSuccess(true);
         setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user); // Truyền nguyên object user (có id, role...) qua trang chủ
+          if (onLoginSuccess) onLoginSuccess(data.user); 
         }, 1200);
       } else if (data.accountStatus === 'LOCKED' || data.accountStatus === 'BANNED') {
-        // TRƯỜNG HỢP 2: TÀI KHOẢN BỊ KHÓA -> Bật cờ accountLocked để màn hình hiện Modal cảnh báo màu đỏ
         setLoading(false);
         setAccountLocked({ status: data.accountStatus, message: data.message });
       } else {
-        // TRƯỜNG HỢP 3: LỖI THƯỜNG (Sai mật khẩu, ko tồn tại...) -> Hiện chữ báo lỗi
         setLoading(false);
         setErrorMsg(data.message || 'Đăng nhập thất bại.');
       }
@@ -70,37 +61,31 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Hàm chạy khi người dùng nhập Email + Pass rồi bấm nút "Đăng nhập"
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) return; // Trống thông tin thì chặn lại luôn
+    if (!email || !password) return; 
     
-    // Đóng gói thông tin form rồi nhờ hàm processBackendLogin ở trên xử lý
     processBackendLogin({
       email,
-      password, // Gọi bằng Form tay nên bắt buộc có password
-      name: email.split('@')[0], // Tạm lấy đoạn đầu email làm tên (phòng khi Backend cần fallback)
+      password, 
+      name: email.split('@')[0], 
       requestedRole: role.toUpperCase(),
       avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
     });
   };
 
-  // Hàm chạy khi người dùng đăng nhập thành công bằng cửa sổ Popup của Google
   const handleGoogleSuccess = (credentialResponse) => {
-    // Dịch ngược token của Google để lấy thông tin user
     const decoded = jwtDecode(credentialResponse.credential);
     
-    // Đóng gói thông tin Google (KHÔNG CÓ password, nhưng BẮT BUỘC CÓ googleId) và nhờ processBackendLogin xử lý
     processBackendLogin({
       email: decoded.email,
       name: decoded.name,
-      googleId: decoded.sub, // Khóa chính của Google
+      googleId: decoded.sub, 
       avatar: decoded.picture,
       requestedRole: role.toUpperCase()
     });
   };
 
-  // --- BƯỚC 1 CỦA QUÊN MẬT KHẨU: Gửi yêu cầu xin cấp OTP ---
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -108,7 +93,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      // Gọi API yêu cầu Backend sinh mã OTP và bắn qua Email
       const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,11 +101,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       const data = await response.json();
       
       if (data.success) {
-        // NẾU THÀNH CÔNG: Chuyển giao diện sang bước Nhập OTP, bắt đầu đếm ngược đồng hồ 60 giây.
         setCodeSent(true);
         setSuccessMsg('Mã xác nhận đã được gửi về email của bạn!');
         setTimer(60); 
-        setOtp(['', '', '', '', '', '']); // Clear sạch 6 ô input OTP
+        setOtp(['', '', '', '', '', '']); 
       } else {
         setErrorMsg(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
       }
@@ -132,10 +115,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // --- BƯỚC 2 CỦA QUÊN MẬT KHẨU: Gửi mã người dùng nhập lên để Backend kiểm tra ---
   const handleVerifyCode = async (e) => {
     e.preventDefault();
-    const code = otp.join(''); // Ghép 6 ô input lẻ tẻ lại thành chuỗi 6 số (VD: "123456")
+    const code = otp.join(''); 
     if (code.length < 6) return;
     
     setLoading(true);
@@ -143,7 +125,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     setSuccessMsg('');
     
     try {
-      // Gọi API /verify-code để kiểm chứng mã OTP với Backend
       const response = await fetch('http://localhost:8080/api/auth/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,12 +133,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       const data = await response.json();
       
       if (data.success) {
-        // NẾU MÃ ĐÚNG:
         setSuccessMsg('✅ Xác nhận thành công! Vui lòng nhập mật khẩu mới.');
         setIsResettingPassword(true);
-        setCodeSent(false); // Ẩn phần OTP
+        setCodeSent(false); 
       } else {
-        // NẾU MÃ SAI HOẶC HẾT HẠN:
         setErrorMsg(data.message || 'Mã không chính xác!');
       }
     } catch (err) {
@@ -167,7 +146,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // --- BƯỚC 3 CỦA QUÊN MẬT KHẨU: Đặt lại mật khẩu mới ---
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -388,7 +366,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       />
                     </div>
 
-                    {/* OTP input boxes (hiện ra khi đã gửi mã) */}
                     {codeSent && (
                       <div>
                         <label className="block text-[11px] font-bold text-primary mb-2">
@@ -424,7 +401,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                           ))}
                         </div>
 
-                        {/* Đếm ngược và gửi lại mã */}
                         <div className="mt-2 text-center text-[11px] font-semibold">
                           {timer > 0 ? (
                             <span className="text-muted">Gửi lại mã sau {timer}s</span>
@@ -484,7 +460,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </form>
                 )}
 
-                {/* Quay lại đăng nhập */}
                 <div className="mt-4 text-center text-[12px] text-muted font-medium">
                   <a
                     href="#login"
@@ -617,7 +592,6 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[11px] font-bold text-primary">Password</label>
-                      {/* Nút Forgot Password */}
                       <a
                         href="#forgot"
                         onClick={(e) => {
@@ -630,7 +604,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                           setOtp(['', '', '', '', '', '']);
                           setNewPassword('');
                           setConfirmPassword('');
-                          setForgotEmail(email); // Pre-fill email nếu đã nhập
+                          setForgotEmail(email); 
                         }}
                         className="text-secondary font-bold text-[11px] hover:underline"
                       >

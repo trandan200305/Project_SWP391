@@ -48,13 +48,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.updateFeeConfig(fee, adminId));
     }
 
-    // 6. GET /api/admin/users - User Management (sử dụng JPA kết nối sạch từ DB)
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getUsers() {
         return ResponseEntity.ok(adminService.getUsers());
     }
 
-    // 7. PUT /api/admin/users/{id}/status - Change user status (Có bảo vệ Admin tối cao)
     @PutMapping("/users/{id}/status")
     public ResponseEntity<Map<String, Object>> updateUserStatus(
             @PathVariable("id") int id,
@@ -69,13 +67,11 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    // 8. GET /api/admin/projects/pending - Moderation (sử dụng JPA)
     @GetMapping("/projects/pending")
     public ResponseEntity<List<Map<String, Object>>> getPendingProjects() {
         return ResponseEntity.ok(adminService.getPendingProjects());
     }
 
-    // 9. PUT /api/admin/projects/{id}/moderate - Approve/Reject project (sử dụng JPA)
     @PutMapping("/projects/{id}/moderate")
     public ResponseEntity<Map<String, Object>> moderateProject(
             @PathVariable("id") int id,
@@ -106,7 +102,6 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAuditLogs());
     }
 
-    // 13. GET /api/admin/job-categories - Manage Categories (sử dụng JPA)
     @GetMapping("/job-categories")
     public ResponseEntity<List<Map<String, Object>>> getJobCategories() {
         return ResponseEntity.ok(adminService.getJobCategories());

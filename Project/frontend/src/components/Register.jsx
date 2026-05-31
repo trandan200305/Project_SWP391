@@ -15,26 +15,23 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [errorField, setErrorField] = useState(""); // trường bị lỗi cụ thể
+  const [errorField, setErrorField] = useState(""); 
 
-  // Hàm này tự động chạy khi người dùng đăng nhập thành công qua popup của Google
   const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true); // Bật trạng thái loading để vô hiệu hóa các nút bấm
-    setError("");     // Xóa lỗi cũ
+    setLoading(true); 
+    setError("");     
     try {
-      // Giải mã token (JWT) Google trả về để lấy email, tên, ảnh
       const decoded = jwtDecode(credentialResponse.credential);
       
-      // Gửi xuống Backend qua API /login (Backend tự động "tạo tài khoản ẩn" nếu chưa có)
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: decoded.email,          // Email từ Google
-          name: decoded.name,            // Tên từ Google
-          googleId: decoded.sub,         // ID định danh của Google
-          avatar: decoded.picture,       // Ảnh đại diện
-          requestedRole: role.toUpperCase(), // Vai trò (FREELANCER / EMPLOYER)
+          email: decoded.email,          
+          name: decoded.name,            
+          googleId: decoded.sub,         
+          avatar: decoded.picture,       
+          requestedRole: role.toUpperCase(), 
         }),
       });
       
@@ -43,7 +40,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       if (data.success) {
         setSuccess(true);
         setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user); // Chuyển vào trang chủ
+          if (onLoginSuccess) onLoginSuccess(data.user); 
         }, 1200);
       } else {
         setError(data.message || "Đăng ký bằng Google thất bại.");
@@ -51,15 +48,13 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     } catch (err) {
       setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
-      setLoading(false); // Tắt loading
+      setLoading(false); 
     }
   };
 
-  // Hàm này chạy khi người dùng ấn nút Submit ("Create free profile")
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Chặn hành vi load lại trang của trình duyệt
+    e.preventDefault(); 
     
-    // Nếu có ô bị trống, không làm gì cả
     if (
       !fullName ||
       !displayName ||
@@ -70,12 +65,11 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     )
       return;
 
-    setLoading(true); // Bật hiệu ứng chờ
+    setLoading(true); 
     setError("");
-    setErrorField(""); // Xóa cảnh báo viền đỏ ở ô input (nếu có)
+    setErrorField(""); 
 
     try {
-      // Gọi API Đăng ký của Backend
       const response = await fetch("http://localhost:8080/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,25 +80,25 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           fullName,
           displayName,
           phone: phoneNumber,
-          requestedRole: role.toUpperCase(), // Chuyển đổi vai trò sang chữ IN HOA
+          requestedRole: role.toUpperCase(), 
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(true); // Đăng ký thành công, đổi nút sang màu xanh lá
+        setSuccess(true); 
         setTimeout(() => {
-          if (onSwitchToLogin) onSwitchToLogin(); // Chuyển sang màn hình Login sau 1.5s
+          if (onSwitchToLogin) onSwitchToLogin(); 
         }, 1500);
       } else {
         setError(data.message || "Đăng ký thất bại!");
-        setErrorField(data.field || ""); // Nhận 'field' lỗi từ Backend để bôi đỏ viền ô input đó (VD: 'email')
+        setErrorField(data.field || ""); 
       }
     } catch (err) {
       setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
-      setLoading(false); // Tắt vòng xoay chờ
+      setLoading(false); 
     }
   };
 

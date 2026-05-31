@@ -19,10 +19,8 @@ public class ChatController {
     @Autowired
     private SupportChatService chatService;
 
-    // Xử lý các tin nhắn được gửi đến đường dẫn "/app/chat.send"
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
-        // Kiểm tra xem admin đã trả lời ticket này chưa
         boolean shouldSendAutoReply = false;
         if (!"ADMIN".equals(chatMessage.getSenderRole())) {
             Integer ticketId = chatMessage.getTicketId();
@@ -33,18 +31,12 @@ public class ChatController {
             }
         }
 
-        // 1. Lưu tin nhắn vào Database (sẽ tự động tạo messageId, thời gian sentAt, ticketId, và thông tin người gửi)
         ChatMessageDto savedMessage = chatService.saveMessage(chatMessage);
 
-        // 2. Phát (Broadcast) tin nhắn đến kênh riêng của ticket này (để cả người dùng và admin đang xem chat đều nhận được)
-        // Chủ đề (Topic): "/topic/ticket.{ticketId}"
         messagingTemplate.convertAndSend("/topic/ticket." + savedMessage.getTicketId(), savedMessage);
 
-        // 3. Phát tin nhắn đến kênh chung của admin (để làm mới danh sách ticket / thông báo badge theo thời gian thực)
-        // Chủ đề (Topic): "/topic/admin"
         messagingTemplate.convertAndSend("/topic/admin", savedMessage);
 
-        // 4. Gửi tin nhắn trả lời tự động (auto-reply) nếu admin chưa từng phản hồi
         if (shouldSendAutoReply) {
             ChatMessageDto autoReply = new ChatMessageDto();
             autoReply.setTicketId(savedMessage.getTicketId());
@@ -55,15 +47,11 @@ public class ChatController {
 
             ChatMessageDto savedAutoReply = chatService.saveAutoReply(autoReply);
 
-            // Phát tin nhắn trả lời tự động vào kênh của ticket đó
             messagingTemplate.convertAndSend("/topic/ticket." + savedAutoReply.getTicketId(), savedAutoReply);
 
-            // Gửi thông báo đến kênh cá nhân của người dùng về việc có tin nhắn trả lời tự động
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
 
-        // 5. Gửi thông báo đến kênh cá nhân của người dùng nếu tin nhắn vừa gửi là từ một admin (không phải tin nhắn tự động)
-        // Chủ đề (Topic): "/topic/user.{userId}"
         if ("ADMIN".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {
