@@ -34,7 +34,12 @@ export default function App() {
     }
   };
   const handleNavigate = (page) => {
-    const protectedPages = ["admin", "coming_soon", "messenger", "employer_profile"];
+    const protectedPages = [
+      "admin",
+      "coming_soon",
+      "messenger",
+      "employer_profile",
+    ];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage("login");
       return;
@@ -51,9 +56,9 @@ export default function App() {
   };
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setCurrentPage("home"); 
+    setCurrentPage("home");
   };
-  
+
   const handleLogout = () => {
     setUser(null);
     setCurrentPage("home");
@@ -74,11 +79,11 @@ export default function App() {
       <Messenger user={user} onNavigateHome={() => handleNavigate("home")} />
     );
   }
-  if (currentPage === 'employer_profile') {
+  if (currentPage === "employer_profile") {
     return (
       <EmployerProfileSettings
         user={user}
-        onNavigateHome={() => handleNavigate('home')}
+        onNavigateHome={() => handleNavigate("home")}
         onUserUpdate={setUser}
       />
     );
@@ -86,7 +91,6 @@ export default function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <div className="min-h-screen bg-background text-primary font-sans selection:bg-secondary-light selection:text-secondary-dark antialiased relative">
-        
         <Navbar
           onNavigate={handleNavigate}
           onNavigateToAdmin={() => handleNavigate("admin")}
@@ -95,18 +99,17 @@ export default function App() {
           onLogout={handleLogout}
         />
         <main>
-          
           <Hero onSearch={handleSearch} />
           <Stats />
           <HowItWorks />
           <FeaturedJobs searchQuery={searchQuery} />
-          
+
           <Testimonials />
           <CTA />
         </main>
-        
+
         <Footer />
-        
+
         {currentPage === "login" && (
           <Login
             onClose={() => handleNavigate("home")}

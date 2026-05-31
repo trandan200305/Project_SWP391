@@ -1125,7 +1125,56 @@ export default function Messenger({ user, onNavigateHome }) {
                   <input 
                     type="file" 
                     ref={imageInputRef}
-                    accept="image
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, true)}
+                    className="hidden"
+                    multiple
+                  />
+
+                  <button 
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploading}
+                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                    title="Đính kèm hình ảnh"
+                  >
+                    <Image className="w-5 h-5 shrink-0" />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                    title="Đính kèm tệp tin"
+                  >
+                    <Paperclip className="w-5 h-5 shrink-0" />
+                  </button>
+
+                  <input 
+                    type="text" 
+                    placeholder={user?.role === 'ADMIN' ? 'Trả lời yêu cầu kỹ thuật của khách hàng...' : 'Nhập tin nhắn gửi kỹ thuật hỗ trợ...'}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                  />
+                  
+                  {(() => {
+                    const canSend = (inputText.trim() !== '' || attachedFiles.length > 0) && !uploading;
+                    return (
+                      <button 
+                        type="submit"
+                        disabled={!canSend}
+                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                          !canSend ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
+                        }`}
+                      >
+                        <Send className="w-5 h-5 shrink-0" />
+                      </button>
+                    );
+                  })()}
+                </form>
+              </>
+            ) : (
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
                 <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
                   <Shield className="w-8 h-8" />
