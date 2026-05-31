@@ -13,6 +13,7 @@ import Login from "./components/Login.jsx";
 import Register from "./components/Register.jsx";
 import ComingSoon from "./components/ComingSoon.jsx";
 import Messenger from "./components/Messenger.jsx";
+import EmployerProfileSettings from "./components/EmployerProfileSettings.jsx";
 
 // Client ID thật từ Google Cloud Console (Dự án LancerPro - @gmail.com)
 const GOOGLE_CLIENT_ID =
@@ -47,7 +48,7 @@ export default function App() {
    */
   const handleNavigate = (page) => {
     // Các tính năng cần bảo vệ (yêu cầu phải đăng nhập mới được dùng)
-    const protectedPages = ["admin", "coming_soon", "messenger"];
+    const protectedPages = ["admin", "coming_soon", "messenger", "employer_profile"];
 
     if (protectedPages.includes(page) && !user) {
       // Nếu chưa đăng nhập mà cố tình truy cập tính năng cần bảo vệ -> Mở form đăng nhập
@@ -57,6 +58,11 @@ export default function App() {
 
     if (page === "admin" && user?.role !== "ADMIN") {
       // Nếu đã đăng nhập nhưng cố tình vào trang Quản trị (admin) mà không có quyền ADMIN -> Hiển thị trang coming soon
+      setCurrentPage("coming_soon");
+      return;
+    }
+
+    if (page === "employer_profile" && user?.role !== "EMPLOYER") {
       setCurrentPage("coming_soon");
       return;
     }
@@ -103,6 +109,16 @@ export default function App() {
   if (currentPage === "messenger") {
     return (
       <Messenger user={user} onNavigateHome={() => handleNavigate("home")} />
+    );
+  }
+
+  if (currentPage === 'employer_profile') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onUserUpdate={setUser}
+      />
     );
   }
 
