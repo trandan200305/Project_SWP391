@@ -42,7 +42,7 @@ public class SupportChatService {
             return ticketIds.get(0);
         }
 
-        // Create new ticket
+        // Tạo mới một phòng chat (ticket)
         String sql = "INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
                      "VALUES (?, ?, ?, ?, 'OPEN', 'MEDIUM', GETDATE(), GETDATE())";
 
@@ -56,7 +56,7 @@ public class SupportChatService {
     }
 
     public List<ChatMessageDto> getChatHistory(Integer ticketId) {
-        // Mark all user messages in this ticket as read when loaded by Admin or User
+        // Đánh dấu tất cả tin nhắn trong phòng này là đã đọc (is_read = 1) khi được tải bởi Admin hoặc Người dùng
         jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL", ticketId);
 
         String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.is_read, tm.sent_at, " +
@@ -93,7 +93,7 @@ public class SupportChatService {
                 msg.setIsRead(false);
             }
 
-            // Determine Sender
+            // Xác định ai là người gửi (Dựa vào ID)
             if (row.get("sender_freelancer_id") != null) {
                 msg.setSenderId((Integer) row.get("sender_freelancer_id"));
                 msg.setSenderRole("FREELANCER");
@@ -111,7 +111,7 @@ public class SupportChatService {
                 msg.setSenderAvatar((String) row.get("admin_avatar"));
             }
 
-            // Fetch attachments from ticket_attachments
+            // Tải danh sách file đính kèm từ bảng ticket_attachments
             List<Map<String, Object>> attachments = jdbcTemplate.queryForList(
                 "SELECT file_url AS fileUrl, file_name AS fileName, file_size AS fileSize FROM ticket_attachments WHERE message_id = ?",
                 msg.getMessageId()
@@ -146,7 +146,7 @@ public class SupportChatService {
         for (Map<String, Object> row : rows) {
             Map<String, Object> ticket = new HashMap<>(row);
             
-            // Format timestamps for JSON compatibility
+            // Chuyển đổi định dạng thời gian để tương thích với JSON (Frontend)
             if (row.get("created_at") != null) {
                 ticket.put("created_at", row.get("created_at").toString());
             }
@@ -157,7 +157,7 @@ public class SupportChatService {
                 ticket.put("last_message_at", row.get("last_message_at").toString());
             }
 
-            // Client helper data
+            // Bổ sung thông tin người gửi hỗ trợ cho Frontend
             if (row.get("freelancer_id") != null) {
                 ticket.put("sender_name", row.get("freelancer_name"));
                 ticket.put("sender_avatar", row.get("freelancer_avatar"));
@@ -176,11 +176,11 @@ public class SupportChatService {
                 ticket.put("sender_last_login", row.get("employer_last_login") != null ? row.get("employer_last_login").toString() : null);
             }
 
-            // Pass has_admin_replied as boolean
+            // Trả về biến kiểm tra xem admin đã trả lời chưa dưới dạng boolean (true/false)
             Object hasReplied = row.get("has_admin_replied");
             ticket.put("has_admin_replied", hasReplied != null && ((Number) hasReplied).intValue() == 1);
 
-            // Pass unread_count and total_messages
+            // Trả về số tin nhắn chưa đọc và tổng số tin nhắn
             Object unreadCount = row.get("unread_count");
             ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
 
@@ -200,7 +200,7 @@ public class SupportChatService {
     public ChatMessageDto saveMessage(ChatMessageDto messageDto) {
         Integer ticketId = messageDto.getTicketId();
         if (ticketId == null || ticketId == 0) {
-            // Find or create ticket for user
+            // Tìm kiếm hoặc tạo mới phòng chat (ticket) cho người dùng
             if ("ADMIN".equals(messageDto.getSenderRole())) {
                 throw new IllegalStateException("Admin cannot send messages without a valid ticket ID");
             }
@@ -231,7 +231,7 @@ public class SupportChatService {
         messageDto.setSentAt(LocalDateTime.now());
         messageDto.setIsRead(isReadValue == 1);
 
-        // Save attachments in ticket_attachments
+        // Lưu các file đính kèm vào bảng ticket_attachments
         if (messageDto.getAttachments() != null) {
             for (Map<String, Object> att : messageDto.getAttachments()) {
                 jdbcTemplate.update(
@@ -241,10 +241,10 @@ public class SupportChatService {
             }
         }
 
-        // Update ticket updated_at
+        // Cập nhật thời gian có hoạt động mới nhất cho ticket
         jdbcTemplate.update("UPDATE support_tickets SET updated_at = GETDATE() WHERE ticket_id = ?", ticketId);
 
-        // Fetch sender's name and avatar if not provided
+        // Lấy tên và ảnh đại diện của người gửi từ DB nếu Frontend không cung cấp
         if (messageDto.getSenderName() == null || messageDto.getSenderAvatar() == null) {
             if ("FREELANCER".equals(role)) {
                 List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM freelancers WHERE freelancer_id = ?", freelancerId);
@@ -270,7 +270,7 @@ public class SupportChatService {
         return messageDto;
     }
     
-    // Helper to fetch single user ticket
+    // Hàm hỗ trợ lấy ID của phòng chat hiện tại đang mở của một người dùng
     public Integer getActiveTicketForUser(Integer userId, String role) {
         String roleUpper = role.toUpperCase();
         String sql = "SELECT ticket_id FROM support_tickets WHERE " + 
@@ -315,7 +315,7 @@ public class SupportChatService {
         if (!adminIds.isEmpty()) {
             adminId = adminIds.get(0);
         } else {
-            adminId = 1; // Fallback
+            adminId = 1; // ID dự phòng nếu không tìm thấy Admin nào
         }
 
         String sql = "INSERT INTO ticket_messages (ticket_id, sender_admin_id, message_text, is_read, sent_at) " +

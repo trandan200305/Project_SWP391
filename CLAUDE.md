@@ -1,7 +1,7 @@
 # CLAUDE.md — Project Memory & Architecture Guide
 # Version: 1.0.0 | Updated: 2026-05-27 | Project: vLance Freelance Marketplace (CNY)
 
-## TL;DR (Đọc nhanh — 60 giây)
+## TL;DR 
 - **Hệ thống:** vLance Freelance Marketplace — Kết nối Client (Nhà tuyển dụng) và Freelancer (Người tìm việc).
 - **Backend:** Spring Boot (Java 17, Maven, REST APIs on port `8080`, WebSocket for notifications/chat).
 - **Frontend:** React (Vite on port `3000`/`5173`, Vanilla CSS & Tailwind CSS).

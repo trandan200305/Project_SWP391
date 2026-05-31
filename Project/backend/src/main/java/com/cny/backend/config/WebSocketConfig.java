@@ -12,17 +12,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple memory-based message broker to carry messages back to clients
-        // on destinations prefixed with "/topic"
+        // Kích hoạt một máy chủ trung gian (broker) đơn giản trên bộ nhớ để chuyển tin nhắn về cho client
+        // trên các đường dẫn (destination) có tiền tố là "/topic"
         config.enableSimpleBroker("/topic");
         
-        // Designate "/app" prefix for messages bound for methods annotated with @MessageMapping
+        // Đặt tiền tố "/app" cho các tin nhắn gửi từ client lên server (nhắm tới các hàm có @MessageMapping)
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/ws" endpoint, enabling SockJS fallback options
+        // Đăng ký đường dẫn "/ws" cho WebSocket, đồng thời bật tính năng dự phòng SockJS (fallback)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();

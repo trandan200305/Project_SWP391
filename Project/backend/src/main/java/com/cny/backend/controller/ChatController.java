@@ -19,10 +19,10 @@ public class ChatController {
     @Autowired
     private SupportChatService chatService;
 
-    // Handles messages sent to "/app/chat.send"
+    // Xử lý các tin nhắn được gửi đến đường dẫn "/app/chat.send"
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
-        // Check if admin has replied to this ticket yet
+        // Kiểm tra xem admin đã trả lời ticket này chưa
         boolean shouldSendAutoReply = false;
         if (!"ADMIN".equals(chatMessage.getSenderRole())) {
             Integer ticketId = chatMessage.getTicketId();
@@ -33,18 +33,18 @@ public class ChatController {
             }
         }
 
-        // 1. Save message to DB (will populate messageId, sentAt, ticketId, and sender profile details)
+        // 1. Lưu tin nhắn vào Database (sẽ tự động tạo messageId, thời gian sentAt, ticketId, và thông tin người gửi)
         ChatMessageDto savedMessage = chatService.saveMessage(chatMessage);
 
-        // 2. Broadcast to the specific ticket channel (for both user and admin currently viewing the chat)
-        // Topic: "/topic/ticket.{ticketId}"
+        // 2. Phát (Broadcast) tin nhắn đến kênh riêng của ticket này (để cả người dùng và admin đang xem chat đều nhận được)
+        // Chủ đề (Topic): "/topic/ticket.{ticketId}"
         messagingTemplate.convertAndSend("/topic/ticket." + savedMessage.getTicketId(), savedMessage);
 
-        // 3. Broadcast to the general admin topic (to refresh the support ticket list/badge in real-time)
-        // Topic: "/topic/admin"
+        // 3. Phát tin nhắn đến kênh chung của admin (để làm mới danh sách ticket / thông báo badge theo thời gian thực)
+        // Chủ đề (Topic): "/topic/admin"
         messagingTemplate.convertAndSend("/topic/admin", savedMessage);
 
-        // 4. Send auto-reply if admin has not replied yet
+        // 4. Gửi tin nhắn trả lời tự động (auto-reply) nếu admin chưa từng phản hồi
         if (shouldSendAutoReply) {
             ChatMessageDto autoReply = new ChatMessageDto();
             autoReply.setTicketId(savedMessage.getTicketId());
@@ -55,15 +55,15 @@ public class ChatController {
 
             ChatMessageDto savedAutoReply = chatService.saveAutoReply(autoReply);
 
-            // Broadcast auto-reply to the specific ticket channel
+            // Phát tin nhắn trả lời tự động vào kênh của ticket đó
             messagingTemplate.convertAndSend("/topic/ticket." + savedAutoReply.getTicketId(), savedAutoReply);
 
-            // Send notification to the user topic for the auto-reply reply
+            // Gửi thông báo đến kênh cá nhân của người dùng về việc có tin nhắn trả lời tự động
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
 
-        // 5. Send notification to the user topic if the message was sent by an admin (non-auto-reply)
-        // Topic: "/topic/user.{userId}"
+        // 5. Gửi thông báo đến kênh cá nhân của người dùng nếu tin nhắn vừa gửi là từ một admin (không phải tin nhắn tự động)
+        // Chủ đề (Topic): "/topic/user.{userId}"
         if ("ADMIN".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {
