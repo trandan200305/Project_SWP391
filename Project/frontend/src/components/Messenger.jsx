@@ -10,7 +10,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 export default function Messenger({ user, onNavigateHome }) {
-  const [activeTab, setActiveTab] = useState('active'); // Admin defaults to 'active' tab
+  const [activeTab, setActiveTab] = useState('active'); 
   const [tickets, setTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -24,24 +24,24 @@ export default function Messenger({ user, onNavigateHome }) {
   const ticketSubscriptionRef = useRef(null);
   const activeTicketIdRef = useRef(null);
 
-  // States & Refs for file attachments
+  
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
 
-  // States & Refs for system users filtering
-  const [navSection, setNavSection] = useState('chat'); // 'chat' | 'freelancer' | 'employer'
+  
+  const [navSection, setNavSection] = useState('chat'); 
   const [systemUsers, setSystemUsers] = useState([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
-  // Keep ref updated to access latest active ticket in subscription callbacks
+  
   useEffect(() => {
     activeTicketIdRef.current = activeTicket?.ticket_id || activeTicket?.ticketId;
   }, [activeTicket]);
 
-  // Connect to WebSocket and initialize subscriptions
+  
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/api/ws');
     const client = new Client({
@@ -59,17 +59,17 @@ export default function Messenger({ user, onNavigateHome }) {
       setIsConnected(true);
 
       if (user?.role === 'ADMIN') {
-        // Admins listen to global topic for ticket and message updates
+        
         client.subscribe('/topic/admin', (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log('Received on /topic/admin', receivedMessage);
 
-          // Update tickets list dynamically in real-time
+          
           setTickets(prevTickets => {
             const ticketIndex = prevTickets.findIndex(t => t.ticket_id === receivedMessage.ticketId);
             
             if (ticketIndex !== -1) {
-              // Update existing ticket with latest message
+              
               const updatedTickets = [...prevTickets];
               const isAdminRealReply =
                 receivedMessage.senderRole === 'ADMIN' &&
@@ -80,19 +80,19 @@ export default function Messenger({ user, onNavigateHome }) {
                 last_message: receivedMessage.messageText,
                 last_message_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                // If admin just replied for the first time, mark as replied
+                
                 has_admin_replied: updatedTickets[ticketIndex].has_admin_replied || isAdminRealReply
               };
-              // Sort tickets: latest updated on top
+              
               return updatedTickets.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
             } else {
-              // Refetch ticket list to include new ticket details
+              
               fetchTickets();
               return prevTickets;
             }
           });
 
-          // Append message if it belongs to the currently active ticket
+          
           if (activeTicketIdRef.current === receivedMessage.ticketId) {
             setMessages(prev => {
               if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
@@ -101,7 +101,7 @@ export default function Messenger({ user, onNavigateHome }) {
           }
         });
       } else {
-        // Standard users listen to their private channel for replies
+        
         client.subscribe(`/topic/user.${user?.id}`, (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log('Received on user private channel', receivedMessage);
@@ -124,7 +124,7 @@ export default function Messenger({ user, onNavigateHome }) {
     client.activate();
     stompClientRef.current = client;
 
-    // Fetch initial ticket data depending on user role
+    
     if (user?.role === 'ADMIN') {
       fetchTickets();
     } else {
@@ -138,12 +138,12 @@ export default function Messenger({ user, onNavigateHome }) {
     };
   }, [user]);
 
-  // Scroll to bottom when messages list updates
+  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch all open tickets for admin
+  
   const fetchTickets = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/chat/tickets');
@@ -156,7 +156,7 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Get or create active support ticket for normal Freelancer / Employer
+  
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
@@ -174,7 +174,7 @@ export default function Messenger({ user, onNavigateHome }) {
         };
         setActiveTicket(activeT);
         
-        // Fetch chat messages and subscribe to the ticket channel
+        
         await fetchMessages(ticketId);
         subscribeToTicket(ticketId);
       }
@@ -185,7 +185,7 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Fetch chat history for a selected ticket
+  
   const fetchMessages = async (ticketId) => {
     try {
       const response = await fetch(`http://localhost:8080/api/chat/messages/${ticketId}`);
@@ -198,27 +198,27 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
-  // Subscribe to a ticket room
+  
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
 
-    // Unsubscribe from previous ticket topic if any exists
+    
     if (ticketSubscriptionRef.current) {
       ticketSubscriptionRef.current.unsubscribe();
     }
 
-    // Subscribe to current ticket topic
+    
     ticketSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/ticket.${ticketId}`, (message) => {
       const receivedMessage = JSON.parse(message.body);
       setMessages(prev => {
-        // Prevent duplicate messages
+        
         if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
         return [...prev, receivedMessage];
       });
     });
   };
 
-  // Admin selects a customer ticket to chat
+  
   const handleSelectTicket = async (ticket) => {
     setIsLoading(true);
     setActiveTicket(ticket);
@@ -276,7 +276,7 @@ export default function Messenger({ user, onNavigateHome }) {
     setAttachedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // Handle sending chat message
+  
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() && attachedFiles.length === 0) return;
@@ -378,29 +378,29 @@ export default function Messenger({ user, onNavigateHome }) {
     return (u.name || '').toLowerCase().includes(query) || (u.email || '').toLowerCase().includes(query);
   });
 
-  // Split tickets into two groups based on whether admin has replied
+  
   const matchesSearch = (ticket) =>
     (ticket.sender_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ticket.sender_email || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-  // Chờ phản hồi: admin chưa reply thực tế
+  
   const pendingTickets = tickets.filter(t => !t.has_admin_replied && matchesSearch(t));
-  // Đang xử lý: admin đã reply ít nhất 1 lần
+  
   const activeTickets = tickets.filter(t => t.has_admin_replied && matchesSearch(t));
 
-  // For tab filtering
+  
   const filteredTickets = activeTab === 'pending'
     ? pendingTickets
     : activeTab === 'active'
     ? activeTickets
-    : [...activeTickets, ...pendingTickets]; // 'all' shows active first then pending
+    : [...activeTickets, ...pendingTickets]; 
 
   return (
     <div className="flex h-screen bg-slate-50/50 text-slate-800 font-sans overflow-hidden">
-      {/* LEFT SIDEBAR NAVIGATION */}
+      {}
       <div className="w-[260px] border-r border-slate-200 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
-          {/* Logo */}
+          {}
           <div 
             className="p-6 flex items-center gap-3 cursor-pointer border-b border-slate-800/80"
             onClick={onNavigateHome}
@@ -414,7 +414,7 @@ export default function Messenger({ user, onNavigateHome }) {
             </div>
           </div>
 
-          {/* Nav Links */}
+          {}
           <nav className="px-3 mt-6 flex flex-col gap-1.5">
             <button 
               onClick={() => setNavSection('chat')}
@@ -474,7 +474,7 @@ export default function Messenger({ user, onNavigateHome }) {
           </nav>
         </div>
 
-        {/* Support Link */}
+        {}
         <div className="p-4 border-t border-slate-800/50">
           <button 
             onClick={onNavigateHome}
@@ -486,10 +486,10 @@ export default function Messenger({ user, onNavigateHome }) {
         </div>
       </div>
 
-      {/* MAIN CONTAINER */}
+      {}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* TOP HEADER */}
+        {}
         <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4">
             <button 
@@ -505,7 +505,7 @@ export default function Messenger({ user, onNavigateHome }) {
               </h2>
             </div>
             
-            {/* Connection status badge */}
+            {}
             <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
               isConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
             }`}>
@@ -539,10 +539,10 @@ export default function Messenger({ user, onNavigateHome }) {
           </div>
         </header>
 
-        {/* WORK AREA: SIDEBAR + CONVERSATION */}
+        {}
         <div className="flex-1 flex overflow-hidden">
           
-          {/* CONVERSATIONS LIST COLUMN */}
+          {}
           <div className={`w-full md:w-[360px] border-r border-slate-200 flex flex-col bg-white shrink-0 ${
             activeTicket && 'hidden md:flex'
           }`}>
@@ -624,11 +624,11 @@ export default function Messenger({ user, onNavigateHome }) {
               )}
             </div>
 
-            {/* Support list content */}
+            {}
             <div className="flex-1 overflow-y-auto">
               {user?.role === 'ADMIN' && navSection === 'chat' && (
                 <>
-                  {/* ACTIVE TICKETS (admin đã reply) - Hiển thị trên giao diện chính */}
+                  {}
                   {activeTab === 'active' && (
                     <>
                       {activeTickets.length > 0 ? (
@@ -683,7 +683,7 @@ export default function Messenger({ user, onNavigateHome }) {
                     </>
                   )}
 
-                  {/* PENDING TICKETS (admin chưa reply) - Danh sách chờ */}
+                  {}
                   {(activeTab === 'pending' || activeTab === 'all') && pendingTickets.length > 0 && (
                     <>
                       <div className="px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
@@ -733,7 +733,7 @@ export default function Messenger({ user, onNavigateHome }) {
                     </>
                   )}
 
-                  {/* Empty state for pending tab with no results */}
+                  {}
                   {activeTab === 'pending' && pendingTickets.length === 0 && (
                     <div className="p-8 text-center text-slate-400">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -741,7 +741,7 @@ export default function Messenger({ user, onNavigateHome }) {
                     </div>
                   )}
 
-                  {/* Empty state for all tab */}
+                  {}
                   {activeTab === 'all' && tickets.length === 0 && (
                     <div className="p-8 text-center text-slate-400">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -826,7 +826,7 @@ export default function Messenger({ user, onNavigateHome }) {
               )}
 
               {user?.role !== 'ADMIN' && (
-                /* Regular User view: Persistent support item */
+                
                 <div 
                   onClick={() => {}}
                   className="flex gap-3.5 p-4.5 bg-blue-50/30 border-l-4 border-blue-600 cursor-default"
@@ -863,13 +863,13 @@ export default function Messenger({ user, onNavigateHome }) {
             </div>
           </div>
 
-          {/* CHAT DISPLAY PANEL */}
+          {}
           <div className={`flex-1 bg-slate-50/50 flex flex-col h-full overflow-hidden ${
             !activeTicket && 'hidden md:flex'
           }`}>
             {activeTicket ? (
               <>
-                {/* CHAT PANEL HEADER */}
+                {}
                 <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <button 
@@ -908,7 +908,7 @@ export default function Messenger({ user, onNavigateHome }) {
                   </div>
                 </div>
 
-                {/* MESSAGES LOG VIEWER */}
+                {}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
@@ -944,7 +944,7 @@ export default function Messenger({ user, onNavigateHome }) {
                                 </span>
                               </p>
                             )}
-                            {/* Message text bubble */}
+                            {}
                             {msg.messageText && msg.messageText.trim() !== '' && !(msg.attachments && msg.attachments.length > 0 && (msg.messageText === '[Hình ảnh]' || msg.messageText === '[Tệp đính kèm]')) && (
                               <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium ${
                                 isMe 
@@ -955,7 +955,7 @@ export default function Messenger({ user, onNavigateHome }) {
                               </div>
                             )}
 
-                            {/* Message attachments rendering */}
+                            {}
                             {msg.attachments && msg.attachments.length > 0 && (
                               <div className={`mt-2 flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'}`}>
                                 {msg.attachments.map((att, attIdx) => {
@@ -1043,7 +1043,7 @@ export default function Messenger({ user, onNavigateHome }) {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* ATTACHMENT PREVIEW BAR */}
+                {}
                 {(attachedFiles.length > 0 || uploading) && (
                   <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2.5 items-center shrink-0">
                     {attachedFiles.map((file, idx) => {
@@ -1081,12 +1081,12 @@ export default function Messenger({ user, onNavigateHome }) {
                   </div>
                 )}
 
-                {/* BOTTOM CHAT INPUT BOX */}
+                {}
                 <form 
                   onSubmit={handleSendMessage}
                   className="p-4 bg-white border-t border-slate-200/80 flex items-center gap-3 shrink-0"
                 >
-                  {/* Hidden file inputs */}
+                  {}
                   <input 
                     type="file" 
                     ref={fileInputRef}
@@ -1147,7 +1147,7 @@ export default function Messenger({ user, onNavigateHome }) {
                 </form>
               </>
             ) : (
-              /* EMPTY VIEW (FOR ADMINS WITH NO ACTIVE TICKET CHOSEN) */
+              
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
                 <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
                   <Shield className="w-8 h-8" />

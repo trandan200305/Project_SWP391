@@ -10,9 +10,11 @@ import com.cny.backend.repository.EmployerRepository;
 import com.cny.backend.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.cny.backend.repository.DashboardRepository;
+import com.cny.backend.dto.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,14 +36,22 @@ public class AdminService {
     @Autowired
     private DashboardRepository dashboardRepository;
 
+    @Autowired
+    private com.cny.backend.repository.ManagerRepository managerRepository;
+
+    @Autowired
+    private com.cny.backend.repository.StaffRepository staffRepository;
+
+    @Autowired
+    private com.cny.backend.repository.AdminRepository adminRepository;
+
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "illyasviel1252004@gmail.com",
         "admin@lancerpro.com"
     );
 
-    // 1. Get Dashboard Stats
-    public Map<String, Object> getStats(String period) {
-        Map<String, Object> stats = new HashMap<>();
+    
+    public AdminStatsDto getStats(String period) {
         int days = period.equals("7days") ? 7 : (period.equals("365days") ? 365 : 30);
 
         try {
@@ -50,7 +60,6 @@ public class AdminService {
             int totalUsers = totalFreelancers + totalEmployers;
             
             int activeProjects = dashboardRepository.countActiveProjects(-days);
-            
             int pendingWithdrawals = dashboardRepository.countPendingWithdrawals();
 
             double totalRevenue = 0.0;
@@ -75,34 +84,34 @@ public class AdminService {
                 activeDisputes = dashboardRepository.countActiveDisputes();
             } catch(Exception e) {}
 
-            stats.put("totalUsers", totalUsers);
-            stats.put("activeProjects", activeProjects);
-            stats.put("totalRevenue", totalRevenue);
-            stats.put("activeDisputes", activeDisputes);
-            stats.put("pendingWithdrawals", pendingWithdrawals);
-            
-            stats.put("usersGrowthPercent", 0.0);
-            stats.put("projectsGrowthPercent", 0.0);
-            stats.put("revenueGrowthPercent", 0.0);
+            return AdminStatsDto.builder()
+                    .totalUsers(totalUsers)
+                    .activeProjects(activeProjects)
+                    .totalRevenue(totalRevenue)
+                    .activeDisputes(activeDisputes)
+                    .pendingWithdrawals(pendingWithdrawals)
+                    .usersGrowthPercent(0.0)
+                    .projectsGrowthPercent(0.0)
+                    .revenueGrowthPercent(0.0)
+                    .build();
         } catch (Exception e) {
-            stats.put("totalUsers", 1284);
-            stats.put("activeProjects", 452);
-            stats.put("totalRevenue", 128500.0);
-            stats.put("activeDisputes", 18);
-            stats.put("pendingWithdrawals", 2);
-            stats.put("usersGrowthPercent", 12.0);
-            stats.put("projectsGrowthPercent", 5.0);
-            stats.put("revenueGrowthPercent", 8.2);
+            return AdminStatsDto.builder()
+                    .totalUsers(1284)
+                    .activeProjects(452)
+                    .totalRevenue(128500.0)
+                    .activeDisputes(18)
+                    .pendingWithdrawals(2)
+                    .usersGrowthPercent(12.0)
+                    .projectsGrowthPercent(5.0)
+                    .revenueGrowthPercent(8.2)
+                    .build();
         }
-        return stats;
     }
 
-    // 2. Get User Growth Trend
-    public List<Map<String, Object>> getUserGrowthTrend() {
-        List<Map<String, Object>> trend = new ArrayList<>();
+    public List<UserGrowthTrendDto> getUserGrowthTrend() {
+        List<UserGrowthTrendDto> trend = new ArrayList<>();
         try {
             for (int i = 5; i >= 0; i--) {
-                Map<String, Object> point = new HashMap<>();
                 String monthLabel = dashboardRepository.getMonthLabel(-i);
                 
                 int currF = dashboardRepository.countFreelancersByMonthOffset(-i);
@@ -111,110 +120,138 @@ public class AdminService {
                 int prevF = dashboardRepository.countFreelancersByMonthOffset(-(i + 1));
                 int prevE = dashboardRepository.countEmployersByMonthOffset(-(i + 1));
                 
-                point.put("label", monthLabel);
-                point.put("value", currF + currE);
-                point.put("compareValue", prevF + prevE);
-                trend.add(point);
+                trend.add(UserGrowthTrendDto.builder()
+                        .label(monthLabel)
+                        .value(currF + currE)
+                        .compareValue(prevF + prevE)
+                        .build());
             }
         } catch (Exception e) {}
         return trend;
     }
 
-    // 3. Get Revenue Trend
-    public List<Map<String, Object>> getRevenueTrend() {
-        List<Map<String, Object>> trend = new ArrayList<>();
+    public List<RevenueTrendDto> getRevenueTrend() {
+        List<RevenueTrendDto> trend = new ArrayList<>();
         try {
             for (int i = 3; i >= 0; i--) {
-                Map<String, Object> point = new HashMap<>();
                 String qLabel = dashboardRepository.getQuarterLabel(-i);
-                
                 Double rev = dashboardRepository.calculateRevenueByQuarterOffset(-i);
                 
-                point.put("label", qLabel);
-                point.put("value", rev != null ? rev : 0.0);
-                trend.add(point);
+                trend.add(RevenueTrendDto.builder()
+                        .label(qLabel)
+                        .value(rev != null ? rev : 0.0)
+                        .build());
             }
         } catch (Exception e) {}
         return trend;
     }
 
-    // 4. Get Platform Fee Config
-    public Map<String, Object> getFeeConfig() {
-        Map<String, Object> response = new HashMap<>();
+    public PlatformFeeDto getFeeConfig() {
         try {
             Double currentFee = dashboardRepository.getLatestFeeConfig();
-            response.put("fee", currentFee != null ? currentFee : 10.0);
+            return PlatformFeeDto.builder()
+                    .fee(currentFee != null ? currentFee : 10.0)
+                    .build();
         } catch (Exception e) {
-            response.put("fee", 10.0);
+            return PlatformFeeDto.builder()
+                    .fee(10.0)
+                    .build();
         }
-        return response;
     }
 
-    // 5. Update Platform Fee Config
     @Transactional
-    public Map<String, Object> updateFeeConfig(double fee, int adminId) {
-        Map<String, Object> response = new HashMap<>();
+    public PlatformFeeDto updateFeeConfig(double fee, int adminId) {
         try {
             dashboardRepository.insertFeeConfig(fee);
-            
             dashboardRepository.logAudit(adminId, "UPDATE_FEE_RATE", "FINANCE", "Đã cấu hình lại mức phí dịch vụ của nền tảng thành " + fee + "%");
 
-            response.put("success", true);
-            response.put("fee", fee);
+            return PlatformFeeDto.builder()
+                    .success(true)
+                    .fee(fee)
+                    .build();
         } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", e.getMessage());
+            return PlatformFeeDto.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build();
         }
-        return response;
     }
 
-    public List<Map<String, Object>> getUsers() {
-        List<Map<String, Object>> users = new ArrayList<>();
+    public List<AdminUserDto> getUsers() {
+        List<AdminUserDto> users = new ArrayList<>();
         
-        // Fetch Freelancers
         List<Freelancer> freelancers = freelancerRepository.findAll();
         for (Freelancer f : freelancers) {
             if (f.getIsDeleted() != null && f.getIsDeleted()) continue;
             
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", f.getProfileId());
-            map.put("name", f.getDisplayName());
-            map.put("email", f.getEmail());
-            map.put("status", f.getStatus());
-            map.put("role", "FREELANCER");
-            map.put("joined", f.getCreatedAt() != null ? f.getCreatedAt().toString().substring(0, 10) : "");
-            map.put("lastLogin", f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null);
-            map.put("isProtectedAdmin", false);
-            users.add(map);
+            users.add(AdminUserDto.builder()
+                    .id(f.getProfileId())
+                    .name(f.getDisplayName())
+                    .email(f.getEmail())
+                    .status(f.getStatus())
+                    .role("FREELANCER")
+                    .joined(f.getCreatedAt() != null ? f.getCreatedAt().toString().substring(0, 10) : "")
+                    .lastLogin(f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null)
+                    .isProtectedAdmin(false)
+                    .build());
         }
 
-        // Fetch Employers (using exact Database ID)
         List<Employer> employers = employerRepository.findAll();
         for (Employer e : employers) {
             if (e.getIsDeleted() != null && e.getIsDeleted()) continue;
             
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", e.getEmployerId());
-            map.put("name", e.getDisplayName());
-            map.put("email", e.getEmail());
-            map.put("status", e.getStatus());
-            map.put("role", "EMPLOYER");
-            map.put("joined", e.getCreatedAt() != null ? e.getCreatedAt().toString().substring(0, 10) : "");
-            map.put("lastLogin", e.getLastLoginAt() != null ? e.getLastLoginAt().toString() : null);
-            map.put("isProtectedAdmin", false);
-            users.add(map);
+            users.add(AdminUserDto.builder()
+                    .id(e.getEmployerId())
+                    .name(e.getDisplayName())
+                    .email(e.getEmail())
+                    .status(e.getStatus())
+                    .role("EMPLOYER")
+                    .joined(e.getCreatedAt() != null ? e.getCreatedAt().toString().substring(0, 10) : "")
+                    .lastLogin(e.getLastLoginAt() != null ? e.getLastLoginAt().toString() : null)
+                    .isProtectedAdmin(false)
+                    .build());
+        }
+
+        List<com.cny.backend.entity.Manager> managers = managerRepository.findAll();
+        for (com.cny.backend.entity.Manager m : managers) {
+            if (m.getIsDeleted() != null && m.getIsDeleted()) continue;
+            
+            users.add(AdminUserDto.builder()
+                    .id(m.getManagerId())
+                    .name(m.getDisplayName())
+                    .email(m.getEmail())
+                    .status(m.getStatus())
+                    .role("MANAGER")
+                    .joined(m.getCreatedAt() != null ? m.getCreatedAt().toString().substring(0, 10) : "")
+                    .lastLogin(m.getLastLoginAt() != null ? m.getLastLoginAt().toString() : null)
+                    .isProtectedAdmin(false)
+                    .build());
+        }
+
+        List<com.cny.backend.entity.Staff> staff = staffRepository.findAll();
+        for (com.cny.backend.entity.Staff s : staff) {
+            if (s.getIsDeleted() != null && s.getIsDeleted()) continue;
+            
+            users.add(AdminUserDto.builder()
+                    .id(s.getStaffId())
+                    .name(s.getDisplayName())
+                    .email(s.getEmail())
+                    .status(s.getStatus())
+                    .role("STAFF")
+                    .joined(s.getCreatedAt() != null ? s.getCreatedAt().toString().substring(0, 10) : "")
+                    .lastLogin(s.getLastLoginAt() != null ? s.getLastLoginAt().toString() : null)
+                    .isProtectedAdmin(false)
+                    .build());
         }
         
         return users;
     }
 
-    // 7. Update User Status (Kiểm tra và đổi trạng thái dựa trên Role)
     @Transactional
     public Map<String, Object> updateUserStatus(int id, String role, String status, String reason, int adminId) {
         Map<String, Object> response = new HashMap<>();
         
         if ("EMPLOYER".equalsIgnoreCase(role)) {
-            // Employer (O(1) PK Lookup)
             Optional<Employer> employerOpt = employerRepository.findById(id);
             if (employerOpt.isPresent()) {
                 Employer emp = employerOpt.get();
@@ -222,7 +259,6 @@ public class AdminService {
                 emp.setStatus(status);
                 employerRepository.save(emp);
                 
-                // Log history
                 dashboardRepository.logEmployerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
                 
                 sendNotification(id, "EMPLOYER", status, reason);
@@ -232,8 +268,35 @@ public class AdminService {
                 response.put("message", "Đã cập nhật trạng thái Employer thành công.");
                 return response;
             }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.entity.Manager> managerOpt = managerRepository.findById(id);
+            if (managerOpt.isPresent()) {
+                com.cny.backend.entity.Manager mgr = managerOpt.get();
+                String oldStatus = mgr.getStatus();
+                mgr.setStatus(status);
+                managerRepository.save(mgr);
+                
+                writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Manager #" + id + " (" + mgr.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
+                
+                response.put("success", true);
+                response.put("message", "Đã cập nhật trạng thái Manager thành công.");
+                return response;
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.entity.Staff> staffOpt = staffRepository.findById(id);
+            if (staffOpt.isPresent()) {
+                com.cny.backend.entity.Staff stf = staffOpt.get();
+                String oldStatus = stf.getStatus();
+                stf.setStatus(status);
+                staffRepository.save(stf);
+                
+                writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Staff #" + id + " (" + stf.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
+                
+                response.put("success", true);
+                response.put("message", "Đã cập nhật trạng thái Staff thành công.");
+                return response;
+            }
         } else if ("FREELANCER".equalsIgnoreCase(role)) {
-            // Freelancer (O(1) PK Lookup)
             Optional<Freelancer> freelancerOpt = freelancerRepository.findById(id);
             if (freelancerOpt.isPresent()) {
                 Freelancer f = freelancerOpt.get();
@@ -241,7 +304,6 @@ public class AdminService {
                 f.setStatus(status);
                 freelancerRepository.save(f);
                 
-                // Log history
                 dashboardRepository.logFreelancerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
                 
                 sendNotification(id, "FREELANCER", status, reason);
@@ -264,18 +326,18 @@ public class AdminService {
         String notifType = "SYSTEM";
 
         if ("LOCKED".equals(status)) {
-            notifTitle = "⚠️ Tài khoản của bạn đã bị tạm khóa";
+            notifTitle = " Tài khoản của bạn đã bị tạm khóa";
             notifContent = "Tài khoản của bạn đã bị Admin tạm khóa với lý do: " + 
                 (reason != null ? reason : "Vi phạm chính sách nền tảng") + 
                 ". Trong thời gian bị khóa, bạn sẽ không thể đăng nhập hoặc sử dụng các dịch vụ trên hệ thống. " +
                 "Vui lòng liên hệ bộ phận hỗ trợ qua email support@vlance.vn để được giải quyết.";
         } else if ("BANNED".equals(status)) {
-            notifTitle = "🚫 Tài khoản của bạn đã bị cấm vĩnh viễn";
+            notifTitle = " Tài khoản của bạn đã bị cấm vĩnh viễn";
             notifContent = "Tài khoản của bạn đã bị Admin cấm vĩnh viễn với lý do: " + 
                 (reason != null ? reason : "Vi phạm nghiêm trọng chính sách nền tảng") + 
                 ". Quyết định này có hiệu lực ngay lập tức và không thể đảo ngược.";
         } else if ("ACTIVE".equals(status)) {
-            notifTitle = "✅ Tài khoản của bạn đã được mở khóa";
+            notifTitle = " Tài khoản của bạn đã được mở khóa";
             notifContent = "Chúc mừng! Tài khoản của bạn đã được Admin mở khóa thành công.";
         }
 
@@ -292,22 +354,21 @@ public class AdminService {
         dashboardRepository.logAudit(adminId, action, module, description);
     }
 
-    // 8. GET Pending Projects for Moderation
-    public List<Map<String, Object>> getPendingProjects() {
-        return dashboardRepository.getPendingProjects().stream().map(p -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("title", p.getTitle());
-            map.put("description", p.getDescription());
-            map.put("type", p.getType());
-            map.put("budget", p.getBudget());
-            map.put("createdAt", p.getCreatedAt());
-            map.put("clientName", p.getClientName());
-            return map;
-        }).collect(Collectors.toList());
+    public List<PendingProjectDto> getPendingProjects() {
+        return dashboardRepository.getPendingProjects().stream().map(p -> 
+            PendingProjectDto.builder()
+                .id(p.getId())
+                .title(p.getTitle())
+                .description(p.getDescription())
+                .type(p.getType())
+                .budget(p.getBudget())
+                .createdAt(p.getCreatedAt())
+                .clientName(p.getClientName())
+                .build()
+        ).collect(Collectors.toList());
     }
 
-    // 9. Moderate Project (Approve/Reject)
+    
     @Transactional
     public Map<String, Object> moderateProject(int id, boolean approve, String reason, int adminId) {
         Map<String, Object> response = new HashMap<>();
@@ -326,31 +387,28 @@ public class AdminService {
         return response;
     }
 
-    // 10. GET Withdrawal Requests
-    public List<Map<String, Object>> getWithdrawals() {
-        return dashboardRepository.getAllWithdrawalRequests().stream().map(p -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("amount", p.getAmount());
-            map.put("status", p.getStatus());
-            map.put("createdAt", p.getCreatedAt());
-            map.put("userName", p.getFreelancerName());
-            map.put("userEmail", p.getFreelancerEmail());
-            map.put("bankName", p.getBankName());
-            map.put("accountNumber", p.getAccountNumber());
-            return map;
-        }).collect(Collectors.toList());
+    
+    public List<WithdrawalDto> getWithdrawals() {
+        return dashboardRepository.getAllWithdrawalRequests().stream().map(p -> 
+            WithdrawalDto.builder()
+                .id(p.getId())
+                .amount(p.getAmount())
+                .status(p.getStatus())
+                .createdAt(p.getCreatedAt())
+                .userName(p.getFreelancerName())
+                .userEmail(p.getFreelancerEmail())
+                .bankName(p.getBankName())
+                .accountNumber(p.getAccountNumber())
+                .build()
+        ).collect(Collectors.toList());
     }
 
-    // 11. Process Withdrawal Request
     @Transactional
     public Map<String, Object> processWithdrawal(int id, String status, int adminId) {
         Map<String, Object> response = new HashMap<>();
         try {
             dashboardRepository.processWithdrawalRequest(id, status, adminId);
-            
             writeAuditLog(adminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
-            
             response.put("success", true);
             response.put("message", "Đã xử lý yêu cầu rút tiền thành công.");
         } catch (Exception e) {
@@ -360,176 +418,325 @@ public class AdminService {
         return response;
     }
 
-    // 12. GET Admin Audit Logs
-    public List<Map<String, Object>> getAuditLogs() {
-        return dashboardRepository.getAuditLogs().stream().map(p -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("status", p.getStatus());
-            map.put("module", p.getModule());
-            map.put("detail", p.getDetail());
-            map.put("timestamp", p.getTimestamp());
-            map.put("source", p.getSource());
-            return map;
-        }).collect(Collectors.toList());
+    public List<AdminAuditLogDto> getAuditLogs() {
+        return dashboardRepository.getAuditLogs().stream().map(p -> 
+            AdminAuditLogDto.builder()
+                .id(p.getId())
+                .status(p.getStatus())
+                .module(p.getModule())
+                .detail(p.getDetail())
+                .timestamp(p.getTimestamp())
+                .source(p.getSource())
+                .build()
+        ).collect(Collectors.toList());
     }
 
-    // 13. GET Job Categories
-    public List<Map<String, Object>> getJobCategories() {
-        return dashboardRepository.getJobCategories().stream().map(p -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("name", p.getName());
-            map.put("description", p.getDescription());
-            map.put("isActive", p.getIsActive());
-            return map;
-        }).collect(Collectors.toList());
+    public List<JobCategoryDto> getJobCategories() {
+        return dashboardRepository.getJobCategories().stream().map(p -> 
+            JobCategoryDto.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .description(p.getDescription())
+                .isActive(p.getIsActive())
+                .build()
+        ).collect(Collectors.toList());
     }
 
-    // 14. GET KYC Requests (Mock Data)
-    public List<Map<String, Object>> getKycRequests() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> req1 = new HashMap<>();
-        req1.put("id", 1);
-        req1.put("userName", "Nguyễn Minh Anh");
-        req1.put("userEmail", "minhanh@gmail.com");
-        req1.put("idCard", "030094001234");
-        req1.put("status", "PENDING");
-        req1.put("submittedAt", "2026-05-18T10:30:00");
+    public List<KycRequestDto> getKycRequests() {
+        List<KycRequestDto> list = new ArrayList<>();
+        list.add(KycRequestDto.builder()
+                .id(1)
+                .userName("Nguyễn Minh Anh")
+                .userEmail("minhanh@gmail.com")
+                .idCard("030094001234")
+                .status("PENDING")
+                .submittedAt("2026-05-18T10:30:00")
+                .build());
         
-        Map<String, Object> req2 = new HashMap<>();
-        req2.put("id", 2);
-        req2.put("userName", "Trần Việt Hoàng");
-        req2.put("userEmail", "hoangtv@gmail.com");
-        req2.put("idCard", "038092005678");
-        req2.put("status", "APPROVED");
-        req2.put("submittedAt", "2026-05-17T15:20:00");
-        
-        list.add(req1);
-        list.add(req2);
+        list.add(KycRequestDto.builder()
+                .id(2)
+                .userName("Trần Việt Hoàng")
+                .userEmail("hoangtv@gmail.com")
+                .idCard("038092005678")
+                .status("APPROVED")
+                .submittedAt("2026-05-17T15:20:00")
+                .build());
         return list;
     }
 
-    // 15. GET Dispute Resolution Requests (Mock Data)
-    public List<Map<String, Object>> getDisputes() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> d1 = new HashMap<>();
-        d1.put("id", 1);
-        d1.put("projectTitle", "Xây dựng Website bán hàng Laravel");
-        d1.put("clientName", "LancerPro Client");
-        d1.put("freelancerName", "Nguyễn Minh Anh");
-        d1.put("amount", 15000000);
-        d1.put("status", "OPEN");
-        d1.put("reason", "Freelancer chậm tiến độ bàn giao sản phẩm");
-        d1.put("createdAt", "2026-05-16T09:00:00");
+    public List<DisputeDto> getDisputes() {
+        List<DisputeDto> list = new ArrayList<>();
+        list.add(DisputeDto.builder()
+                .id(1)
+                .projectTitle("Xây dựng Website bán hàng Laravel")
+                .clientName("LancerPro Client")
+                .freelancerName("Nguyễn Minh Anh")
+                .amount(15000000)
+                .status("OPEN")
+                .reason("Freelancer chậm tiến độ bàn giao sản phẩm")
+                .createdAt("2026-05-16T09:00:00")
+                .build());
         
-        Map<String, Object> d2 = new HashMap<>();
-        d2.put("id", 2);
-        d2.put("projectTitle", "Thiết kế Banner Sự kiện");
-        d2.put("clientName", "TechFlow Corporation");
-        d2.put("freelancerName", "Lê Thủy Tiên");
-        d2.put("amount", 2000000);
-        d2.put("status", "RESOLVED");
-        d2.put("reason", "Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi");
-        d2.put("createdAt", "2026-05-14T14:30:00");
-        
-        list.add(d1);
-        list.add(d2);
+        list.add(DisputeDto.builder()
+                .id(2)
+                .projectTitle("Thiết kế Banner Sự kiện")
+                .clientName("TechFlow Corporation")
+                .freelancerName("Lê Thủy Tiên")
+                .amount(2000000)
+                .status("RESOLVED")
+                .reason("Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi")
+                .createdAt("2026-05-14T14:30:00")
+                .build());
         return list;
     }
 
-    // 16. GET User Reports (Mock Data)
-    public List<Map<String, Object>> getReports() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> r1 = new HashMap<>();
-        r1.put("id", 1);
-        r1.put("reporterName", "Trần Việt Hoàng");
-        r1.put("reportedName", "LancerPro Client");
-        r1.put("reason", "Spam bài đăng tuyển dụng nhiều lần cùng nội dung");
-        r1.put("status", "PENDING");
-        r1.put("createdAt", "2026-05-18T08:15:00");
+    public List<ReportDto> getReports() {
+        List<ReportDto> list = new ArrayList<>();
+        list.add(ReportDto.builder()
+                .id(1)
+                .reporterName("Trần Việt Hoàng")
+                .reportedName("LancerPro Client")
+                .reason("Spam bài đăng tuyển dụng nhiều lần cùng nội dung")
+                .status("PENDING")
+                .createdAt("2026-05-18T08:15:00")
+                .build());
         
-        Map<String, Object> r2 = new HashMap<>();
-        r2.put("id", 2);
-        r2.put("reporterName", "Nguyễn Minh Anh");
-        r2.put("reportedName", "Vũ Hoàng Nam");
-        r2.put("reason", "Lời lẽ thô tục xúc phạm trong khung chat");
-        r2.put("status", "RESOLVED");
-        r2.put("createdAt", "2026-05-15T11:45:00");
-        
-        list.add(r1);
-        list.add(r2);
+        list.add(ReportDto.builder()
+                .id(2)
+                .reporterName("Nguyễn Minh Anh")
+                .reportedName("Vũ Hoàng Nam")
+                .reason("Lời lẽ thô tục xúc phạm trong khung chat")
+                .status("RESOLVED")
+                .createdAt("2026-05-15T11:45:00")
+                .build());
         return list;
     }
 
-    // 17. GET CMS Articles (Mock Data)
-    public List<Map<String, Object>> getArticles() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> a1 = new HashMap<>();
-        a1.put("id", 1);
-        a1.put("title", "Kinh nghiệm làm việc tự do (Freelancer) thành công năm 2026");
-        a1.put("author", "Admin");
-        a1.put("views", 1245);
-        a1.put("status", "PUBLISHED");
-        a1.put("publishedAt", "2026-05-10T08:00:00");
+    public List<ArticleDto> getArticles() {
+        List<ArticleDto> list = new ArrayList<>();
+        list.add(ArticleDto.builder()
+                .id(1)
+                .title("Kinh nghiệm làm việc tự do (Freelancer) thành công năm 2026")
+                .author("Admin")
+                .views(1245)
+                .status("PUBLISHED")
+                .publishedAt("2026-05-10T08:00:00")
+                .build());
         
-        Map<String, Object> a2 = new HashMap<>();
-        a2.put("id", 2);
-        a2.put("title", "Làm thế nào để thuê được Freelancer IT chất lượng cao?");
-        a2.put("author", "Admin");
-        a2.put("views", 856);
-        a2.put("status", "DRAFT");
-        a2.put("publishedAt", "2026-05-12T14:00:00");
-        
-        list.add(a1);
-        list.add(a2);
+        list.add(ArticleDto.builder()
+                .id(2)
+                .title("Làm thế nào để thuê được Freelancer IT chất lượng cao?")
+                .author("Admin")
+                .views(856)
+                .status("DRAFT")
+                .publishedAt("2026-05-12T14:00:00")
+                .build());
         return list;
     }
 
-    // 18. GET Support Tickets (Mock Data)
-    public List<Map<String, Object>> getTickets() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> t1 = new HashMap<>();
-        t1.put("id", 1);
-        t1.put("subject", "Lỗi không nạp tiền qua cổng VNPay");
-        t1.put("sender", "minhanh@gmail.com");
-        t1.put("priority", "HIGH");
-        t1.put("status", "OPEN");
-        t1.put("createdAt", "2026-05-19T09:30:00");
+    public List<SupportTicketDto> getTickets() {
+        List<SupportTicketDto> list = new ArrayList<>();
+        list.add(SupportTicketDto.builder()
+                .id(1)
+                .subject("Lỗi không nạp tiền qua cổng VNPay")
+                .sender("minhanh@gmail.com")
+                .priority("HIGH")
+                .status("OPEN")
+                .createdAt("2026-05-19T09:30:00")
+                .build());
         
-        Map<String, Object> t2 = new HashMap<>();
-        t2.put("id", 2);
-        t2.put("subject", "Yêu cầu thay đổi số điện thoại liên kết");
-        t2.put("sender", "hoangtv@gmail.com");
-        t2.put("priority", "LOW");
-        t2.put("status", "CLOSED");
-        t2.put("createdAt", "2026-05-17T16:00:00");
-        
-        list.add(t1);
-        list.add(t2);
+        list.add(SupportTicketDto.builder()
+                .id(2)
+                .subject("Yêu cầu thay đổi số điện thoại liên kết")
+                .sender("hoangtv@gmail.com")
+                .priority("LOW")
+                .status("CLOSED")
+                .createdAt("2026-05-17T16:00:00")
+                .build());
         return list;
     }
 
-    // 19. GET SEO Configurations (Mock Data)
-    public List<Map<String, Object>> getSeoConfigs() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> s1 = new HashMap<>();
-        s1.put("id", 1);
-        s1.put("pageName", "Home Page");
-        s1.put("title", "LancerPro - Nền tảng Freelancer lớn nhất Việt Nam");
-        s1.put("description", "Kết nối doanh nghiệp với hàng ngàn freelancer tài năng trên toàn quốc.");
-        s1.put("keywords", "freelancer, thue freelancer, viec lam tu do, thiet ke web");
+    public List<SeoConfigDto> getSeoConfigs() {
+        List<SeoConfigDto> list = new ArrayList<>();
+        list.add(SeoConfigDto.builder()
+                .id(1)
+                .pageName("Home Page")
+                .title("LancerPro - Nền tảng Freelancer lớn nhất Việt Nam")
+                .description("Kết nối doanh nghiệp với hàng ngàn freelancer tài năng trên toàn quốc.")
+                .keywords("freelancer, thue freelancer, viec lam tu do, thiet ke web")
+                .build());
         
-        Map<String, Object> s2 = new HashMap<>();
-        s2.put("id", 2);
-        s2.put("pageName", "Find Jobs Page");
-        s2.put("title", "Tìm việc freelance lương cao tại LancerPro");
-        s2.put("description", "Hàng trăm dự án mới mỗi ngày thuộc nhiều lĩnh vực khác nhau.");
-        s2.put("keywords", "tim viec freelance, viec lam it freelance, viet lach, marketing");
-        
-        list.add(s1);
-        list.add(s2);
+        list.add(SeoConfigDto.builder()
+                .id(2)
+                .pageName("Find Jobs Page")
+                .title("Tìm việc freelance lương cao tại LancerPro")
+                .description("Hàng trăm dự án mới mỗi ngày thuộc nhiều lĩnh vực khác nhau.")
+                .keywords("tim viec freelance, viec lam it freelance, viet lach, marketing")
+                .build());
         return list;
+    }
+
+    @Transactional
+    public Map<String, Object> createManager(ManagerCreateDto dto, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String email = dto.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email không được để trống!");
+            return response;
+        }
+
+        if (adminRepository.findByEmail(email).isPresent() ||
+            freelancerRepository.findByEmail(email).isPresent() ||
+            employerRepository.findByEmail(email).isPresent() ||
+            managerRepository.findByEmail(email).isPresent() ||
+            staffRepository.findByEmail(email).isPresent()) {
+            response.put("success", false);
+            response.put("message", "Email đã tồn tại trong hệ thống!");
+            return response;
+        }
+
+        com.cny.backend.entity.Manager mgr = com.cny.backend.entity.Manager.builder()
+                .email(email)
+                .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
+                .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Manager")
+                .fullName(dto.getFullName())
+                .phone(dto.getPhone())
+                .status("ACTIVE")
+                .department(dto.getDepartment() != null ? dto.getDepartment() : "General")
+                .managedByAdmin(adminId)
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        mgr = managerRepository.save(mgr);
+        writeAuditLog(adminId, "CREATE_MANAGER", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Manager: " + email + " (ID: " + mgr.getManagerId() + ")");
+
+        response.put("success", true);
+        response.put("message", "Tạo tài khoản Manager thành công.");
+        response.put("manager", ManagerDto.builder()
+                .managerId(mgr.getManagerId())
+                .email(mgr.getEmail())
+                .displayName(mgr.getDisplayName())
+                .fullName(mgr.getFullName())
+                .phone(mgr.getPhone())
+                .status(mgr.getStatus())
+                .department(mgr.getDepartment())
+                .managedByAdmin(mgr.getManagedByAdmin())
+                .createdAt(mgr.getCreatedAt().toString())
+                .updatedAt(mgr.getUpdatedAt().toString())
+                .build());
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> createStaff(StaffCreateDto dto, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String email = dto.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email không được để trống!");
+            return response;
+        }
+
+        if (adminRepository.findByEmail(email).isPresent() ||
+            freelancerRepository.findByEmail(email).isPresent() ||
+            employerRepository.findByEmail(email).isPresent() ||
+            managerRepository.findByEmail(email).isPresent() ||
+            staffRepository.findByEmail(email).isPresent()) {
+            response.put("success", false);
+            response.put("message", "Email đã tồn tại trong hệ thống!");
+            return response;
+        }
+
+        com.cny.backend.entity.Manager mgr = null;
+        if (dto.getManagerId() != null) {
+            Optional<com.cny.backend.entity.Manager> mgrOpt = managerRepository.findById(dto.getManagerId());
+            if (mgrOpt.isPresent()) {
+                mgr = mgrOpt.get();
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy Manager được chỉ định!");
+                return response;
+            }
+        }
+
+        com.cny.backend.entity.Staff stf = com.cny.backend.entity.Staff.builder()
+                .email(email)
+                .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
+                .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Staff")
+                .fullName(dto.getFullName())
+                .phone(dto.getPhone())
+                .status("ACTIVE")
+                .specialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General")
+                .manager(mgr)
+                .createdByAdmin(adminId)
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        stf = staffRepository.save(stf);
+        writeAuditLog(adminId, "CREATE_STAFF", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Staff: " + email + " (ID: " + stf.getStaffId() + ")");
+
+        response.put("success", true);
+        response.put("message", "Tạo tài khoản Staff thành công.");
+        response.put("staff", StaffDto.builder()
+                .staffId(stf.getStaffId())
+                .email(stf.getEmail())
+                .displayName(stf.getDisplayName())
+                .fullName(stf.getFullName())
+                .phone(stf.getPhone())
+                .status(stf.getStatus())
+                .specialization(stf.getSpecialization())
+                .managerId(stf.getManager() != null ? stf.getManager().getManagerId() : null)
+                .managerName(stf.getManager() != null ? stf.getManager().getDisplayName() : null)
+                .createdByAdmin(stf.getCreatedByAdmin())
+                .createdAt(stf.getCreatedAt().toString())
+                .updatedAt(stf.getUpdatedAt().toString())
+                .build());
+        return response;
+    }
+
+    public List<ManagerDto> getAllManagers() {
+        return managerRepository.findAll().stream()
+                .filter(m -> m.getIsDeleted() == null || !m.getIsDeleted())
+                .map(m -> ManagerDto.builder()
+                        .managerId(m.getManagerId())
+                        .email(m.getEmail())
+                        .displayName(m.getDisplayName())
+                        .fullName(m.getFullName())
+                        .phone(m.getPhone())
+                        .avatarUrl(m.getAvatarUrl())
+                        .status(m.getStatus())
+                        .department(m.getDepartment())
+                        .managedByAdmin(m.getManagedByAdmin())
+                        .createdAt(m.getCreatedAt() != null ? m.getCreatedAt().toString() : null)
+                        .updatedAt(m.getUpdatedAt() != null ? m.getUpdatedAt().toString() : null)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<StaffDto> getAllStaff() {
+        return staffRepository.findAll().stream()
+                .filter(s -> s.getIsDeleted() == null || !s.getIsDeleted())
+                .map(s -> StaffDto.builder()
+                        .staffId(s.getStaffId())
+                        .email(s.getEmail())
+                        .displayName(s.getDisplayName())
+                        .fullName(s.getFullName())
+                        .phone(s.getPhone())
+                        .avatarUrl(s.getAvatarUrl())
+                        .status(s.getStatus())
+                        .specialization(s.getSpecialization())
+                        .managerId(s.getManager() != null ? s.getManager().getManagerId() : null)
+                        .managerName(s.getManager() != null ? s.getManager().getDisplayName() : null)
+                        .createdByAdmin(s.getCreatedByAdmin())
+                        .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().toString() : null)
+                        .updatedAt(s.getUpdatedAt() != null ? s.getUpdatedAt().toString() : null)
+                        .build())
+                .collect(Collectors.toList());
     }
 }
 

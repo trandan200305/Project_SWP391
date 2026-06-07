@@ -30,13 +30,13 @@ public class UploadController {
         }
 
         try {
-            // Create uploads directory if it does not exist
+            
             File dir = new File(UPLOADS_DIR);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
-            // Generate unique filename to prevent duplicates
+            
             String originalFilename = file.getOriginalFilename();
             String extension = "";
             if (originalFilename != null && originalFilename.lastIndexOf('.') != -1) {
@@ -44,7 +44,7 @@ public class UploadController {
             }
             String uniqueName = UUID.randomUUID().toString() + extension;
 
-            // Save the file locally
+            
             Path path = Paths.get(UPLOADS_DIR, uniqueName);
             Files.write(path, file.getBytes());
 

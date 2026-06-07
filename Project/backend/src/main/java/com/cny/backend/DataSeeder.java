@@ -39,26 +39,33 @@ public class DataSeeder implements CommandLineRunner {
     private AdminRepository adminRepository;
 
     @Autowired
+    private com.cny.backend.repository.ManagerRepository managerRepository;
+
+    @Autowired
+    private com.cny.backend.repository.StaffRepository staffRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) throws Exception {
-        // Seed Categories
+        
         if (jobCategoryRepository.count() == 0) {
             seedCategories();
         }
 
-        // Seed Freelancers, Employers, and Admins directly into their own tables
+        
         if (employerRepository.count() == 0 && freelancerRepository.count() == 0) {
             seedActors();
         }
 
-        // Seed Projects
+        
         if (projectRepository.count() == 0) {
             seedProjects();
         }
 
-        // Seed Admin system support logs & withdrawals
+        seedManagerAndStaff();
+        
         seedAdminEntities();
     }
 
@@ -79,7 +86,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedActors() {
-        // 1. Create a dedicated Employer (Client) directly in the employers table
+        
         Employer employer = Employer.builder()
                 .email("client@lancerpro.vn")
                 .passwordHash("OAUTH_GOOGLE_LOGGED")
@@ -111,7 +118,7 @@ public class DataSeeder implements CommandLineRunner {
                 .build();
         employerRepository.save(employer);
 
-        // 2. Create a dedicated Admin directly in the admins table
+        
         Admin admin = Admin.builder()
                 .email("admin@lancerpro.com")
                 .passwordHash("OAUTH_GOOGLE_LOGGED")
@@ -131,7 +138,7 @@ public class DataSeeder implements CommandLineRunner {
                 .build();
         adminRepository.save(admin);
 
-        // Top Freelancers matching the vLance screenshot
+        
         String[] names = {"Minh Anh", "Quang Huy", "Phương Linh", "Tùng Dương"};
         String[] emails = {"minhanh@gmail.com", "quanghuy@gmail.com", "phuonglinh@gmail.com", "tungduong@gmail.com"};
         String[] titles = {
@@ -193,7 +200,7 @@ public class DataSeeder implements CommandLineRunner {
 
         List<Project> projects = new ArrayList<>();
 
-        // Seed 6 Published Projects for homepage
+        
         projects.add(Project.builder()
                 .client(client)
                 .category(design != null ? design : tech)
@@ -245,7 +252,7 @@ public class DataSeeder implements CommandLineRunner {
                 .proposalCount(15)
                 .build());
 
-        // Seed 3 projects with status = 'PENDING_REVIEW' for admin moderation page
+        
         projects.add(Project.builder()
                 .client(client)
                 .category(tech)
@@ -289,10 +296,10 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedAdminEntities() {
         try {
-            // Check if bank accounts are seeded
+            
             Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
             if (bankCount != null && bankCount == 0) {
-                // Get freelancer and admin IDs safely from separate tables
+                
                 List<Integer> adminIds = jdbcTemplate.queryForList("SELECT admin_id FROM admins WHERE email = 'admin@lancerpro.com'", Integer.class);
                 List<Integer> maIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'minhanh@gmail.com'", Integer.class);
                 List<Integer> qhIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'quanghuy@gmail.com'", Integer.class);
@@ -302,13 +309,13 @@ public class DataSeeder implements CommandLineRunner {
                     Integer maFreelancerId = maIds.get(0);
                     Integer qhFreelancerId = qhIds.get(0);
 
-                    // 1. Seed bank accounts
+                    
                     jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
                             maFreelancerId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
                     jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
                             qhFreelancerId, "Techcombank", "190345129", "TRAN QUANG HUY");
 
-                    // Get bank account IDs
+                    
                     List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, maFreelancerId);
                     List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, qhFreelancerId);
 
@@ -316,14 +323,14 @@ public class DataSeeder implements CommandLineRunner {
                         Integer maBankId = maBankIds.get(0);
                         Integer qhBankId = qhBankIds.get(0);
 
-                        // 2. Seed withdrawal requests
+                        
                         jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
                                 maFreelancerId, maBankId);
                         jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
                                 qhFreelancerId, qhBankId);
                     }
 
-                    // 3. Seed initial admin audit logs using the concrete admin ID
+                    
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer Minh Anh', GETDATE())",
                             adminId);
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
@@ -332,6 +339,66 @@ public class DataSeeder implements CommandLineRunner {
             }
         } catch (Exception e) {
             System.err.println("Error seeding admin data: " + e.getMessage());
+        }
+    }
+
+    private void seedManagerAndStaff() {
+        try {
+            if (managerRepository.count() == 0) {
+                com.cny.backend.entity.Manager manager = com.cny.backend.entity.Manager.builder()
+                        .email("manager@lancerpro.com")
+                        .passwordHash("123456")
+                        .displayName("Trưởng Phòng IT")
+                        .fullName("Nguyễn Văn Quản Lý")
+                        .phone("0981112222")
+                        .avatarUrl("https://ui-avatars.com/api/?name=Manager")
+                        .status("ACTIVE")
+                        .department("IT & Development")
+                        .managedByAdmin(1)
+                        .isDeleted(false)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+                manager = managerRepository.save(manager);
+
+                if (staffRepository.count() == 0) {
+                    com.cny.backend.entity.Staff staff1 = com.cny.backend.entity.Staff.builder()
+                            .email("staff1@lancerpro.com")
+                            .passwordHash("123456")
+                            .displayName("Nhân Viên Dev 1")
+                            .fullName("Trần Thị Nhân Viên")
+                            .phone("0983334444")
+                            .avatarUrl("https://ui-avatars.com/api/?name=Staff1")
+                            .status("ACTIVE")
+                            .specialization("Web Development Support")
+                            .manager(manager)
+                            .createdByAdmin(1)
+                            .isDeleted(false)
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build();
+                    staffRepository.save(staff1);
+
+                    com.cny.backend.entity.Staff staff2 = com.cny.backend.entity.Staff.builder()
+                            .email("staff2@lancerpro.com")
+                            .passwordHash("123456")
+                            .displayName("Nhân Viên Dev 2")
+                            .fullName("Phạm Văn Nhân Viên")
+                            .phone("0985556666")
+                            .avatarUrl("https://ui-avatars.com/api/?name=Staff2")
+                            .status("ACTIVE")
+                            .specialization("Mobile App Support")
+                            .manager(manager)
+                            .createdByAdmin(1)
+                            .isDeleted(false)
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build();
+                    staffRepository.save(staff2);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error seeding manager/staff: " + e.getMessage());
         }
     }
 }

@@ -16,14 +16,14 @@ public class FreelancerController {
     @Autowired
     private FreelancerRepository freelancerRepository;
 
-    // Get all active freelancers
+    
     @GetMapping
     public ResponseEntity<List<Freelancer>> getAllFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         return ResponseEntity.ok(freelancers);
     }
 
-    // Get the top 4 highest-rated active freelancers for the homepage
+    
     @GetMapping("/top")
     public ResponseEntity<List<Freelancer>> getTopFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();

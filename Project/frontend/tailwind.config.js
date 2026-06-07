@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+
 export default {
   content: [
     "./index.html",
@@ -10,18 +10,18 @@ export default {
         background: '#F8FAFC',
         surface: '#FFFFFF',
         primary: {
-          DEFAULT: '#0F172A', // Dark Navy Blue
+          DEFAULT: '#0F172A', 
           light: '#1E293B',
           dark: '#020617',
         },
         secondary: {
-          DEFAULT: '#06B6D4', // Cyan Blue
+          DEFAULT: '#06B6D4', 
           dark: '#0891B2',
           light: '#ECFEFF',
           container: '#E0F7FA',
         },
         accent: {
-          DEFAULT: '#F59E0B', // Accent Orange
+          DEFAULT: '#F59E0B', 
           dark: '#D97706',
           light: '#FEF3C7',
         },

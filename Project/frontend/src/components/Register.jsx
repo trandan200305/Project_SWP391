@@ -4,7 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
 export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
-  const [role, setRole] = useState('freelancer'); // 'freelancer' or 'employer'
+  const [role, setRole] = useState('freelancer'); 
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -15,7 +15,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [errorField, setErrorField] = useState(''); // trường bị lỗi cụ thể
+  const [errorField, setErrorField] = useState(''); 
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
@@ -81,7 +81,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         }, 1500);
       } else {
         setError(data.message || 'Đăng ký thất bại!');
-        setErrorField(data.field || ''); // 'email' | 'phone' | 'displayName'
+        setErrorField(data.field || ''); 
       }
     } catch (err) {
       setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
@@ -95,12 +95,12 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       onClick={onClose} 
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-primary/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
-      {/* Centered Modal Card Container */}
+      {}
       <div 
         onClick={(e) => e.stopPropagation()} 
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[580px] animate-scale-up border border-slate-100"
       >
-        {/* Floating Close Button */}
+        {}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -109,21 +109,21 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL: Join Metrics & Core Benefits */}
+        {}
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
-          {/* Ambient Glow Orbs */}
+          {}
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:2.5rem_2.5rem]" />
 
-          {/* Logo */}
+          {}
           <div className="relative z-10">
             <span className="font-display text-2xl font-extrabold tracking-tight text-white block">
               Lancer<span className="text-secondary">Pro</span>
             </span>
           </div>
 
-          {/* Core Tagline */}
+          {}
           <div className="relative z-10 my-2 max-w-sm">
             <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-[1.2]">
               Join the world's finest digital workforce.
@@ -398,7 +398,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
             </div>
           </div>
 
-          {/* Footer copyright */}
+          {}
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-2.5">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

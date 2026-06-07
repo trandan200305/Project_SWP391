@@ -5,7 +5,7 @@ export default function Testimonials() {
   const [freelancers, setFreelancers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Avatar premium color maps
+  
   const avatarColors = [
     { color: 'bg-teal-600 text-teal-100' },
     { color: 'bg-indigo-600 text-indigo-100' },
@@ -13,7 +13,7 @@ export default function Testimonials() {
     { color: 'bg-amber-600 text-amber-100' }
   ];
 
-  // Helper: Get initials from name
+  
   const getInitials = (name) => {
     if (!name) return 'FL';
     const parts = name.trim().split(' ');
@@ -21,7 +21,7 @@ export default function Testimonials() {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  // Fetch Top Freelancers from API
+  
   useEffect(() => {
     fetch('http://localhost:8080/api/freelancers/top')
       .then(res => {
@@ -42,7 +42,7 @@ export default function Testimonials() {
     <section className="py-20 bg-surface border-t border-muted-light/60">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Top Freelancers Section */}
+        {}
         <div className="mb-20">
           <div className="flex justify-between items-end mb-10">
             <div>
@@ -77,7 +77,7 @@ export default function Testimonials() {
                     key={profile.profileId} 
                     className="bg-surface p-6 rounded-2xl border border-muted-light/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group"
                   >
-                    {/* Avatar Icon */}
+                    {}
                     <div className="relative mb-4">
                       <div className={`w-20 h-20 ${colorConfig.color} rounded-full flex items-center justify-center font-extrabold text-2xl shadow-md`}>
                         {initials}
@@ -87,22 +87,22 @@ export default function Testimonials() {
                       </span>
                     </div>
 
-                    {/* Name */}
+                    {}
                     <h3 className="font-display text-lg font-bold text-primary mb-1 flex items-center gap-1 group-hover:text-secondary transition-colors duration-200">
                       {name}
                     </h3>
                     
-                    {/* Role */}
+                    {}
                     <span className="text-body-sm text-muted mb-3 block font-medium line-clamp-1">{profile.professionalTitle || 'Chuyên gia Freelancer'}</span>
                     
-                    {/* Ratings */}
+                    {}
                     <div className="flex items-center justify-center gap-1.5 mb-6">
                       <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                       <span className="font-bold text-primary text-body-sm">{profile.averageRating ? parseFloat(profile.averageRating).toFixed(1) : '5.0'}</span>
                       <span className="text-muted text-[13px]">({profile.projectsCompleted} đánh giá)</span>
                     </div>
 
-                    {/* Action button */}
+                    {}
                     <button className="w-full bg-muted-light/20 hover:bg-secondary-light hover:text-secondary-dark border border-muted-light/50 hover:border-secondary/20 py-2.5 rounded-xl font-semibold text-primary text-body-sm transition-all duration-200 flex items-center justify-center gap-1">
                       Xem hồ sơ <ArrowUpRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </button>
@@ -113,7 +113,7 @@ export default function Testimonials() {
           )}
         </div>
 
-        {/* Business Testimonials */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pt-8 border-t border-muted-light/60">
           <div>
             <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Được các doanh nghiệp đánh giá cao</span>
@@ -145,7 +145,7 @@ export default function Testimonials() {
             </div>
           </div>
 
-          {/* Right graphics */}
+          {}
           <div className="relative lg:pl-10">
             <div className="aspect-[4/3] bg-gradient-to-tr from-primary to-primary-light rounded-3xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col justify-between">
               <div className="absolute top-0 right-0 w-64 h-64 bg-secondary opacity-20 blur-[80px] rounded-full" />

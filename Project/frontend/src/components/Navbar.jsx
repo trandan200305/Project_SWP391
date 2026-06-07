@@ -196,7 +196,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         : 'bg-transparent py-6'
     }`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        {/* Brand Logo */}
+        {}
         <div className="flex items-center gap-8">
           <a 
             href="#" 
@@ -212,7 +212,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             </span>
           </a>
 
-          {/* Desktop Navigation */}
+          {}
           <nav className="hidden md:flex gap-8">
             <a 
               href="#find-work" 
@@ -253,7 +253,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           </nav>
         </div>
 
-        {/* Action Buttons */}
+        {}
         <div className="hidden md:flex items-center gap-5">
           {user ? (
             <div className="relative">
@@ -272,7 +272,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 </div>
               </div>
 
-              {/* Click outside overlay */}
+              {}
               {showProfileMenu && (
                 <div 
                   className="fixed inset-0 z-40" 
@@ -280,7 +280,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 />
               )}
 
-              {/* Premium Dropdown Menu */}
+              {}
               {showProfileMenu && (
                 <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-3 py-2 border-b border-slate-50 mb-1">
@@ -353,7 +353,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           )}
         </div>
 
-        {/* Mobile Menu Button */}
+        {}
         <button 
           onClick={() => setIsOpen(!isOpen)} 
           className="md:hidden p-2 rounded-lg text-primary hover:bg-muted-light/30 transition-colors"
@@ -362,7 +362,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         </button>
       </div>
 
-      {/* Mobile Drawer */}
+      {}
       {isOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-surface border-b border-muted-light/80 shadow-lg py-6 px-6 flex flex-col gap-5 animate-fade-in">
           {user && (
@@ -413,7 +413,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             Giải pháp
           </a>
           
-          {/* Mobile Admin panel entry */}
+          {}
           {user && user.role === 'ADMIN' && (
             <button 
               onClick={() => { setIsOpen(false); onNavigateToAdmin(); }}
@@ -469,7 +469,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         </div>
       )}
 
-      {/* PIN Modal Overlay */}
+      {}
       {showPinModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in">

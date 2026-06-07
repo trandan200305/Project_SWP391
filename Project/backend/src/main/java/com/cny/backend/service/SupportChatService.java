@@ -42,7 +42,7 @@ public class SupportChatService {
             return ticketIds.get(0);
         }
 
-        // Create new ticket
+        
         String sql = "INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
                      "VALUES (?, ?, ?, ?, 'OPEN', 'MEDIUM', GETDATE(), GETDATE())";
 
@@ -56,7 +56,7 @@ public class SupportChatService {
     }
 
     public List<ChatMessageDto> getChatHistory(Integer ticketId) {
-        // Mark all user messages in this ticket as read when loaded by Admin or User
+        
         jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL", ticketId);
 
         String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.is_read, tm.sent_at, " +
@@ -93,7 +93,7 @@ public class SupportChatService {
                 msg.setIsRead(false);
             }
 
-            // Determine Sender
+            
             if (row.get("sender_freelancer_id") != null) {
                 msg.setSenderId((Integer) row.get("sender_freelancer_id"));
                 msg.setSenderRole("FREELANCER");
@@ -111,7 +111,7 @@ public class SupportChatService {
                 msg.setSenderAvatar((String) row.get("admin_avatar"));
             }
 
-            // Fetch attachments from ticket_attachments
+            
             List<Map<String, Object>> attachments = jdbcTemplate.queryForList(
                 "SELECT file_url AS fileUrl, file_name AS fileName, file_size AS fileSize FROM ticket_attachments WHERE message_id = ?",
                 msg.getMessageId()
@@ -145,7 +145,7 @@ public class SupportChatService {
         for (Map<String, Object> row : rows) {
             Map<String, Object> ticket = new HashMap<>(row);
             
-            // Format timestamps for JSON compatibility
+            
             if (row.get("created_at") != null) {
                 ticket.put("created_at", row.get("created_at").toString());
             }
@@ -156,7 +156,7 @@ public class SupportChatService {
                 ticket.put("last_message_at", row.get("last_message_at").toString());
             }
 
-            // Client helper data
+            
             if (row.get("freelancer_id") != null) {
                 ticket.put("sender_name", row.get("freelancer_name"));
                 ticket.put("sender_avatar", row.get("freelancer_avatar"));
@@ -171,11 +171,11 @@ public class SupportChatService {
                 ticket.put("sender_id", row.get("employer_id"));
             }
 
-            // Pass has_admin_replied as boolean
+            
             Object hasReplied = row.get("has_admin_replied");
             ticket.put("has_admin_replied", hasReplied != null && ((Number) hasReplied).intValue() == 1);
 
-            // Pass unread_count and total_messages
+            
             Object unreadCount = row.get("unread_count");
             ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
 
@@ -192,7 +192,7 @@ public class SupportChatService {
     public ChatMessageDto saveMessage(ChatMessageDto messageDto) {
         Integer ticketId = messageDto.getTicketId();
         if (ticketId == null || ticketId == 0) {
-            // Find or create ticket for user
+            
             if ("ADMIN".equals(messageDto.getSenderRole())) {
                 throw new IllegalStateException("Admin cannot send messages without a valid ticket ID");
             }
@@ -223,7 +223,7 @@ public class SupportChatService {
         messageDto.setSentAt(LocalDateTime.now());
         messageDto.setIsRead(isReadValue == 1);
 
-        // Save attachments in ticket_attachments
+        
         if (messageDto.getAttachments() != null) {
             for (Map<String, Object> att : messageDto.getAttachments()) {
                 jdbcTemplate.update(
@@ -233,10 +233,10 @@ public class SupportChatService {
             }
         }
 
-        // Update ticket updated_at
+        
         jdbcTemplate.update("UPDATE support_tickets SET updated_at = GETDATE() WHERE ticket_id = ?", ticketId);
 
-        // Fetch sender's name and avatar if not provided
+        
         if (messageDto.getSenderName() == null || messageDto.getSenderAvatar() == null) {
             if ("FREELANCER".equals(role)) {
                 List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM freelancers WHERE freelancer_id = ?", freelancerId);
@@ -262,7 +262,7 @@ public class SupportChatService {
         return messageDto;
     }
     
-    // Helper to fetch single user ticket
+    
     public Integer getActiveTicketForUser(Integer userId, String role) {
         String roleUpper = role.toUpperCase();
         String sql = "SELECT ticket_id FROM support_tickets WHERE " + 
@@ -307,7 +307,7 @@ public class SupportChatService {
         if (!adminIds.isEmpty()) {
             adminId = adminIds.get(0);
         } else {
-            adminId = 1; // Fallback
+            adminId = 1; 
         }
 
         String sql = "INSERT INTO ticket_messages (ticket_id, sender_admin_id, message_text, is_read, sent_at) " +

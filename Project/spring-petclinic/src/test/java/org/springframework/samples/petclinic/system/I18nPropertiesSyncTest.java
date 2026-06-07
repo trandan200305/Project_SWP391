@@ -15,13 +15,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * This test ensures that there are no hard-coded strings without internationalization in
- * any HTML files. Also ensures that a string is translated in every language to avoid
- * partial translations.
- *
- * @author Anuj Ashok Potdar
- */
+
 public class I18nPropertiesSyncTest {
 
 	private static final String I18N_DIR = "src/main/resources";
@@ -114,8 +108,8 @@ public class I18nPropertiesSyncTest {
 
 		for (Map.Entry<String, Properties> entry : localeToProps.entrySet()) {
 			String fileName = entry.getKey();
-			// We use fallback logic to include english strings, hence messages_en is not
-			// populated.
+			
+			
 			if (fileName.equals(baseFile) || "messages_en.properties".equals(fileName)) {
 				continue;
 			}

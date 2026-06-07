@@ -16,14 +16,14 @@ public class ProjectController {
     @Autowired
     private ProjectRepository projectRepository;
 
-    // Get all published, active projects
+    
     @GetMapping
     public ResponseEntity<List<Project>> getAllProjects() {
         List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
         return ResponseEntity.ok(projects);
     }
 
-    // Get the latest 6 published projects for the homepage bento grid
+    
     @GetMapping("/latest")
     public ResponseEntity<List<Project>> getLatestProjects() {
         List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
@@ -31,7 +31,7 @@ public class ProjectController {
         return ResponseEntity.ok(latest);
     }
 
-    // Search projects by keyword
+    
     @GetMapping("/search")
     public ResponseEntity<List<Project>> searchProjects(@RequestParam("keyword") String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -41,7 +41,7 @@ public class ProjectController {
         return ResponseEntity.ok(projects);
     }
 
-    // Post a new project
+    
     @PostMapping
     public ResponseEntity<Project> createProject(@RequestBody Project project) {
         Project saved = projectRepository.save(project);
