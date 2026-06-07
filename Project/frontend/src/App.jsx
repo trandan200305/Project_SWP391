@@ -15,8 +15,7 @@ import ComingSoon from "./components/ComingSoon.jsx";
 import Messenger from "./components/Messenger.jsx";
 import EmployerProfileSettings from "./components/EmployerProfileSettings.jsx";
 
-const GOOGLE_CLIENT_ID =
-  "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home"); // 'home' | 'admin' | 'login' | 'register' | 'coming_soon'
@@ -54,6 +53,7 @@ export default function App() {
     }
     setCurrentPage(page);
   };
+
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setCurrentPage("home");

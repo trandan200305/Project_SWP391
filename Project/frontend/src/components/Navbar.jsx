@@ -201,8 +201,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-      scrolled 
+    <>
+      <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        scrolled 
         ? 'bg-surface/90 backdrop-blur-md border-b border-muted-light/60 shadow-sm py-4' 
         : 'bg-transparent py-6'
     }`}>
@@ -492,6 +493,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           </div>
         </div>
       )}
+      </header>
 
       {/* PIN Modal Overlay */}
       {showPinModal && (
@@ -611,6 +613,6 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

@@ -1,88 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { Star, Eye, EyeOff, Chrome, X } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
+import React, { useState, useEffect } from "react";
+import { Star, Eye, EyeOff, Chrome, X } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  const [role, setRole] = useState('freelancer'); // 'freelancer' or 'employer'
+  const [role, setRole] = useState("freelancer"); // 'freelancer' or 'employer'
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
   const [accountLocked, setAccountLocked] = useState(null);
 
   // --- Forgot Password State ---
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState("");
   const [codeSent, setCodeSent] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [successMsg, setSuccessMsg] = useState("");
   const [timer, setTimer] = useState(0);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (timer <= 0) return;
-    const interval = setInterval(() => setTimer(t => t - 1), 1000);
+    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
   const processBackendLogin = async (payload) => {
-    setLoading(true); 
-    setErrorMsg('');
+    setLoading(true);
+    setErrorMsg("");
     setAccountLocked(null);
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
-      
+
       if (data.success) {
         setLoading(false);
         setSuccess(true);
         setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user); 
+          if (onLoginSuccess) onLoginSuccess(data.user);
         }, 1200);
-      } else if (data.accountStatus === 'LOCKED' || data.accountStatus === 'BANNED') {
+      } else if (
+        data.accountStatus === "LOCKED" ||
+        data.accountStatus === "BANNED"
+      ) {
         setLoading(false);
         setAccountLocked({ status: data.accountStatus, message: data.message });
       } else {
         setLoading(false);
-        setErrorMsg(data.message || 'Đăng nhập thất bại.');
+        setErrorMsg(data.message || "Đăng nhập thất bại.");
       }
     } catch (error) {
       setLoading(false);
-      setErrorMsg('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+      setErrorMsg("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) return; 
-    
+    if (!email || !password) return;
+
     processBackendLogin({
       email,
-      password, 
-      name: email.split('@')[0], 
+      password,
+      name: email.split("@")[0],
       requestedRole: role.toUpperCase(),
-      avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
+      avatar: `https://ui-avatars.com/api/?name=${email.split("@")[0]}&background=random`,
     });
   };
 
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
-    
+
     processBackendLogin({
       email: decoded.email,
       name: decoded.name,
-      googleId: decoded.sub, 
+      googleId: decoded.sub,
       avatar: decoded.picture,
-      requestedRole: role.toUpperCase()
+      requestedRole: role.toUpperCase(),
     });
   };
 
@@ -90,26 +93,29 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     e.preventDefault();
     if (!forgotEmail) return;
     setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setErrorMsg("");
+    setSuccessMsg("");
     try {
-      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail })
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail }),
+        },
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setCodeSent(true);
-        setSuccessMsg('Mã xác nhận đã được gửi về email của bạn!');
-        setTimer(60); 
-        setOtp(['', '', '', '', '', '']); 
+        setSuccessMsg("Mã xác nhận đã được gửi về email của bạn!");
+        setTimer(60);
+        setOtp(["", "", "", "", "", ""]);
       } else {
-        setErrorMsg(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
+        setErrorMsg(data.message || "Không thể gửi mã. Vui lòng thử lại.");
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg("Lỗi kết nối đến máy chủ!");
     } finally {
       setLoading(false);
     }
@@ -117,30 +123,33 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
-    const code = otp.join(''); 
+    const code = otp.join("");
     if (code.length < 6) return;
-    
+
     setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-    
+    setErrorMsg("");
+    setSuccessMsg("");
+
     try {
-      const response = await fetch('http://localhost:8080/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail, code })
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/auth/verify-code",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail, code }),
+        },
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        setSuccessMsg('✅ Xác nhận thành công! Vui lòng nhập mật khẩu mới.');
+        setSuccessMsg("✅ Xác nhận thành công! Vui lòng nhập mật khẩu mới.");
         setIsResettingPassword(true);
-        setCodeSent(false); 
+        setCodeSent(false);
       } else {
-        setErrorMsg(data.message || 'Mã không chính xác!');
+        setErrorMsg(data.message || "Mã không chính xác!");
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg("Lỗi kết nối đến máy chủ!");
     } finally {
       setLoading(false);
     }
@@ -149,41 +158,44 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp!');
+      setErrorMsg("Mật khẩu xác nhận không khớp!");
       return;
     }
     if (newPassword.length < 6) {
-      setErrorMsg('Mật khẩu phải có ít nhất 6 ký tự!');
+      setErrorMsg("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
 
     setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setErrorMsg("");
+    setSuccessMsg("");
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail, newPassword })
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/auth/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail, newPassword }),
+        },
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        setSuccessMsg('✅ Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay.');
+        setSuccessMsg("✅ Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay.");
         setTimeout(() => {
           setIsForgotPassword(false);
           setIsResettingPassword(false);
-          setSuccessMsg('');
-          setForgotEmail('');
-          setNewPassword('');
-          setConfirmPassword('');
+          setSuccessMsg("");
+          setForgotEmail("");
+          setNewPassword("");
+          setConfirmPassword("");
         }, 3000);
       } else {
-        setErrorMsg(data.message || 'Có lỗi xảy ra!');
+        setErrorMsg(data.message || "Có lỗi xảy ra!");
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg("Lỗi kết nối đến máy chủ!");
     } finally {
       setLoading(false);
     }
@@ -225,19 +237,27 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <div className="relative z-10 bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-lg">
             <div className="flex gap-0.5 mb-2.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 text-secondary fill-secondary" />
+                <Star
+                  key={i}
+                  className="w-4 h-4 text-secondary fill-secondary"
+                />
               ))}
             </div>
             <p className="text-white/95 text-[13px] italic leading-relaxed mb-4 font-medium">
-              "LancerPro has completely transformed how we scale our engineering teams. The caliber of talent is unmatched."
+              "LancerPro has completely transformed how we scale our engineering
+              teams. The caliber of talent is unmatched."
             </p>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/15 border border-white/20 rounded-full flex items-center justify-center font-extrabold text-white text-[12px] shadow-sm">
                 JD
               </div>
               <div>
-                <h4 className="font-bold text-white text-[12px]">James Dalton</h4>
-                <p className="text-[10px] text-white/50 font-medium">CTO at TechFlow</p>
+                <h4 className="font-bold text-white text-[12px]">
+                  James Dalton
+                </h4>
+                <p className="text-[10px] text-white/50 font-medium">
+                  CTO at TechFlow
+                </p>
               </div>
             </div>
           </div>
@@ -246,19 +266,22 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         {/* RIGHT PANEL */}
         <div className="w-full md:w-[52%] p-8 flex flex-col justify-between bg-white relative overflow-y-auto h-full">
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
-
             {/* ===================== FORGOT PASSWORD FLOW ===================== */}
             {isForgotPassword ? (
               <>
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
-                  {isResettingPassword ? 'Đặt lại mật khẩu mới' : (codeSent ? 'Nhập mã xác nhận' : 'Quên mật khẩu')}
+                  {isResettingPassword
+                    ? "Đặt lại mật khẩu mới"
+                    : codeSent
+                      ? "Nhập mã xác nhận"
+                      : "Quên mật khẩu"}
                 </h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
-                  {isResettingPassword 
-                    ? 'Vui lòng nhập mật khẩu mới cho tài khoản của bạn.' 
-                    : (codeSent
+                  {isResettingPassword
+                    ? "Vui lòng nhập mật khẩu mới cho tài khoản của bạn."
+                    : codeSent
                       ? `Mã 6 chữ số đã được gửi về ${forgotEmail}.`
-                      : 'Nhập email đã đăng ký để nhận mã xác nhận.')}
+                      : "Nhập email đã đăng ký để nhận mã xác nhận."}
                 </p>
 
                 {/* Error / Success messages */}
@@ -267,29 +290,34 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     <div>{errorMsg}</div>
                     {codeSent && (
                       <div className="mt-1.5">
-                        Bạn không lấy được mã?{' '}
+                        Bạn không lấy được mã?{" "}
                         <a
                           href="#resend"
                           onClick={async (e) => {
                             e.preventDefault();
                             setLoading(true);
                             try {
-                              const res = await fetch('http://localhost:8080/api/auth/forgot-password', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: forgotEmail })
-                              });
+                              const res = await fetch(
+                                "http://localhost:8080/api/auth/forgot-password",
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ email: forgotEmail }),
+                                },
+                              );
                               const data = await res.json();
                               if (data.success) {
-                                setSuccessMsg('Mã mới đã được gửi!');
+                                setSuccessMsg("Mã mới đã được gửi!");
                                 setTimer(60);
-                                setOtp(['', '', '', '', '', '']);
-                                setErrorMsg('');
+                                setOtp(["", "", "", "", "", ""]);
+                                setErrorMsg("");
                               } else {
                                 setErrorMsg(data.message);
                               }
                             } catch {
-                              setErrorMsg('Lỗi kết nối máy chủ');
+                              setErrorMsg("Lỗi kết nối máy chủ");
                             } finally {
                               setLoading(false);
                             }
@@ -344,12 +372,15 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       {loading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        'Đổi mật khẩu'
+                        "Đổi mật khẩu"
                       )}
                     </button>
                   </form>
                 ) : (
-                  <form onSubmit={codeSent ? handleVerifyCode : handleSendCode} className="space-y-4">
+                  <form
+                    onSubmit={codeSent ? handleVerifyCode : handleSendCode}
+                    className="space-y-4"
+                  >
                     {/* Email input */}
                     <div>
                       <label className="block text-[11px] font-bold text-primary mb-1">
@@ -380,20 +411,28 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                               maxLength={1}
                               value={digit}
                               onChange={(e) => {
-                                const val = e.target.value.replace(/\D/, '');
+                                const val = e.target.value.replace(/\D/, "");
                                 const newOtp = [...otp];
                                 newOtp[index] = val;
                                 setOtp(newOtp);
                                 if (val && index < 5) {
-                                  document.getElementById(`otp-${index + 1}`).focus();
+                                  document
+                                    .getElementById(`otp-${index + 1}`)
+                                    .focus();
                                 }
                               }}
                               onKeyDown={(e) => {
-                                if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
+                                if (
+                                  e.key === "Backspace" &&
+                                  otp[index] === "" &&
+                                  index > 0
+                                ) {
                                   const newOtp = [...otp];
-                                  newOtp[index - 1] = '';
+                                  newOtp[index - 1] = "";
                                   setOtp(newOtp);
-                                  document.getElementById(`otp-${index - 1}`).focus();
+                                  document
+                                    .getElementById(`otp-${index - 1}`)
+                                    .focus();
                                 }
                               }}
                               className="w-11 h-11 text-center bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg text-[16px] font-bold focus:outline-none transition-all text-primary"
@@ -403,32 +442,41 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
 
                         <div className="mt-2 text-center text-[11px] font-semibold">
                           {timer > 0 ? (
-                            <span className="text-muted">Gửi lại mã sau {timer}s</span>
+                            <span className="text-muted">
+                              Gửi lại mã sau {timer}s
+                            </span>
                           ) : (
                             <span className="text-muted">
-                              Bạn không nhận được mã?{' '}
+                              Bạn không nhận được mã?{" "}
                               <a
                                 href="#resend"
                                 onClick={async (e) => {
                                   e.preventDefault();
                                   setLoading(true);
                                   try {
-                                    const res = await fetch('http://localhost:8080/api/auth/forgot-password', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ email: forgotEmail })
-                                    });
+                                    const res = await fetch(
+                                      "http://localhost:8080/api/auth/forgot-password",
+                                      {
+                                        method: "POST",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({
+                                          email: forgotEmail,
+                                        }),
+                                      },
+                                    );
                                     const data = await res.json();
                                     if (data.success) {
-                                      setSuccessMsg('Mã mới đã được gửi!');
+                                      setSuccessMsg("Mã mới đã được gửi!");
                                       setTimer(60);
-                                      setOtp(['', '', '', '', '', '']);
-                                      setErrorMsg('');
+                                      setOtp(["", "", "", "", "", ""]);
+                                      setErrorMsg("");
                                     } else {
                                       setErrorMsg(data.message);
                                     }
                                   } catch {
-                                    setErrorMsg('Lỗi kết nối máy chủ');
+                                    setErrorMsg("Lỗi kết nối máy chủ");
                                   } finally {
                                     setLoading(false);
                                   }
@@ -452,9 +500,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       {loading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : !codeSent ? (
-                        'Gửi mã xác nhận'
+                        "Gửi mã xác nhận"
                       ) : (
-                        'Xác nhận mã OTP'
+                        "Xác nhận mã OTP"
                       )}
                     </button>
                   </form>
@@ -468,11 +516,11 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       setIsForgotPassword(false);
                       setIsResettingPassword(false);
                       setCodeSent(false);
-                      setOtp(['', '', '', '', '', '']);
-                      setErrorMsg('');
-                      setSuccessMsg('');
-                      setNewPassword('');
-                      setConfirmPassword('');
+                      setOtp(["", "", "", "", "", ""]);
+                      setErrorMsg("");
+                      setSuccessMsg("");
+                      setNewPassword("");
+                      setConfirmPassword("");
                     }}
                     className="text-secondary font-bold hover:underline"
                   >
@@ -483,41 +531,56 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             ) : (
               /* ===================== LOGIN FORM ===================== */
               <>
-                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  Welcome back
+                </h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
                   Log in to manage your professional ecosystem.
                 </p>
 
                 {/* Account Locked/Banned Warning */}
                 {accountLocked && (
-                  <div className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
-                    accountLocked.status === 'BANNED'
-                      ? 'bg-rose-50 border-rose-300'
-                      : 'bg-amber-50 border-amber-300'
-                  }`}>
+                  <div
+                    className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
+                      accountLocked.status === "BANNED"
+                        ? "bg-rose-50 border-rose-300"
+                        : "bg-amber-50 border-amber-300"
+                    }`}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
-                        {accountLocked.status === 'BANNED' ? '🚫' : '⚠️'}
+                        {accountLocked.status === "BANNED" ? "🚫" : "⚠️"}
                       </span>
-                      <h3 className={`font-bold text-[13px] ${
-                        accountLocked.status === 'BANNED' ? 'text-rose-800' : 'text-amber-800'
-                      }`}>
-                        {accountLocked.status === 'BANNED'
-                          ? 'Tài khoản đã bị cấm vĩnh viễn'
-                          : 'Tài khoản đang bị tạm khóa'}
+                      <h3
+                        className={`font-bold text-[13px] ${
+                          accountLocked.status === "BANNED"
+                            ? "text-rose-800"
+                            : "text-amber-800"
+                        }`}
+                      >
+                        {accountLocked.status === "BANNED"
+                          ? "Tài khoản đã bị cấm vĩnh viễn"
+                          : "Tài khoản đang bị tạm khóa"}
                       </h3>
                     </div>
-                    <p className={`text-[11px] leading-relaxed ${
-                      accountLocked.status === 'BANNED' ? 'text-rose-700' : 'text-amber-700'
-                    }`}>
+                    <p
+                      className={`text-[11px] leading-relaxed ${
+                        accountLocked.status === "BANNED"
+                          ? "text-rose-700"
+                          : "text-amber-700"
+                      }`}
+                    >
                       {accountLocked.message}
                     </p>
-                    <div className={`text-[10px] font-bold pt-1 border-t ${
-                      accountLocked.status === 'BANNED'
-                        ? 'border-rose-200 text-rose-500'
-                        : 'border-amber-200 text-amber-500'
-                    }`}>
-                      Mã trạng thái: {accountLocked.status} • Liên hệ: support@vlance.vn
+                    <div
+                      className={`text-[10px] font-bold pt-1 border-t ${
+                        accountLocked.status === "BANNED"
+                          ? "border-rose-200 text-rose-500"
+                          : "border-amber-200 text-amber-500"
+                      }`}
+                    >
+                      Mã trạng thái: {accountLocked.status} • Liên hệ:
+                      support@vlance.vn
                     </div>
                   </div>
                 )}
@@ -533,18 +596,22 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
                   <button
                     type="button"
-                    onClick={() => setRole('freelancer')}
+                    onClick={() => setRole("freelancer")}
                     className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === 'freelancer' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary'
+                      role === "freelancer"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted hover:text-primary"
                     }`}
                   >
                     Freelancer
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRole('employer')}
+                    onClick={() => setRole("employer")}
                     className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === 'employer' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary'
+                      role === "employer"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted hover:text-primary"
                     }`}
                   >
                     Employer
@@ -555,7 +622,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 <div className="mb-3.5 flex justify-center w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
-                    onError={() => setErrorMsg('Đăng nhập Google thất bại')}
+                    onError={() => setErrorMsg("Đăng nhập Google thất bại")}
                     useOneTap
                     theme="outline"
                     size="large"
@@ -578,7 +645,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 {/* Email/Password Form */}
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-primary mb-1">Email Address</label>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Email Address
+                    </label>
                     <input
                       type="email"
                       value={email}
@@ -591,20 +660,22 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
 
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="text-[11px] font-bold text-primary">Password</label>
+                      <label className="text-[11px] font-bold text-primary">
+                        Password
+                      </label>
                       <a
                         href="#forgot"
                         onClick={(e) => {
                           e.preventDefault();
                           setIsForgotPassword(true);
                           setIsResettingPassword(false);
-                          setErrorMsg('');
-                          setSuccessMsg('');
+                          setErrorMsg("");
+                          setSuccessMsg("");
                           setCodeSent(false);
-                          setOtp(['', '', '', '', '', '']);
-                          setNewPassword('');
-                          setConfirmPassword('');
-                          setForgotEmail(email); 
+                          setOtp(["", "", "", "", "", ""]);
+                          setNewPassword("");
+                          setConfirmPassword("");
+                          setForgotEmail(email);
                         }}
                         className="text-secondary font-bold text-[11px] hover:underline"
                       >
@@ -613,7 +684,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     </div>
                     <div className="relative">
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -625,20 +696,13 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4.5 h-4.5" />
+                        ) : (
+                          <Eye className="w-4.5 h-4.5" />
+                        )}
                       </button>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
-                    />
-                    <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
-                      Keep me logged in for 30 days
-                    </label>
                   </div>
 
                   <button
@@ -646,23 +710,23 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     disabled={loading || success}
                     className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
                       success
-                        ? 'bg-emerald-600 text-white shadow-lg animate-pulse'
-                        : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
+                        ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                        : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
                     }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : success ? (
-                      'Đăng nhập thành công!'
+                      "Đăng nhập thành công!"
                     ) : (
-                      'Sign In to LancerPro'
+                      "Sign In to LancerPro"
                     )}
                   </button>
                 </form>
 
                 {/* Switch to Register */}
                 <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
-                  Don't have an account?{' '}
+                  Don't have an account?{" "}
                   <a
                     href="#register"
                     onClick={(e) => {
@@ -682,9 +746,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">
-              <a href="#privacy" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#terms" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#help" className="hover:text-primary transition-colors">Help</a>
+              <a
+                href="#privacy"
+                className="hover:text-primary transition-colors"
+              >
+                Privacy
+              </a>
+              <a href="#terms" className="hover:text-primary transition-colors">
+                Terms
+              </a>
+              <a href="#help" className="hover:text-primary transition-colors">
+                Help
+              </a>
             </div>
           </div>
         </div>

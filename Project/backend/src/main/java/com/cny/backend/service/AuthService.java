@@ -11,6 +11,7 @@ import com.cny.backend.repository.LoginHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -32,19 +33,23 @@ public class AuthService {
     @Autowired
     private LoginHistoryRepository loginHistoryRepository;
 
-    @Transactional 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // login and register
+    @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
         String name = payload.get("name");
         String googleId = payload.get("googleId");
         String avatar = payload.get("avatar");
-        String requestedRole = payload.get("requestedRole"); 
+        String requestedRole = payload.get("requestedRole");
 
         String displayName = payload.getOrDefault("displayName", name);
         String fullName = payload.getOrDefault("fullName", name);
         String phone = payload.get("phone");
         String password = payload.get("password");
-        
+
         String passwordHash = (password != null && !password.trim().isEmpty()) ? password : "OAUTH_GOOGLE_LOGGED";
 
         Map<String, Object> response = new HashMap<>();
@@ -60,11 +65,11 @@ public class AuthService {
         }
 
         boolean isSpecialAdmin = "admin@lancerpro.com".equalsIgnoreCase(email);
-                                 
+
         Optional<Admin> existingAdmin = adminRepository.findByEmail(email);
         Optional<Employer> existingEmployer = employerRepository.findByEmail(email);
         Optional<Freelancer> existingFreelancer = freelancerRepository.findByEmail(email);
-                                 
+
         if (isSpecialAdmin || existingAdmin.isPresent()) {
             requestedRole = "ADMIN";
         } else if (existingEmployer.isPresent()) {
@@ -72,9 +77,9 @@ public class AuthService {
         } else if (existingFreelancer.isPresent()) {
             requestedRole = "FREELANCER";
         } else if (requestedRole == null) {
-            requestedRole = "FREELANCER"; 
+            requestedRole = "FREELANCER";
         } else {
-            requestedRole = requestedRole.toUpperCase(); 
+            requestedRole = requestedRole.toUpperCase();
         }
 
         boolean isOAuthLogin = "OAUTH_GOOGLE_LOGGED".equals(passwordHash);
@@ -93,70 +98,42 @@ public class AuthService {
         if ("ADMIN".equals(assignedRole)) {
             if (totalRoles > 0 && emailInAdmins == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
+            // LOGIN FOR ADMIN
             if (existingAdmin.isEmpty()) {
-                if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
-                    response.put("success", false);
-                    response.put("message", "Tài khoản không tồn tại!");
-                    return response;
-                }
-                Admin admin = Admin.builder()
-                        .email(email)
-                        .passwordHash(passwordHash)
-                        .displayName(displayName)
-                        .fullName(fullName)
-                        .phone(phone)
-                        .avatarUrl(avatar)
-                        .status("ACTIVE")
-                        .emailVerified(true)
-                        .googleId(googleId)
-                        .adminLevel("SUPER_ADMIN")
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .isDeleted(false)
-                        .build();
-                admin = adminRepository.save(admin);
-                userId = admin.getAdminId();
-            } else {
-                Admin dbAdmin = existingAdmin.get();
-                if (!isOAuthLogin) {
-                    if (dbAdmin.getPasswordHash() == null || !dbAdmin.getPasswordHash().equals(passwordHash)) {
-                        response.put("success", false);
-                        response.put("message", "Sai mật khẩu!");
-                        return response;
-                    }
-                }
-
-                userId = dbAdmin.getAdminId();
-                userStatus = dbAdmin.getStatus();
-                
-                boolean updated = false;
-                if (googleId != null && dbAdmin.getGoogleId() == null) {
-                    dbAdmin.setGoogleId(googleId);
-                    dbAdmin.setAvatarUrl(avatar);
-                    updated = true;
-                }
-                
-                String dbPin = dbAdmin.getMessengerPin();
-                if (dbPin != null && !dbPin.trim().isEmpty()) {
-                    hasMessengerPin = true;
-                }
-                
-                if (updated) {
-                    adminRepository.save(dbAdmin);
-                }
+                response.put("success", false);
+                response.put("message", "Tài khoản Admin không tồn tại!");
+                return response;
             }
-        } 
-        else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {
+
+            Admin dbAdmin = existingAdmin.get();
+            if (dbAdmin.getPasswordHash() == null
+                    || !passwordEncoder.matches(passwordHash, dbAdmin.getPasswordHash())) {
+                response.put("success", false);
+                response.put("message", "Sai mật khẩu!");
+                return response;
+            }
+
+            userId = dbAdmin.getAdminId();
+            userStatus = dbAdmin.getStatus();
+
+            String dbPin = dbAdmin.getMessengerPin();
+            if (dbPin != null && !dbPin.trim().isEmpty()) {
+                hasMessengerPin = true;
+            }
+        } else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {
             if (totalRoles > 0 && emailInEmployers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò Freelancer. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò Freelancer. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
+            // REGISTER FOR EMPLOYER
             if (existingEmployer.isEmpty()) {
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
@@ -165,7 +142,7 @@ public class AuthService {
                 }
                 Employer employer = Employer.builder()
                         .email(email)
-                        .passwordHash(passwordHash)
+                        .passwordHash(isOAuthLogin ? "OAUTH_GOOGLE_LOGGED" : passwordEncoder.encode(passwordHash))
                         .displayName(displayName)
                         .fullName(fullName)
                         .phone(phone)
@@ -184,9 +161,11 @@ public class AuthService {
                 employer = employerRepository.save(employer);
                 userId = employer.getEmployerId();
             } else {
+                //LOGIN FOR EMPLOYER
                 Employer dbEmployer = existingEmployer.get();
                 if (!isOAuthLogin) {
-                    if (dbEmployer.getPasswordHash() == null || !dbEmployer.getPasswordHash().equals(passwordHash)) {
+                    if (dbEmployer.getPasswordHash() == null
+                            || !passwordEncoder.matches(passwordHash, dbEmployer.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
                         return response;
@@ -195,64 +174,67 @@ public class AuthService {
 
                 userId = dbEmployer.getEmployerId();
                 userStatus = dbEmployer.getStatus();
-                
+
                 boolean updated = false;
                 if (googleId != null && dbEmployer.getGoogleId() == null) {
                     dbEmployer.setGoogleId(googleId);
                     dbEmployer.setAvatarUrl(avatar);
                     updated = true;
                 }
-                
+
                 String dbPin = dbEmployer.getMessengerPin();
                 if (dbPin != null && !dbPin.trim().isEmpty()) {
                     hasMessengerPin = true;
                 }
-                
+
                 if (updated) {
                     employerRepository.save(dbEmployer);
                 }
             }
-        } 
-        else {
+        } else {
             if (totalRoles > 0 && emailInFreelancers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò Employer. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò Employer. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
+            //REGISTER FOR FREELANCER
             if (existingFreelancer.isEmpty()) {
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
                     response.put("message", "Tài khoản không tồn tại!");
                     return response;
                 }
-                
-                Freelancer freelancer = Freelancer.builder() 
+
+                Freelancer freelancer = Freelancer.builder()
                         .email(email)
-                        .passwordHash(passwordHash) 
+                        .passwordHash(isOAuthLogin ? "OAUTH_GOOGLE_LOGGED" : passwordEncoder.encode(passwordHash))
                         .displayName(displayName)
                         .fullName(fullName)
                         .phone(phone)
                         .avatarUrl(avatar)
                         .status("ACTIVE")
-                        .emailVerified(true) 
+                        .emailVerified(true)
                         .googleId(googleId)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
-                        .profileCompleteness(95) 
+                        .profileCompleteness(95)
                         .totalEarnings(java.math.BigDecimal.ZERO)
                         .projectsCompleted(0)
                         .averageRating(new java.math.BigDecimal("5.0"))
                         .isAvailable(true)
                         .isDeleted(false)
                         .build();
-                freelancer = freelancerRepository.save(freelancer); 
-                userId = freelancer.getProfileId(); 
+                freelancer = freelancerRepository.save(freelancer);
+                userId = freelancer.getProfileId();
             } else {
+                //LOGIN FOR FREELANCER
                 Freelancer dbFreelancer = existingFreelancer.get();
-                
+
                 if (!isOAuthLogin) {
-                    if (dbFreelancer.getPasswordHash() == null || !dbFreelancer.getPasswordHash().equals(passwordHash)) {
+                    if (dbFreelancer.getPasswordHash() == null
+                            || !passwordEncoder.matches(passwordHash, dbFreelancer.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
                         return response;
@@ -261,25 +243,26 @@ public class AuthService {
 
                 userId = dbFreelancer.getProfileId();
                 userStatus = dbFreelancer.getStatus();
-                
+
                 boolean updated = false;
                 if (googleId != null && dbFreelancer.getGoogleId() == null) {
                     dbFreelancer.setGoogleId(googleId);
                     dbFreelancer.setAvatarUrl(avatar);
                     updated = true;
                 }
-                
+
                 String dbPin = dbFreelancer.getMessengerPin();
                 if (dbPin != null && !dbPin.trim().isEmpty()) {
                     hasMessengerPin = true;
                 }
-                
+
                 if (updated) {
                     freelancerRepository.save(dbFreelancer);
                 }
             }
         }
 
+        // RECORD LOGIN HISTORY AND UPDATE LAST LOGIN TIME
         LoginHistory history = LoginHistory.builder()
                 .loginAt(LocalDateTime.now())
                 .success(true)
@@ -307,13 +290,14 @@ public class AuthService {
             }
             history.setFreelancerId(userId);
         }
-        
+
         loginHistoryRepository.save(history);
 
+        // CHECK USER ACCOUNT STATUS (LOCKED/BANNED)
         if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus)) {
-            String notifMessage = "LOCKED".equals(userStatus) 
-                ? "Tài khoản của bạn đã bị tạm khóa. Liên hệ support@vlance.vn để được hỗ trợ."
-                : "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
+            String notifMessage = "LOCKED".equals(userStatus)
+                    ? "Tài khoản của bạn đã bị tạm khóa. Liên hệ support@vlance.vn để được hỗ trợ."
+                    : "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
 
             response.put("success", false);
             response.put("accountStatus", userStatus);
@@ -321,8 +305,9 @@ public class AuthService {
             return response;
         }
 
+        // PREPARE SUCCESSFUL LOGIN RESPONSE FOR FRONTEND
         response.put("success", true);
-        
+
         Map<String, Object> userObj = new HashMap<>();
         userObj.put("id", userId);
         userObj.put("email", email);
@@ -330,34 +315,44 @@ public class AuthService {
         userObj.put("role", assignedRole);
         userObj.put("avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name);
         userObj.put("hasMessengerPin", hasMessengerPin);
-        
+
         response.put("user", userObj);
         return response;
     }
 
+    // check login status by role
     public Integer countBy(String table, String column, String value) {
         if ("admins".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return adminRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return adminRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return adminRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return adminRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return adminRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return adminRepository.countByDisplayName(value);
         } else if ("employers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return employerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return employerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return employerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return employerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return employerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return employerRepository.countByDisplayName(value);
         } else if ("freelancers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return freelancerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return freelancerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return freelancerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return freelancerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return freelancerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return freelancerRepository.countByDisplayName(value);
         }
         return 0;
     }
 
-
+    // set messenger pin
     public boolean setMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId).map(u -> {
-                u.setMessengerPin(pin); 
-                adminRepository.save(u); 
+                u.setMessengerPin(pin);
+                adminRepository.save(u);
                 return true;
             }).orElse(false);
         } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
@@ -376,6 +371,7 @@ public class AuthService {
         return false;
     }
 
+    // verify messenger pin
     public boolean verifyMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId)
@@ -396,11 +392,13 @@ public class AuthService {
         return false;
     }
 
+    // reset and email messenger pin
     @Transactional
-    public String resetAndEmailMessengerPin(Integer userId, String role, org.springframework.mail.javamail.JavaMailSender mailSender) {
+    public String resetAndEmailMessengerPin(Integer userId, String role,
+            org.springframework.mail.javamail.JavaMailSender mailSender) {
         String email = null;
-        String newPin = String.format("%04d", (int)(Math.random() * 10000));
-        
+        String newPin = String.format("%04d", (int) (Math.random() * 10000));
+
         if ("ADMIN".equalsIgnoreCase(role)) {
             Optional<Admin> opt = adminRepository.findById(userId);
             if (opt.isPresent()) {
@@ -426,49 +424,51 @@ public class AuthService {
                 freelancerRepository.save(f);
             }
         }
-        
-        if (email == null) return null;
-        
+
+        if (email == null)
+            return null;
+
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
             message.setTo(email);
             message.setSubject("[LancerPro] Cap lai ma PIN bao mat tin nhan");
             message.setText("Chào bạn,\n\n"
-                + "Bạn vừa yêu cầu lấy lại mã PIN bảo mật cho đoạn chat Messenger tại LancerPro.\n\n"
-                + "Mã PIN mới của bạn là: " + newPin + "\n\n"
-                + "Vui lòng đăng nhập và sử dụng mã này để truy cập tin nhắn của bạn.\n\n"
-                + "Trân trọng,\n"
-                + "Đội ngũ LancerPro");
+                    + "Bạn vừa yêu cầu lấy lại mã PIN bảo mật cho đoạn chat Messenger tại LancerPro.\n\n"
+                    + "Mã PIN mới của bạn là: " + newPin + "\n\n"
+                    + "Vui lòng đăng nhập và sử dụng mã này để truy cập tin nhắn của bạn.\n\n"
+                    + "Trân trọng,\n"
+                    + "Đội ngũ LancerPro");
             mailSender.send(message);
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            throw new RuntimeException("Gửi email đặt lại mã PIN thất bại. Vui lòng thử lại sau!");
         }
-        
+
         return email;
     }
 
+    // reset password
     @Transactional
     public boolean resetPassword(String email, String newPassword) {
         boolean updated = false;
 
         Optional<Admin> a = adminRepository.findByEmail(email);
         if (a.isPresent()) {
-            a.get().setPasswordHash(newPassword);
+            a.get().setPasswordHash(passwordEncoder.encode(newPassword));
             adminRepository.save(a.get());
             updated = true;
         }
 
         Optional<Employer> e = employerRepository.findByEmail(email);
         if (e.isPresent()) {
-            e.get().setPasswordHash(newPassword);
+            e.get().setPasswordHash(passwordEncoder.encode(newPassword));
             employerRepository.save(e.get());
             updated = true;
         }
 
         Optional<Freelancer> f = freelancerRepository.findByEmail(email);
         if (f.isPresent()) {
-            f.get().setPasswordHash(newPassword);
+            f.get().setPasswordHash(passwordEncoder.encode(newPassword));
             freelancerRepository.save(f.get());
             updated = true;
         }

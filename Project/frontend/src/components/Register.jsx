@@ -15,32 +15,32 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [errorField, setErrorField] = useState(""); 
+  const [errorField, setErrorField] = useState("");
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true); 
-    setError("");     
+    setLoading(true);
+    setError("");
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      
+
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: decoded.email,          
-          name: decoded.name,            
-          googleId: decoded.sub,         
-          avatar: decoded.picture,       
-          requestedRole: role.toUpperCase(), 
+          email: decoded.email,
+          name: decoded.name,
+          googleId: decoded.sub,
+          avatar: decoded.picture,
+          requestedRole: role.toUpperCase(),
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setSuccess(true);
         setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user); 
+          if (onLoginSuccess) onLoginSuccess(data.user);
         }, 1200);
       } else {
         setError(data.message || "Đăng ký bằng Google thất bại.");
@@ -48,13 +48,13 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     } catch (err) {
       setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); 
-    
+    e.preventDefault();
+
     if (
       !fullName ||
       !displayName ||
@@ -65,9 +65,9 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     )
       return;
 
-    setLoading(true); 
+    setLoading(true);
     setError("");
-    setErrorField(""); 
+    setErrorField("");
 
     try {
       const response = await fetch("http://localhost:8080/api/auth/register", {
@@ -80,25 +80,25 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           fullName,
           displayName,
           phone: phoneNumber,
-          requestedRole: role.toUpperCase(), 
+          requestedRole: role.toUpperCase(),
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(true); 
+        setSuccess(true);
         setTimeout(() => {
-          if (onSwitchToLogin) onSwitchToLogin(); 
+          if (onSwitchToLogin) onSwitchToLogin();
         }, 1500);
       } else {
         setError(data.message || "Đăng ký thất bại!");
-        setErrorField(data.field || ""); 
+        setErrorField(data.field || "");
       }
     } catch (err) {
       setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -407,7 +407,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   id="agree"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  required
+                  required // <--- ĐÂY LÀ KHÓA RÀNG BUỘC CỦA TRÌNH DUYỆT
                   className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded mt-0.5 cursor-pointer"
                 />
                 <label
