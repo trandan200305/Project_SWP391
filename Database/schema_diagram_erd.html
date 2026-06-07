@@ -2,275 +2,3005 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>CNY Database Schema - Chen ERD View</title>
+<title>CNY Database Schema - ERD View</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#f4f5f7;overflow:hidden;font-family:Arial,sans-serif;width:100vw;height:100vh}
+body{background:#0d1117;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;width:100vw;height:100vh}
 #wrap{width:100%;height:100%;position:relative;overflow:hidden;
-  background-image:linear-gradient(rgba(200,200,200,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(200,200,200,.3) 1px,transparent 1px);
-  background-size:40px 40px}
-#pan{position:absolute;transform-origin:0 0;width:1px;height:1px}
+  background-image:linear-gradient(rgba(48,54,61,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(48,54,61,.15) 1px,transparent 1px);
+  background-size:60px 60px}
+#pan{position:absolute;transform-origin:0 0}
 
-/* Chen Notation Entity (Rectangle) */
-.entity {
-  position:absolute; background:#cde6f5; border:2px solid #9ebdd2; border-radius:4px;
-  padding:12px 24px; color:#333; font-size:14px; font-weight:bold; cursor:grab; user-select:none;
-  z-index:10; box-shadow:0 4px 6px rgba(0,0,0,0.1);
-  display:flex; justify-content:center; align-items:center;
-  min-width:120px;
-}
-.entity:hover { border-color:#58a6ff; box-shadow:0 0 15px rgba(88,166,255,.5); z-index:30 }
-.entity.active { border-color:#58a6ff; box-shadow:0 0 20px rgba(88,166,255,.6); z-index:30 }
-.entity.dim { opacity:0.2 }
+/* ERD Table Box styling like standard database diagram */
+.nd{position:absolute;background:#161b22;border:1.5px solid #30363d;border-radius:6px;min-width:240px;color:#c9d1d9;font-size:11px;font-family:Consolas,"Courier New",monospace;cursor:grab;user-select:none;z-index:10;transition:opacity 0.2s, border-color 0.2s, box-shadow 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.nd:hover{border-color:#58a6ff;box-shadow:0 0 15px rgba(88,166,255,.3);z-index:30}
+.nd.dim{opacity:0.15;filter:grayscale(100%)}
+.nd.active{border-color:#58a6ff;box-shadow:0 0 20px rgba(88,166,255,.4);z-index:30;transform:scale(1.02)}
+.nd.related{border-color:#79c0ff;box-shadow:0 0 10px rgba(121,192,255,.2);z-index:20}
 
-/* Chen Notation Relationship (Diamond) */
-.relationship {
-  position:absolute; background:#9ebdd2; color:#333; font-size:12px; font-weight:bold; cursor:grab;
-  user-select:none; z-index:10; box-shadow:0 4px 6px rgba(0,0,0,0.1);
-  display:flex; justify-content:center; align-items:center; text-align:center;
-  width:100px; height:60px;
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-}
-.relationship:hover { background:#58a6ff; color:#fff; z-index:30 }
-.relationship.active { background:#58a6ff; color:#fff; z-index:30 }
-.relationship.dim { opacity:0.2 }
+/* Header style for Table */
+.tb-hdr{background:#21262d;border-bottom:1px solid #30363d;padding:8px 12px;font-weight:bold;font-size:12px;color:#f0f6fc;border-top-left-radius:5px;border-top-right-radius:5px;display:flex;justify-content:space-between;align-items:center}
+.nd.a .tb-hdr{border-top:3px solid #3fb950}
+.nd.j .tb-hdr{border-top:3px solid #d29922}
+.tb-type{font-size:9px;color:#8b949e;text-transform:uppercase;padding:2px 4px;background:#30363d;border-radius:3px}
 
-svg { pointer-events:none; z-index:1 }
-line { stroke:#666; stroke-width:1.5; transition:stroke 0.2s }
-line.active { stroke:#58a6ff; stroke-width:2.5 }
-line.dim { stroke:#eee; stroke-width:1 }
-text.cardinality { fill:#333; font-size:12px; font-weight:bold; font-family:Arial; }
-text.cardinality.active { fill:#58a6ff }
-text.cardinality.dim { fill:#ccc }
+/* Columns Style */
+.tb-body{padding:6px 0}
+.col-row{display:grid;grid-template-columns:1fr auto 40px;gap:12px;padding:3px 12px;align-items:center}
+.col-row:hover{background:rgba(88,166,255,0.06)}
+.col-name{color:#c9d1d9;font-weight:600}
+.col-type{color:#8b949e;font-size:10px}
+.col-key{color:#ff7b72;font-weight:bold;font-size:9px;text-align:right}
+.col-key.fk{color:#d29922}
+.col-row.pk-row .col-name{color:#7ee787}
 
-#hud{position:fixed;top:12px;left:12px;z-index:100;color:#333;font-size:16px;font-weight:600;background:rgba(255,255,255,0.9);padding:12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
-#hud span{color:#666;font-weight:400;font-size:12px;display:block;margin-top:4px}
-#ctrl{position:fixed;top:12px;right:12px;z-index:100;display:flex;gap:8px}
-button{background:#fff;border:1px solid #ccc;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,0.05)}
-button:hover{background:#f0f0f0}
+svg{position:absolute;pointer-events:none;z-index:5}
+svg line{stroke:rgba(88,166,255,.2);stroke-width:1.5;transition:all 0.2s}
+svg line.active{stroke:#58a6ff;stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(88,166,255,0.8));z-index:25}
+svg line.dim{opacity:0.04}
+
+/* Highlight styles for SVG marker paths */
+svg marker path, svg marker line{stroke:rgba(88,166,255,.4); fill:none; transition:all 0.2s}
+svg line.active ~ marker path, svg line.active ~ marker line{stroke:#58a6ff}
+.marker-path{stroke:rgba(88,166,255,.5); stroke-width:1.5}
+.marker-path.active{stroke:#58a6ff; stroke-width:2}
+.marker-path.dim{opacity:0.1}
+
+#hud{position:fixed;top:12px;left:12px;z-index:100;color:#58a6ff;font-size:15px;font-weight:600;background:rgba(13,17,23,0.85);padding:10px 14px;border-radius:8px;border:1px solid #30363d;backdrop-filter:blur(6px)}
+#hud span{color:#8b949e;font-weight:400;font-size:12px;display:block;margin-top:4px}
+#ctrl{position:fixed;top:12px;right:12px;z-index:100;display:flex;gap:6px}
+#ctrl button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;transition:background 0.2s}
+#ctrl button:hover{background:#30363d}
 </style>
 </head>
 <body>
+<div id="hud">CNY ERD Schema Diagram<br><span>Hover vào bảng bất kỳ để xem mối quan hệ & ký hiệu Crow's Foot.<br>Kéo/thả để sắp xếp lại • Cuộn chuột để Zoom.</span></div>
+<div id="ctrl"><button onclick="fit()">Fit All</button><button onclick="resetV()">Reset</button></div>
 <div id="wrap"><div id="pan"></div></div>
-
 <script>
-const T = [{"name": "freelancers", "x": 380, "y": 50}, {"name": "employers", "x": 1200, "y": 50}, {"name": "admins", "x": 1900, "y": 50}, {"name": "login_history", "x": 520, "y": 1060}, {"name": "user_status_history", "x": 750, "y": 1060}, {"name": "job_categories", "x": 1050, "y": 0}, {"name": "skills", "x": 830, "y": 170}, {"name": "freelancer_skills", "x": 160, "y": 420}, {"name": "educations", "x": 30, "y": 250}, {"name": "experiences", "x": 220, "y": 250}, {"name": "portfolios", "x": 420, "y": 250}, {"name": "portfolio_files", "x": 420, "y": 420}, {"name": "projects", "x": 1050, "y": 280}, {"name": "project_skills", "x": 830, "y": 430}, {"name": "project_attachments", "x": 1050, "y": 430}, {"name": "saved_jobs", "x": 630, "y": 430}, {"name": "proposals", "x": 780, "y": 580}, {"name": "contracts", "x": 1100, "y": 580}, {"name": "milestones", "x": 1100, "y": 740}, {"name": "deliverables", "x": 1100, "y": 900}, {"name": "deliverable_files", "x": 1100, "y": 1060}, {"name": "wallets", "x": 80, "y": 580}, {"name": "transactions", "x": 80, "y": 740}, {"name": "escrow_transactions", "x": 1320, "y": 740}, {"name": "bank_accounts", "x": 300, "y": 580}, {"name": "withdrawal_requests", "x": 300, "y": 740}, {"name": "payment_gateway_logs", "x": 80, "y": 900}, {"name": "platform_fee_configs", "x": 1700, "y": 250}, {"name": "reviews", "x": 1350, "y": 430}, {"name": "user_warnings", "x": 2120, "y": 400}, {"name": "disputes", "x": 2100, "y": 560}, {"name": "dispute_evidences", "x": 2050, "y": 730}, {"name": "dispute_decisions", "x": 2280, "y": 730}, {"name": "kyc_requests", "x": 1900, "y": 430}, {"name": "kyc_documents", "x": 1900, "y": 600}, {"name": "conversations", "x": 520, "y": 580}, {"name": "conversation_participants", "x": 490, "y": 740}, {"name": "messages", "x": 690, "y": 740}, {"name": "message_attachments", "x": 690, "y": 900}, {"name": "support_tickets", "x": 1700, "y": 530}, {"name": "ticket_messages", "x": 1700, "y": 700}, {"name": "ticket_attachments", "x": 1700, "y": 870}, {"name": "notifications", "x": 830, "y": 900}, {"name": "newsletter_subscribers", "x": 620, "y": 900}, {"name": "admin_audit_logs", "x": 1930, "y": 250}];
-const rawE = [["login_history", "freelancers", "1:N"], ["login_history", "employers", "1:N"], ["login_history", "admins", "1:N"], ["user_status_history", "freelancers", "1:N"], ["user_status_history", "employers", "1:N"], ["job_categories", "job_categories", "1:N"], ["skills", "job_categories", "1:N"], ["freelancer_skills", "freelancers", "1:N"], ["freelancer_skills", "skills", "1:N"], ["educations", "freelancers", "1:N"], ["experiences", "freelancers", "1:N"], ["portfolios", "freelancers", "1:N"], ["portfolio_files", "portfolios", "1:N"], ["projects", "employers", "1:N"], ["projects", "job_categories", "1:N"], ["projects", "admins", "1:N"], ["project_skills", "projects", "1:N"], ["project_skills", "skills", "1:N"], ["project_attachments", "projects", "1:N"], ["saved_jobs", "freelancers", "1:N"], ["saved_jobs", "projects", "1:N"], ["proposals", "projects", "1:N"], ["proposals", "freelancers", "1:N"], ["contracts", "projects", "1:N"], ["contracts", "freelancers", "1:N"], ["contracts", "employers", "1:N"], ["milestones", "contracts", "1:N"], ["deliverables", "milestones", "1:N"], ["deliverable_files", "deliverables", "1:N"], ["wallets", "freelancers", "1:1"], ["wallets", "employers", "1:1"], ["transactions", "wallets", "1:N"], ["escrow_transactions", "contracts", "1:N"], ["escrow_transactions", "milestones", "1:N"], ["bank_accounts", "freelancers", "1:N"], ["bank_accounts", "employers", "1:N"], ["withdrawal_requests", "freelancers", "1:N"], ["withdrawal_requests", "bank_accounts", "1:N"], ["withdrawal_requests", "admins", "1:N"], ["payment_gateway_logs", "transactions", "1:N"], ["platform_fee_configs", "admins", "1:N"], ["reviews", "contracts", "1:N"], ["reviews", "freelancers", "1:N"], ["reviews", "employers", "1:N"], ["reviews", "freelancers", "1:N"], ["reviews", "employers", "1:N"], ["user_warnings", "freelancers", "1:N"], ["user_warnings", "employers", "1:N"], ["user_warnings", "admins", "1:N"], ["disputes", "contracts", "1:N"], ["disputes", "freelancers", "1:N"], ["disputes", "employers", "1:N"], ["dispute_evidences", "disputes", "1:N"], ["dispute_evidences", "freelancers", "1:N"], ["dispute_evidences", "employers", "1:N"], ["dispute_decisions", "disputes", "1:N"], ["dispute_decisions", "admins", "1:N"], ["kyc_requests", "freelancers", "1:N"], ["kyc_requests", "employers", "1:N"], ["kyc_requests", "admins", "1:N"], ["kyc_documents", "kyc_requests", "1:N"], ["conversation_participants", "conversations", "1:N"], ["conversation_participants", "freelancers", "1:N"], ["conversation_participants", "employers", "1:N"], ["messages", "conversations", "1:N"], ["messages", "freelancers", "1:N"], ["messages", "employers", "1:N"], ["message_attachments", "messages", "1:N"], ["support_tickets", "freelancers", "1:N"], ["support_tickets", "employers", "1:N"], ["support_tickets", "admins", "1:N"], ["ticket_messages", "support_tickets", "1:N"], ["ticket_messages", "freelancers", "1:N"], ["ticket_messages", "employers", "1:N"], ["ticket_messages", "admins", "1:N"], ["ticket_attachments", "ticket_messages", "1:N"], ["notifications", "freelancers", "1:N"], ["notifications", "employers", "1:N"], ["notifications", "admins", "1:N"], ["newsletter_subscribers", "freelancers", "1:N"], ["newsletter_subscribers", "employers", "1:N"], ["admin_audit_logs", "admins", "1:N"]];
-const labelsMap = {"login_history|freelancers": "logs", "login_history|employers": "logs", "login_history|admins": "logs", "user_status_history|freelancers": "tracks", "user_status_history|employers": "tracks", "job_categories|job_categories": "parent_of", "skills|job_categories": "belongs_to", "freelancer_skills|freelancers": "has_skill", "freelancer_skills|skills": "skilled_in", "educations|freelancers": "studied_at", "experiences|freelancers": "worked_at", "portfolios|freelancers": "showcases", "portfolio_files|portfolios": "contains", "projects|employers": "posts", "projects|job_categories": "categorized", "projects|admins": "approved_by", "project_skills|projects": "requires", "project_skills|skills": "uses", "project_attachments|projects": "attached_to", "saved_jobs|freelancers": "saves", "saved_jobs|projects": "bookmarks", "proposals|projects": "bids_on", "proposals|freelancers": "submits", "contracts|projects": "executes", "contracts|freelancers": "works_on", "contracts|employers": "hires", "milestones|contracts": "milestone_of", "deliverables|milestones": "delivers", "deliverable_files|deliverables": "file_of", "wallets|freelancers": "owns", "wallets|employers": "owns", "transactions|wallets": "transacts", "escrow_transactions|contracts": "escrow_for", "escrow_transactions|milestones": "escrow_of", "bank_accounts|freelancers": "has_bank", "bank_accounts|employers": "has_bank", "withdrawal_requests|freelancers": "withdraws", "withdrawal_requests|bank_accounts": "withdraw_to", "withdrawal_requests|admins": "reviewed_by", "payment_gateway_logs|transactions": "gateway_log", "platform_fee_configs|admins": "configured_by", "reviews|contracts": "reviews", "reviews|freelancers": "reviewed_by", "reviews|employers": "reviewed_by", "user_warnings|freelancers": "warned", "user_warnings|employers": "warned", "user_warnings|admins": "issued_by", "disputes|contracts": "disputes", "disputes|freelancers": "raised_by", "disputes|employers": "raised_by", "dispute_evidences|disputes": "evidence_of", "dispute_evidences|freelancers": "submitted_by", "dispute_evidences|employers": "submitted_by", "dispute_decisions|disputes": "decided", "dispute_decisions|admins": "decided_by", "kyc_requests|freelancers": "verifies", "kyc_requests|employers": "verifies", "kyc_requests|admins": "reviewed_by", "kyc_documents|kyc_requests": "doc_of", "conversation_participants|conversations": "joins", "conversation_participants|freelancers": "participates", "conversation_participants|employers": "participates", "messages|conversations": "sent_in", "messages|freelancers": "sent_by", "messages|employers": "sent_by", "message_attachments|messages": "attached", "support_tickets|freelancers": "opens", "support_tickets|employers": "opens", "support_tickets|admins": "assigned_to", "ticket_messages|support_tickets": "replies_to", "ticket_messages|freelancers": "sent_by", "ticket_messages|employers": "sent_by", "ticket_messages|admins": "sent_by", "ticket_attachments|ticket_messages": "attached", "notifications|freelancers": "notifies", "notifications|employers": "notifies", "notifications|admins": "notifies", "newsletter_subscribers|freelancers": "subscribes", "newsletter_subscribers|employers": "subscribes", "admin_audit_logs|admins": "audits"};
+const T = [
+  {
+    "name": "freelancers",
+    "columns": [
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "email",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "password_hash",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "display_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "full_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "phone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "avatar_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "email_verified",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "google_id",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "language",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "timezone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "last_login_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "professional_title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "bio",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "hourly_rate",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "address",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "city",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "country",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "profile_completeness",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "total_earnings",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "projects_completed",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "average_rating",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_available",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_deleted",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 450,
+    "y": 50,
+    "t": "a"
+  },
+  {
+    "name": "employers",
+    "columns": [
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "email",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "password_hash",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "display_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "full_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "phone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "avatar_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "email_verified",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "google_id",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "language",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "timezone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "last_login_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "company_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "company_logo_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "company_description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "website",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "address",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "city",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "country",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "company_size",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "industry",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "profile_completeness",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "total_spent",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "projects_posted",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "average_rating",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_deleted",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1350,
+    "y": 50,
+    "t": "a"
+  },
+  {
+    "name": "admins",
+    "columns": [
+      {
+        "name": "admin_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "email",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "password_hash",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "display_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "full_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "phone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "avatar_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "email_verified",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "google_id",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "language",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "timezone",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "last_login_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "admin_level",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_deleted",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1950,
+    "y": 50,
+    "t": "a"
+  },
+  {
+    "name": "login_history",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "admin_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "ip_address",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "user_agent",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "login_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "success",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1200,
+    "y": 2150,
+    "t": ""
+  },
+  {
+    "name": "user_status_history",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "old_status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "new_status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "changed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1480,
+    "y": 2150,
+    "t": ""
+  },
+  {
+    "name": "job_categories",
+    "columns": [
+      {
+        "name": "category_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "parent_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "category_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "icon_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "display_order",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_active",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 900,
+    "y": 450,
+    "t": ""
+  },
+  {
+    "name": "skills",
+    "columns": [
+      {
+        "name": "skill_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "skill_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "category_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "is_active",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 900,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "freelancer_skills",
+    "columns": [
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "skill_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "proficiency",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 300,
+    "y": 1000,
+    "t": "j"
+  },
+  {
+    "name": "educations",
+    "columns": [
+      {
+        "name": "education_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "school_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "degree",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "field_of_study",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "start_year",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "end_year",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 50,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "experiences",
+    "columns": [
+      {
+        "name": "experience_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "company_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "position",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "start_date",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "end_date",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_current",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 300,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "portfolios",
+    "columns": [
+      {
+        "name": "portfolio_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "project_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 550,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "portfolio_files",
+    "columns": [
+      {
+        "name": "file_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "portfolio_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_size",
+        "type": "BIGINT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 550,
+    "y": 1000,
+    "t": ""
+  },
+  {
+    "name": "projects",
+    "columns": [
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "client_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "category_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "project_type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "budget_min",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "budget_max",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "budget_fixed",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "deadline",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "posting_expires",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reject_reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reviewed_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "proposal_count",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_deleted",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1200,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "project_skills",
+    "columns": [
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "skill_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      }
+    ],
+    "x": 1200,
+    "y": 1400,
+    "t": "j"
+  },
+  {
+    "name": "project_attachments",
+    "columns": [
+      {
+        "name": "attachment_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_size",
+        "type": "BIGINT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1450,
+    "y": 1400,
+    "t": ""
+  },
+  {
+    "name": "saved_jobs",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "saved_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 950,
+    "y": 1050,
+    "t": "j"
+  },
+  {
+    "name": "proposals",
+    "columns": [
+      {
+        "name": "proposal_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "bid_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "estimated_days",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "cover_letter",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "client_feedback",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1450,
+    "y": 1050,
+    "t": ""
+  },
+  {
+    "name": "contracts",
+    "columns": [
+      {
+        "name": "contract_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "project_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "client_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "agreed_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "start_date",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "end_date",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "terms",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1750,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "milestones",
+    "columns": [
+      {
+        "name": "milestone_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "contract_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "due_date",
+        "type": "DATE",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1750,
+    "y": 1250,
+    "t": ""
+  },
+  {
+    "name": "deliverables",
+    "columns": [
+      {
+        "name": "deliverable_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "milestone_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "notes",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "submitted_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "feedback",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1750,
+    "y": 1600,
+    "t": ""
+  },
+  {
+    "name": "deliverable_files",
+    "columns": [
+      {
+        "name": "file_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "deliverable_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_size",
+        "type": "BIGINT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1750,
+    "y": 1950,
+    "t": ""
+  },
+  {
+    "name": "wallets",
+    "columns": [
+      {
+        "name": "wallet_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "balance",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "pending_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "escrow_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "currency",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 50,
+    "y": 1300,
+    "t": ""
+  },
+  {
+    "name": "transactions",
+    "columns": [
+      {
+        "name": "transaction_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "wallet_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reference_id",
+        "type": "INT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reference_type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 50,
+    "y": 1650,
+    "t": ""
+  },
+  {
+    "name": "escrow_transactions",
+    "columns": [
+      {
+        "name": "escrow_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "contract_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "milestone_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2050,
+    "y": 1250,
+    "t": ""
+  },
+  {
+    "name": "bank_accounts",
+    "columns": [
+      {
+        "name": "bank_account_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "bank_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "account_number",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "account_holder",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "branch",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_default",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 320,
+    "y": 1300,
+    "t": ""
+  },
+  {
+    "name": "withdrawal_requests",
+    "columns": [
+      {
+        "name": "withdrawal_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "bank_account_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "processed_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "processed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reject_reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 320,
+    "y": 1650,
+    "t": ""
+  },
+  {
+    "name": "payment_gateway_logs",
+    "columns": [
+      {
+        "name": "log_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "transaction_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "gateway_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "raw_response",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 50,
+    "y": 2000,
+    "t": ""
+  },
+  {
+    "name": "platform_fee_configs",
+    "columns": [
+      {
+        "name": "config_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "fee_percentage",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "effective_from",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2350,
+    "y": 50,
+    "t": ""
+  },
+  {
+    "name": "reviews",
+    "columns": [
+      {
+        "name": "review_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "contract_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewer_freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewer_employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewee_freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewee_employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "rating",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "comment",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2050,
+    "y": 700,
+    "t": ""
+  },
+  {
+    "name": "user_warnings",
+    "columns": [
+      {
+        "name": "warning_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "issued_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2350,
+    "y": 650,
+    "t": ""
+  },
+  {
+    "name": "disputes",
+    "columns": [
+      {
+        "name": "dispute_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "contract_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "raised_by_freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "raised_by_employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 3250,
+    "y": 50,
+    "t": ""
+  },
+  {
+    "name": "dispute_evidences",
+    "columns": [
+      {
+        "name": "evidence_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "dispute_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 3250,
+    "y": 450,
+    "t": ""
+  },
+  {
+    "name": "dispute_decisions",
+    "columns": [
+      {
+        "name": "decision_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "dispute_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "decided_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "freelancer_refund_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "employer_refund_amount",
+        "type": "DECIMAL",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "notes",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "decided_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 3250,
+    "y": 800,
+    "t": ""
+  },
+  {
+    "name": "kyc_requests",
+    "columns": [
+      {
+        "name": "request_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reviewed_by",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "reviewed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "reject_reason",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2650,
+    "y": 50,
+    "t": ""
+  },
+  {
+    "name": "kyc_documents",
+    "columns": [
+      {
+        "name": "document_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "request_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "document_type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "document_number",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2650,
+    "y": 400,
+    "t": ""
+  },
+  {
+    "name": "conversations",
+    "columns": [
+      {
+        "name": "conversation_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 600,
+    "y": 1300,
+    "t": ""
+  },
+  {
+    "name": "conversation_participants",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "conversation_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "joined_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 600,
+    "y": 1600,
+    "t": "j"
+  },
+  {
+    "name": "messages",
+    "columns": [
+      {
+        "name": "message_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "conversation_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "sender_freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "sender_employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "message_text",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_read",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "sent_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 880,
+    "y": 1300,
+    "t": ""
+  },
+  {
+    "name": "message_attachments",
+    "columns": [
+      {
+        "name": "attachment_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "message_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_size",
+        "type": "BIGINT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 880,
+    "y": 1700,
+    "t": ""
+  },
+  {
+    "name": "support_tickets",
+    "columns": [
+      {
+        "name": "ticket_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "subject",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "priority",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "assigned_to",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2950,
+    "y": 50,
+    "t": ""
+  },
+  {
+    "name": "ticket_messages",
+    "columns": [
+      {
+        "name": "message_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "ticket_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "sender_freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "sender_employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "sender_admin_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "message_text",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "sent_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2950,
+    "y": 450,
+    "t": ""
+  },
+  {
+    "name": "ticket_attachments",
+    "columns": [
+      {
+        "name": "attachment_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "message_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "file_url",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_name",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "file_size",
+        "type": "BIGINT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2950,
+    "y": 800,
+    "t": ""
+  },
+  {
+    "name": "notifications",
+    "columns": [
+      {
+        "name": "notification_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "admin_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "type",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "title",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "message",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "is_read",
+        "type": "BIT",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1200,
+    "y": 1800,
+    "t": ""
+  },
+  {
+    "name": "newsletter_subscribers",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "email",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "freelancer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "employer_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "status",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "token",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "subscribed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "unsubscribed_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 1480,
+    "y": 1800,
+    "t": ""
+  },
+  {
+    "name": "admin_audit_logs",
+    "columns": [
+      {
+        "name": "log_id",
+        "type": "INT",
+        "pk": true,
+        "fk": false
+      },
+      {
+        "name": "admin_id",
+        "type": "INT",
+        "pk": false,
+        "fk": true
+      },
+      {
+        "name": "action",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "module",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "description",
+        "type": "NVARCHAR",
+        "pk": false,
+        "fk": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME2",
+        "pk": false,
+        "fk": false
+      }
+    ],
+    "x": 2350,
+    "y": 350,
+    "t": ""
+  }
+];
+// EDGES: Dynamically generated from SQL constraints
+const rawE = [
+  ['login_history', 'freelancers', '1:N'],
+  ['login_history', 'employers', '1:N'],
+  ['login_history', 'admins', '1:N'],
+  ['user_status_history', 'freelancers', '1:N'],
+  ['user_status_history', 'employers', '1:N'],
+  ['job_categories', 'job_categories', '1:N'],
+  ['skills', 'job_categories', '1:N'],
+  ['freelancer_skills', 'freelancers', '1:N'],
+  ['freelancer_skills', 'skills', '1:N'],
+  ['educations', 'freelancers', '1:N'],
+  ['experiences', 'freelancers', '1:N'],
+  ['portfolios', 'freelancers', '1:N'],
+  ['portfolio_files', 'portfolios', '1:N'],
+  ['projects', 'employers', '1:N'],
+  ['projects', 'job_categories', '1:N'],
+  ['projects', 'admins', '1:N'],
+  ['project_skills', 'projects', '1:N'],
+  ['project_skills', 'skills', '1:N'],
+  ['project_attachments', 'projects', '1:N'],
+  ['saved_jobs', 'freelancers', '1:N'],
+  ['saved_jobs', 'projects', '1:N'],
+  ['proposals', 'projects', '1:N'],
+  ['proposals', 'freelancers', '1:N'],
+  ['contracts', 'projects', '1:N'],
+  ['contracts', 'freelancers', '1:N'],
+  ['contracts', 'employers', '1:N'],
+  ['milestones', 'contracts', '1:N'],
+  ['deliverables', 'milestones', '1:N'],
+  ['deliverable_files', 'deliverables', '1:N'],
+  ['wallets', 'freelancers', '1:1'],
+  ['wallets', 'employers', '1:1'],
+  ['transactions', 'wallets', '1:N'],
+  ['escrow_transactions', 'contracts', '1:N'],
+  ['escrow_transactions', 'milestones', '1:N'],
+  ['bank_accounts', 'freelancers', '1:N'],
+  ['bank_accounts', 'employers', '1:N'],
+  ['withdrawal_requests', 'freelancers', '1:N'],
+  ['withdrawal_requests', 'bank_accounts', '1:N'],
+  ['withdrawal_requests', 'admins', '1:N'],
+  ['payment_gateway_logs', 'transactions', '1:N'],
+  ['platform_fee_configs', 'admins', '1:N'],
+  ['reviews', 'contracts', '1:N'],
+  ['reviews', 'freelancers', '1:N'],
+  ['reviews', 'employers', '1:N'],
+  ['reviews', 'freelancers', '1:N'],
+  ['reviews', 'employers', '1:N'],
+  ['user_warnings', 'freelancers', '1:N'],
+  ['user_warnings', 'employers', '1:N'],
+  ['user_warnings', 'admins', '1:N'],
+  ['disputes', 'contracts', '1:N'],
+  ['disputes', 'freelancers', '1:N'],
+  ['disputes', 'employers', '1:N'],
+  ['dispute_evidences', 'disputes', '1:N'],
+  ['dispute_evidences', 'freelancers', '1:N'],
+  ['dispute_evidences', 'employers', '1:N'],
+  ['dispute_decisions', 'disputes', '1:N'],
+  ['dispute_decisions', 'admins', '1:N'],
+  ['kyc_requests', 'freelancers', '1:N'],
+  ['kyc_requests', 'employers', '1:N'],
+  ['kyc_requests', 'admins', '1:N'],
+  ['kyc_documents', 'kyc_requests', '1:N'],
+  ['conversation_participants', 'conversations', '1:N'],
+  ['conversation_participants', 'freelancers', '1:N'],
+  ['conversation_participants', 'employers', '1:N'],
+  ['messages', 'conversations', '1:N'],
+  ['messages', 'freelancers', '1:N'],
+  ['messages', 'employers', '1:N'],
+  ['message_attachments', 'messages', '1:N'],
+  ['support_tickets', 'freelancers', '1:N'],
+  ['support_tickets', 'employers', '1:N'],
+  ['support_tickets', 'admins', '1:N'],
+  ['ticket_messages', 'support_tickets', '1:N'],
+  ['ticket_messages', 'freelancers', '1:N'],
+  ['ticket_messages', 'employers', '1:N'],
+  ['ticket_messages', 'admins', '1:N'],
+  ['ticket_attachments', 'ticket_messages', '1:N'],
+  ['notifications', 'freelancers', '1:N'],
+  ['notifications', 'employers', '1:N'],
+  ['notifications', 'admins', '1:N'],
+  ['newsletter_subscribers', 'freelancers', '1:N'],
+  ['newsletter_subscribers', 'employers', '1:N'],
+  ['admin_audit_logs', 'admins', '1:N']
+];
+const seen = new Set();
+const E = rawE.filter(([a,b,r])=>{if(a===b)return false;const k=[a,b].sort().join('|');if(seen.has(k))return false;seen.add(k);return true;});
 
 const pan = document.getElementById('pan'), wrap = document.getElementById('wrap');
-let sc = 1, ox = 0, oy = 0, nodes = {}, relationships = [], drag = null, mx = 0, my = 0, hoverId = null;
+let sc = 1, ox = 0, oy = 0, nodes = {}, edges = [], drag = null, mx = 0, my = 0, hoverId = null;
 
+// Dynamically create ERD table boxes
 T.forEach(t => {
   const d = document.createElement('div');
-  d.className = 'entity';
-  d.textContent = t.name;
-  d.style.left = t.x + 'px'; d.style.top = t.y + 'px'; 
-  d.dataset.id = 'ent_' + t.name;
+  d.className = 'nd' + (t.t === 'a' ? ' a' : t.t === 'j' ? ' j' : '');
+  d.style.left = t.x + 'px';
+  d.style.top = t.y + 'px';
+  d.dataset.id = t.name;
+
+  // Table header
+  const hdr = document.createElement('div');
+  hdr.className = 'tb-hdr';
   
-  d.addEventListener('mouseenter', () => { hoverId = 'ent_' + t.name; updateHighlights(); });
-  d.addEventListener('mouseleave', () => { hoverId = null; updateHighlights(); });
-  
+  const titleSpan = document.createElement('span');
+  titleSpan.textContent = t.name;
+  hdr.appendChild(titleSpan);
+
+  if (t.t) {
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 'tb-type';
+    typeSpan.textContent = t.t === 'a' ? 'Actor' : 'Junction';
+    hdr.appendChild(typeSpan);
+  }
+  d.appendChild(hdr);
+
+  // Table columns list
+  const body = document.createElement('div');
+  body.className = 'tb-body';
+  t.columns.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'col-row' + (c.pk ? ' pk-row' : '');
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'col-name';
+    nameSpan.textContent = c.name;
+
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 'col-type';
+    typeSpan.textContent = c.type.toLowerCase();
+
+    const keySpan = document.createElement('span');
+    keySpan.className = 'col-key' + (c.fk ? ' fk' : '');
+    keySpan.textContent = c.pk ? '<PK>' : (c.fk ? '<FK>' : '');
+
+    row.appendChild(nameSpan);
+    row.appendChild(typeSpan);
+    row.appendChild(keySpan);
+    body.appendChild(row);
+  });
+  d.appendChild(body);
+
+  d.addEventListener('mouseenter', () => {
+    hoverId = t.name;
+    updateHighlights();
+  });
+  d.addEventListener('mouseleave', () => {
+    hoverId = null;
+    updateHighlights();
+  });
+
   pan.appendChild(d);
-  nodes['ent_' + t.name] = { el: d, x: t.x, y: t.y, w: 0, h: 0, adj: new Set(), type: 'entity' };
+  nodes[t.name] = { el: d, x: t.x, y: t.y, w: 0, h: 0, adj: new Set() };
 });
 
+// Large SVG Canvas with viewBox centered at 0,0 and extending -5000 to +5000
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 svg.id = 'lines'; 
 svg.setAttribute('viewBox', '-5000 -5000 10000 10000');
 svg.style.position = 'absolute';
-svg.style.left = '-5000px'; svg.style.top = '-5000px';
-svg.style.width = '10000px'; svg.style.height = '10000px';
+svg.style.left = '-5000px';
+svg.style.top = '-5000px';
+svg.style.width = '10000px';
+svg.style.height = '10000px';
 pan.insertBefore(svg, pan.firstChild);
 
+// Define Defs for Crow's Foot markers inside SVG
 const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 defs.innerHTML = `
+  <!-- FK Side: Zero or many (Circle + Fork) -->
   <marker id="many-marker" viewBox="0 0 20 20" refX="18" refY="10" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
-    <line x1="0" y1="10" x2="18" y2="10" stroke="#666" stroke-width="1.5"/>
-    <path d="M 18 4 L 8 10 L 18 16" fill="none" stroke="#666" stroke-width="1.5"/>
-    <circle cx="4" cy="10" r="3" fill="#f4f5f7" stroke="#666" stroke-width="1.5"/>
+    <line x1="0" y1="10" x2="18" y2="10" stroke="#58a6ff" stroke-width="1.5"/>
+    <path d="M 18 4 L 8 10 L 18 16" fill="none" stroke="#58a6ff" stroke-width="2"/>
+    <circle cx="4" cy="10" r="3" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
   </marker>
-  <marker id="one-marker" viewBox="0 0 20 20" refX="18" refY="10" markerWidth="10" markerHeight="10" orient="auto">
-    <line x1="0" y1="10" x2="18" y2="10" stroke="#666" stroke-width="1.5"/>
-    <line x1="8" y1="4" x2="8" y2="16" stroke="#666" stroke-width="1.5"/>
-    <line x1="14" y1="4" x2="14" y2="16" stroke="#666" stroke-width="1.5"/>
+  <!-- PK Side: One (and only one) (Double hash lines) -->
+  <marker id="one-marker" viewBox="0 0 20 20" refX="18" refY="10" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+    <line x1="0" y1="10" x2="18" y2="10" stroke="#3fb950" stroke-width="1.5"/>
+    <line x1="8" y1="4" x2="8" y2="16" stroke="#3fb950" stroke-width="2"/>
+    <line x1="14" y1="4" x2="14" y2="16" stroke="#3fb950" stroke-width="2"/>
   </marker>
 `;
 svg.appendChild(defs);
 
-const seen = new Set();
-let relCount = 0;
-const processedEdges = [];
-
-rawE.forEach(([f, t, r]) => {
-  if(f === t) return;
-  const k = [f, t].sort().join('|');
-  if(seen.has(k)) return;
-  seen.add(k);
-  
-  const fk_k = f + '|' + t;
-  const label = labelsMap[fk_k] || 'has';
-  
-  const relId = 'rel_' + relCount++;
-  
-  const rd = document.createElement('div');
-  rd.className = 'relationship';
-  rd.textContent = label;
-  
-  rd.style.left = '0px'; rd.style.top = '0px';
-  rd.dataset.id = relId;
-  
-  rd.addEventListener('mouseenter', () => { hoverId = relId; updateHighlights(); });
-  rd.addEventListener('mouseleave', () => { hoverId = null; updateHighlights(); });
-  
-  pan.appendChild(rd);
-  nodes[relId] = { el: rd, x: 0, y: 0, w: 100, h: 60, adj: new Set(), type: 'rel' };
-  
-  nodes['ent_' + f].adj.add(relId); nodes[relId].adj.add('ent_' + f);
-  nodes['ent_' + t].adj.add(relId); nodes[relId].adj.add('ent_' + t);
-  
-  const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  
-  if(r === '1:1') {
-    l1.setAttribute('marker-start', 'url(#one-marker)');
-  } else {
-    l1.setAttribute('marker-start', 'url(#many-marker)');
-  }
-  l2.setAttribute('marker-end', 'url(#one-marker)');
-  
-  svg.appendChild(l1); svg.appendChild(l2);
-  
-  relationships.push({ 
-    f: 'ent_' + f, t: 'ent_' + t, relId: relId, 
-    l1: l1, l2: l2
-  });
-});
-
-
-
-// Initialize sizes before simulation
-Object.values(nodes).forEach(n => {
-  if (!n.w) { n.w = n.el.offsetWidth || (n.type === 'rel' ? 100 : 120); n.h = n.el.offsetHeight || (n.type === 'rel' ? 60 : 40); }
-});
-
-relationships.forEach(r => {
-  const a = nodes[r.f], b = nodes[r.t], rel = nodes[r.relId];
-  rel.x = (a.x + b.x) / 2 + (Math.random() - 0.5) * 50;
-  rel.y = (a.y + b.y) / 2 + (Math.random() - 0.5) * 50;
-});
-
-function edgePtEnt(ent, tx, ty) {
-  let ax = ent.x + ent.w / 2, ay = ent.y + ent.h / 2;
-  let dx = tx - ax, dy = ty - ay;
+function edgePt(a, b) {
+  let ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2;
+  let dx = bx - ax, dy = by - ay;
   let sx, sy;
-  if (Math.abs(dx) * ent.h > Math.abs(dy) * ent.w) { sx = ax + (dx > 0 ? ent.w / 2 : -ent.w / 2); sy = ay + dy * (ent.w / 2) / Math.abs(dx || 1) }
-  else { sy = ay + (dy > 0 ? ent.h / 2 : -ent.h / 2); sx = ax + dx * (ent.h / 2) / Math.abs(dy || 1) }
-  return { x: sx, y: sy }
+  if (Math.abs(dx) * a.h > Math.abs(dy) * a.w) { sx = ax + (dx > 0 ? a.w / 2 : -a.w / 2); sy = ay + dy * (a.w / 2) / Math.abs(dx || 1) }
+  else { sy = ay + (dy > 0 ? a.h / 2 : -a.h / 2); sx = ax + dx * (a.h / 2) / Math.abs(dy || 1) }
+  let ex, ey; dx = -dx; dy = -dy;
+  if (Math.abs(dx) * b.h > Math.abs(dy) * b.w) { ex = bx + (dx > 0 ? b.w / 2 : -b.w / 2); ey = by + dy * (b.w / 2) / Math.abs(dx || 1) }
+  else { ey = by + (dy > 0 ? b.h / 2 : -b.h / 2); ex = bx + dx * (b.h / 2) / Math.abs(dy || 1) }
+  return { x1: sx, y1: sy, x2: ex, y2: ey }
 }
 
-let isSimulating = true;
-let simAlpha = 1.0;
-
-function simulate() {
-  if (!isSimulating) return;
-  simAlpha *= 0.95;
-  if (simAlpha < 0.01) isSimulating = false;
+E.forEach(([f, t, r]) => {
+  if (!nodes[f] || !nodes[t]) return;
+  nodes[f].adj.add(t); nodes[t].adj.add(f);
   
-  relationships.forEach(r => {
-    const a = nodes[r.f], b = nodes[r.t], rel = nodes[r.relId];
-    let fx = 0, fy = 0;
-    
-    // Spring force to midpoint of connected entities
-    let midX = (a.x + a.w/2 + b.x + b.w/2) / 2 - rel.w/2;
-    let midY = (a.y + a.h/2 + b.y + b.h/2) / 2 - rel.h/2;
-    fx += (midX - rel.x) * 0.1 * simAlpha;
-    fy += (midY - rel.y) * 0.1 * simAlpha;
-    
-    // Repulsion from other diamonds
-    relationships.forEach(r2 => {
-      if (r === r2) return;
-      const rel2 = nodes[r2.relId];
-      let dx = rel.x - rel2.x, dy = rel.y - rel2.y;
-      let dist = Math.sqrt(dx*dx + dy*dy) || 1;
-      if (dist < 120) {
-        let f = (120 - dist) / dist * 0.5 * simAlpha;
-        fx += dx * f; fy += dy * f;
-      }
-    });
-    
-    // Repulsion from Entities
-    T.forEach(t => {
-      const ent = nodes['ent_' + t.name];
-      let dx = (rel.x + rel.w/2) - (ent.x + ent.w/2);
-      let dy = (rel.y + rel.h/2) - (ent.y + ent.h/2);
-      let dist = Math.sqrt(dx*dx + dy*dy) || 1;
-      if (dist < 160) {
-        let f = (160 - dist) / dist * 0.8 * simAlpha;
-        fx += dx * f; fy += dy * f;
-      }
-    });
-    
-    rel.x += fx; rel.y += fy;
-  });
+  const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   
-  relationships.forEach(r => {
-    const rel = nodes[r.relId];
-    rel.el.style.left = rel.x + 'px';
-    rel.el.style.top = rel.y + 'px';
-  });
+  // Set markers based on relationship type
+  // f = Child table (FK side), t = Parent table (PK side)
+  if (r === '1:1') {
+    l.setAttribute('marker-start', 'url(#one-marker)');
+    l.setAttribute('marker-end', 'url(#one-marker)');
+  } else {
+    // 1:N relationship
+    l.setAttribute('marker-start', 'url(#many-marker)');
+    l.setAttribute('marker-end', 'url(#one-marker)');
+  }
   
-  drawLines();
-  if (isSimulating) requestAnimationFrame(simulate);
-}
+  svg.appendChild(l);
+  edges.push({ f, t, l, r });
+});
 
 function drawLines() {
-  relationships.forEach(r => {
-    const a = nodes[r.f], b = nodes[r.t], rel = nodes[r.relId];
+  edges.forEach(e => {
+    const a = nodes[e.f], b = nodes[e.t];
+    if (!a.w || a.w === 0) { a.w = a.el.offsetWidth; a.h = a.el.offsetHeight; }
+    if (!b.w || b.w === 0) { b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; }
+    const p = edgePt(a, b);
     
-    // Line 1: from Entity A to Diamond center
-    let relCX = rel.x + rel.w/2, relCY = rel.y + rel.h/2;
-    let ptA = edgePtEnt(a, relCX, relCY);
-    r.l1.setAttribute('x1', ptA.x); r.l1.setAttribute('y1', ptA.y);
-    r.l1.setAttribute('x2', relCX); r.l1.setAttribute('y2', relCY);
+    // Offset endpoints slightly towards the center so Crow's Foot markers are fully visible and not cut off by z-indexing
+    let dx = p.x2 - p.x1;
+    let dy = p.y2 - p.y1;
+    let len = Math.sqrt(dx*dx + dy*dy) || 1;
+    let offsetStart = 12; // distance to offset FK/Many marker
+    let offsetEnd = 12;   // distance to offset PK/One marker
     
-    // Line 2: from Diamond center to Entity B
-    let ptB = edgePtEnt(b, relCX, relCY);
-    r.l2.setAttribute('x1', relCX); r.l2.setAttribute('y1', relCY);
-    r.l2.setAttribute('x2', ptB.x); r.l2.setAttribute('y2', ptB.y);
+    let x1_new = p.x1 + (dx / len) * offsetStart;
+    let y1_new = p.y1 + (dy / len) * offsetStart;
+    let x2_new = p.x2 - (dx / len) * offsetEnd;
+    let y2_new = p.y2 - (dy / len) * offsetEnd;
+    
+    e.l.setAttribute('x1', x1_new); e.l.setAttribute('y1', y1_new);
+    e.l.setAttribute('x2', x2_new); e.l.setAttribute('y2', y2_new);
   });
 }
-requestAnimationFrame(simulate);
+drawLines();
 
 function updateHighlights() {
   if (!hoverId) {
-    Object.values(nodes).forEach(n => { n.el.classList.remove('dim', 'active'); });
-    relationships.forEach(r => { 
-      r.l1.classList.remove('dim', 'active'); r.l2.classList.remove('dim', 'active'); 
-    });
+    Object.values(nodes).forEach(n => { n.el.classList.remove('dim', 'active', 'related'); });
+    edges.forEach(e => { e.l.classList.remove('dim', 'active'); });
     return;
   }
-  
   const main = nodes[hoverId];
   Object.values(nodes).forEach(n => {
-    if (n.el.dataset.id === hoverId) { n.el.classList.remove('dim'); n.el.classList.add('active'); }
-    else if (main.adj.has(n.el.dataset.id)) { n.el.classList.remove('dim'); n.el.classList.add('active'); }
-    else { n.el.classList.remove('active'); n.el.classList.add('dim'); }
+    if (n.el.dataset.id === hoverId) { n.el.classList.remove('dim', 'related'); n.el.classList.add('active'); }
+    else if (main.adj.has(n.el.dataset.id)) { n.el.classList.remove('dim', 'active'); n.el.classList.add('related'); }
+    else { n.el.classList.remove('active', 'related'); n.el.classList.add('dim'); }
   });
-  
-  relationships.forEach(r => {
-    if (r.f === hoverId || r.t === hoverId || r.relId === hoverId) {
-      r.l1.classList.remove('dim'); r.l1.classList.add('active');
-      r.l2.classList.remove('dim'); r.l2.classList.add('active');
+  edges.forEach(e => {
+    if (e.f === hoverId || e.t === hoverId) {
+      e.l.classList.remove('dim'); e.l.classList.add('active');
     } else {
-      r.l1.classList.remove('active'); r.l1.classList.add('dim');
-      r.l2.classList.remove('active'); r.l2.classList.add('dim');
+      e.l.classList.remove('active'); e.l.classList.add('dim');
     }
   });
 }
 
+// Drag & Drop
 pan.addEventListener('mousedown', e => {
-  const nd = e.target.closest('.entity, .relationship');
+  const nd = e.target.closest('.nd');
   if (nd) { drag = nodes[nd.dataset.id]; mx = e.clientX; my = e.clientY; nd.style.cursor = 'grabbing'; e.preventDefault() }
 });
 window.addEventListener('mousemove', e => {
@@ -281,6 +3011,7 @@ window.addEventListener('mousemove', e => {
 });
 window.addEventListener('mouseup', () => { if (drag) { drag.el.style.cursor = 'grab'; drag = null } });
 
+// Panning
 let panning = false, px, py;
 wrap.addEventListener('mousedown', e => {
   if (e.target === wrap || e.target === pan || e.target === svg) { panning = true; px = e.clientX; py = e.clientY; wrap.style.cursor = 'grabbing' }
@@ -292,6 +3023,7 @@ window.addEventListener('mousemove', e => {
 });
 window.addEventListener('mouseup', () => { if (panning) { panning = false; wrap.style.cursor = 'default' } });
 
+// Zooming
 wrap.addEventListener('wheel', e => {
   e.preventDefault();
   let d = e.deltaY > 0 ? .92 : 1.08, ns = Math.max(.1, Math.min(3, sc * d));
@@ -316,7 +3048,7 @@ function fit() {
   oy = -mn.y * sc + (wrap.clientHeight - h * sc) / 2 + 75 * sc;
   pan.style.transform = `translate(${ox}px,${oy}px) scale(${sc})`;
 }
-setTimeout(fit, 200);
+setTimeout(fit, 100);
 </script>
 </body>
 </html>

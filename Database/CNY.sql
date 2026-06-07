@@ -18,6 +18,7 @@ GO
 
 -- 2. SAFE CLEANUP (DROP TABLE SEQUENCE IN REVERSE FK DEPENDENCY ORDER)
 -- This allows running the script multiple times without any constraint conflicts.
+IF OBJECT_ID('dbo.staff_invitations', 'U') IS NOT NULL DROP TABLE dbo.staff_invitations;
 IF OBJECT_ID('dbo.admin_audit_logs', 'U') IS NOT NULL DROP TABLE dbo.admin_audit_logs;
 IF OBJECT_ID('dbo.newsletter_subscribers', 'U') IS NOT NULL DROP TABLE dbo.newsletter_subscribers;
 IF OBJECT_ID('dbo.notifications', 'U') IS NOT NULL DROP TABLE dbo.notifications;
@@ -208,6 +209,20 @@ CREATE TABLE staff (
     messenger_pin       NVARCHAR(10) NULL
 );
 CREATE INDEX idx_staff_email ON staff(email);
+GO
+
+-- Staff/Manager Onboarding Invitations Table
+CREATE TABLE staff_invitations (
+    id                  INT PRIMARY KEY IDENTITY(1,1),
+    email               NVARCHAR(255) NOT NULL UNIQUE,
+    role                NVARCHAR(50) NOT NULL, -- 'MANAGER' or 'STAFF'
+    token               NVARCHAR(255) NOT NULL UNIQUE,
+    expires_at          DATETIME2 NOT NULL,
+    status              NVARCHAR(50) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'ACCEPTED', 'EXPIRED'
+    created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+CREATE INDEX idx_staff_invitations_token ON staff_invitations(token);
 GO
 
 -- =============================================

@@ -4,10 +4,12 @@ import com.cny.backend.entity.Admin;
 import com.cny.backend.entity.Employer;
 import com.cny.backend.entity.Freelancer;
 import com.cny.backend.entity.LoginHistory;
+import com.cny.backend.entity.StaffInvitation;
 import com.cny.backend.repository.AdminRepository;
 import com.cny.backend.repository.EmployerRepository;
 import com.cny.backend.repository.FreelancerRepository;
 import com.cny.backend.repository.LoginHistoryRepository;
+import com.cny.backend.repository.StaffInvitationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,9 @@ public class AuthService {
 
     @Autowired
     private com.cny.backend.repository.StaffRepository staffRepository;
+
+    @Autowired
+    private StaffInvitationRepository staffInvitationRepository;
 
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
@@ -588,5 +593,120 @@ public class AuthService {
         }
         
         return email;
+    }
+
+    public Map<String, Object> verifyInvitationToken(String token) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
+        if (opt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Liên kết mời không hợp lệ hoặc đã hết hạn!");
+            return response;
+        }
+        StaffInvitation invitation = opt.get();
+        if (!"PENDING".equals(invitation.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
+            return response;
+        }
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            invitation.setStatus("EXPIRED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời đã hết hạn (chỉ có hiệu lực trong 24 giờ)!");
+            return response;
+        }
+        response.put("success", true);
+        response.put("email", invitation.getEmail());
+        response.put("role", invitation.getRole());
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> acceptInvitation(Map<String, String> payload) {
+        Map<String, Object> response = new HashMap<>();
+        String token = payload.get("token");
+        String fullName = payload.get("fullName");
+        String phone = payload.get("phone");
+        String password = payload.get("password");
+        String displayName = payload.get("displayName");
+
+        if (token == null || token.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Token không được để trống!");
+            return response;
+        }
+        if (password == null || password.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu không được để trống!");
+            return response;
+        }
+
+        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
+        if (opt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Liên kết mời không hợp lệ!");
+            return response;
+        }
+        StaffInvitation invitation = opt.get();
+        if (!"PENDING".equals(invitation.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Lời mời đã được sử dụng hoặc hết hạn!");
+            return response;
+        }
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            invitation.setStatus("EXPIRED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời đã hết hạn!");
+            return response;
+        }
+
+        String email = invitation.getEmail();
+        String role = invitation.getRole();
+
+        // Complete Onboarding based on role
+        if ("MANAGER".equals(role)) {
+            Optional<com.cny.backend.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.entity.Manager mgr = mgrOpt.get();
+                mgr.setPasswordHash(password); // Save plain text password as per project design
+                mgr.setFullName(fullName);
+                mgr.setPhone(phone);
+                mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                mgr.setStatus("ACTIVE");
+                mgr.setUpdatedAt(LocalDateTime.now());
+                managerRepository.save(mgr);
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy tài khoản Manager tương ứng!");
+                return response;
+            }
+        } else {
+            Optional<com.cny.backend.entity.Staff> stfOpt = staffRepository.findByEmail(email);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.entity.Staff stf = stfOpt.get();
+                stf.setPasswordHash(password);
+                stf.setFullName(fullName);
+                stf.setPhone(phone);
+                stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                stf.setStatus("ACTIVE");
+                stf.setUpdatedAt(LocalDateTime.now());
+                staffRepository.save(stf);
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy tài khoản Staff tương ứng!");
+                return response;
+            }
+        }
+
+        // Update invitation status
+        invitation.setStatus("ACCEPTED");
+        invitation.setUpdatedAt(LocalDateTime.now());
+        staffInvitationRepository.save(invitation);
+
+        response.put("success", true);
+        response.put("message", "Thiết lập tài khoản thành công! Bạn hiện đã có thể đăng nhập vào hệ thống.");
+        return response;
     }
 }

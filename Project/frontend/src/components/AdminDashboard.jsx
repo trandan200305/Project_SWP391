@@ -143,35 +143,20 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
   const handleCreateUser = (e) => {
     e.preventDefault();
-    if (!createForm.email || !createForm.password || !createForm.displayName) {
-      showToast('Vui lòng điền đầy đủ các thông tin bắt buộc (Email, Mật khẩu, Tên hiển thị)!', 'error');
+    if (!createForm.email) {
+      showToast('Vui lòng nhập Email!', 'error');
       return;
     }
 
-    const isManager = createRole === 'MANAGER';
-    const url = isManager ? 'http://localhost:8080/api/admin/managers' : 'http://localhost:8080/api/admin/staff';
-    
-    const payload = isManager ? {
+    const payload = {
       email: createForm.email,
-      password: createForm.password,
-      displayName: createForm.displayName,
-      fullName: createForm.fullName,
-      phone: createForm.phone,
-      department: createForm.department || 'General'
-    } : {
-      email: createForm.email,
-      password: createForm.password,
-      displayName: createForm.displayName,
-      fullName: createForm.fullName,
-      phone: createForm.phone,
-      specialization: createForm.specialization || 'General',
-      managerId: createForm.managerId ? parseInt(createForm.managerId) : null
+      role: createRole
     };
 
     const headers = { 'Content-Type': 'application/json' };
     if (user?.id) headers['X-Admin-Id'] = user.id.toString();
 
-    fetch(url, {
+    fetch('http://localhost:8080/api/admin/invite', {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(payload)
@@ -179,9 +164,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .then(res => res.json())
       .then(data => {
         if (data.success === false) {
-          showToast(data.message || 'Lỗi khi tạo tài khoản.', 'error');
+          showToast(data.message || 'Lỗi khi gửi lời mời.', 'error');
         } else {
-          showToast(data.message || 'Tạo tài khoản thành công!', 'success');
+          showToast(data.message || 'Gửi lời mời kích hoạt tài khoản thành công!', 'success');
           setShowCreateModal(false);
           setCreateForm({
             email: '',
@@ -196,11 +181,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
           fetch('http://localhost:8080/api/admin/users')
             .then(res => res.json())
             .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
-          if (isManager) {
-            fetch('http://localhost:8080/api/admin/managers')
-              .then(res => res.json())
-              .then(mgrData => { if (Array.isArray(mgrData)) setManagersList(mgrData); });
-          }
         }
       })
       .catch(err => {
@@ -2703,14 +2683,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         </div>
       </div>
 
-      {/* MODAL TẠO TÀI KHOẢN MANAGER / STAFF */}
+      {/* MODAL MỜI NHÂN SỰ MANAGER / STAFF (INVITATION FLOW) */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showCreateModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border-t-[6px] border-blue-600 overflow-hidden transition-all duration-300 ease-out transform ${
           showCreateModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}>
           <div className="p-6 border-b flex justify-between items-center bg-blue-50/30 border-blue-100">
             <h4 className="font-bold text-lg flex items-center gap-2 text-blue-800">
-              + Tạo Tài Khoản Quản Trị Viên / Nhân Viên
+              + Mời Nhân Sự Quản Trị / Vận Hành
             </h4>
             <button 
               onClick={() => setShowCreateModal(false)}
@@ -2719,7 +2699,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleCreateUser} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          <form onSubmit={handleCreateUser} className="p-6 space-y-4">
             {/* Vai trò */}
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Vai Trò Tài Khoản</label>
@@ -2749,113 +2729,21 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               </div>
             </div>
 
-            {/* Email & Password */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Email <span className="text-rose-500">*</span></label>
-                <input 
-                  type="email" 
-                  required
-                  placeholder="nhap@lancerpro.com" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                  value={createForm.email}
-                  onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mật khẩu <span className="text-rose-500">*</span></label>
-                <input 
-                  type="password" 
-                  required
-                  placeholder="Nhập mật khẩu" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                  value={createForm.password}
-                  onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Display Name & Full Name */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tên hiển thị <span className="text-rose-500">*</span></label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Ví dụ: Alex" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                  value={createForm.displayName}
-                  onChange={e => setCreateForm({ ...createForm, displayName: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Họ và Tên</label>
-                <input 
-                  type="text" 
-                  placeholder="Ví dụ: Nguyễn Văn A" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                  value={createForm.fullName}
-                  onChange={e => setCreateForm({ ...createForm, fullName: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Điện thoại */}
+            {/* Email */}
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số điện thoại</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Email Người Nhận Lời Mời <span className="text-rose-500">*</span></label>
               <input 
-                type="text" 
-                placeholder="Ví dụ: 0912345678" 
+                type="email" 
+                required
+                placeholder="nhap@lancerpro.com" 
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                value={createForm.phone}
-                onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
+                value={createForm.email}
+                onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
               />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Hệ thống sẽ gửi email tự động kèm liên kết kích hoạt. Người nhận sẽ tự điền Họ và tên, SĐT và đặt mật khẩu.
+              </p>
             </div>
-
-            {/* Department (Manager only) */}
-            {createRole === 'MANAGER' && (
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Phòng ban (Department)</label>
-                <input 
-                  type="text" 
-                  placeholder="Ví dụ: Moderation, Support, Tech, HR" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                  value={createForm.department}
-                  onChange={e => setCreateForm({ ...createForm, department: e.target.value })}
-                />
-              </div>
-            )}
-
-            {/* Specialization & Manager Selection (Staff only) */}
-            {createRole === 'STAFF' && (
-              <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chuyên môn (Chức năng đặc thù)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ví dụ: KYC, Disputes, Tickets" 
-                    className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                    value={createForm.specialization}
-                    onChange={e => setCreateForm({ ...createForm, specialization: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Người quản lý (Manager)</label>
-                  <select 
-                    className="w-full border border-slate-200 bg-white rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                    value={createForm.managerId}
-                    onChange={e => setCreateForm({ ...createForm, managerId: e.target.value })}
-                  >
-                    <option value="">-- Không chỉ định --</option>
-                    {managersList.map(mgr => (
-                      <option key={mgr.managerId} value={mgr.managerId}>
-                        {mgr.displayName} ({mgr.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
 
             {/* Nút xác nhận */}
             <div className="flex gap-3 justify-end pt-3">
@@ -2870,7 +2758,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300"
               >
-                Tạo tài khoản
+                Gửi lời mời
               </button>
             </div>
           </form>

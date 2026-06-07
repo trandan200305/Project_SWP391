@@ -11,6 +11,10 @@ import com.cny.backend.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.cny.backend.repository.DashboardRepository;
 import com.cny.backend.dto.*;
+import com.cny.backend.entity.StaffInvitation;
+import com.cny.backend.repository.StaffInvitationRepository;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +24,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class AdminService {
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    @Autowired
+    private StaffInvitationRepository staffInvitationRepository;
 
     @Autowired
     private FreelancerRepository freelancerRepository;
@@ -737,6 +747,116 @@ public class AdminService {
                         .updatedAt(s.getUpdatedAt() != null ? s.getUpdatedAt().toString() : null)
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> inviteStaffOrManager(Map<String, String> payload, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String email = payload.get("email");
+        String role = payload.get("role"); // "MANAGER" or "STAFF"
+
+        if (email == null || email.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email không được để trống!");
+            return response;
+        }
+        if (role == null || (!role.equalsIgnoreCase("MANAGER") && !role.equalsIgnoreCase("STAFF"))) {
+            response.put("success", false);
+            response.put("message", "Vai trò không hợp lệ!");
+            return response;
+        }
+
+        email = email.trim().toLowerCase();
+        role = role.toUpperCase();
+
+        // Check if email already exists in any table
+        if (adminRepository.findByEmail(email).isPresent() ||
+            freelancerRepository.findByEmail(email).isPresent() ||
+            employerRepository.findByEmail(email).isPresent() ||
+            managerRepository.findByEmail(email).isPresent() ||
+            staffRepository.findByEmail(email).isPresent()) {
+            response.put("success", false);
+            response.put("message", "Email đã tồn tại trong hệ thống!");
+            return response;
+        }
+
+        // Clean up any existing pending invitations for this email to avoid duplicates
+        staffInvitationRepository.findByEmail(email).ifPresent(inv -> staffInvitationRepository.delete(inv));
+
+        // Generate invitation token
+        String token = java.util.UUID.randomUUID().toString();
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+        // Create the invitation record
+        com.cny.backend.entity.StaffInvitation invitation = com.cny.backend.entity.StaffInvitation.builder()
+                .email(email)
+                .role(role)
+                .token(token)
+                .expiresAt(expiresAt)
+                .status("PENDING")
+                .build();
+        staffInvitationRepository.save(invitation);
+
+        // Create placeholder user account with status "INVITED"
+        String emailPrefix = email.split("@")[0];
+        if ("MANAGER".equals(role)) {
+            com.cny.backend.entity.Manager mgr = com.cny.backend.entity.Manager.builder()
+                    .email(email)
+                    .passwordHash("INVITED_PENDING")
+                    .displayName(emailPrefix)
+                    .status("INVITED")
+                    .department("General")
+                    .managedByAdmin(adminId)
+                    .isDeleted(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            managerRepository.save(mgr);
+        } else {
+            com.cny.backend.entity.Staff stf = com.cny.backend.entity.Staff.builder()
+                    .email(email)
+                    .passwordHash("INVITED_PENDING")
+                    .displayName(emailPrefix)
+                    .status("INVITED")
+                    .specialization("General")
+                    .manager(null)
+                    .createdByAdmin(adminId)
+                    .isDeleted(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            staffRepository.save(stf);
+        }
+
+        // Send Email
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[LancerPro] Mời tham gia quản trị hệ thống");
+
+            String onboardingUrl = "http://localhost:3000/onboard?token=" + token;
+            String emailContent = "Chào bạn,\n\n"
+                    + "Bạn được quản trị viên mời tham gia quản trị hệ thống LancerPro với vai trò: " + role + ".\n\n"
+                    + "Vui lòng truy cập liên kết dưới đây để thiết lập tài khoản của bạn (liên kết có hiệu lực trong 24 giờ):\n"
+                    + onboardingUrl + "\n\n"
+                    + "Trân trọng,\n"
+                    + "Đội ngũ LancerPro";
+
+            message.setText(emailContent);
+            mailSender.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // We can still return success, just warn about email send failure
+            writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Mời " + email + " làm " + role + " (Email gửi lỗi: " + e.getMessage() + ")");
+            response.put("success", true);
+            response.put("message", "Tạo lời mời thành công (Nhưng có lỗi gửi email: " + e.getMessage() + "). Link kích hoạt: http://localhost:3000/onboard?token=" + token);
+            return response;
+        }
+
+        writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã gửi lời mời kích hoạt tài khoản cho " + email + " làm " + role);
+        response.put("success", true);
+        response.put("message", "Đã gửi email lời mời kích hoạt tài khoản thành công!");
+        return response;
     }
 }
 

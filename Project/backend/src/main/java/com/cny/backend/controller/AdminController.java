@@ -153,4 +153,11 @@ public class AdminController {
     public ResponseEntity<List<StaffDto>> getAllStaff() {
         return ResponseEntity.ok(adminService.getAllStaff());
     }
+
+    @PostMapping("/invite")
+    public ResponseEntity<Map<String, Object>> inviteStaffOrManager(
+            @RequestBody Map<String, String> payload,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.inviteStaffOrManager(payload, adminId));
+    }
 }

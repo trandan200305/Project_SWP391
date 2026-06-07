@@ -273,4 +273,14 @@ public class AuthController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/invitation/verify")
+    public ResponseEntity<Map<String, Object>> verifyInvitation(@RequestParam("token") String token) {
+        return ResponseEntity.ok(authService.verifyInvitationToken(token));
+    }
+
+    @PostMapping("/invitation/accept")
+    public ResponseEntity<Map<String, Object>> acceptInvitation(@RequestBody Map<String, String> payload) {
+        return ResponseEntity.ok(authService.acceptInvitation(payload));
+    }
 }

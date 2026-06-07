@@ -13,6 +13,7 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
 import Messenger from './components/Messenger.jsx';
+import Onboard from './components/Onboard.jsx';
 
 
 const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
@@ -21,9 +22,15 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('home'); 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
-  
-  
   const [user, setUser] = useState(null);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      setCurrentPage('onboard');
+    }
+  }, []);
 
   const handleSearch = (query, location) => {
     setSearchQuery(query);
@@ -77,6 +84,18 @@ export default function App() {
   
   if (currentPage === 'messenger') {
     return <Messenger user={user} onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'onboard') {
+    return (
+      <Onboard 
+        onBackToHome={() => handleNavigate('home')} 
+        onOpenLogin={() => {
+          handleNavigate('home');
+          setCurrentPage('login');
+        }} 
+      />
+    );
   }
 
   return (
