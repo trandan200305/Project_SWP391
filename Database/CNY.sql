@@ -58,6 +58,8 @@ IF OBJECT_ID('dbo.educations', 'U') IS NOT NULL DROP TABLE dbo.educations;
 IF OBJECT_ID('dbo.freelancer_skills', 'U') IS NOT NULL DROP TABLE dbo.freelancer_skills;
 IF OBJECT_ID('dbo.skills', 'U') IS NOT NULL DROP TABLE dbo.skills;
 IF OBJECT_ID('dbo.job_categories', 'U') IS NOT NULL DROP TABLE dbo.job_categories;
+IF OBJECT_ID('dbo.staff', 'U') IS NOT NULL DROP TABLE dbo.staff;
+IF OBJECT_ID('dbo.managers', 'U') IS NOT NULL DROP TABLE dbo.managers;
 IF OBJECT_ID('dbo.admins', 'U') IS NOT NULL DROP TABLE dbo.admins;
 IF OBJECT_ID('dbo.employers', 'U') IS NOT NULL DROP TABLE dbo.employers;
 IF OBJECT_ID('dbo.freelancers', 'U') IS NOT NULL DROP TABLE dbo.freelancers;
@@ -165,6 +167,49 @@ CREATE TABLE admins (
 CREATE INDEX idx_admins_email ON admins(email);
 GO
 
+-- Manager (Trưởng phòng ban) Concrete Table
+CREATE TABLE managers (
+    manager_id          INT PRIMARY KEY IDENTITY(1,1),
+    email               NVARCHAR(255) NOT NULL UNIQUE,
+    password_hash       NVARCHAR(255) NOT NULL,
+    display_name        NVARCHAR(100) NOT NULL,
+    full_name           NVARCHAR(150),
+    phone               NVARCHAR(20),
+    avatar_url          NVARCHAR(500),
+    status              NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    department          NVARCHAR(50) NOT NULL,
+    managed_by_admin    INT REFERENCES admins(admin_id),
+    is_deleted          BIT NOT NULL DEFAULT 0,
+    created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    last_login_at       DATETIME2,
+    messenger_pin       NVARCHAR(10) NULL
+);
+CREATE INDEX idx_managers_email ON managers(email);
+GO
+
+-- Staff (Nhân viên chuyên trách) Concrete Table
+CREATE TABLE staff (
+    staff_id            INT PRIMARY KEY IDENTITY(1,1),
+    email               NVARCHAR(255) NOT NULL UNIQUE,
+    password_hash       NVARCHAR(255) NOT NULL,
+    display_name        NVARCHAR(100) NOT NULL,
+    full_name           NVARCHAR(150),
+    phone               NVARCHAR(20),
+    avatar_url          NVARCHAR(500),
+    status              NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    specialization      NVARCHAR(50) NOT NULL,
+    manager_id          INT REFERENCES managers(manager_id),
+    created_by_admin    INT REFERENCES admins(admin_id),
+    is_deleted          BIT NOT NULL DEFAULT 0,
+    created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    last_login_at       DATETIME2,
+    messenger_pin       NVARCHAR(10) NULL
+);
+CREATE INDEX idx_staff_email ON staff(email);
+GO
+
 -- =============================================
 -- 4. LOGIN HISTORY & SYSTEM LOGS
 -- =============================================
@@ -173,6 +218,8 @@ CREATE TABLE login_history (
     freelancer_id INT REFERENCES freelancers(freelancer_id),
     employer_id   INT REFERENCES employers(employer_id),
     admin_id      INT REFERENCES admins(admin_id),
+    manager_id    INT REFERENCES managers(manager_id),
+    staff_id      INT REFERENCES staff(staff_id),
     ip_address    NVARCHAR(45),
     user_agent    NVARCHAR(500),
     login_at      DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -682,6 +729,12 @@ IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'empl
 GO
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'admins' AND COLUMN_NAME = 'messenger_pin')
     ALTER TABLE admins ADD messenger_pin NVARCHAR(10) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'managers' AND COLUMN_NAME = 'messenger_pin')
+    ALTER TABLE managers ADD messenger_pin NVARCHAR(10) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'staff' AND COLUMN_NAME = 'messenger_pin')
+    ALTER TABLE staff ADD messenger_pin NVARCHAR(10) NULL;
 GO
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ticket_messages' AND COLUMN_NAME = 'is_read')
     ALTER TABLE ticket_messages ADD is_read BIT NOT NULL DEFAULT 0;
