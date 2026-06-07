@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { messengerApi } from '../api/messengerApi.js';
 import { 
   Search, Bell, HelpCircle, MessageSquare, Users, 
   FolderKanban, Settings, LifeBuoy, Plus, MessageCircle,
@@ -146,11 +147,8 @@ export default function Messenger({ user, onNavigateHome }) {
   
   const fetchTickets = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/chat/tickets');
-      if (response.ok) {
-        const data = await response.json();
-        setTickets(data);
-      }
+      const data = await messengerApi.getTickets();
+      setTickets(data);
     } catch (err) {
       console.error('Failed to fetch open support tickets', err);
     }
@@ -160,24 +158,20 @@ export default function Messenger({ user, onNavigateHome }) {
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/chat/tickets/get-or-create?userId=${user.id}&role=${user.role}`);
-      if (response.ok) {
-        const ticketData = await response.json();
-        const ticketId = ticketData.ticketId;
-        
-        const activeT = {
-          ticket_id: ticketId,
-          subject: 'Hỗ trợ kỹ thuật',
-          sender_name: 'Hỗ trợ kỹ thuật',
-          sender_role: 'ADMIN',
-          status: 'OPEN'
-        };
-        setActiveTicket(activeT);
-        
-        
-        await fetchMessages(ticketId);
-        subscribeToTicket(ticketId);
-      }
+      const ticketData = await messengerApi.getOrCreateTicket(user.id, user.role);
+      const ticketId = ticketData.ticketId;
+      
+      const activeT = {
+        ticket_id: ticketId,
+        subject: 'Hỗ trợ kỹ thuật',
+        sender_name: 'Hỗ trợ kỹ thuật',
+        sender_role: 'ADMIN',
+        status: 'OPEN'
+      };
+      setActiveTicket(activeT);
+      
+      await fetchMessages(ticketId);
+      subscribeToTicket(ticketId);
     } catch (err) {
       console.error('Failed to get/create ticket', err);
     } finally {
@@ -188,11 +182,8 @@ export default function Messenger({ user, onNavigateHome }) {
   
   const fetchMessages = async (ticketId) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/chat/messages/${ticketId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data);
-      }
+      const data = await messengerApi.getMessages(ticketId);
+      setMessages(data);
     } catch (err) {
       console.error('Failed to load chat history', err);
     }
@@ -240,24 +231,15 @@ export default function Messenger({ user, onNavigateHome }) {
       formData.append('file', file);
 
       try {
-        const response = await fetch('http://localhost:8080/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            newAttachments.push({
-              fileUrl: data.fileUrl,
-              fileName: data.fileName,
-              fileSize: data.fileSize
-            });
-          } else {
-            alert(`Tải file thất bại: ${data.message || 'Lỗi không xác định'}`);
-          }
+        const data = await messengerApi.uploadFile(formData);
+        if (data.success) {
+          newAttachments.push({
+            fileUrl: data.fileUrl,
+            fileName: data.fileName,
+            fileSize: data.fileSize
+          });
         } else {
-          alert('Tải file thất bại. Vui lòng thử lại.');
+          alert(`Tải file thất bại: ${data.message || 'Lỗi không xác định'}`);
         }
       } catch (err) {
         console.error('Error uploading file:', err);
@@ -317,11 +299,8 @@ export default function Messenger({ user, onNavigateHome }) {
   const fetchSystemUsers = async () => {
     setIsUsersLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/admin/users');
-      if (response.ok) {
-        const data = await response.json();
-        setSystemUsers(data);
-      }
+      const data = await messengerApi.getUsers();
+      setSystemUsers(data);
     } catch (err) {
       console.error('Failed to fetch system users', err);
     } finally {
@@ -340,27 +319,24 @@ export default function Messenger({ user, onNavigateHome }) {
   const handleStartChatWithUser = async (clickedUser, role) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/chat/tickets/get-or-create?userId=${clickedUser.id}&role=${role}`);
-      if (response.ok) {
-        const data = await response.json();
-        const ticketId = data.ticketId;
+      const data = await messengerApi.getOrCreateTicket(clickedUser.id, role);
+      const ticketId = data.ticketId;
 
-        const activeT = {
-          ticket_id: ticketId,
-          subject: 'Hỗ trợ kỹ thuật',
-          sender_name: clickedUser.name,
-          sender_avatar: clickedUser.avatarUrl || `https://ui-avatars.com/api/?name=${clickedUser.name || 'User'}&background=3b82f6&color=fff`,
-          sender_role: role.toUpperCase(),
-          sender_id: clickedUser.id,
-          status: 'OPEN'
-        };
-        
-        setActiveTicket(activeT);
-        await fetchMessages(ticketId);
-        subscribeToTicket(ticketId);
-        await fetchTickets();
-        setNavSection('chat');
-      }
+      const activeT = {
+        ticket_id: ticketId,
+        subject: 'Hỗ trợ kỹ thuật',
+        sender_name: clickedUser.name,
+        sender_avatar: clickedUser.avatarUrl || `https://ui-avatars.com/api/?name=${clickedUser.name || 'User'}&background=3b82f6&color=fff`,
+        sender_role: role.toUpperCase(),
+        sender_id: clickedUser.id,
+        status: 'OPEN'
+      };
+      
+      setActiveTicket(activeT);
+      await fetchMessages(ticketId);
+      subscribeToTicket(ticketId);
+      await fetchTickets();
+      setNavSection('chat');
     } catch (err) {
       console.error('Failed to start chat with user', err);
       alert('Không thể tạo phòng chat với người dùng này.');

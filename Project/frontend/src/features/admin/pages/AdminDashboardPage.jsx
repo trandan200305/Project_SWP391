@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { adminApi } from '../api/adminApi.js';
 import { 
   LayoutDashboard, Users, ShieldAlert, BadgeDollarSign, Settings, 
   Search, Bell, UserCheck, AlertTriangle, CheckCircle2, Ban, 
@@ -99,38 +100,26 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
   
   const fetchStats = (period) => {
-    fetch(`http://localhost:8080/api/admin/stats?period=${period}`)
-      .then(res => res.json())
+    adminApi.getStats(period)
       .then(data => setStats(data))
       .catch(err => console.error('Error fetching stats:', err));
   };
 
-  
   const fetchFeeConfig = () => {
-    fetch('http://localhost:8080/api/admin/fee-config')
-      .then(res => res.json())
+    adminApi.getFeeConfig()
       .then(data => setFeeRate(data.fee))
       .catch(err => console.error('Error loading fee config:', err));
   };
 
-  
   const handleUpdateFeeConfig = (newFee) => {
     setIsUpdatingFee(true);
-    const headers = { 'Content-Type': 'application/json' };
-    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
-
-    fetch(`http://localhost:8080/api/admin/fee-config?fee=${newFee}`, {
-      method: 'POST',
-      headers: headers
-    })
-      .then(res => res.json())
+    adminApi.updateFeeConfig(newFee)
       .then(data => {
         if (data.success) {
           setFeeRate(data.fee);
           fetchStats(selectedPeriod); 
           
-          fetch('http://localhost:8080/api/admin/audit-logs')
-            .then(res => res.json())
+          adminApi.getAuditLogs()
             .then(logs => { if (Array.isArray(logs)) setAuditLogs(logs); });
         }
         setIsUpdatingFee(false);
@@ -148,21 +137,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       return;
     }
 
-    const payload = {
-      email: createForm.email,
-      role: createRole
-    };
-
-    const headers = { 'Content-Type': 'application/json' };
-    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
-
-    fetch('http://localhost:8080/api/admin/invite', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    })
-      .then(res => res.json())
+    setIsLoading(true);
+    adminApi.inviteStaffOrManager(createForm.email, createRole)
       .then(data => {
+        setIsLoading(false);
         if (data.success === false) {
           showToast(data.message || 'Lỗi khi gửi lời mời.', 'error');
         } else {
@@ -178,12 +156,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             specialization: '',
             managerId: ''
           });
-          fetch('http://localhost:8080/api/admin/users')
-            .then(res => res.json())
+          adminApi.getUsers()
             .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
         }
       })
       .catch(err => {
+        setIsLoading(false);
         console.error(err);
         showToast('Lỗi kết nối máy chủ.', 'error');
       });
@@ -195,21 +173,15 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     fetchStats(selectedPeriod);
     fetchFeeConfig();
 
-    
-    fetch('http://localhost:8080/api/admin/charts/user-growth')
-      .then(res => res.json())
+    adminApi.getUserGrowth()
       .then(data => { if (Array.isArray(data)) setUserGrowthTrend(data); })
       .catch(err => console.error('Error user growth chart:', err));
 
-    
-    fetch('http://localhost:8080/api/admin/charts/revenue')
-      .then(res => res.json())
+    adminApi.getRevenueGrowth()
       .then(data => { if (Array.isArray(data)) setRevenueTrend(data); })
       .catch(err => console.error('Error revenue chart:', err));
 
-    
-    fetch('http://localhost:8080/api/admin/audit-logs')
-      .then(res => res.json())
+    adminApi.getAuditLogs()
       .then(data => {
         setAuditLogs(Array.isArray(data) ? data : []);
         setIsLoading(false);
@@ -226,21 +198,18 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     
     if (activeTab === 'users') {
       setIsLoading(true);
-      fetch('http://localhost:8080/api/admin/users')
-        .then(res => res.json())
+      adminApi.getUsers()
         .then(data => {
           setUsers(Array.isArray(data) ? data : []);
           setIsLoading(false);
         })
         .catch(err => console.error('Error users:', err));
-      fetch('http://localhost:8080/api/admin/managers')
-        .then(res => res.json())
+      adminApi.getManagers()
         .then(data => { if (Array.isArray(data)) setManagersList(data); })
         .catch(err => console.error('Error managers:', err));
     } else if (activeTab === 'moderation') {
       setIsLoading(true);
-      fetch('http://localhost:8080/api/admin/projects/pending')
-        .then(res => res.json())
+      adminApi.getPendingProjects()
         .then(data => {
           setPendingProjects(Array.isArray(data) ? data : []);
           setIsLoading(false);
@@ -248,8 +217,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         .catch(err => console.error('Error projects:', err));
     } else if (activeTab === 'finance') {
       setIsLoading(true);
-      fetch('http://localhost:8080/api/admin/withdrawals')
-        .then(res => res.json())
+      adminApi.getWithdrawals()
         .then(data => {
           setWithdrawals(Array.isArray(data) ? data : []);
           setIsLoading(false);
@@ -258,13 +226,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     } else if (activeTab === 'cms') {
       setIsLoading(true);
       Promise.all([
-        fetch('http://localhost:8080/api/admin/job-categories').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/kyc-requests').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/disputes').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/reports').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/articles').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/tickets').then(res => res.json()),
-        fetch('http://localhost:8080/api/admin/seo-configs').then(res => res.json())
+        adminApi.getJobCategories(),
+        adminApi.getKycRequests(),
+        adminApi.getDisputes(),
+        adminApi.getReports(),
+        adminApi.getArticles(),
+        adminApi.getTickets(),
+        adminApi.getSeoConfigs()
       ]).then(([categories, kyc, disps, reps, arts, ticks, seo]) => {
         setJobCategories(Array.isArray(categories) ? categories : []);
         setKycRequests(Array.isArray(kyc) ? kyc : []);
@@ -298,21 +266,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
     const reasonStr = banReasons.length > 0 ? banReasons.join(', ') : 'Yêu cầu từ Admin';
     const reasonParam = encodeURIComponent(reasonStr);
-    const headers = {};
-    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
 
-    fetch(`http://localhost:8080/api/admin/users/${userId}/status?role=${role}&status=${newStatus}&reason=${reasonParam}&pin=${adminPin}`, {
-      method: 'PUT',
-      headers: headers
-    })
-      .then(res => res.json())
+    adminApi.updateUserStatus(userId, role, newStatus, reasonParam, adminPin, user?.id)
       .then(data => {
         if (data.success === false) {
           showToast(data.message || 'Hành động bị từ chối bởi hệ thống.', 'error');
         } else {
           showToast(data.message || 'Thao tác thành công!', 'success');
-          fetch('http://localhost:8080/api/admin/users')
-            .then(res => res.json())
+          adminApi.getUsers()
             .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
           loadDashboardData();
           setActiveUserForAction(null);
@@ -329,17 +290,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   
   const handleProjectAction = (projectId, approve, reason = '') => {
     const reasonParam = encodeURIComponent(reason);
-    const headers = {};
-    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
-
-    fetch(`http://localhost:8080/api/admin/projects/${projectId}/moderate?approve=${approve}&reason=${reasonParam}`, {
-      method: 'PUT',
-      headers: headers
-    })
-      .then(res => res.json())
+    adminApi.moderateProject(projectId, approve, reasonParam, user?.id)
       .then(() => {
-        fetch('http://localhost:8080/api/admin/projects/pending')
-          .then(res => res.json())
+        adminApi.getPendingProjects()
           .then(data => setPendingProjects(data));
         loadDashboardData();
       })
@@ -349,17 +302,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   
   const handleWithdrawalAction = (withdrawalId, approve) => {
     const status = approve ? 'APPROVED' : 'REJECTED';
-    const headers = {};
-    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
-
-    fetch(`http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`, {
-      method: 'PUT',
-      headers: headers
-    })
-      .then(res => res.json())
+    adminApi.processWithdrawal(withdrawalId, status, user?.id)
       .then(() => {
-        fetch('http://localhost:8080/api/admin/withdrawals')
-          .then(res => res.json())
+        adminApi.getWithdrawals()
           .then(data => setWithdrawals(data));
         loadDashboardData();
       })

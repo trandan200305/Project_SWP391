@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, Lock, User, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
+import { authApi } from '../api/authApi.js';
 
 export default function Onboard({ onBackToHome, onOpenLogin }) {
   const [token, setToken] = useState('');
@@ -27,8 +28,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     setToken(tokenVal);
 
     // Call API to verify token
-    fetch(`http://localhost:8080/api/auth/invitation/verify?token=${tokenVal}`)
-      .then(res => res.json())
+    authApi.verifyInvitation(tokenVal)
       .then(data => {
         setLoading(false);
         if (data.success) {
@@ -51,18 +51,13 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     }
 
     setSubmitting(true);
-    fetch('http://localhost:8080/api/auth/invitation/accept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token,
-        fullName,
-        phone,
-        displayName,
-        password
-      })
+    authApi.acceptInvitation({
+      token,
+      fullName,
+      phone,
+      displayName,
+      password
     })
-      .then(res => res.json())
       .then(data => {
         setSubmitting(false);
         if (data.success) {

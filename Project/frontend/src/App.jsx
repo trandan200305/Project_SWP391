@@ -1,20 +1,7 @@
 import React, { useState } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import Navbar from './components/Navbar.jsx';
-import Hero from './components/Hero.jsx';
-import Stats from './components/Stats.jsx';
-import HowItWorks from './components/HowItWorks.jsx';
-import FeaturedJobs from './components/FeaturedJobs.jsx';
-import Testimonials from './components/Testimonials.jsx';
-import CTA from './components/CTA.jsx';
-import Footer from './components/Footer.jsx';
-import AdminDashboard from './components/AdminDashboard.jsx';
-import Login from './components/Login.jsx';
-import Register from './components/Register.jsx';
-import ComingSoon from './components/ComingSoon.jsx';
-import Messenger from './components/Messenger.jsx';
-import Onboard from './components/Onboard.jsx';
-
+import MainLayout from './components/layouts/MainLayout.jsx';
+import AppRoutes from './routes/AppRoutes.jsx';
 
 const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
 
@@ -43,17 +30,14 @@ export default function App() {
   };
 
   const handleNavigate = (page) => {
-    
     const protectedPages = ['admin', 'coming_soon', 'messenger'];
     
     if (protectedPages.includes(page) && !user) {
-      
       setCurrentPage('login');
       return;
     }
 
     if (page === 'admin' && user?.role !== 'ADMIN') {
-      
       setCurrentPage('coming_soon');
       return;
     }
@@ -71,86 +55,36 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  
-  if (currentPage === 'admin') {
-    return <AdminDashboard user={user} onNavigateToHome={() => handleNavigate('home')} />;
-  }
+  const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard'].includes(currentPage);
 
-  
-  if (currentPage === 'coming_soon') {
-    return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
-  }
-
-  
-  if (currentPage === 'messenger') {
-    return <Messenger user={user} onNavigateHome={() => handleNavigate('home')} />;
-  }
-
-  if (currentPage === 'onboard') {
-    return (
-      <Onboard 
-        onBackToHome={() => handleNavigate('home')} 
-        onOpenLogin={() => {
-          handleNavigate('home');
-          setCurrentPage('login');
-        }} 
-      />
-    );
-  }
+  const routesContent = (
+    <AppRoutes
+      currentPage={currentPage}
+      user={user}
+      searchQuery={searchQuery}
+      handleSearch={handleSearch}
+      handleNavigate={handleNavigate}
+      handleLoginSuccess={handleLoginSuccess}
+      onCloseAuth={() => handleNavigate('home')}
+    />
+  );
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="min-h-screen bg-background text-primary font-sans selection:bg-secondary-light selection:text-secondary-dark antialiased relative">
-        {}
-        <Navbar 
-          onNavigate={handleNavigate} 
-          onNavigateToAdmin={() => handleNavigate('admin')} 
+      {isLayoutPage ? (
+        <MainLayout
           currentPage={currentPage}
           user={user}
+          onNavigate={handleNavigate}
+          onNavigateToAdmin={() => handleNavigate('admin')}
           onLogout={handleLogout}
-        />
-
-        <main>
-          {}
-          <Hero onSearch={handleSearch} />
-
-          {}
-          <Stats />
-
-          {}
-          <HowItWorks />
-
-          {}
-          <FeaturedJobs searchQuery={searchQuery} />
-
-          {}
-          <Testimonials />
-
-          {}
-          <CTA />
-        </main>
-
-        {}
-        <Footer />
-
-        {}
-        {currentPage === 'login' && (
-          <Login 
-            onClose={() => handleNavigate('home')} 
-            onSwitchToRegister={() => handleNavigate('register')}
-            onLoginSuccess={handleLoginSuccess}
-          />
-        )}
-
-        {}
-        {currentPage === 'register' && (
-          <Register 
-            onClose={() => handleNavigate('home')} 
-            onSwitchToLogin={() => handleNavigate('login')} 
-            onLoginSuccess={handleLoginSuccess}
-          />
-        )}
-      </div>
+        >
+          {routesContent}
+        </MainLayout>
+      ) : (
+        routesContent
+      )}
     </GoogleOAuthProvider>
   );
 }
+

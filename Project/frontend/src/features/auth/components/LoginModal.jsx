@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Eye, EyeOff, Chrome, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
+import { authApi } from '../api/authApi.js';
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [role, setRole] = useState('freelancer'); 
@@ -33,12 +34,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     setErrorMsg('');
     setAccountLocked(null);
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
+      const data = await authApi.login(payload);
       if (data.success) {
         setLoading(false);
         setSuccess(true);
@@ -89,12 +85,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail })
-      });
-      const data = await response.json();
+      const data = await authApi.forgotPassword(forgotEmail);
       if (data.success) {
         setCodeSent(true);
         setSuccessMsg('Mã xác nhận đã được gửi về email của bạn!');
@@ -119,12 +110,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      const response = await fetch('http://localhost:8080/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail, code })
-      });
-      const data = await response.json();
+      const data = await authApi.verifyCode({ email: forgotEmail, code });
       if (data.success) {
         setSuccessMsg('✅ Xác nhận thành công! Mật khẩu mới đã được gửi vào email của bạn.');
         setCodeSent(false);
@@ -292,12 +278,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                                 e.preventDefault();
                                 setLoading(true);
                                 try {
-                                  const res = await fetch('http://localhost:8080/api/auth/forgot-password', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ email: forgotEmail })
-                                  });
-                                  const data = await res.json();
+                                  const data = await authApi.forgotPassword(forgotEmail);
                                   if (data.success) {
                                     setSuccessMsg('Mã mới đã được gửi!');
                                     setTimer(60);

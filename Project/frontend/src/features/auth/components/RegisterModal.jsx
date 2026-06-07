@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Chrome, Eye, EyeOff, Sparkles, CheckCircle, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
+import { authApi } from '../api/authApi.js';
 
 export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [role, setRole] = useState('freelancer'); 
@@ -22,18 +23,13 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     setError('');
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: decoded.email,
-          name: decoded.name,
-          googleId: decoded.sub,
-          avatar: decoded.picture,
-          requestedRole: role.toUpperCase()
-        })
+      const data = await authApi.login({
+        email: decoded.email,
+        name: decoded.name,
+        googleId: decoded.sub,
+        avatar: decoded.picture,
+        requestedRole: role.toUpperCase()
       });
-      const data = await response.json();
       if (data.success) {
         setSuccess(true);
         setTimeout(() => {
@@ -58,21 +54,15 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     setErrorField('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          name: fullName,
-          fullName,
-          displayName,
-          phone: phoneNumber,
-          requestedRole: role.toUpperCase()
-        }),
+      const data = await authApi.register({
+        email,
+        password,
+        name: fullName,
+        fullName,
+        displayName,
+        phone: phoneNumber,
+        requestedRole: role.toUpperCase()
       });
-
-      const data = await response.json();
 
       if (data.success) {
         setSuccess(true);
