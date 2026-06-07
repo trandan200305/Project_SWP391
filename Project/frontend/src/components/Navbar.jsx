@@ -16,11 +16,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   const [resetPinSuccess, setResetPinSuccess] = useState('');
   const [isResettingTempPin, setIsResettingTempPin] = useState(false);
 
-  // ==========================================
-  // ==========================================
   // 1. RESET AND OPEN MESSENGER PIN MODAL
-  // ==========================================
-  // ==========================================
   const handleMessengerClick = () => {
     setShowProfileMenu(false);
     setIsOpen(false);
@@ -34,11 +30,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     setIsResettingTempPin(false);
   };
 
-  // ==========================================
-  // ==========================================
   // 2. REQUEST TEMPORARY MESSENGER PIN VIA EMAIL
-  // ==========================================
-  // ==========================================
   const handleForgotPin = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -64,11 +56,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
-  // ==========================================
-  // ==========================================
   // 3. SUBMIT PIN (VERIFY CURRENT OR SET NEW)
-  // ==========================================
-  // ==========================================
   const handlePinSubmit = async () => {
     if (isSubmitting) return;
 
@@ -163,11 +151,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
-  // ==========================================
-  // ==========================================
   // 4. HANDLE PIN INPUT CHANGE, AUTO-FOCUS & PASTE
-  // ==========================================
-  // ==========================================
   const handlePinChange = (index, value) => {
     if (!/^[0-9]*$/.test(value)) return;
     
@@ -198,11 +182,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
-  // ==========================================
-  // ==========================================
   // 5. HANDLE BACKSPACE KEY TO AUTO-FOCUS PREVIOUS INPUT
-  // ==========================================
-  // ==========================================
   const handlePinKeyDown = (index, e) => {
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
     const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
@@ -213,11 +193,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
-  // ==========================================
-  // ==========================================
   // 6. LISTEN TO SCROLL EVENTS TO TOGGLE HEADER STYLE
-  // ==========================================
-  // ==========================================
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 20) {
