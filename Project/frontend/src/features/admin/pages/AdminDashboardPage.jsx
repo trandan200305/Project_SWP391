@@ -26,8 +26,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [activeOnlineChecked, setActiveOnlineChecked] = useState(true);
   const [activeOfflineChecked, setActiveOfflineChecked] = useState(true);
   
+  const [selectedRoleTab, setSelectedRoleTab] = useState('ALL'); // 'ALL', 'EMPLOYER', 'MANAGER', 'STAFF'
   const [filterEmployer, setFilterEmployer] = useState(true);
-  const [filterFreelancer, setFilterFreelancer] = useState(true);
   const [filterManager, setFilterManager] = useState(true);
   const [filterStaff, setFilterStaff] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1222,6 +1222,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
           {activeTab === 'users' && (() => {
             
             const filteredUsers = users.filter(user => {
+              if (user.role === 'FREELANCER') return false;
+
               const matchesSearch = searchQuery === '' || 
                 user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 user.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1287,10 +1289,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               }
 
               let matchesRole = false;
-              if (filterEmployer && user.role === 'EMPLOYER') matchesRole = true;
-              if (filterFreelancer && user.role === 'FREELANCER') matchesRole = true;
-              if (filterManager && user.role === 'MANAGER') matchesRole = true;
-              if (filterStaff && user.role === 'STAFF') matchesRole = true;
+              if (selectedRoleTab === 'ALL') {
+                if (filterEmployer && user.role === 'EMPLOYER') matchesRole = true;
+                if (filterManager && user.role === 'MANAGER') matchesRole = true;
+                if (filterStaff && user.role === 'STAFF') matchesRole = true;
+              } else {
+                if (user.role === selectedRoleTab) matchesRole = true;
+              }
 
               return matchesSearch && matchesStatus && matchesTime && matchesRole;
             });
@@ -1693,23 +1698,46 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 `}</style>
 
                 {}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                     <div>
                       <h3 className="font-bold text-primary text-lg">Danh sách Tài khoản Người dùng</h3>
-                      <p className="text-[12px] text-slate-400 mt-1">Kết quả khớp điều kiện: <span className="font-bold text-blue-600">{filteredUsers.length}</span> / {users.length} tài khoản</p>
+                      <p className="text-[12px] text-slate-400 mt-1">Kết quả khớp điều kiện: <span className="font-bold text-blue-600">{filteredUsers.length}</span> tài khoản được quản lý</p>
                     </div>
 
+                    <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200/50">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'EMPLOYER', label: 'Employer' },
+                        { key: 'MANAGER', label: 'Manager' },
+                        { key: 'STAFF', label: 'Staff' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setSelectedRoleTab(tab.key)}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                            selectedRoleTab === tab.key
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                       <button 
                         onClick={() => setShowCreateModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 py-2 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
+                        className="h-[38px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
                       >
                         + Tạo Tài Khoản
                       </button>
                       
-                      {}
-                      <div className="flex items-center gap-2 mr-2">
+                      <div className="flex items-center gap-2">
                         <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
                           <div className="button-wrapper">
                             <div className="text">Excel</div>
@@ -1729,10 +1757,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         </div>
                       </div>
 
-                      {}
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
-                          <Search className="w-4 h-4 text-slate-400" />
+                        <div className="h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
+                          <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                           <input 
                             type="text" 
                             placeholder="Tìm kiếm Email hoặc Tên..." 
@@ -1747,14 +1774,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           {searchQuery && (
                             <button 
                               onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
-                              className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition-all"
+                              className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition-all flex-shrink-0"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
 
-                        {}
                         {showSuggestions && emailSuggestions.length > 0 && (
                           <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-150 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in slide-in-from-top-2 duration-150">
                             {emailSuggestions.map((email, idx) => (
@@ -1779,7 +1805,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         )}
                       </div>
 
-                      {}
                       <div className="relative filter-wrapper">
                         <div className="filter-main">
                           Bộ lọc nâng cao
@@ -1960,21 +1985,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   <span className="text-[12px] font-bold text-slate-600 ml-1">Employer</span>
                                 </label>
 
-                                <label className="ios-checkbox purple" title="Tài khoản Freelancer">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={filterFreelancer}
-                                    onChange={e => setFilterFreelancer(e.target.checked)} 
-                                  />
-                                  <div className="checkbox-wrapper">
-                                    <div className="checkbox-bg" />
-                                    <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
-                                      <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
-                                    </svg>
-                                  </div>
-                                  <span className="text-[12px] font-bold text-slate-600 ml-1">Freelancer</span>
-                                </label>
-
                                 <label className="ios-checkbox emerald" title="Tài khoản Manager">
                                   <input 
                                     type="checkbox" 
@@ -2015,7 +2025,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   setUserTimeEnd('');
                                   setSearchQuery('');
                                   setFilterEmployer(true);
-                                  setFilterFreelancer(true);
                                   setFilterManager(true);
                                   setFilterStaff(true);
                                   setActiveOnlineChecked(true);
