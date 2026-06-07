@@ -1,15 +1,22 @@
 package com.cny.backend;
 
-import com.cny.backend.entity.Freelancer;
-import com.cny.backend.entity.Employer;
-import com.cny.backend.entity.Admin;
-import com.cny.backend.entity.JobCategory;
-import com.cny.backend.entity.Project;
-import com.cny.backend.repository.FreelancerRepository;
-import com.cny.backend.repository.EmployerRepository;
-import com.cny.backend.repository.AdminRepository;
-import com.cny.backend.repository.JobCategoryRepository;
-import com.cny.backend.repository.ProjectRepository;
+import com.cny.backend.auth.entity.*;
+import com.cny.backend.admin.entity.*;
+import com.cny.backend.project.entity.*;
+import com.cny.backend.user.entity.*;
+import com.cny.backend.auth.repository.*;
+import com.cny.backend.admin.repository.*;
+import com.cny.backend.project.repository.*;
+import com.cny.backend.user.repository.*;
+import com.cny.backend.admin.dto.*;
+import com.cny.backend.chat.dto.*;
+import com.cny.backend.project.dto.*;
+import com.cny.backend.user.dto.*;
+import com.cny.backend.auth.service.*;
+import com.cny.backend.admin.service.*;
+import com.cny.backend.chat.service.*;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,10 +46,10 @@ public class DataSeeder implements CommandLineRunner {
     private AdminRepository adminRepository;
 
     @Autowired
-    private com.cny.backend.repository.ManagerRepository managerRepository;
+    private com.cny.backend.admin.repository.ManagerRepository managerRepository;
 
     @Autowired
-    private com.cny.backend.repository.StaffRepository staffRepository;
+    private com.cny.backend.admin.repository.StaffRepository staffRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -345,7 +352,7 @@ public class DataSeeder implements CommandLineRunner {
     private void seedManagerAndStaff() {
         try {
             if (managerRepository.count() == 0) {
-                com.cny.backend.entity.Manager manager = com.cny.backend.entity.Manager.builder()
+                com.cny.backend.admin.entity.Manager manager = com.cny.backend.admin.entity.Manager.builder()
                         .email("manager@lancerpro.com")
                         .passwordHash("123456")
                         .displayName("Trưởng Phòng IT")
@@ -362,7 +369,7 @@ public class DataSeeder implements CommandLineRunner {
                 manager = managerRepository.save(manager);
 
                 if (staffRepository.count() == 0) {
-                    com.cny.backend.entity.Staff staff1 = com.cny.backend.entity.Staff.builder()
+                    com.cny.backend.admin.entity.Staff staff1 = com.cny.backend.admin.entity.Staff.builder()
                             .email("staff1@lancerpro.com")
                             .passwordHash("123456")
                             .displayName("Nhân Viên Dev 1")
@@ -379,7 +386,7 @@ public class DataSeeder implements CommandLineRunner {
                             .build();
                     staffRepository.save(staff1);
 
-                    com.cny.backend.entity.Staff staff2 = com.cny.backend.entity.Staff.builder()
+                    com.cny.backend.admin.entity.Staff staff2 = com.cny.backend.admin.entity.Staff.builder()
                             .email("staff2@lancerpro.com")
                             .passwordHash("123456")
                             .displayName("Nhân Viên Dev 2")

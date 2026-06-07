@@ -1,4 +1,4 @@
-package com.cny.backend;
+package com.cny.backend.user.repository;
 
 import com.cny.backend.auth.entity.*;
 import com.cny.backend.admin.entity.*;
@@ -17,13 +17,14 @@ import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
 
-@SpringBootApplication
-public class BackendApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(BackendApplication.class, args);
-    }
+@Repository
+public interface EmployerRepository extends JpaRepository<Employer, Integer> {
+    Optional<Employer> findByEmail(String email);
+    int countByEmail(String email);
+    int countByPhone(String phone);
+    int countByDisplayName(String displayName);
 }

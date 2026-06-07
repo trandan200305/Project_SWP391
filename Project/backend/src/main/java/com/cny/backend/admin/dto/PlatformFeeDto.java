@@ -1,4 +1,4 @@
-package com.cny.backend;
+package com.cny.backend.admin.dto;
 
 import com.cny.backend.auth.entity.*;
 import com.cny.backend.admin.entity.*;
@@ -17,13 +17,17 @@ import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@SpringBootApplication
-public class BackendApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(BackendApplication.class, args);
-    }
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PlatformFeeDto {
+    private double fee;
+    private Boolean success;
+    private String message;
 }
