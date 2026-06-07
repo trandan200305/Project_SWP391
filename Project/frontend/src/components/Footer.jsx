@@ -18,7 +18,7 @@ export default function Footer() {
     <footer className="w-full py-16 bg-primary-dark text-white border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
         
-        {/* Brand Column */}
+        {}
         <div className="flex flex-col gap-4">
           <span className="font-display text-2xl font-extrabold tracking-tight text-white">
             Lancer<span className="text-secondary">Pro</span>
@@ -36,7 +36,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Client Links */}
+        {}
         <div>
           <h4 className="font-bold text-white text-body-md mb-6 relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-0.5 after:bg-secondary">
             Dành cho Khách hàng
@@ -49,7 +49,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Freelancer Links */}
+        {}
         <div>
           <h4 className="font-bold text-white text-body-md mb-6 relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-0.5 after:bg-secondary">
             Dành cho Freelancer
@@ -62,7 +62,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Newsletter Column */}
+        {}
         <div>
           <h4 className="font-bold text-white text-body-md mb-6 relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-0.5 after:bg-secondary">
             Bản tin LancerPro
@@ -97,7 +97,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Bar */}
+      {}
       <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-body-sm">
         <p>© 2026 LancerPro Marketplace. Phát triển dựa trên CNY Database và Spring Boot + React.</p>
         <div className="flex gap-6">

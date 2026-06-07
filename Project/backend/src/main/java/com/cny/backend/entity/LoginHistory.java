@@ -29,6 +29,12 @@ public class LoginHistory {
     @Column(name = "admin_id")
     private Integer adminId;
 
+    @Column(name = "manager_id")
+    private Integer managerId;
+
+    @Column(name = "staff_id")
+    private Integer staffId;
+
     @Column(name = "ip_address")
     private String ipAddress;
 

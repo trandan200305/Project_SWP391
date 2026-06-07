@@ -14,15 +14,15 @@ import Register from './components/Register.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
 import Messenger from './components/Messenger.jsx';
 
-// Client ID thật từ Google Cloud Console (Dự án LancerPro - illyasviel1252004@gmail.com)
+
 const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'admin' | 'login' | 'register' | 'coming_soon'
+  const [currentPage, setCurrentPage] = useState('home'); 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   
-  // Quản lý trạng thái người dùng (null: khách, object: đã đăng nhập)
+  
   const [user, setUser] = useState(null);
 
   const handleSearch = (query, location) => {
@@ -36,17 +36,17 @@ export default function App() {
   };
 
   const handleNavigate = (page) => {
-    // Các tính năng cần bảo vệ (yêu cầu đăng nhập)
+    
     const protectedPages = ['admin', 'coming_soon', 'messenger'];
     
     if (protectedPages.includes(page) && !user) {
-      // Nếu chưa đăng nhập mà truy cập tính năng cần bảo vệ -> Mở form đăng nhập
+      
       setCurrentPage('login');
       return;
     }
 
     if (page === 'admin' && user?.role !== 'ADMIN') {
-      // Nếu đăng nhập rồi nhưng không phải ADMIN -> Hiển thị coming soon (hoặc báo lỗi access denied)
+      
       setCurrentPage('coming_soon');
       return;
     }
@@ -56,7 +56,7 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setCurrentPage('home'); // Đăng nhập thành công, điều hướng về home
+    setCurrentPage('home'); 
   };
 
   const handleLogout = () => {
@@ -64,17 +64,17 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  // Render Admin Dashboard
+  
   if (currentPage === 'admin') {
     return <AdminDashboard user={user} onNavigateToHome={() => handleNavigate('home')} />;
   }
 
-  // Render Coming Soon page for unfinished protected features
+  
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
   }
 
-  // Render Messenger page
+  
   if (currentPage === 'messenger') {
     return <Messenger user={user} onNavigateHome={() => handleNavigate('home')} />;
   }
@@ -82,7 +82,7 @@ export default function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <div className="min-h-screen bg-background text-primary font-sans selection:bg-secondary-light selection:text-secondary-dark antialiased relative">
-        {/* Navigation bar with dynamic routing state */}
+        {}
         <Navbar 
           onNavigate={handleNavigate} 
           onNavigateToAdmin={() => handleNavigate('admin')} 
@@ -92,29 +92,29 @@ export default function App() {
         />
 
         <main>
-          {/* Hero Section with interactive search capabilities */}
+          {}
           <Hero onSearch={handleSearch} />
 
-          {/* Dynamic numerical trust metrics */}
+          {}
           <Stats />
 
-          {/* Step by step descriptive guide */}
+          {}
           <HowItWorks />
 
-          {/* Categories list and Bento grid for latest jobs */}
+          {}
           <FeaturedJobs searchQuery={searchQuery} />
 
-          {/* Top Freelancers from the user's screenshot & trust stories */}
+          {}
           <Testimonials />
 
-          {/* Bottom Register and onboarding Call to Action banner */}
+          {}
           <CTA />
         </main>
 
-        {/* Structured footer with localized info */}
+        {}
         <Footer />
 
-        {/* FLOATING LOGIN MODAL POPUP */}
+        {}
         {currentPage === 'login' && (
           <Login 
             onClose={() => handleNavigate('home')} 
@@ -123,7 +123,7 @@ export default function App() {
           />
         )}
 
-        {/* FLOATING REGISTER MODAL POPUP */}
+        {}
         {currentPage === 'register' && (
           <Register 
             onClose={() => handleNavigate('home')} 

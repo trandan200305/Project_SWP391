@@ -20,7 +20,7 @@ public class Freelancer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "freelancer_id")
-    private Integer profileId; // Matches PK for frontend compatibility
+    private Integer profileId; 
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -93,7 +93,7 @@ public class Freelancer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
-    // Transient user helper object for 100% frontend compatibility
+    
     @Transient
     private TransientUser user;
 

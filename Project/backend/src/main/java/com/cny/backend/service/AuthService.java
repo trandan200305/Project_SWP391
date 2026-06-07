@@ -32,6 +32,12 @@ public class AuthService {
     @Autowired
     private LoginHistoryRepository loginHistoryRepository;
 
+    @Autowired
+    private com.cny.backend.repository.ManagerRepository managerRepository;
+
+    @Autowired
+    private com.cny.backend.repository.StaffRepository staffRepository;
+
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
@@ -64,9 +70,15 @@ public class AuthService {
         Optional<Admin> existingAdmin = adminRepository.findByEmail(email);
         Optional<Employer> existingEmployer = employerRepository.findByEmail(email);
         Optional<Freelancer> existingFreelancer = freelancerRepository.findByEmail(email);
+        Optional<com.cny.backend.entity.Manager> existingManager = managerRepository.findByEmail(email);
+        Optional<com.cny.backend.entity.Staff> existingStaff = staffRepository.findByEmail(email);
                                  
         if (isSpecialAdmin || existingAdmin.isPresent()) {
             requestedRole = "ADMIN";
+        } else if (existingManager.isPresent()) {
+            requestedRole = "MANAGER";
+        } else if (existingStaff.isPresent()) {
+            requestedRole = "STAFF";
         } else if (existingEmployer.isPresent()) {
             requestedRole = "EMPLOYER";
         } else if (existingFreelancer.isPresent()) {
@@ -82,8 +94,10 @@ public class AuthService {
         int emailInAdmins = countBy("admins", "email", email);
         int emailInEmployers = countBy("employers", "email", email);
         int emailInFreelancers = countBy("freelancers", "email", email);
+        int emailInManagers = countBy("managers", "email", email);
+        int emailInStaff = countBy("staff", "email", email);
 
-        int totalRoles = emailInAdmins + emailInEmployers + emailInFreelancers;
+        int totalRoles = emailInAdmins + emailInEmployers + emailInFreelancers + emailInManagers + emailInStaff;
 
         int userId = -1;
         String assignedRole = requestedRole;
@@ -213,10 +227,80 @@ public class AuthService {
                 }
             }
         } 
+        else if ("MANAGER".equals(assignedRole)) {
+            if (totalRoles > 0 && emailInManagers == 0) {
+                response.put("success", false);
+                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                return response;
+            }
+
+            if (existingManager.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Tài khoản không tồn tại!");
+                return response;
+            } else {
+                com.cny.backend.entity.Manager dbManager = existingManager.get();
+                if (!isOAuthLogin) {
+                    if (dbManager.getPasswordHash() == null || !dbManager.getPasswordHash().equals(passwordHash)) {
+                        response.put("success", false);
+                        response.put("message", "Sai mật khẩu!");
+                        return response;
+                    }
+                }
+
+                userId = dbManager.getManagerId();
+                userStatus = dbManager.getStatus();
+                
+                boolean updated = false;
+                String dbPin = dbManager.getMessengerPin();
+                if (dbPin != null && !dbPin.trim().isEmpty()) {
+                    hasMessengerPin = true;
+                }
+                
+                if (updated) {
+                    managerRepository.save(dbManager);
+                }
+            }
+        }
+        else if ("STAFF".equals(assignedRole)) {
+            if (totalRoles > 0 && emailInStaff == 0) {
+                response.put("success", false);
+                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                return response;
+            }
+
+            if (existingStaff.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Tài khoản không tồn tại!");
+                return response;
+            } else {
+                com.cny.backend.entity.Staff dbStaff = existingStaff.get();
+                if (!isOAuthLogin) {
+                    if (dbStaff.getPasswordHash() == null || !dbStaff.getPasswordHash().equals(passwordHash)) {
+                        response.put("success", false);
+                        response.put("message", "Sai mật khẩu!");
+                        return response;
+                    }
+                }
+
+                userId = dbStaff.getStaffId();
+                userStatus = dbStaff.getStatus();
+                
+                boolean updated = false;
+                String dbPin = dbStaff.getMessengerPin();
+                if (dbPin != null && !dbPin.trim().isEmpty()) {
+                    hasMessengerPin = true;
+                }
+                
+                if (updated) {
+                    staffRepository.save(dbStaff);
+                }
+            }
+        }
         else {
             if (totalRoles > 0 && emailInFreelancers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò Employer. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
@@ -278,7 +362,7 @@ public class AuthService {
             }
         }
 
-        // Login History & Last Login
+        
         LoginHistory history = LoginHistory.builder()
                 .loginAt(LocalDateTime.now())
                 .success(true)
@@ -291,6 +375,20 @@ public class AuthService {
                 adminRepository.save(a);
             }
             history.setAdminId(userId);
+        } else if ("MANAGER".equals(assignedRole)) {
+            com.cny.backend.entity.Manager m = managerRepository.findById(userId).orElse(null);
+            if (m != null) {
+                m.setLastLoginAt(LocalDateTime.now());
+                managerRepository.save(m);
+            }
+            history.setManagerId(userId);
+        } else if ("STAFF".equals(assignedRole)) {
+            com.cny.backend.entity.Staff s = staffRepository.findById(userId).orElse(null);
+            if (s != null) {
+                s.setLastLoginAt(LocalDateTime.now());
+                staffRepository.save(s);
+            }
+            history.setStaffId(userId);
         } else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {
             Employer e = employerRepository.findById(userId).orElse(null);
             if (e != null) {
@@ -336,17 +434,25 @@ public class AuthService {
 
     public Integer countBy(String table, String column, String value) {
         if ("admins".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return adminRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return adminRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return adminRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column)) return (int) adminRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column)) return (int) adminRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column)) return (int) adminRepository.countByDisplayName(value);
+        } else if ("managers".equalsIgnoreCase(table)) {
+            if ("email".equalsIgnoreCase(column)) return (int) managerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column)) return (int) managerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column)) return (int) managerRepository.countByDisplayName(value);
+        } else if ("staff".equalsIgnoreCase(table)) {
+            if ("email".equalsIgnoreCase(column)) return (int) staffRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column)) return (int) staffRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column)) return (int) staffRepository.countByDisplayName(value);
         } else if ("employers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return employerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return employerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return employerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column)) return (int) employerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column)) return (int) employerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column)) return (int) employerRepository.countByDisplayName(value);
         } else if ("freelancers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return freelancerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return freelancerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return freelancerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column)) return (int) freelancerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column)) return (int) freelancerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column)) return (int) freelancerRepository.countByDisplayName(value);
         }
         return 0;
     }
@@ -356,6 +462,18 @@ public class AuthService {
             return adminRepository.findById(userId).map(u -> {
                 u.setMessengerPin(pin);
                 adminRepository.save(u);
+                return true;
+            }).orElse(false);
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            return managerRepository.findById(userId).map(u -> {
+                u.setMessengerPin(pin);
+                managerRepository.save(u);
+                return true;
+            }).orElse(false);
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            return staffRepository.findById(userId).map(u -> {
+                u.setMessengerPin(pin);
+                staffRepository.save(u);
                 return true;
             }).orElse(false);
         } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
@@ -378,6 +496,16 @@ public class AuthService {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId)
                     .map(Admin::getMessengerPin)
+                    .map(p -> p.equals(pin))
+                    .orElse(false);
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            return managerRepository.findById(userId)
+                    .map(com.cny.backend.entity.Manager::getMessengerPin)
+                    .map(p -> p.equals(pin))
+                    .orElse(false);
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            return staffRepository.findById(userId)
+                    .map(com.cny.backend.entity.Staff::getMessengerPin)
                     .map(p -> p.equals(pin))
                     .orElse(false);
         } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
@@ -406,6 +534,22 @@ public class AuthService {
                 email = a.getEmail();
                 a.setMessengerPin(newPin);
                 adminRepository.save(a);
+            }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.entity.Manager> opt = managerRepository.findById(userId);
+            if (opt.isPresent()) {
+                com.cny.backend.entity.Manager m = opt.get();
+                email = m.getEmail();
+                m.setMessengerPin(newPin);
+                managerRepository.save(m);
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.entity.Staff> opt = staffRepository.findById(userId);
+            if (opt.isPresent()) {
+                com.cny.backend.entity.Staff s = opt.get();
+                email = s.getEmail();
+                s.setMessengerPin(newPin);
+                staffRepository.save(s);
             }
         } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
             Optional<Employer> opt = employerRepository.findById(userId);

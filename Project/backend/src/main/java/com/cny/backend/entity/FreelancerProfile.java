@@ -22,8 +22,8 @@ public class FreelancerProfile {
     private Integer profileId;
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    @JoinColumn(name = "freelancer_id", nullable = false, unique = true)
+    private Freelancer freelancer;
 
     @Column(name = "professional_title", length = 200)
     private String professionalTitle;

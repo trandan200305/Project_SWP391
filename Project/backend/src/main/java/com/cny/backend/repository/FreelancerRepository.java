@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface FreelancerRepository extends JpaRepository<Freelancer, Integer> {
     
-    // Custom query to fetch top-rated active freelancers
+    
     List<Freelancer> findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
     
     @Query("SELECT f FROM Freelancer f WHERE f.isAvailable = true AND f.averageRating >= 4.5 ORDER BY f.averageRating DESC")

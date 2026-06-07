@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Code, Palette, Megaphone, Languages, PenTool, Video, Bookmark, Calendar, DollarSign, ExternalLink, Folder } from 'lucide-react';
 
 export default function FeaturedJobs({ searchQuery }) {
-  // States
+  
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [savedJobs, setSavedJobs] = useState({});
 
-  // Map backend icon string to Lucide React component
+  
   const iconMap = {
     'code': Code,
     'palette': Palette,
@@ -20,7 +20,7 @@ export default function FeaturedJobs({ searchQuery }) {
     'folder-open': Folder
   };
 
-  // Color palette for dynamic mapping
+  
   const categoryColors = [
     'text-blue-600 bg-blue-50',
     'text-indigo-600 bg-indigo-50',
@@ -31,7 +31,7 @@ export default function FeaturedJobs({ searchQuery }) {
     'text-emerald-600 bg-emerald-50'
   ];
 
-  // Helper: Format Time Ago from ISO LocalDateTime
+  
   const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Mới đăng';
     try {
@@ -54,7 +54,7 @@ export default function FeaturedJobs({ searchQuery }) {
     }
   };
 
-  // Helper: Format Budget dynamically from entity fields
+  
   const formatBudget = (project) => {
     if (project.projectType === 'MONTHLY') {
       const amt = project.budgetFixed || project.budgetMax || project.budgetMin;
@@ -73,7 +73,7 @@ export default function FeaturedJobs({ searchQuery }) {
     return singleAmt ? `${parseFloat(singleAmt).toLocaleString('vi-VN')}đ` : 'Thỏa thuận';
   };
 
-  // Helper: Map mock skills dynamic tags by category to match premium aesthetics
+  
   const getSkillsByCategory = (catName) => {
     const defaultSkills = ['Freelance', 'Professional', 'vLance'];
     const map = {
@@ -88,7 +88,7 @@ export default function FeaturedJobs({ searchQuery }) {
     return map[catName] || defaultSkills;
   };
 
-  // Fetch Job Categories
+  
   useEffect(() => {
     fetch('http://localhost:8080/api/categories')
       .then(res => {
@@ -105,7 +105,7 @@ export default function FeaturedJobs({ searchQuery }) {
       });
   }, []);
 
-  // Fetch Projects based on Search Query
+  
   useEffect(() => {
     setIsLoadingProjects(true);
     const url = searchQuery && searchQuery.trim() !== ''
@@ -138,7 +138,7 @@ export default function FeaturedJobs({ searchQuery }) {
     <section id="find-work" className="py-20 bg-[#F8FAFC]">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Popular Categories */}
+        {}
         <div className="mb-20">
           <div className="flex justify-between items-end mb-8">
             <div>
@@ -183,7 +183,7 @@ export default function FeaturedJobs({ searchQuery }) {
           )}
         </div>
 
-        {/* Latest Projects Grid */}
+        {}
         <div>
           <div className="flex justify-between items-end mb-8">
             <div>
@@ -223,7 +223,7 @@ export default function FeaturedJobs({ searchQuery }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => {
                 const skills = getSkillsByCategory(project.category?.categoryName);
-                const isEnterprise = project.proposalCount > 15; // Map criteria dynamically based on popularity
+                const isEnterprise = project.proposalCount > 15; 
                 
                 return (
                   <div 
@@ -235,7 +235,7 @@ export default function FeaturedJobs({ searchQuery }) {
                     }`}
                   >
                     <div>
-                      {/* Header: Tag + Save */}
+                      {}
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-3 py-1 rounded-full text-body-sm font-bold ${
@@ -265,20 +265,20 @@ export default function FeaturedJobs({ searchQuery }) {
                         </button>
                       </div>
 
-                      {/* Title */}
+                      {}
                       <h3 className="font-display text-lg font-bold text-primary mb-2 group-hover:text-secondary transition-colors duration-200 line-clamp-1">
                         {project.title}
                       </h3>
                       
-                      {/* Duration/Meta */}
+                      {}
                       <span className="text-[12px] text-muted block mb-3 font-medium">Đăng {formatTimeAgo(project.createdAt)}</span>
                       
-                      {/* Description */}
+                      {}
                       <p className="font-sans text-muted text-body-sm mb-4 line-clamp-2 leading-relaxed">
                         {project.description}
                       </p>
 
-                      {/* Skills Chips */}
+                      {}
                       <div className="flex flex-wrap gap-1.5 mb-6">
                         {skills.map((skill, i) => (
                           <span key={i} className="px-2.5 py-0.5 bg-muted-light/30 border border-muted-light/80 rounded-md text-[12px] font-medium text-primary">
@@ -288,7 +288,7 @@ export default function FeaturedJobs({ searchQuery }) {
                       </div>
                     </div>
 
-                    {/* Footer: Budget + Action */}
+                    {}
                     <div className="flex justify-between items-center pt-4 border-t border-muted-light/50 mt-auto">
                       <div>
                         <p className="text-[11px] text-muted uppercase font-bold tracking-wider">Ngân sách</p>

@@ -4,7 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  const [role, setRole] = useState('freelancer'); // 'freelancer' or 'employer'
+  const [role, setRole] = useState('freelancer'); 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +13,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [accountLocked, setAccountLocked] = useState(null);
 
-  // --- Forgot Password State ---
+  
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -21,7 +21,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [timer, setTimer] = useState(0);
 
-  // Đếm ngược bộ đếm thời gian cho mã OTP
+  
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
@@ -81,7 +81,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Gửi mã OTP về email
+  
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -110,7 +110,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Xác minh mã OTP
+  
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join('');
@@ -153,7 +153,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        {/* Close Button */}
+        {}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -162,7 +162,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL */}
+        {}
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -322,7 +322,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     </div>
                   )}
 
-                  {/* Submit Button */}
+                  {}
                   <button
                     type="submit"
                     disabled={loading}
@@ -338,7 +338,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </button>
                 </form>
 
-                {/* Quay lại đăng nhập */}
+                {}
                 <div className="mt-4 text-center text-[12px] text-muted font-medium">
                   <a
                     href="#login"
@@ -357,14 +357,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 </div>
               </>
             ) : (
-              /* ===================== LOGIN FORM ===================== */
+              
               <>
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
                   Log in to manage your professional ecosystem.
                 </p>
 
-                {/* Account Locked/Banned Warning */}
+                {}
                 {accountLocked && (
                   <div className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
                     accountLocked.status === 'BANNED'
@@ -398,14 +398,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </div>
                 )}
 
-                {/* Error Message */}
+                {}
                 {errorMsg && !accountLocked && (
                   <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
                     {errorMsg}
                   </div>
                 )}
 
-                {/* Role Switcher */}
+                {}
                 <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
                   <button
                     type="button"
@@ -427,7 +427,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </button>
                 </div>
 
-                {/* Google Sign-In */}
+                {}
                 <div className="mb-3.5 flex justify-center w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -441,7 +441,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   />
                 </div>
 
-                {/* Divider */}
+                {}
                 <div className="relative flex items-center justify-center mb-3.5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-muted-light/60"></div>
@@ -451,7 +451,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </span>
                 </div>
 
-                {/* Email/Password Form */}
+                {}
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-bold text-primary mb-1">Email Address</label>
@@ -468,7 +468,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[11px] font-bold text-primary">Password</label>
-                      {/* Nút Forgot Password */}
+                      {}
                       <a
                         href="#forgot"
                         onClick={(e) => {
@@ -478,7 +478,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                           setSuccessMsg('');
                           setCodeSent(false);
                           setOtp(['', '', '', '', '', '']);
-                          setForgotEmail(email); // Pre-fill email nếu đã nhập
+                          setForgotEmail(email); 
                         }}
                         className="text-secondary font-bold text-[11px] hover:underline"
                       >
@@ -534,7 +534,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </button>
                 </form>
 
-                {/* Switch to Register */}
+                {}
                 <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
                   Don't have an account?{' '}
                   <a
@@ -552,7 +552,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             )}
           </div>
 
-          {/* Footer */}
+          {}
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

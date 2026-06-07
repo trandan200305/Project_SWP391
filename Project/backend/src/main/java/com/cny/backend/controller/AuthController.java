@@ -22,13 +22,13 @@ public class AuthController {
     @Autowired
     private JavaMailSender mailSender;
 
-    // Lưu trữ tạm thời mã xác nhận và timestamp (dùng bộ nhớ tạm, không lưu DB)
+    
     private final Map<String, String> verificationCodes = new ConcurrentHashMap<>();
     private final Map<String, Long> codeTimestamps = new ConcurrentHashMap<>();
 
-    // ==========================================
-    // ĐĂNG NHẬP (Hỗ trợ Google OAuth & Email)
-    // ==========================================
+    
+    
+    
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> payload) {
         Map<String, Object> response = authService.login(payload);
@@ -41,9 +41,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // ==========================================
-    // ĐĂNG KÝ TÀI KHOẢN MỚI (Email/Password)
-    // ==========================================
+    
+    
+    
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> payload) {
         String email       = payload.get("email");
@@ -55,19 +55,19 @@ public class AuthController {
 
         Map<String, Object> response = new HashMap<>();
 
-        // 1. Validate bắt buộc
+        
         if (email == null || email.trim().isEmpty()) {
             response.put("success", false);
             response.put("message", "Email không được để trống!");
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 2. Kiểm tra trùng lặp tuỳ theo vai trò
+        
         try {
             String table        = role.equals("EMPLOYER") ? "employers" : "freelancers";
             String idColumn     = role.equals("EMPLOYER") ? "employer_id"  : "freelancer_id";
 
-            // Kiểm tra Email trên toàn bộ hệ thống (chỉ 1 email 1 vai trò duy nhất)
+            
             Integer emailInEmployers = authService.countBy("employers", "email", email);
             Integer emailInFreelancers = authService.countBy("freelancers", "email", email);
             Integer emailInAdmins = authService.countBy("admins", "email", email);
@@ -81,7 +81,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra Số điện thoại đã tồn tại chưa
+            
             if (phone != null && !phone.trim().isEmpty()) {
                 Integer phoneCount = authService.countBy(table, "phone", phone);
                 if (phoneCount != null && phoneCount > 0) {
@@ -92,7 +92,7 @@ public class AuthController {
                 }
             }
 
-            // Kiểm tra Tên hiển thị đã tồn tại chưa
+            
             if (displayName != null && !displayName.trim().isEmpty()) {
                 Integer displayNameCount = authService.countBy(table, "display_name", displayName);
                 if (displayNameCount != null && displayNameCount > 0) {
@@ -103,7 +103,7 @@ public class AuthController {
                 }
             }
 
-            // 3. Tất cả hợp lệ - tiến hành tạo tài khoản
+            
             Map<String, String> registerPayload = new HashMap<>();
             registerPayload.put("email",         email);
             registerPayload.put("name",          fullName != null ? fullName : email.split("@")[0]);
@@ -113,7 +113,7 @@ public class AuthController {
             registerPayload.put("password",      password);
             registerPayload.put("requestedRole", role);
             registerPayload.put("googleId",      null);
-            registerPayload.put("isRegistration", "true"); // Đánh dấu đây là luồng đăng ký chủ động
+            registerPayload.put("isRegistration", "true"); 
 
             Map<String, Object> result = authService.login(registerPayload);
             if ((Boolean) result.getOrDefault("success", false)) {
@@ -134,9 +134,9 @@ public class AuthController {
     }
 
 
-    // ==========================================
-    // QUÊN MẬT KHẨU - Gửi mã OTP về Email
-    // ==========================================
+    
+    
+    
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -148,12 +148,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // Tạo mã OTP 6 chữ số ngẫu nhiên
+        
         String code = String.format("%06d", (int)(Math.random() * 1000000));
         verificationCodes.put(email, code);
         codeTimestamps.put(email, System.currentTimeMillis());
 
-        // Soạn và gửi email
+        
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("[LancerPro] Mã xác nhận đặt lại mật khẩu");
@@ -173,16 +173,16 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // ==========================================
-    // XÁC NHẬN MÃ OTP
-    // ==========================================
+    
+    
+    
     @PostMapping("/verify-code")
     public ResponseEntity<Map<String, Object>> verifyCode(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String code = payload.get("code");
         Map<String, Object> response = new HashMap<>();
 
-        // Kiểm tra mã đã hết hạn chưa (60 giây)
+        
         Long timestamp = codeTimestamps.get(email);
         if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
             response.put("success", false);
@@ -190,10 +190,10 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // Kiểm tra mã có đúng không
+        
         String savedCode = verificationCodes.get(email);
         if (savedCode != null && savedCode.equals(code)) {
-            // Xóa mã sau khi xác nhận thành công
+            
             verificationCodes.remove(email);
             codeTimestamps.remove(email);
             response.put("success", true);
@@ -206,9 +206,9 @@ public class AuthController {
         }
     }
 
-    // ==========================================
-    // MESSENGER PIN
-    // ==========================================
+    
+    
+    
     @PostMapping("/set-messenger-pin")
     public ResponseEntity<Map<String, Object>> setMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");

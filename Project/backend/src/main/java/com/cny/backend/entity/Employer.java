@@ -97,7 +97,7 @@ public class Employer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
-    // Transient user helper object for 100% frontend compatibility
+    
     @Transient
     private TransientUser user;
 

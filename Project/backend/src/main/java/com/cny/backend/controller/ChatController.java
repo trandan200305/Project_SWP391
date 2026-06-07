@@ -19,10 +19,10 @@ public class ChatController {
     @Autowired
     private SupportChatService chatService;
 
-    // Handles messages sent to "/app/chat.send"
+    
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
-        // Check if admin has replied to this ticket yet
+        
         boolean shouldSendAutoReply = false;
         if (!"ADMIN".equals(chatMessage.getSenderRole())) {
             Integer ticketId = chatMessage.getTicketId();
@@ -33,18 +33,18 @@ public class ChatController {
             }
         }
 
-        // 1. Save message to DB (will populate messageId, sentAt, ticketId, and sender profile details)
+        
         ChatMessageDto savedMessage = chatService.saveMessage(chatMessage);
 
-        // 2. Broadcast to the specific ticket channel (for both user and admin currently viewing the chat)
-        // Topic: "/topic/ticket.{ticketId}"
+        
+        
         messagingTemplate.convertAndSend("/topic/ticket." + savedMessage.getTicketId(), savedMessage);
 
-        // 3. Broadcast to the general admin topic (to refresh the support ticket list/badge in real-time)
-        // Topic: "/topic/admin"
+        
+        
         messagingTemplate.convertAndSend("/topic/admin", savedMessage);
 
-        // 4. Send auto-reply if admin has not replied yet
+        
         if (shouldSendAutoReply) {
             ChatMessageDto autoReply = new ChatMessageDto();
             autoReply.setTicketId(savedMessage.getTicketId());
@@ -55,15 +55,15 @@ public class ChatController {
 
             ChatMessageDto savedAutoReply = chatService.saveAutoReply(autoReply);
 
-            // Broadcast auto-reply to the specific ticket channel
+            
             messagingTemplate.convertAndSend("/topic/ticket." + savedAutoReply.getTicketId(), savedAutoReply);
 
-            // Send notification to the user topic for the auto-reply reply
+            
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
 
-        // 5. Send notification to the user topic if the message was sent by an admin (non-auto-reply)
-        // Topic: "/topic/user.{userId}"
+        
+        
         if ("ADMIN".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {

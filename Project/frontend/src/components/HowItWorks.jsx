@@ -36,7 +36,7 @@ export default function HowItWorks() {
   return (
     <section className="py-20 bg-surface border-t border-muted-light/60">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Section Header */}
+        {}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div className="max-w-2xl">
             <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Quy trình chuyên nghiệp</span>
@@ -52,7 +52,7 @@ export default function HowItWorks() {
           </a>
         </div>
 
-        {/* Steps Grid */}
+        {}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step, index) => {
             const Icon = step.icon;
@@ -61,12 +61,12 @@ export default function HowItWorks() {
                 key={index} 
                 className="group p-6 rounded-2xl bg-surface border border-muted-light/50 shadow-sm hover:shadow-md hover:border-secondary/20 transition-all duration-300"
               >
-                {/* Icon Container */}
+                {}
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${step.color} ${step.hoverColor} transition-all duration-300 shadow-sm`}>
                   <Icon className="w-7 h-7" />
                 </div>
                 
-                {/* Text Metadata */}
+                {}
                 <h3 className="font-display text-lg font-bold text-primary mb-3 group-hover:text-secondary transition-colors duration-200">
                   {step.title}
                 </h3>

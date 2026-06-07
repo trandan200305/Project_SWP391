@@ -10,14 +10,14 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function AdminDashboard({ user, onNavigateToHome }) {
-  // Tabs: 'home' | 'dashboard' | 'users' | 'moderation' | 'finance' | 'cms'
+  
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState('30days'); // '7days' | '30days' | '365days'
+  const [selectedPeriod, setSelectedPeriod] = useState('30days'); 
   
-  // Advanced User Filter States
-  const [userStatusFilter, setUserStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'LOCKED' | 'BANNED' | 'OFFLINE'
-  const [userTimeFilterType, setUserTimeFilterType] = useState('ALL'); // 'ALL' | '8HOURS' | 'CUSTOM'
+  
+  const [userStatusFilter, setUserStatusFilter] = useState('ALL'); 
+  const [userTimeFilterType, setUserTimeFilterType] = useState('ALL'); 
   const [userTimeStart, setUserTimeStart] = useState('');
   const [userTimeEnd, setUserTimeEnd] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -27,10 +27,25 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   
   const [filterEmployer, setFilterEmployer] = useState(true);
   const [filterFreelancer, setFilterFreelancer] = useState(true);
+  const [filterManager, setFilterManager] = useState(true);
+  const [filterStaff, setFilterStaff] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createRole, setCreateRole] = useState('MANAGER');
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    displayName: '',
+    fullName: '',
+    phone: '',
+    department: '',
+    specialization: '',
+    managerId: ''
+  });
+  const [managersList, setManagersList] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Real States fetched from SQL Server Database via Spring Boot API
+  
   const [stats, setStats] = useState({
     totalUsers: 1284,
     activeProjects: 452,
@@ -51,7 +66,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [feeRate, setFeeRate] = useState(10.0);
 
-  // System & CMS States (Real Data from DB)
+  
   const [jobCategories, setJobCategories] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
   const [disputes, setDisputes] = useState([]);
@@ -59,14 +74,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [articles, setArticles] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [seoConfigs, setSeoConfigs] = useState([]);
-  const [activeCmsTab, setActiveCmsTab] = useState('seo'); // 'seo' | 'categories' | 'kyc' | 'disputes' | 'reports' | 'articles' | 'tickets'
+  const [activeCmsTab, setActiveCmsTab] = useState('seo'); 
 
-  // Financial Control states
+  
   const [compareMode, setCompareMode] = useState(true);
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [chartWidth, setChartWidth] = useState(600);
   
-  // Loading & Action states
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingFee, setIsUpdatingFee] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -75,14 +90,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [activeUserForAction, setActiveUserForAction] = useState(null);
   const [actionType, setActionType] = useState('');
 
-  // Toast notification state
+  
   const [toast, setToast] = useState({ message: '', type: 'success', visible: false });
   const showToast = (message, type = 'success') => {
     setToast({ message, type, visible: true });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2500);
-  }; // 'lock' | 'ban'
+  }; 
 
-  // 1. Fetch statistics based on period
+  
   const fetchStats = (period) => {
     fetch(`http://localhost:8080/api/admin/stats?period=${period}`)
       .then(res => res.json())
@@ -90,7 +105,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .catch(err => console.error('Error fetching stats:', err));
   };
 
-  // 2. Fetch platform fee config
+  
   const fetchFeeConfig = () => {
     fetch('http://localhost:8080/api/admin/fee-config')
       .then(res => res.json())
@@ -98,7 +113,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .catch(err => console.error('Error loading fee config:', err));
   };
 
-  // 3. Update Platform Fee Rate (UC-30)
+  
   const handleUpdateFeeConfig = (newFee) => {
     setIsUpdatingFee(true);
     const headers = { 'Content-Type': 'application/json' };
@@ -112,8 +127,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .then(data => {
         if (data.success) {
           setFeeRate(data.fee);
-          fetchStats(selectedPeriod); // Re-calculate dynamic revenues based on new fee multiplier
-          // Refresh audit logs
+          fetchStats(selectedPeriod); 
+          
           fetch('http://localhost:8080/api/admin/audit-logs')
             .then(res => res.json())
             .then(logs => { if (Array.isArray(logs)) setAuditLogs(logs); });
@@ -126,25 +141,93 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       });
   };
 
-  // 4. Fetch all dashboard data & charts
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    if (!createForm.email || !createForm.password || !createForm.displayName) {
+      showToast('Vui lòng điền đầy đủ các thông tin bắt buộc (Email, Mật khẩu, Tên hiển thị)!', 'error');
+      return;
+    }
+
+    const isManager = createRole === 'MANAGER';
+    const url = isManager ? 'http://localhost:8080/api/admin/managers' : 'http://localhost:8080/api/admin/staff';
+    
+    const payload = isManager ? {
+      email: createForm.email,
+      password: createForm.password,
+      displayName: createForm.displayName,
+      fullName: createForm.fullName,
+      phone: createForm.phone,
+      department: createForm.department || 'General'
+    } : {
+      email: createForm.email,
+      password: createForm.password,
+      displayName: createForm.displayName,
+      fullName: createForm.fullName,
+      phone: createForm.phone,
+      specialization: createForm.specialization || 'General',
+      managerId: createForm.managerId ? parseInt(createForm.managerId) : null
+    };
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (user?.id) headers['X-Admin-Id'] = user.id.toString();
+
+    fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success === false) {
+          showToast(data.message || 'Lỗi khi tạo tài khoản.', 'error');
+        } else {
+          showToast(data.message || 'Tạo tài khoản thành công!', 'success');
+          setShowCreateModal(false);
+          setCreateForm({
+            email: '',
+            password: '',
+            displayName: '',
+            fullName: '',
+            phone: '',
+            department: '',
+            specialization: '',
+            managerId: ''
+          });
+          fetch('http://localhost:8080/api/admin/users')
+            .then(res => res.json())
+            .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
+          if (isManager) {
+            fetch('http://localhost:8080/api/admin/managers')
+              .then(res => res.json())
+              .then(mgrData => { if (Array.isArray(mgrData)) setManagersList(mgrData); });
+          }
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  
   const loadDashboardData = () => {
     setIsLoading(true);
     fetchStats(selectedPeriod);
     fetchFeeConfig();
 
-    // Fetch User Growth Trend series
+    
     fetch('http://localhost:8080/api/admin/charts/user-growth')
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setUserGrowthTrend(data); })
       .catch(err => console.error('Error user growth chart:', err));
 
-    // Fetch Revenue Trend series
+    
     fetch('http://localhost:8080/api/admin/charts/revenue')
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setRevenueTrend(data); })
       .catch(err => console.error('Error revenue chart:', err));
 
-    // Fetch audit logs
+    
     fetch('http://localhost:8080/api/admin/audit-logs')
       .then(res => res.json())
       .then(data => {
@@ -157,7 +240,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       });
   };
 
-  // Trigger loading when tab or period changes
+  
   useEffect(() => {
     loadDashboardData();
     
@@ -170,6 +253,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
           setIsLoading(false);
         })
         .catch(err => console.error('Error users:', err));
+      fetch('http://localhost:8080/api/admin/managers')
+        .then(res => res.json())
+        .then(data => { if (Array.isArray(data)) setManagersList(data); })
+        .catch(err => console.error('Error managers:', err));
     } else if (activeTab === 'moderation') {
       setIsLoading(true);
       fetch('http://localhost:8080/api/admin/projects/pending')
@@ -211,12 +298,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     }
   }, [activeTab, selectedPeriod]);
 
-  // Reset pagination page on filter change
+  
   useEffect(() => {
     setCurrentPage(1);
   }, [userStatusFilter, activeOnlineChecked, activeOfflineChecked, userTimeFilterType, userTimeStart, userTimeEnd, searchQuery]);
 
-  // Handle User Security Status Action
+  
   const handleUserStatusChange = (userId, role, newStatus) => {
     if (newStatus !== 'ACTIVE') {
       if (banReasons.length === 0) {
@@ -259,7 +346,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       });
   };
 
-  // Handle Moderation Action (Approve/Reject)
+  
   const handleProjectAction = (projectId, approve, reason = '') => {
     const reasonParam = encodeURIComponent(reason);
     const headers = {};
@@ -279,7 +366,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .catch(err => console.error(err));
   };
 
-  // Handle Finance Processing (Approve/Reject withdrawal)
+  
   const handleWithdrawalAction = (withdrawalId, approve) => {
     const status = approve ? 'APPROVED' : 'REJECTED';
     const headers = {};
@@ -299,7 +386,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       .catch(err => console.error(err));
   };
 
-  // Calculate coordinates for SVG line charts dynamically
+  
   const getSvgCoordinates = (data, field, width = 600, height = 160, globalMax = null) => {
     if (!data || data.length === 0) return '';
     const maxVal = globalMax || Math.max(...data.map(d => d[field] || 1));
@@ -313,7 +400,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     }).join(' ');
   };
 
-  // Handle mouse moves over SVG area chart to render high-precision hover tooltips
+  
   const handleMouseMove = (e) => {
     const svgRect = e.currentTarget.getBoundingClientRect();
     const mouseX = e.clientX - svgRect.left;
@@ -337,7 +424,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
     try {
       if (window.showSaveFilePicker) {
-        // Request the file handle IMMEDIATELY while we still have the user gesture token
+        
         fileHandle = await window.showSaveFilePicker({
           suggestedName: defaultFileName,
           types: [{ description, accept: { [mimeType]: [ext] } }],
@@ -349,7 +436,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       if (err.name !== 'AbortError') {
         setToast({ title: 'Lỗi', message: 'Không thể mở hộp thoại lưu file: ' + err.message, type: 'error' });
       }
-      return; // User aborted or error
+      return; 
     }
 
     setToast({ title: 'Đang xử lý', message: `Đang khởi tạo file ${format}, vui lòng đợi...`, type: 'success' });
@@ -409,7 +496,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       
       finalBlob = doc.output('blob');
     } else {
-      // Excel HTML
+      
       let excelHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
           <meta charset="utf-8">
@@ -486,7 +573,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   return (
     <div className="h-screen bg-slate-100 flex font-sans antialiased text-slate-800 overflow-hidden">
       
-      {/* Sidebar Navigation - iOS Settings Card layout */}
+      {}
       <aside className="w-64 bg-slate-50 border-r border-slate-200/80 flex flex-col justify-between p-4 shrink-0">
         <div className="space-y-5">
           <div className="px-1">
@@ -501,7 +588,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Settings</p>
             
             <nav className="space-y-2">
-              {/* TAB 0: HOME CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('home')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -520,7 +607,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* TAB 1: DASHBOARD CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('dashboard')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -539,7 +626,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* TAB 2: USER MANAGEMENT CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('users')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -558,7 +645,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* TAB 3: PROJECT MODERATION CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('moderation')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -582,7 +669,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 )}
               </div>
 
-              {/* TAB 4: FINANCE CONTROL CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('finance')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -606,7 +693,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 )}
               </div>
 
-              {/* TAB 5: CMS SETTINGS CARD */}
+              {}
               <div 
                 onClick={() => setActiveTab('cms')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
@@ -650,10 +737,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         </div>
       </aside>
 
-      {/* Main Panel Content */}
+      {}
       <main className="flex-grow flex flex-col min-w-0 bg-slate-50">
         
-        {/* Main Header with dynamic control elements */}
+        {}
         <header className="bg-white border-b border-slate-200 h-20 px-8 flex justify-between items-center shrink-0">
           <div>
             <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-3">
@@ -687,13 +774,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
           )}
         </header>
 
-        {/* Dynamic Panels */}
+        {}
         <div className="flex-grow p-8 overflow-y-auto overflow-x-hidden space-y-8 min-w-0">
           
-          {/* TAB 0: HOME OVERVIEW */}
+          {}
           {activeTab === 'home' && (
             <div className="space-y-8 animate-in fade-in duration-300">
-              {/* Top Banner */}
+              {}
               <div className="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
                   <h2 className="text-3xl font-bold font-display mb-2">Hệ thống Quản trị LancerPro</h2>
@@ -719,12 +806,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
                 </div>
                 
-                {/* Decorative background circles */}
+                {}
                 <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-400/20 rounded-full blur-2xl"></div>
               </div>
 
-              {/* Service Grid */}
+              {}
               <div>
                 <div className="flex items-center gap-2 mb-6 text-slate-700">
                   <LayoutDashboard className="w-5 h-5 text-blue-600" />
@@ -733,7 +820,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Dashboard Card */}
+                  {}
                   <div 
                     onClick={() => setActiveTab('dashboard')}
                     className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
@@ -749,7 +836,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <p className="text-xs font-bold text-emerald-600">Dữ liệu theo thời gian thực</p>
                   </div>
 
-                  {/* Users Card */}
+                  {}
                   <div 
                     onClick={() => setActiveTab('users')}
                     className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
@@ -765,7 +852,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <p className="text-xs font-bold text-rose-600">{stats.totalUsers} người dùng</p>
                   </div>
 
-                  {/* Moderation Card */}
+                  {}
                   <div 
                     onClick={() => setActiveTab('moderation')}
                     className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-green-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
@@ -785,7 +872,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <p className="text-xs font-bold text-green-600">{pendingProjects.length} dự án chờ duyệt</p>
                   </div>
 
-                  {/* Finance Card */}
+                  {}
                   <div 
                     onClick={() => setActiveTab('finance')}
                     className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
@@ -805,7 +892,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <p className="text-xs font-bold text-cyan-600">{stats.pendingWithdrawals} yêu cầu rút tiền</p>
                   </div>
 
-                  {/* CMS Card */}
+                  {}
                   <div 
                     onClick={() => setActiveTab('cms')}
                     className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
@@ -825,10 +912,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </div>
           )}
 
-          {/* TAB 1: OVERVIEW DASHBOARD */}
+          {}
           {activeTab === 'dashboard' && (
             <>
-              {/* KPI metrics row */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
                 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-500 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -909,7 +996,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* Dynamic Platform Fee Controller - High-end control panel */}
+              {}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="space-y-1 w-full md:w-auto">
                   <div className="flex items-center gap-2">
@@ -945,10 +1032,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* Advanced Interactive SVG Area Chart & Bar Chart */}
+              {}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* 1. High-precision SVG Area Chart */}
+                {}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
@@ -975,9 +1062,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     </div>
                   </div>
 
-                  {/* SVG Chart area with Hover Interactive Guide line & Tooltip */}
+                  {}
                   <div className="relative h-64 border border-slate-100 rounded-xl bg-slate-50/50 p-4">
-                    {/* Y-Axis guide lines */}
+                    {}
                     <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-slate-300 text-[10px] p-6 pl-12">
                       <div className="border-b border-slate-200/50 w-full pb-1 text-right">1,200 users</div>
                       <div className="border-b border-slate-200/50 w-full pb-1 text-right">800 users</div>
@@ -991,7 +1078,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       onMouseMove={handleMouseMove}
                       onMouseLeave={() => setHoveredPoint(null)}
                     >
-                      {/* Compare line dashed (if active) */}
+                      {}
                       {compareMode && userGrowthTrend.length > 0 && (
                         <polyline
                           fill="none"
@@ -1002,16 +1089,16 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         />
                       )}
 
-                      {/* Main Registration Line */}
+                      {}
                       {userGrowthTrend.length > 0 && (
                         <>
-                          {/* Gradient Area Fill */}
+                          {}
                           <path
                             d={`M 30,140 L ${getSvgCoordinates(userGrowthTrend, 'value', chartWidth, 160, Math.max(...userGrowthTrend.map(d => Math.max(d.value || 0, d.compareValue || 0))))} L ${((userGrowthTrend.length - 1) / (userGrowthTrend.length - 1)) * (chartWidth - 60) + 30},140 Z`}
                             fill="url(#area-gradient)"
                             opacity="0.12"
                           />
-                          {/* Line */}
+                          {}
                           <polyline
                             fill="none"
                             stroke="#2563EB"
@@ -1023,7 +1110,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         </>
                       )}
 
-                      {/* Interactive Hover Guide line & Points */}
+                      {}
                       {hoveredPoint && (
                         <>
                           <line 
@@ -1046,7 +1133,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         </>
                       )}
 
-                      {/* Gradient definition */}
+                      {}
                       <defs>
                         <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#2563EB" />
@@ -1055,7 +1142,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       </defs>
                     </svg>
 
-                    {/* Interactive High-Precision Floating Tooltip */}
+                    {}
                     {hoveredPoint && (
                       <div 
                         className="absolute bg-slate-900 text-white rounded-xl p-3 text-body-sm shadow-xl border border-slate-700 pointer-events-none z-20 flex flex-col gap-1"
@@ -1086,7 +1173,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
                 </div>
 
-                {/* 2. SVG Financial Revenue Bar Chart */}
+                {}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
@@ -1117,7 +1204,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             className="bg-blue-100 w-10 hover:bg-blue-600 rounded-t-lg transition-all duration-300 shadow-sm cursor-pointer relative"
                             style={{ height: `${percentHeight}%` }}
                           >
-                            {/* Bar hover tooltip */}
+                            {}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-lg whitespace-nowrap">
                               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(pt.value)}
                             </div>
@@ -1137,7 +1224,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
-              {/* Recent System Activity Log List */}
+              {}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
@@ -1206,9 +1293,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </>
           )}
 
-          {/* TAB 2: USER MANAGEMENT */}
+          {}
           {activeTab === 'users' && (() => {
-            // Advanced Filters Logic with clean date parsing
+            
             const filteredUsers = users.filter(user => {
               const matchesSearch = searchQuery === '' || 
                 user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1222,7 +1309,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   } else {
                     const cleanStr = user.lastLogin.split('.')[0];
                     const lastLoginTime = new Date(cleanStr).getTime();
-                    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000); // 5 minutes threshold
+                    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000); 
                     matchesStatus = lastLoginTime < fiveMinutesAgo;
                   }
                 } else if (userStatusFilter === 'ACTIVE') {
@@ -1277,11 +1364,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               let matchesRole = false;
               if (filterEmployer && user.role === 'EMPLOYER') matchesRole = true;
               if (filterFreelancer && user.role === 'FREELANCER') matchesRole = true;
+              if (filterManager && user.role === 'MANAGER') matchesRole = true;
+              if (filterStaff && user.role === 'STAFF') matchesRole = true;
 
               return matchesSearch && matchesStatus && matchesTime && matchesRole;
             });
 
-            // Email Suggestions Autocomplete matches
+            
             const emailSuggestions = searchQuery.trim() !== '' ? users
               .filter(u => u.email.toLowerCase().includes(searchQuery.toLowerCase()) && u.email.toLowerCase() !== searchQuery.toLowerCase())
               .map(u => u.email)
@@ -1290,7 +1379,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
             return (
               <div className="space-y-6">
-                {/* CSS styles exactly replicating the morphing and clip-path transitions from user request */}
+                {}
                 <style>{`
                   .filter-main {
                     font-weight: 800;
@@ -1678,7 +1767,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   }
                 `}</style>
 
-                {/* Advanced Filter Panel */}
+                {}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -1687,7 +1776,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                      {/* Fancy Download Buttons */}
+                      <button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 py-2 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
+                      >
+                        + Tạo Tài Khoản
+                      </button>
+                      
+                      {}
                       <div className="flex items-center gap-2 mr-2">
                         <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
                           <div className="button-wrapper">
@@ -1708,7 +1804,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         </div>
                       </div>
 
-                      {/* Search Input with Autocomplete Suggestions */}
+                      {}
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
                         <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
                           <Search className="w-4 h-4 text-slate-400" />
@@ -1733,7 +1829,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           )}
                         </div>
 
-                        {/* Autocomplete Dropdown list */}
+                        {}
                         {showSuggestions && emailSuggestions.length > 0 && (
                           <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-150 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in slide-in-from-top-2 duration-150">
                             {emailSuggestions.map((email, idx) => (
@@ -1758,7 +1854,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         )}
                       </div>
 
-                      {/* Customized Filter Button with the morphing Hamburger animations from User Checkbox */}
+                      {}
                       <div className="relative filter-wrapper">
                         <div className="filter-main">
                           Bộ lọc nâng cao
@@ -1769,11 +1865,11 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           </div>
                         </div>
 
-                        {/* Slide down expandable filters panel */}
+                        {}
                         <section className="filter-menu-container" onClick={e => e.stopPropagation()}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
                               
-                              {/* Item 1: Status selection */}
+                              {}
                               <div className="filter-item-list space-y-2">
                                 <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Trạng thái tài khoản</span>
                                 <div className="grid grid-cols-1 gap-1.5">
@@ -1844,7 +1940,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                 </div>
                               </div>
 
-                              {/* Item 2: Time Selection */}
+                              {}
                               <div className="filter-item-list space-y-2">
                                 <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Đăng nhập lần cuối</span>
                                 <div className="flex flex-col gap-1.5">
@@ -1871,7 +1967,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                 </div>
                               </div>
 
-                              {/* Item 3: Custom date ranges */}
+                              {}
                               <div className="filter-item-list space-y-2">
                                 <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chọn khoảng ngày</span>
                                 <div className={`p-4 rounded-2xl border transition-all duration-300 ${
@@ -1921,9 +2017,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
                             </div>
 
-                            {/* Reset Button inside filters panel */}
+                            {}
                             <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-5">
-                              <div className="flex gap-5 items-center pl-2">
+                              <div className="flex flex-wrap gap-5 items-center pl-2">
                                 <label className="ios-checkbox blue" title="Tài khoản Doanh nghiệp">
                                   <input 
                                     type="checkbox" 
@@ -1953,6 +2049,36 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   </div>
                                   <span className="text-[12px] font-bold text-slate-600 ml-1">Freelancer</span>
                                 </label>
+
+                                <label className="ios-checkbox emerald" title="Tài khoản Manager">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={filterManager}
+                                    onChange={e => setFilterManager(e.target.checked)} 
+                                  />
+                                  <div className="checkbox-wrapper">
+                                    <div className="checkbox-bg" />
+                                    <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                      <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-[12px] font-bold text-slate-600 ml-1">Manager</span>
+                                </label>
+
+                                <label className="ios-checkbox blue" title="Tài khoản Staff">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={filterStaff}
+                                    onChange={e => setFilterStaff(e.target.checked)} 
+                                  />
+                                  <div className="checkbox-wrapper">
+                                    <div className="checkbox-bg" />
+                                    <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                                      <path strokeLinejoin="round" strokeLinecap="round" strokeWidth={3} stroke="currentColor" d="M4 12L10 18L20 6" className="check-path" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-[12px] font-bold text-slate-600 ml-1">Staff</span>
+                                </label>
                               </div>
 
                               <button
@@ -1965,6 +2091,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   setSearchQuery('');
                                   setFilterEmployer(true);
                                   setFilterFreelancer(true);
+                                  setFilterManager(true);
+                                  setFilterStaff(true);
                                   setActiveOnlineChecked(true);
                                   setActiveOfflineChecked(true);
                                 }}
@@ -1980,7 +2108,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
                 </div>
 
-                {/* Users Table */}
+                {}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print-section">
                   <div className="overflow-x-auto min-w-0">
                     <table className="w-full text-left border-collapse table-fixed">
@@ -2020,7 +2148,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                               <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[180px]" title={user.email}>{user.email}</td>
                               <td className="px-3 py-3 font-medium whitespace-nowrap w-[95px]">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
-                                  user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-purple-50 text-purple-700 border border-purple-100'
+                                  user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                                  user.role === 'EMPLOYER' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
+                                  user.role === 'MANAGER' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                                  'bg-teal-50 text-teal-700 border border-teal-100'
                                 }`}>
                                   {user.role}
                                 </span>
@@ -2106,7 +2237,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     </table>
                   </div>
 
-                  {/* Gorgeous Premium Pagination Controls Component */}
+                  {}
                   {(() => {
                     const totalPages = Math.ceil(filteredUsers.length / 20);
                     return (
@@ -2168,7 +2299,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             );
           })()}
 
-          {/* TAB 3: PROJECT MODERATION */}
+          {}
           {activeTab === 'moderation' && (
             <div className="space-y-6">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -2219,10 +2350,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </div>
           )}
 
-          {/* TAB 4: FINANCE CONTROL */}
+          {}
           {activeTab === 'finance' && (
             <div className="space-y-8">
-              {/* Withdrawal Request Board */}
+              {}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200">
                   <h3 className="font-bold text-primary text-body-md">Yêu cầu rút tiền đang chờ duyệt (Withdrawal Escrow)</h3>
@@ -2293,10 +2424,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </div>
           )}
 
-          {/* TAB 5: CMS & SYSTEM MANAGEMENT */}
+          {}
           {activeTab === 'cms' && (
             <div className="space-y-6">
-              {/* CMS Sub-navigation */}
+              {}
               <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-200">
                 {[
                   { id: 'seo', label: 'Cấu hình Hệ thống' },
@@ -2328,7 +2459,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 ))}
               </div>
 
-              {/* System Configs Sub-tab */}
+              {}
               {activeCmsTab === 'seo' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
@@ -2378,7 +2509,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               )}
 
-              {/* Dynamic DB Data Tables (Mock UI for Real Data arrays) */}
+              {}
               {activeCmsTab !== 'seo' && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-200 bg-slate-50">
@@ -2399,7 +2530,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         return <p className="text-center text-slate-400 py-8">Chưa có dữ liệu trong Database cho mục này.</p>;
                       }
 
-                      // Dynamic table rendering based on first object keys
+                      
                       const headers = Object.keys(data[0]);
                       return (
                         <div className="overflow-x-auto">
@@ -2435,7 +2566,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
       </main>
 
-      {/* MODAL 1: AUDIT LOG DETAIL PREVIEW */}
+      {}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedActivity ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${selectedActivity ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
@@ -2475,7 +2606,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         </div>
       </div>
 
-      {/* MODAL 2: USER SECURE ACTION */}
+      {}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${activeUserForAction ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border-t-[6px] overflow-hidden transition-all duration-300 ease-out transform ${
           activeUserForAction ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
@@ -2572,13 +2703,187 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         </div>
       </div>
 
-      {/* TOAST NOTIFICATION */}
+      {/* MODAL TẠO TÀI KHOẢN MANAGER / STAFF */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showCreateModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border-t-[6px] border-blue-600 overflow-hidden transition-all duration-300 ease-out transform ${
+          showCreateModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}>
+          <div className="p-6 border-b flex justify-between items-center bg-blue-50/30 border-blue-100">
+            <h4 className="font-bold text-lg flex items-center gap-2 text-blue-800">
+              + Tạo Tài Khoản Quản Trị Viên / Nhân Viên
+            </h4>
+            <button 
+              onClick={() => setShowCreateModal(false)}
+              className="p-2 rounded-full transition-all duration-200 hover:rotate-90 active:scale-95 text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={handleCreateUser} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            {/* Vai trò */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Vai Trò Tài Khoản</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreateRole('MANAGER')}
+                  className={`py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 border ${
+                    createRole === 'MANAGER'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/10'
+                      : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Manager (Quản Lý)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateRole('STAFF')}
+                  className={`py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 border ${
+                    createRole === 'STAFF'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/10'
+                      : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Staff (Nhân Viên)
+                </button>
+              </div>
+            </div>
+
+            {/* Email & Password */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Email <span className="text-rose-500">*</span></label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="nhap@lancerpro.com" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.email}
+                  onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mật khẩu <span className="text-rose-500">*</span></label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Nhập mật khẩu" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.password}
+                  onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Display Name & Full Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tên hiển thị <span className="text-rose-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ví dụ: Alex" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.displayName}
+                  onChange={e => setCreateForm({ ...createForm, displayName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Họ và Tên</label>
+                <input 
+                  type="text" 
+                  placeholder="Ví dụ: Nguyễn Văn A" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.fullName}
+                  onChange={e => setCreateForm({ ...createForm, fullName: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Điện thoại */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số điện thoại</label>
+              <input 
+                type="text" 
+                placeholder="Ví dụ: 0912345678" 
+                className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                value={createForm.phone}
+                onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
+              />
+            </div>
+
+            {/* Department (Manager only) */}
+            {createRole === 'MANAGER' && (
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Phòng ban (Department)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ví dụ: Moderation, Support, Tech, HR" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.department}
+                  onChange={e => setCreateForm({ ...createForm, department: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Specialization & Manager Selection (Staff only) */}
+            {createRole === 'STAFF' && (
+              <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chuyên môn (Chức năng đặc thù)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ví dụ: KYC, Disputes, Tickets" 
+                    className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                    value={createForm.specialization}
+                    onChange={e => setCreateForm({ ...createForm, specialization: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Người quản lý (Manager)</label>
+                  <select 
+                    className="w-full border border-slate-200 bg-white rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                    value={createForm.managerId}
+                    onChange={e => setCreateForm({ ...createForm, managerId: e.target.value })}
+                  >
+                    <option value="">-- Không chỉ định --</option>
+                    {managersList.map(mgr => (
+                      <option key={mgr.managerId} value={mgr.managerId}>
+                        {mgr.displayName} ({mgr.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Nút xác nhận */}
+            <div className="flex gap-3 justify-end pt-3">
+              <button 
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300"
+              >
+                Tạo tài khoản
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {}
       <div className={`fixed top-6 right-6 z-[100] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         toast.visible 
           ? 'translate-x-0 opacity-100 visible' 
           : 'translate-x-12 opacity-0 invisible pointer-events-none'
       }`}>
-        {/* Left colored border accent */}
+        {}
         <div className={`absolute left-0 top-0 bottom-0 w-2 rounded-l-xl ${
           toast?.type === 'success' ? 'bg-emerald-400' : 
           toast?.type === 'warning' ? 'bg-amber-400' : 'bg-rose-400'
@@ -2612,3 +2917,5 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     </div>
   );
 }
+
+// thêm đoạn code mẫu ngắn để trong comment về câu query

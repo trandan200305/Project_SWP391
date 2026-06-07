@@ -9,11 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface FreelancerProfileRepository extends JpaRepository<FreelancerProfile, Integer> {
-    Optional<FreelancerProfile> findByUserUserId(Integer userId);
-    
-    // Custom query to fetch top-rated active freelancers
+    Optional<FreelancerProfile> findByFreelancerProfileId(Integer freelancerId);
+
     List<FreelancerProfile> findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
-    
+
     @Query("SELECT fp FROM FreelancerProfile fp WHERE fp.isAvailable = true AND fp.averageRating >= 4.5 ORDER BY fp.averageRating DESC")
     List<FreelancerProfile> findTopRatedFreelancers();
 }
