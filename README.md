@@ -4,9 +4,9 @@ Chào mừng bạn đến với dự án **vLance Freelance Marketplace** (tên 
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+## Công Nghệ Sử Dụng (Tech Stack)
 
-### 💻 Backend
+### Backend
 *   **Ngôn ngữ:** Java 17
 *   **Framework:** Spring Boot 3.x
 *   **Bảo mật:** Spring Security, JWT (Json Web Token) để phân quyền và xác thực
@@ -14,14 +14,14 @@ Chào mừng bạn đến với dự án **vLance Freelance Marketplace** (tên 
 *   **Giao thức Real-time:** WebSocket (STOMP qua SockJS) để phục vụ kênh chat trực tuyến
 *   **Cơ sở dữ liệu:** SQL Server (Tên database: `CNY`)
 
-### 🎨 Frontend
+### Frontend
 *   **Framework:** React 18, Vite
 *   **Styling:** Vanilla CSS & Tailwind CSS
 *   **Thư viện Icon:** Lucide React
 
 ---
 
-## 🌟 Các Tính Năng Đang Phát Triển
+## Các Tính Năng Đang Phát Triển
 *   **Đăng ký & Đăng nhập phân vai:** Hỗ trợ 3 nhóm tài khoản chính: Freelancer, Employer và Admin (Quản trị viên).
 *   **Mã PIN Bảo Mật (Messenger PIN):** Yêu cầu mã PIN 4 số riêng biệt để bảo mật trước khi truy cập vào hộp thư tin nhắn.
 *   **Kênh Hỗ Trợ Kỹ Thuật (Live Support):** Cho phép người dùng chat trực tuyến thời gian thực với Admin khi gặp lỗi hoặc sự cố.
@@ -29,7 +29,7 @@ Chào mừng bạn đến với dự án **vLance Freelance Marketplace** (tên 
 
 ---
 
-## 🚀 Hướng Dẫn Khởi Chạy Dự Án (Local Development)
+## Hướng Dẫn Khởi Chạy Dự Án (Local Development)
 
 Dự án đã được cấu hình sẵn kịch bản chạy nhanh ở thư mục gốc giúp bạn khởi chạy cả Backend và Frontend chỉ bằng một click chuột.
 
@@ -51,26 +51,25 @@ Script này sẽ tự động:
 
 ---
 
-## 📈 Lộ Trình Phát Triển Dự Án (Project Roadmap)
+## Lộ Trình Phát Triển Dự Án (Project Roadmap)
 
 Dự án được phân chia phát triển theo mô hình Agile/Scrum qua các giai đoạn (Phase) nhằm tối ưu hóa trải nghiệm người dùng và tính bảo mật của hệ thống giao dịch:
 
-### 📍 Giai đoạn 1: Nền tảng & Xác thực (Hiện tại)
+### Giai đoạn 1: Nền tảng & Xác thực (Hiện tại)
 *   [x] Thiết kế cơ sở dữ liệu quan hệ hoàn chỉnh trên **SQL Server**.
 *   [x] Xây dựng cổng xác thực tập trung mã hóa JWT và cơ chế bảo mật phân vai người dùng.
 *   [x] Tích hợp **Messenger PIN** nâng cao để bảo vệ quyền riêng tư hộp thư.
 *   [x] Phát triển kênh hỗ trợ kỹ thuật thời gian thực giữa Khách hàng và Quản trị viên (Admin Support Chat).
 
-### 📍 Giai đoạn 2: Quản lý Dự án & Đấu thầu (Sắp tới)
+### Giai đoạn 2: Quản lý Dự án & Đấu thầu (Sắp tới)
 *   [ ] **Phía Employer:** Phát triển bộ công cụ đăng dự án, đặt ngân sách, mô tả yêu cầu công việc chi tiết và quản lý danh sách Freelancer ứng tuyển.
 *   [ ] **Phía Freelancer:** Xây dựng trang hồ sơ năng lực (Portfolio), CV cá nhân, hiển thị kỹ năng và tính năng ứng tuyển, đấu thầu dự án (gửi Proposal đề xuất chi phí & thời gian bàn giao).
 *   [ ] **Bộ lọc thông minh:** Cho phép tìm kiếm dự án/freelancer theo khoảng giá, kỹ năng, lĩnh vực và độ uy tín.
 
-### 📍 Giai đoạn 3: Chat P2P & Hệ thống Ký quỹ (Escrow Payment)
+### Giai đoạn 3: Chat P2P & Hệ thống Ký quỹ (Escrow Payment)
 *   [ ] **Ký quỹ bảo mật (Escrow):** Tích hợp cổng thanh toán trực tuyến (**VNPay**, **Momo** hoặc **PayPal**). Hệ thống sẽ đứng ra giữ tiền đặt cọc của Employer khi dự án bắt đầu và tự động giải ngân cho Freelancer khi nghiệm thu thành công, loại bỏ hoàn toàn rủi ro gian lận tài chính cho cả hai bên.
 *   [ ] **Kênh Chat P2P:** Mở kênh chat trực tiếp giữa Freelancer và Employer sau khi dự án được duyệt.
 
-### 📍 Giai đoạn 4: Trung tâm Tranh chấp & Đánh giá
+### Giai đoạn 4: Trung tâm Tranh chấp & Đánh giá
 *   [ ] **Trung tâm giải quyết tranh chấp (Dispute Center):** Admin đứng ra phân xử và hoàn tiền ký quỹ về tài khoản phù hợp nếu một trong hai bên vi phạm hợp đồng hoặc bàn giao trễ hạn.
 *   [ ] **Đánh giá hai chiều (Review & Rating):** Hệ thống xếp hạng 5 sao kèm phản hồi chi tiết sau khi dự án kết thúc để định hình hệ sinh thái freelancer chất lượng cao.
-
