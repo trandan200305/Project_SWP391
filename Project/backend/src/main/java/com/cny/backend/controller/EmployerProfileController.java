@@ -1,7 +1,7 @@
 package com.cny.backend.controller;
 
-import com.cny.backend.entity.Employer;
-import com.cny.backend.repository.EmployerRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.repository.EmployerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;

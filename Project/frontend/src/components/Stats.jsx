@@ -51,12 +51,12 @@ export default function Stats() {
               key={index} 
               className={`glass-card p-6 rounded-2xl border ${stat.borderColor} shadow-level-1 hover:shadow-level-2 transition-all duration-300 hover:-translate-y-1 flex items-center gap-5`}
             >
-              {/* Animated Icon Container */}
+              {}
               <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center shrink-0`}>
                 <IconComponent className={`w-6 h-6 ${stat.color}`} />
               </div>
               
-              {/* Stats Metadata */}
+              {}
               <div className="flex flex-col">
                 <span className="font-display text-2xl sm:text-3xl font-extrabold text-primary leading-tight">
                   {stat.value}

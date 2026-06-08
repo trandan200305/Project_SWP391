@@ -8,14 +8,14 @@
   }
 }
 
-/* Custom Glassmorphism styles for premium UI elements */
+
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Elegant fade-in and scale animations */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -46,7 +46,7 @@
   animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom transition for glowing effects */
+
 .glow-effect {
   position: relative;
   transition: all 0.3s ease;
@@ -67,13 +67,13 @@
   opacity: 0.3;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
+
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
 }

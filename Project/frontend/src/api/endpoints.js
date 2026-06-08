@@ -1,0 +1,31 @@
+export const ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    VERIFY_CODE: '/auth/verify-code',
+    SET_PIN: '/auth/set-messenger-pin',
+    VERIFY_PIN: '/auth/verify-messenger-pin',
+    FORGOT_PIN: '/auth/forgot-messenger-pin',
+    VERIFY_INVITATION: '/auth/invitation/verify',
+    ACCEPT_INVITATION: '/auth/invitation/accept',
+    RESET_PASSWORD: '/auth/reset-password',
+  },
+  ADMIN: {
+    STATS: '/admin/stats',
+    AUDIT_LOGS: '/admin/audit-logs',
+    INVITE: '/admin/invite',
+    USERS: '/admin/users',
+    MANAGERS: '/admin/managers',
+    STAFF: '/admin/staff',
+    JOBS: '/admin/jobs',
+    JOB_CATEGORIES: '/admin/job-categories',
+    KYC_REQUESTS: '/admin/kyc-requests',
+    DISPUTES: '/admin/disputes',
+    REPORTS: '/admin/reports',
+    ARTICLES: '/admin/articles',
+    TICKETS: '/admin/tickets',
+    SEO_CONFIGS: '/admin/seo-configs',
+    PLATFORM_FEE: '/admin/platform-fee',
+  }
+};
