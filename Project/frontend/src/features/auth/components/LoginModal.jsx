@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from '../api/authApi.js';
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
+  // State đăng nhập thông thường
   const [role, setRole] = useState('freelancer'); 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [accountLocked, setAccountLocked] = useState(null);
 
-  
+  // State xử lý quên mật khẩu và OTP
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -25,13 +26,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  
+  // Đếm ngược thời gian gửi lại mã OTP
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Xử lý gọi API đăng nhập hệ thống
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg('');
@@ -57,6 +59,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
+  // Đăng nhập bằng Email và Mật khẩu
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -69,6 +72,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
+  // Đăng nhập bằng tài khoản Google
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -80,7 +84,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  
+  // Gửi mã OTP xác nhận về Email
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -104,7 +108,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  
+  // Xác thực mã OTP
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join('');
@@ -129,6 +133,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
+  // Đặt lại mật khẩu mới
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
