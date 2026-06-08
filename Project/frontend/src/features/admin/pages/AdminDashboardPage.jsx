@@ -1385,7 +1385,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border: 1px solid #e2e8f0;
                     border-radius: 16px;
                     position: absolute;
-                    width: 38rem;
+                    width: 44rem;
                     right: 0;
                     top: calc(100% + 10px);
                     overflow: hidden;
@@ -2117,7 +2117,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                       <button
                                         type="button"
                                         onClick={() => setUserStatusFilter(status.value)}
-                                        className={`w-full px-3.5 py-2.5 rounded-xl text-left font-semibold text-body-sm transition-all border flex items-center gap-2.5 ${
+                                        className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
                                           userStatusFilter === status.value
                                             ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
                                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -2185,7 +2185,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                     <button
                                       key={timeOpt.value}
                                       onClick={() => setUserTimeFilterType(timeOpt.value)}
-                                      className={`px-3.5 py-2.5 rounded-xl text-left font-semibold text-body-sm transition-all border flex justify-between items-center ${
+                                      className={`px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex justify-between items-center ${
                                         userTimeFilterType === timeOpt.value
                                           ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
                                           : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
