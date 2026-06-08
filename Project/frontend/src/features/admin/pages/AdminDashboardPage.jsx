@@ -2720,7 +2720,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </div>
 
       {}
-      <div className={`fixed top-6 right-6 z-[100] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+      <div className={`fixed top-6 right-6 z-[99999] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         toast.visible 
           ? 'translate-x-0 opacity-100 visible' 
           : 'translate-x-12 opacity-0 invisible pointer-events-none'
