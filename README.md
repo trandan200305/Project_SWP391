@@ -73,3 +73,36 @@ Dự án được phân chia phát triển theo mô hình Agile/Scrum qua các g
 ### Giai đoạn 4: Trung tâm Tranh chấp & Đánh giá
 *   [ ] **Trung tâm giải quyết tranh chấp (Dispute Center):** Admin đứng ra phân xử và hoàn tiền ký quỹ về tài khoản phù hợp nếu một trong hai bên vi phạm hợp đồng hoặc bàn giao trễ hạn.
 *   [ ] **Đánh giá hai chiều (Review & Rating):** Hệ thống xếp hạng 5 sao kèm phản hồi chi tiết sau khi dự án kết thúc để định hình hệ sinh thái freelancer chất lượng cao.
+
+---
+
+## Nhật Ký Cập Nhật & Sửa Lỗi (Update & Bug Fixes Log)
+
+### Sprint 1: Tích hợp Nhánh & Sửa lỗi Hệ thống (08/06/2026)
+
+Dự án đã tiến hành gộp thành công nhánh `origin/fix-dto+add-manager+staff` vào `master` và `main` để đồng bộ hóa các lớp dữ liệu quản trị mới, đồng thời vá các lỗi vận hành cốt lõi:
+
+#### 1. Đồng bộ hóa & Gộp Nhánh (Git Merge)
+- Gộp thành công các thay đổi từ nhánh của đồng nghiệp bao gồm cấu trúc thực thể quản lý mới (`Manager`, `Staff`, `StaffInvitation`).
+- Đồng bộ hóa toàn bộ cơ sở dữ liệu [CNY.sql](file:///e:/Ky5/SWP391/Project_SWP391/Database/CNY.sql) bổ sung thêm bảng `managers`, `staff`, `staff_invitations`, và lịch sử đăng nhập `login_history`.
+- Cập nhật các package import trong Backend để thích ứng với cấu trúc thư mục phân rã theo tính năng mới (`com.cny.backend.user.entity` / `repository`).
+
+#### 2. Khôi phục các định tuyến bị thiếu (Routing & Navigation)
+- Khôi phục Route trang **Hồ sơ doanh nghiệp & Thanh toán** (`employer_profile`) bị thiếu trong [AppRoutes.jsx](file:///e:/Ky5/SWP391/Project_SWP391/Project/frontend/src/routes/AppRoutes.jsx) sau khi tái cấu trúc.
+- Cấu hình phân quyền bảo vệ cho trang `employer_profile` trong [App.jsx](file:///e:/Ky5/SWP391/Project_SWP391/Project/frontend/src/App.jsx) (chỉ cho phép Employer truy cập và tách biệt khỏi MainLayout).
+
+#### 3. Khắc phục lỗi bảo mật & Logic đăng nhập (Security & Login Validation)
+- Khắc phục lỗi **bỏ qua xác thực vai trò** trong [AuthService.java](file:///e:/Ky5/SWP391/Project_SWP391/Project/backend/src/main/java/com/cny/backend/auth/service/AuthService.java) khiến tài khoản đăng nhập sai tab (Freelancer/Employer) vẫn vào được. Hệ thống hiện tại sẽ chặn đăng nhập sai vai trò và thông báo chính xác.
+- Mã hóa BCrypt mật khẩu các tài khoản mẫu trong [DataSeeder.java](file:///e:/Ky5/SWP391/Project_SWP391/Project/backend/src/main/java/com/cny/backend/DataSeeder.java) và cập nhật cơ sở dữ liệu để cho phép đăng nhập thử nghiệm bằng mật khẩu thường:
+  - **Tài khoản mẫu đăng nhập**:
+    - **Admin**: `admin@lancerpro.com` / Mật khẩu: `123456`
+    - **Employer**: `client@lancerpro.vn` / Mật khẩu: `123456`
+    - **Freelancer**: `minhanh@gmail.com` / Mật khẩu: `123456` (và các tài khoản freelancer mẫu khác)
+    - **Manager**: `manager@lancerpro.com` / Mật khẩu: `123456`
+    - **Staff**: `staff1@lancerpro.com` / Mật khẩu: `123456`
+
+#### 4. Vá lỗi sập giao diện & Tối ưu UI (Frontend Stability & Cleanups)
+- Vá lỗi **sập trang trắng trơn (white screen)** khi click vào "Forgot password?" trong [LoginModal.jsx](file:///e:/Ky5/SWP391/Project_SWP391/Project/frontend/src/features/auth/components/LoginModal.jsx) bằng cách thêm đầy đủ các biến trạng thái bị thiếu (`isResettingPassword`, `newPassword`, `confirmPassword`).
+- Sửa lỗi hiển thị thông báo kết nối giả lập: các modal đăng nhập/đăng ký hiện đã truyền đúng thông báo cụ thể từ Backend thay vì luôn báo `"Không thể kết nối đến máy chủ"`.
+- Loại bỏ ô chọn checkbox `"Keep me logged in for 30 days"` khỏi màn hình đăng nhập theo yêu cầu để giao diện tối giản và gọn gàng hơn.
+
