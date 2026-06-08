@@ -2333,10 +2333,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           <th className="px-3 py-3.5 pl-5 w-[80px]">ID</th>
                           <th className="px-3 py-3.5 w-[140px]">Tên hiển thị</th>
                           <th className="px-3 py-3.5 w-[180px]">Email</th>
-                          <th className="px-3 py-3.5 w-[95px]">Vai trò</th>
-                          <th className="px-3 py-3.5 w-[95px]">Trạng thái</th>
+                          <th className="px-3 py-3.5 w-[80px]">Vai trò</th>
+                          <th className="px-3 py-3.5 w-[90px]">Trạng thái</th>
                           <th className="px-3 py-3.5 w-[170px]">Đăng nhập cuối</th>
-                          <th className="px-3 py-3.5 w-[100px]">Ngày gia nhập</th>
+                          <th className="px-3 py-3.5 w-[120px]">Ngày gia nhập</th>
                           <th className="px-3 py-3.5 text-center w-[140px]">Hành động bảo mật</th>
                         </tr>
                       </thead>
@@ -2362,7 +2362,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                               </td>
                               <td className="px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[140px]" title={user.name}>{user.name}</td>
                               <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[180px]" title={user.email}>{user.email}</td>
-                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[95px]">
+                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[80px]">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
                                   user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                                   user.role === 'EMPLOYER' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
@@ -2372,7 +2372,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   {user.role}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 whitespace-nowrap w-[95px]">
+                              <td className="px-3 py-3 whitespace-nowrap w-[90px]">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                   user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                                   user.status === 'LOCKED' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
@@ -2414,7 +2414,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   })()}
                                 </div>
                               </td>
-                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[100px]">{user.joined}</td>
+                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[120px]">{user.joined}</td>
                               <td className="px-3 py-3 text-center whitespace-nowrap w-[140px]">
                                 <div className="flex justify-center gap-1">
                                   {user.isProtectedAdmin ? (
