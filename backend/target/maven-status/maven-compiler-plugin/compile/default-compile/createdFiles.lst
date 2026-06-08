@@ -37,6 +37,7 @@ com\cny\backend\admin\dto\ReportDto.class
 com\cny\backend\admin\dto\StaffCreateDto$StaffCreateDtoBuilder.class
 com\cny\backend\project\dto\ArticleDto.class
 com\cny\backend\admin\dto\StaffCreateDto.class
+com\cny\backend\user\dto\KycSubmitDto.class
 com\cny\backend\user\repository\FreelancerRepository.class
 com\cny\backend\admin\service\AdminService.class
 com\cny\backend\chat\controller\ChatController.class
@@ -46,6 +47,7 @@ com\cny\backend\user\entity\Freelancer$FreelancerBuilder.class
 com\cny\backend\upload\controller\UploadController.class
 com\cny\backend\project\dto\ArticleDto$ArticleDtoBuilder.class
 com\cny\backend\user\dto\FreelancerDto.class
+com\cny\backend\user\dto\KycSubmitDto$KycSubmitDtoBuilder.class
 com\cny\backend\admin\dto\ManagerDto$ManagerDtoBuilder.class
 com\cny\backend\admin\dto\DisputeDto$DisputeDtoBuilder.class
 com\cny\backend\user\controller\EmployerController.class
