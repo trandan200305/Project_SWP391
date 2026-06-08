@@ -21,6 +21,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [successMsg, setSuccessMsg] = useState('');
   const [timer, setTimer] = useState(0);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   
   useEffect(() => {
@@ -50,7 +53,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       }
     } catch (error) {
       setLoading(false);
-      setErrorMsg('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+      setErrorMsg(error.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     }
   };
 
@@ -95,7 +98,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         setErrorMsg(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
     } finally {
       setLoading(false);
     }
@@ -120,7 +123,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         setErrorMsg(data.message || 'Mã không chính xác!');
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
     } finally {
       setLoading(false);
     }
@@ -156,7 +159,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         setErrorMsg(data.message || 'Có lỗi xảy ra!');
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
     } finally {
       setLoading(false);
     }
@@ -366,8 +369,8 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                                     } else {
                                       setErrorMsg(data.message);
                                     }
-                                  } catch {
-                                    setErrorMsg('Lỗi kết nối máy chủ');
+                                  } catch (err) {
+                                    setErrorMsg(err.message || 'Lỗi kết nối máy chủ');
                                   } finally {
                                     setLoading(false);
                                   }
@@ -567,16 +570,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
-                    />
-                    <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
-                      Keep me logged in for 30 days
-                    </label>
-                  </div>
+
 
                   <button
                     type="submit"

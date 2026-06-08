@@ -39,7 +39,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         setError(data.message || "Đăng ký bằng Google thất bại.");
       }
     } catch (err) {
-      setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
+      setError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         setErrorField(data.field || "");
       }
     } catch (err) {
-      setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
+      setError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }

@@ -93,14 +93,16 @@ public class AuthService {
             requestedRole = "MANAGER";
         } else if (existingStaff.isPresent()) {
             requestedRole = "STAFF";
-        } else if (existingEmployer.isPresent()) {
-            requestedRole = "EMPLOYER";
-        } else if (existingFreelancer.isPresent()) {
-            requestedRole = "FREELANCER";
-        } else if (requestedRole == null) {
-            requestedRole = "FREELANCER";
         } else {
-            requestedRole = requestedRole.toUpperCase();
+            if (requestedRole == null || requestedRole.trim().isEmpty()) {
+                if (existingEmployer.isPresent()) {
+                    requestedRole = "EMPLOYER";
+                } else {
+                    requestedRole = "FREELANCER";
+                }
+            } else {
+                requestedRole = requestedRole.toUpperCase();
+            }
         }
 
         boolean isOAuthLogin = "OAUTH_GOOGLE_LOGGED".equals(passwordHash);
@@ -134,11 +136,13 @@ public class AuthService {
             }
 
             Admin dbAdmin = existingAdmin.get();
-            if (dbAdmin.getPasswordHash() == null
-                    || !passwordEncoder.matches(passwordHash, dbAdmin.getPasswordHash())) {
-                response.put("success", false);
-                response.put("message", "Sai mật khẩu!");
-                return response;
+            if (!isOAuthLogin) {
+                if (dbAdmin.getPasswordHash() == null
+                        || !passwordEncoder.matches(passwordHash, dbAdmin.getPasswordHash())) {
+                    response.put("success", false);
+                    response.put("message", "Sai mật khẩu!");
+                    return response;
+                }
             }
 
             userId = dbAdmin.getAdminId();

@@ -28,7 +28,7 @@ export default function App() {
     }
   };
   const handleNavigate = (page) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'employer_profile'];
     
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
@@ -39,6 +39,12 @@ export default function App() {
       setCurrentPage('coming_soon');
       return;
     }
+
+    if (page === 'employer_profile' && user?.role !== 'EMPLOYER') {
+      setCurrentPage('coming_soon');
+      return;
+    }
+
     setCurrentPage(page);
   };
 
@@ -47,11 +53,15 @@ export default function App() {
     setCurrentPage('home');
   };
 
+  const handleUserUpdate = (userData) => {
+    setUser(userData);
+  };
+
   const handleLogout = () => {
     setUser(null);
     setCurrentPage("home");
   };
-  const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard'].includes(currentPage);
+  const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard', 'employer_profile'].includes(currentPage);
 
   const routesContent = (
     <AppRoutes
@@ -61,6 +71,7 @@ export default function App() {
       handleSearch={handleSearch}
       handleNavigate={handleNavigate}
       handleLoginSuccess={handleLoginSuccess}
+      onUserUpdate={handleUserUpdate}
       onCloseAuth={() => handleNavigate('home')}
     />
   );

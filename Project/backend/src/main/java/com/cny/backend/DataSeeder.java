@@ -20,6 +20,7 @@ import com.cny.backend.chat.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,6 +30,9 @@ import java.util.List;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
@@ -96,7 +100,7 @@ public class DataSeeder implements CommandLineRunner {
         
         Employer employer = Employer.builder()
                 .email("client@lancerpro.vn")
-                .passwordHash("OAUTH_GOOGLE_LOGGED")
+                .passwordHash(passwordEncoder.encode("123456"))
                 .displayName("Doanh Nghiệp Việt")
                 .fullName("Công Ty TNHH Lancer Việt Nam")
                 .phone("0901234567")
@@ -128,7 +132,7 @@ public class DataSeeder implements CommandLineRunner {
         
         Admin admin = Admin.builder()
                 .email("admin@lancerpro.com")
-                .passwordHash("OAUTH_GOOGLE_LOGGED")
+                .passwordHash(passwordEncoder.encode("123456"))
                 .displayName("Hệ Thống Admin")
                 .fullName("Administrator LancerPro")
                 .phone("0911223344")
@@ -161,7 +165,7 @@ public class DataSeeder implements CommandLineRunner {
         for (int i = 0; i < names.length; i++) {
             Freelancer freelancer = Freelancer.builder()
                     .email(emails[i])
-                    .passwordHash("OAUTH_GOOGLE_LOGGED")
+                    .passwordHash(passwordEncoder.encode("123456"))
                     .displayName(names[i])
                     .fullName(names[i])
                     .phone("098765432" + i)

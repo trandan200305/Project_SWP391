@@ -6,6 +6,7 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
+import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -14,6 +15,7 @@ export default function AppRoutes({
   handleSearch,
   handleNavigate,
   handleLoginSuccess,
+  onUserUpdate,
   onCloseAuth
 }) {
   if (currentPage === 'admin') {
@@ -26,6 +28,16 @@ export default function AppRoutes({
 
   if (currentPage === 'messenger') {
     return <MessengerPage user={user} onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'employer_profile') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onUserUpdate={onUserUpdate}
+      />
+    );
   }
 
   if (currentPage === 'onboard') {
