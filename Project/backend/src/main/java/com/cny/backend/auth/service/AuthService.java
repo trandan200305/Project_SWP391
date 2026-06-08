@@ -50,6 +50,9 @@ public class AuthService {
     @Autowired
     private StaffInvitationRepository staffInvitationRepository;
 
+    @Autowired
+    private com.cny.backend.department.service.DepartmentService departmentService;
+
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
@@ -392,6 +395,9 @@ public class AuthService {
             if (m != null) {
                 m.setLastLoginAt(LocalDateTime.now());
                 managerRepository.save(m);
+                if (m.getDepartmentEntity() != null) {
+                    departmentService.startSession(m.getDepartmentEntity().getDepartmentId(), userId, "MANAGER", payload.get("ipAddress"));
+                }
             }
             history.setManagerId(userId);
         } else if ("STAFF".equals(assignedRole)) {
@@ -399,6 +405,9 @@ public class AuthService {
             if (s != null) {
                 s.setLastLoginAt(LocalDateTime.now());
                 staffRepository.save(s);
+                if (s.getDepartmentEntity() != null) {
+                    departmentService.startSession(s.getDepartmentEntity().getDepartmentId(), userId, "STAFF", payload.get("ipAddress"));
+                }
             }
             history.setStaffId(userId);
         } else if ("EMPLOYER".equals(assignedRole) || "CLIENT".equals(assignedRole)) {

@@ -37,6 +37,8 @@ public class StaffDto {
     private String specialization;
     private Integer managerId;
     private String managerName;
+    private Integer departmentId;
+    private String departmentName;
     private Integer createdByAdmin;
     private String createdAt;
     private String updatedAt;

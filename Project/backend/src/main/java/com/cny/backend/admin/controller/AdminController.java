@@ -171,8 +171,21 @@ public class AdminController {
 
     @PostMapping("/invite")
     public ResponseEntity<Map<String, Object>> inviteStaffOrManager(
-            @RequestBody Map<String, String> payload,
+            @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.inviteStaffOrManager(payload, adminId));
+    }
+
+    @GetMapping("/verification-tasks")
+    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
+        return ResponseEntity.ok(adminService.getVerificationTasks());
+    }
+
+    @PostMapping("/verification-tasks/{id}/signoff")
+    public ResponseEntity<Map<String, Object>> submitTaskSignoff(
+            @PathVariable("id") int id,
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "X-Verifier-Email", required = false, defaultValue = "admin@lancerpro.com") String verifierEmail) {
+        return ResponseEntity.ok(adminService.submitTaskSignoff(id, payload, verifierEmail));
     }
 }

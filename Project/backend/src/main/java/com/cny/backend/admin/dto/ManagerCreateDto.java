@@ -33,4 +33,5 @@ public class ManagerCreateDto {
     private String fullName;
     private String phone;
     private String department;
+    private Integer departmentId;
 }

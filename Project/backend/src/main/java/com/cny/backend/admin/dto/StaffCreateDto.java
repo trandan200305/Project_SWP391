@@ -34,4 +34,5 @@ public class StaffCreateDto {
     private String phone;
     private String specialization;
     private Integer managerId;
+    private Integer departmentId;
 }

@@ -35,4 +35,6 @@ public class AdminUserDto {
     private String joined;
     private String lastLogin;
     private boolean isProtectedAdmin;
+    private Integer departmentId;
+    private String departmentName;
 }

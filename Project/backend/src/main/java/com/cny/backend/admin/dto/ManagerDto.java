@@ -35,6 +35,8 @@ public class ManagerDto {
     private String avatarUrl;
     private String status;
     private String department;
+    private Integer departmentId;
+    private String departmentName;
     private Integer managedByAdmin;
     private String createdAt;
     private String updatedAt;

@@ -58,8 +58,12 @@ public class Manager {
     @Column(nullable = false)
     private String status;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String department;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
+    private com.cny.backend.department.entity.Department departmentEntity;
 
     @Column(name = "managed_by_admin")
     private Integer managedByAdmin;

@@ -15,6 +15,8 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.department.entity.*;
+import com.cny.backend.department.repository.*;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +60,16 @@ public class AdminService {
     private com.cny.backend.admin.repository.StaffRepository staffRepository;
 
     @Autowired
+    private com.cny.backend.department.repository.DepartmentRepository departmentRepository;
+
+    @Autowired
     private com.cny.backend.admin.repository.AdminRepository adminRepository;
+
+    @Autowired
+    private com.cny.backend.department.repository.DepartmentVerificationTaskRepository departmentVerificationTaskRepository;
+
+    @Autowired
+    private com.cny.backend.department.repository.DepartmentTaskSignoffRepository departmentTaskSignoffRepository;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "illyasviel1252004@gmail.com",
@@ -240,6 +251,8 @@ public class AdminService {
                     .joined(m.getCreatedAt() != null ? m.getCreatedAt().toString().substring(0, 10) : "")
                     .lastLogin(m.getLastLoginAt() != null ? m.getLastLoginAt().toString() : null)
                     .isProtectedAdmin(false)
+                    .departmentId(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getDepartmentId() : null)
+                    .departmentName(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getName() : null)
                     .build());
         }
 
@@ -256,6 +269,8 @@ public class AdminService {
                     .joined(s.getCreatedAt() != null ? s.getCreatedAt().toString().substring(0, 10) : "")
                     .lastLogin(s.getLastLoginAt() != null ? s.getLastLoginAt().toString() : null)
                     .isProtectedAdmin(false)
+                    .departmentId(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getDepartmentId() : null)
+                    .departmentName(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getName() : null)
                     .build());
         }
         
@@ -611,6 +626,14 @@ public class AdminService {
             return response;
         }
 
+        com.cny.backend.department.entity.Department dept = null;
+        if (dto.getDepartmentId() != null) {
+            dept = departmentRepository.findById(dto.getDepartmentId()).orElse(null);
+        }
+        if (dept == null) {
+            dept = departmentRepository.findByCode("GEN").orElse(null);
+        }
+
         com.cny.backend.admin.entity.Manager mgr = com.cny.backend.admin.entity.Manager.builder()
                 .email(email)
                 .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
@@ -618,7 +641,8 @@ public class AdminService {
                 .fullName(dto.getFullName())
                 .phone(dto.getPhone())
                 .status("ACTIVE")
-                .department(dto.getDepartment() != null ? dto.getDepartment() : "General")
+                .department(dept != null ? dept.getName() : "General")
+                .departmentEntity(dept)
                 .managedByAdmin(adminId)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
@@ -638,6 +662,8 @@ public class AdminService {
                 .phone(mgr.getPhone())
                 .status(mgr.getStatus())
                 .department(mgr.getDepartment())
+                .departmentId(mgr.getDepartmentEntity() != null ? mgr.getDepartmentEntity().getDepartmentId() : null)
+                .departmentName(mgr.getDepartmentEntity() != null ? mgr.getDepartmentEntity().getName() : null)
                 .managedByAdmin(mgr.getManagedByAdmin())
                 .createdAt(mgr.getCreatedAt().toString())
                 .updatedAt(mgr.getUpdatedAt().toString())
@@ -677,6 +703,17 @@ public class AdminService {
             }
         }
 
+        com.cny.backend.department.entity.Department dept = null;
+        if (dto.getDepartmentId() != null) {
+            dept = departmentRepository.findById(dto.getDepartmentId()).orElse(null);
+        }
+        if (dept == null && mgr != null) {
+            dept = mgr.getDepartmentEntity();
+        }
+        if (dept == null) {
+            dept = departmentRepository.findByCode("GEN").orElse(null);
+        }
+
         com.cny.backend.admin.entity.Staff stf = com.cny.backend.admin.entity.Staff.builder()
                 .email(email)
                 .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
@@ -686,6 +723,7 @@ public class AdminService {
                 .status("ACTIVE")
                 .specialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General")
                 .manager(mgr)
+                .departmentEntity(dept)
                 .createdByAdmin(adminId)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
@@ -707,6 +745,8 @@ public class AdminService {
                 .specialization(stf.getSpecialization())
                 .managerId(stf.getManager() != null ? stf.getManager().getManagerId() : null)
                 .managerName(stf.getManager() != null ? stf.getManager().getDisplayName() : null)
+                .departmentId(stf.getDepartmentEntity() != null ? stf.getDepartmentEntity().getDepartmentId() : null)
+                .departmentName(stf.getDepartmentEntity() != null ? stf.getDepartmentEntity().getName() : null)
                 .createdByAdmin(stf.getCreatedByAdmin())
                 .createdAt(stf.getCreatedAt().toString())
                 .updatedAt(stf.getUpdatedAt().toString())
@@ -726,6 +766,8 @@ public class AdminService {
                         .avatarUrl(m.getAvatarUrl())
                         .status(m.getStatus())
                         .department(m.getDepartment())
+                        .departmentId(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getDepartmentId() : null)
+                        .departmentName(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getName() : null)
                         .managedByAdmin(m.getManagedByAdmin())
                         .createdAt(m.getCreatedAt() != null ? m.getCreatedAt().toString() : null)
                         .updatedAt(m.getUpdatedAt() != null ? m.getUpdatedAt().toString() : null)
@@ -747,6 +789,8 @@ public class AdminService {
                         .specialization(s.getSpecialization())
                         .managerId(s.getManager() != null ? s.getManager().getManagerId() : null)
                         .managerName(s.getManager() != null ? s.getManager().getDisplayName() : null)
+                        .departmentId(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getDepartmentId() : null)
+                        .departmentName(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getName() : null)
                         .createdByAdmin(s.getCreatedByAdmin())
                         .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().toString() : null)
                         .updatedAt(s.getUpdatedAt() != null ? s.getUpdatedAt().toString() : null)
@@ -755,10 +799,12 @@ public class AdminService {
     }
 
     @Transactional
-    public Map<String, Object> inviteStaffOrManager(Map<String, String> payload, int adminId) {
+    public Map<String, Object> inviteStaffOrManager(Map<String, Object> payload, int adminId) {
         Map<String, Object> response = new HashMap<>();
-        String email = payload.get("email");
-        String role = payload.get("role"); // "MANAGER" or "STAFF"
+        String email = payload.get("email") != null ? payload.get("email").toString() : null;
+        String role = payload.get("role") != null ? payload.get("role").toString() : null;
+        String departmentIdStr = payload.get("departmentId") != null ? payload.get("departmentId").toString() : null;
+        String managerIdStr = payload.get("managerId") != null ? payload.get("managerId").toString() : null;
 
         if (email == null || email.trim().isEmpty()) {
             response.put("success", false);
@@ -785,6 +831,25 @@ public class AdminService {
             return response;
         }
 
+        com.cny.backend.department.entity.Department dept = null;
+        if (departmentIdStr != null && !departmentIdStr.trim().isEmpty()) {
+            try {
+                int deptId = Integer.parseInt(departmentIdStr);
+                dept = departmentRepository.findById(deptId).orElse(null);
+            } catch (Exception e) {}
+        }
+        if (dept == null) {
+            dept = departmentRepository.findByCode("GEN").orElse(null);
+        }
+
+        com.cny.backend.admin.entity.Manager mgr = null;
+        if (managerIdStr != null && !managerIdStr.trim().isEmpty()) {
+            try {
+                int mgrId = Integer.parseInt(managerIdStr);
+                mgr = managerRepository.findById(mgrId).orElse(null);
+            } catch (Exception e) {}
+        }
+
         // Clean up any existing pending invitations for this email to avoid duplicates
         staffInvitationRepository.findByEmail(email).ifPresent(inv -> staffInvitationRepository.delete(inv));
 
@@ -805,18 +870,19 @@ public class AdminService {
         // Create placeholder user account with status "INVITED"
         String emailPrefix = email.split("@")[0];
         if ("MANAGER".equals(role)) {
-            com.cny.backend.admin.entity.Manager mgr = com.cny.backend.admin.entity.Manager.builder()
+            com.cny.backend.admin.entity.Manager managerPlaceholder = com.cny.backend.admin.entity.Manager.builder()
                     .email(email)
                     .passwordHash("INVITED_PENDING")
                     .displayName(emailPrefix)
                     .status("INVITED")
-                    .department("General")
+                    .department(dept != null ? dept.getName() : "General")
+                    .departmentEntity(dept)
                     .managedByAdmin(adminId)
                     .isDeleted(false)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
-            managerRepository.save(mgr);
+            managerRepository.save(managerPlaceholder);
         } else {
             com.cny.backend.admin.entity.Staff stf = com.cny.backend.admin.entity.Staff.builder()
                     .email(email)
@@ -824,7 +890,8 @@ public class AdminService {
                     .displayName(emailPrefix)
                     .status("INVITED")
                     .specialization("General")
-                    .manager(null)
+                    .manager(mgr)
+                    .departmentEntity(dept)
                     .createdByAdmin(adminId)
                     .isDeleted(false)
                     .createdAt(LocalDateTime.now())
@@ -862,6 +929,221 @@ public class AdminService {
         response.put("success", true);
         response.put("message", "Đã gửi email lời mời kích hoạt tài khoản thành công!");
         return response;
+    }
+
+    // --- VERIFICATION TASKS ENDPOINTS ---
+
+    public List<Map<String, Object>> getVerificationTasks() {
+        // Ensure default departments are present in DB
+        initPresetDepartments();
+
+        List<DepartmentVerificationTask> tasks = departmentVerificationTaskRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        for (DepartmentVerificationTask task : tasks) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("taskId", task.getTaskId());
+            map.put("taskType", task.getTaskType());
+            map.put("referenceId", task.getReferenceId());
+            map.put("title", task.getTitle());
+            map.put("description", task.getDescription());
+            map.put("status", task.getStatus());
+            map.put("requiredDepartments", task.getRequiredDepartments());
+            map.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : null);
+            map.put("updatedAt", task.getUpdatedAt() != null ? task.getUpdatedAt().toString() : null);
+            
+            // Get signoffs for this task
+            List<DepartmentTaskSignoff> signoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
+            List<Map<String, Object>> signoffList = new ArrayList<>();
+            for (DepartmentTaskSignoff s : signoffs) {
+                Map<String, Object> smap = new HashMap<>();
+                smap.put("signoffId", s.getSignoffId());
+                smap.put("departmentCode", s.getDepartmentCode());
+                smap.put("verifierEmail", s.getVerifierEmail());
+                smap.put("status", s.getStatus());
+                smap.put("note", s.getNote());
+                smap.put("signedAt", s.getSignedAt().toString());
+                signoffList.add(smap);
+            }
+            map.put("signoffs", signoffList);
+            result.add(map);
+        }
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> submitTaskSignoff(int taskId, Map<String, Object> payload, String verifierEmail) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);
+        if (!taskOpt.isPresent()) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tác vụ kiểm chứng!");
+            return response;
+        }
+
+        DepartmentVerificationTask task = taskOpt.get();
+        if (!"PENDING".equals(task.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Tác vụ này đã được hoàn tất trước đó!");
+            return response;
+        }
+
+        String departmentCode = payload.get("departmentCode") != null ? payload.get("departmentCode").toString().toUpperCase() : "";
+        String status = payload.get("status") != null ? payload.get("status").toString().toUpperCase() : ""; // APPROVED, REJECTED
+        String note = payload.get("note") != null ? payload.get("note").toString() : "";
+
+        if (departmentCode.isEmpty() || status.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Mã khoa hoặc trạng thái ký duyệt không hợp lệ!");
+            return response;
+        }
+
+        // Verify if department is required for this task
+        List<String> requiredDepts = Arrays.asList(task.getRequiredDepartments().split(","));
+        if (!requiredDepts.contains(departmentCode)) {
+            response.put("success", false);
+            response.put("message", "Khoa của bạn không nằm trong danh sách yêu cầu kiểm chứng cho tác vụ này!");
+            return response;
+        }
+
+        // Check if already signed off by this department
+        List<DepartmentTaskSignoff> existing = departmentTaskSignoffRepository.findByVerificationTaskAndDepartmentCode(task, departmentCode);
+        if (!existing.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Khoa của bạn đã thực hiện ký duyệt tác vụ này rồi!");
+            return response;
+        }
+
+        // Create new signoff
+        DepartmentTaskSignoff signoff = DepartmentTaskSignoff.builder()
+                .verificationTask(task)
+                .departmentCode(departmentCode)
+                .verifierEmail(verifierEmail)
+                .status(status)
+                .note(note)
+                .build();
+        departmentTaskSignoffRepository.save(signoff);
+
+        writeAuditLog(0, "TASK_SIGNOFF", "DEPARTMENTS", 
+                "Tài khoản " + verifierEmail + " của khoa " + departmentCode + " đã ký duyệt " + status + " tác vụ #" + taskId);
+
+        // Check overall status
+        if ("REJECTED".equals(status)) {
+            task.setStatus("REJECTED");
+            departmentVerificationTaskRepository.save(task);
+            
+            // Execute rejection of original transaction
+            rejectOriginalTransaction(task.getTaskType(), task.getReferenceId());
+            
+            response.put("success", true);
+            response.put("message", "Đã từ chối tác vụ kiểm chứng thành công. Giao dịch gốc đã bị hủy.");
+            return response;
+        }
+
+        // Recheck if all required departments signed APPROVED
+        List<DepartmentTaskSignoff> allSignoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
+        Set<String> approvedDepts = allSignoffs.stream()
+                .filter(s -> "APPROVED".equals(s.getStatus()))
+                .map(DepartmentTaskSignoff::getDepartmentCode)
+                .collect(Collectors.toSet());
+
+        boolean allApproved = true;
+        for (String req : requiredDepts) {
+            if (!approvedDepts.contains(req)) {
+                allApproved = false;
+                break;
+            }
+        }
+
+        if (allApproved) {
+            task.setStatus("APPROVED");
+            departmentVerificationTaskRepository.save(task);
+            
+            // Execute approval of original transaction
+            approveOriginalTransaction(task.getTaskType(), task.getReferenceId());
+            
+            response.put("success", true);
+            response.put("message", "Tất cả các khoa đã đồng ý ký duyệt. Giao dịch gốc đã được tự động phê duyệt.");
+        } else {
+            response.put("success", true);
+            response.put("message", "Ký duyệt thành công. Chờ chữ ký từ các khoa còn lại.");
+        }
+
+        return response;
+    }
+
+    private void approveOriginalTransaction(String type, int referenceId) {
+        try {
+            if ("WITHDRAWAL".equals(type)) {
+                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", 1);
+            } else if ("DISPUTE_REFUND".equals(type)) {
+                // mock process dispute refund success
+                System.out.println("Dispute refund #" + referenceId + " approved!");
+            } else if ("KYC_VERIFICATION".equals(type)) {
+                System.out.println("KYC Verification #" + referenceId + " approved!");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void rejectOriginalTransaction(String type, int referenceId) {
+        try {
+            if ("WITHDRAWAL".equals(type)) {
+                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", 1);
+            } else if ("DISPUTE_REFUND".equals(type)) {
+                System.out.println("Dispute refund #" + referenceId + " rejected!");
+            } else if ("KYC_VERIFICATION".equals(type)) {
+                System.out.println("KYC Verification #" + referenceId + " rejected!");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initPresetDepartments() {
+        String[][] presets = {
+            {"FIN", "Khoa Quản lý Tài chính", "Quản lý và kiểm duyệt các giao dịch tài chính, rút tiền, thanh toán và phí dịch vụ."},
+            {"MOD", "Khoa Kiểm duyệt Dự án", "Đảm bảo nội dung các bài đăng tuyển dụng, dự án đúng quy định pháp luật và chính sách."},
+            {"KYC", "Khoa Xác thực Người dùng", "Xác minh thông tin danh tính, hồ sơ năng lực của các Freelancer và Employer."},
+            {"DIS", "Khoa Giải quyết Tranh chấp", "Tiếp nhận khiếu nại, giải quyết tranh chấp hợp đồng giữa Client và Freelancer."},
+            {"SUP", "Khoa Hỗ trợ Khách hàng", "Hỗ trợ kỹ thuật, giải đáp thắc mắc và phản hồi các yêu cầu từ người dùng."}
+        };
+
+        for (String[] preset : presets) {
+            String code = preset[0];
+            if (!departmentRepository.findByCode(code).isPresent()) {
+                com.cny.backend.department.entity.Department d = com.cny.backend.department.entity.Department.builder()
+                        .code(code)
+                        .name(preset[1])
+                        .description(preset[2])
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+                departmentRepository.save(d);
+            }
+        }
+
+        // Generate mock tasks if there are none to populate the list on UI load!
+        if (departmentVerificationTaskRepository.findAll().isEmpty()) {
+            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
+                    .taskType("WITHDRAWAL")
+                    .referenceId(1)
+                    .title("Yêu cầu rút tiền lớn từ Nguyễn Minh Anh")
+                    .description("Yêu cầu rút 15.000.000 VND về tài khoản Techcombank 1903xxx. Cần kiểm chứng danh tính (KYC) và số dư ví (FIN).")
+                    .status("PENDING")
+                    .requiredDepartments("KYC,FIN")
+                    .build());
+
+            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
+                    .taskType("DISPUTE_REFUND")
+                    .referenceId(1)
+                    .title("Hoàn tiền tranh chấp dự án Laravel Website")
+                    .description("Yêu cầu hoàn trả 50% số tiền cọc (7.500.000 VND) cho Client do Freelancer chậm tiến độ. Cần Tranh chấp (DIS) và Tài chính (FIN) duyệt.")
+                    .status("PENDING")
+                    .requiredDepartments("DIS,FIN")
+                    .build());
+        }
     }
 }
 

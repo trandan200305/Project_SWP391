@@ -18,6 +18,11 @@ GO
 
 -- 2. SAFE CLEANUP (DROP TABLE SEQUENCE IN REVERSE FK DEPENDENCY ORDER)
 -- This allows running the script multiple times without any constraint conflicts.
+IF OBJECT_ID('dbo.department_task_signoffs', 'U') IS NOT NULL DROP TABLE dbo.department_task_signoffs;
+IF OBJECT_ID('dbo.department_verification_tasks', 'U') IS NOT NULL DROP TABLE dbo.department_verification_tasks;
+IF OBJECT_ID('dbo.department_transfer_history', 'U') IS NOT NULL DROP TABLE dbo.department_transfer_history;
+IF OBJECT_ID('dbo.department_activity_logs', 'U') IS NOT NULL DROP TABLE dbo.department_activity_logs;
+IF OBJECT_ID('dbo.department_sessions', 'U') IS NOT NULL DROP TABLE dbo.department_sessions;
 IF OBJECT_ID('dbo.staff_invitations', 'U') IS NOT NULL DROP TABLE dbo.staff_invitations;
 IF OBJECT_ID('dbo.admin_audit_logs', 'U') IS NOT NULL DROP TABLE dbo.admin_audit_logs;
 IF OBJECT_ID('dbo.newsletter_subscribers', 'U') IS NOT NULL DROP TABLE dbo.newsletter_subscribers;
@@ -61,6 +66,7 @@ IF OBJECT_ID('dbo.skills', 'U') IS NOT NULL DROP TABLE dbo.skills;
 IF OBJECT_ID('dbo.job_categories', 'U') IS NOT NULL DROP TABLE dbo.job_categories;
 IF OBJECT_ID('dbo.staff', 'U') IS NOT NULL DROP TABLE dbo.staff;
 IF OBJECT_ID('dbo.managers', 'U') IS NOT NULL DROP TABLE dbo.managers;
+IF OBJECT_ID('dbo.departments', 'U') IS NOT NULL DROP TABLE dbo.departments;
 IF OBJECT_ID('dbo.admins', 'U') IS NOT NULL DROP TABLE dbo.admins;
 IF OBJECT_ID('dbo.employers', 'U') IS NOT NULL DROP TABLE dbo.employers;
 IF OBJECT_ID('dbo.freelancers', 'U') IS NOT NULL DROP TABLE dbo.freelancers;
@@ -168,6 +174,28 @@ CREATE TABLE admins (
 CREATE INDEX idx_admins_email ON admins(email);
 GO
 
+-- Department (Khoa / Phòng ban) Table — CÁC PHÒNG BAN CỐ ĐỊNH, KHÔNG ĐƯỢC THÊM MỚI
+CREATE TABLE departments (
+    department_id       INT PRIMARY KEY IDENTITY(1,1),
+    name                NVARCHAR(100) NOT NULL UNIQUE,
+    code                NVARCHAR(20) NOT NULL UNIQUE,
+    description         NVARCHAR(500),
+    max_managers        INT NOT NULL DEFAULT 5,  -- Tối đa 5 manager mỗi phòng ban
+    created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- SEED 6 PHÒNG BAN CỐ ĐỊNH (KHÔNG ĐƯỢC THÊM MỚI TỪ GIAO DIỆN)
+INSERT INTO departments (name, code, description, max_managers) VALUES
+    (N'Phòng Tài Chính', 'FIN', N'Quản lý rút tiền, hoàn tiền, escrow, giao dịch tài chính', 5),
+    (N'Phòng Kiểm Duyệt', 'MOD', N'Duyệt dự án, kiểm duyệt nội dung, xác minh KYC', 5),
+    (N'Phòng Tranh Chấp', 'DIS', N'Xử lý tranh chấp, phân xử hợp đồng giữa các bên', 5),
+    (N'Phòng Hỗ Trợ', 'CS', N'Support tickets, hỗ trợ và chăm sóc người dùng', 5),
+    (N'Phòng Kỹ Thuật', 'IT', N'Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật', 5),
+    (N'Phòng Kiểm Toán', 'AUD', N'Giám sát, audit logs, đánh giá tuân thủ quy trình', 5);
+GO
+
 -- Manager (Trưởng phòng ban) Concrete Table
 CREATE TABLE managers (
     manager_id          INT PRIMARY KEY IDENTITY(1,1),
@@ -178,7 +206,8 @@ CREATE TABLE managers (
     phone               NVARCHAR(20),
     avatar_url          NVARCHAR(500),
     status              NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
-    department          NVARCHAR(50) NOT NULL,
+    department          NVARCHAR(50) NULL, -- Chuỗi text cũ (để tương thích ngược)
+    department_id       INT REFERENCES departments(department_id), -- Quan hệ chính thức với Khoa
     managed_by_admin    INT REFERENCES admins(admin_id),
     is_deleted          BIT NOT NULL DEFAULT 0,
     created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -201,6 +230,7 @@ CREATE TABLE staff (
     status              NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
     specialization      NVARCHAR(50) NOT NULL,
     manager_id          INT REFERENCES managers(manager_id),
+    department_id       INT REFERENCES departments(department_id), -- Thuộc Khoa nào
     created_by_admin    INT REFERENCES admins(admin_id),
     is_deleted          BIT NOT NULL DEFAULT 0,
     created_at          DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -209,6 +239,49 @@ CREATE TABLE staff (
     messenger_pin       NVARCHAR(10) NULL
 );
 CREATE INDEX idx_staff_email ON staff(email);
+GO
+
+-- Department Sessions (Phiên làm việc của khoa/phòng ban) Table
+CREATE TABLE department_sessions (
+    session_id          INT PRIMARY KEY IDENTITY(1,1),
+    department_id       INT NOT NULL REFERENCES departments(department_id),
+    user_id             INT NOT NULL,
+    user_role           NVARCHAR(50) NOT NULL,
+    login_at            DATETIME2 NOT NULL DEFAULT GETDATE(),
+    logout_at           DATETIME2,
+    ip_address          NVARCHAR(45),
+    status              NVARCHAR(50) NOT NULL DEFAULT 'ACTIVE'
+);
+GO
+
+-- Department Activity Logs (Nhật ký hành động trong khoa/phòng ban) Table
+CREATE TABLE department_activity_logs (
+    log_id              INT PRIMARY KEY IDENTITY(1,1),
+    session_id          INT REFERENCES department_sessions(session_id),
+    department_id       INT NOT NULL REFERENCES departments(department_id),
+    user_id             INT NOT NULL,
+    user_role           NVARCHAR(50) NOT NULL,
+    action              NVARCHAR(100) NOT NULL,
+    description         NVARCHAR(MAX),
+    created_at          DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- Department Transfer History (Lịch sử điều chuyển nhân sự giữa các phòng ban)
+CREATE TABLE department_transfer_history (
+    transfer_id         INT PRIMARY KEY IDENTITY(1,1),
+    user_type           NVARCHAR(20) NOT NULL,    -- 'MANAGER' hoặc 'STAFF'
+    user_id             INT NOT NULL,             -- manager_id hoặc staff_id
+    user_email          NVARCHAR(255) NOT NULL,   -- Email để truy vấn nhanh
+    user_display_name   NVARCHAR(100),            -- Tên hiển thị
+    from_department_id  INT NOT NULL REFERENCES departments(department_id),
+    to_department_id    INT NOT NULL REFERENCES departments(department_id),
+    transferred_by      INT NOT NULL REFERENCES admins(admin_id),
+    reason              NVARCHAR(500),
+    transferred_at      DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+CREATE INDEX idx_transfer_history_user ON department_transfer_history(user_type, user_id);
+CREATE INDEX idx_transfer_history_dept ON department_transfer_history(from_department_id, to_department_id);
 GO
 
 -- Staff/Manager Onboarding Invitations Table
@@ -753,5 +826,32 @@ IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'staf
 GO
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ticket_messages' AND COLUMN_NAME = 'is_read')
     ALTER TABLE ticket_messages ADD is_read BIT NOT NULL DEFAULT 0;
+GO
+
+-- =============================================
+-- 11. DEPARTMENT VERIFICATION TASKS & SIGNOFFS
+-- =============================================
+CREATE TABLE department_verification_tasks (
+    task_id               INT PRIMARY KEY IDENTITY(1,1),
+    task_type             NVARCHAR(50) NOT NULL, -- 'WITHDRAWAL', 'DISPUTE_REFUND', 'KYC_VERIFICATION'
+    reference_id          INT NOT NULL,
+    title                 NVARCHAR(255) NOT NULL,
+    description           NVARCHAR(MAX),
+    status                NVARCHAR(30) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'APPROVED', 'REJECTED'
+    required_departments  NVARCHAR(255) NOT NULL, -- e.g., 'KYC,FIN'
+    created_at            DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at            DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE department_task_signoffs (
+    signoff_id            INT PRIMARY KEY IDENTITY(1,1),
+    task_id               INT NOT NULL REFERENCES department_verification_tasks(task_id) ON DELETE CASCADE,
+    department_code       NVARCHAR(20) NOT NULL,
+    verifier_email        NVARCHAR(255) NOT NULL,
+    status                NVARCHAR(30) NOT NULL, -- 'APPROVED', 'REJECTED'
+    note                  NVARCHAR(MAX),
+    signed_at             DATETIME2 NOT NULL DEFAULT GETDATE()
+);
 GO
 

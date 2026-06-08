@@ -52,26 +52,27 @@ public class DataSeeder implements CommandLineRunner {
     private com.cny.backend.admin.repository.StaffRepository staffRepository;
 
     @Autowired
+    private com.cny.backend.department.repository.DepartmentRepository departmentRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) throws Exception {
+        // Seed fixed departments first (always ensure they exist)
+        seedFixedDepartments();
         
         if (jobCategoryRepository.count() == 0) {
             seedCategories();
         }
 
-        
         if (employerRepository.count() == 0 && freelancerRepository.count() == 0) {
             seedActors();
         }
 
-        
         if (projectRepository.count() == 0) {
             seedProjects();
         }
-
-        seedManagerAndStaff();
         
         seedAdminEntities();
     }
@@ -93,38 +94,6 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedActors() {
-        
-        Employer employer = Employer.builder()
-                .email("client@lancerpro.vn")
-                .passwordHash("OAUTH_GOOGLE_LOGGED")
-                .displayName("Doanh Nghiệp Việt")
-                .fullName("Công Ty TNHH Lancer Việt Nam")
-                .phone("0901234567")
-                .avatarUrl("client_avatar.png")
-                .status("ACTIVE")
-                .emailVerified(true)
-                .googleId("google_employer_mock")
-                .language("vi")
-                .timezone("Asia/Ho_Chi_Minh")
-                .companyName("Công Ty TNHH Lancer Việt Nam")
-                .companyLogoUrl("client_avatar.png")
-                .companyDescription("Chúng tôi là doanh nghiệp công nghệ đi đầu trong việc số hóa quy trình chuyển dịch lao động tự do.")
-                .website("https://lancerpro.vn")
-                .address("Quận 1")
-                .city("Hồ Chí Minh")
-                .country("Việt Nam")
-                .companySize("11-50")
-                .industry("Công nghệ thông tin")
-                .profileCompleteness(100)
-                .projectsPosted(6)
-                .totalSpent(BigDecimal.valueOf(45000000))
-                .averageRating(BigDecimal.valueOf(5.0))
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-        employerRepository.save(employer);
-
         
         Admin admin = Admin.builder()
                 .email("admin@lancerpro.com")
@@ -349,63 +318,31 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedManagerAndStaff() {
+    private void seedFixedDepartments() {
         try {
-            if (managerRepository.count() == 0) {
-                com.cny.backend.admin.entity.Manager manager = com.cny.backend.admin.entity.Manager.builder()
-                        .email("manager@lancerpro.com")
-                        .passwordHash("123456")
-                        .displayName("Trưởng Phòng IT")
-                        .fullName("Nguyễn Văn Quản Lý")
-                        .phone("0981112222")
-                        .avatarUrl("https://ui-avatars.com/api/?name=Manager")
-                        .status("ACTIVE")
-                        .department("IT & Development")
-                        .managedByAdmin(1)
-                        .isDeleted(false)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build();
-                manager = managerRepository.save(manager);
+            // 6 phòng ban cố định — chỉ seed nếu chưa tồn tại
+            String[][] departments = {
+                {"FIN", "Phòng Tài Chính", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch tài chính"},
+                {"MOD", "Phòng Kiểm Duyệt", "Duyệt dự án, kiểm duyệt nội dung, xác minh KYC"},
+                {"DIS", "Phòng Tranh Chấp", "Xử lý tranh chấp, phân xử hợp đồng giữa các bên"},
+                {"CS", "Phòng Hỗ Trợ", "Support tickets, hỗ trợ và chăm sóc người dùng"},
+                {"IT", "Phòng Kỹ Thuật", "Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật"},
+                {"AUD", "Phòng Kiểm Toán", "Giám sát, audit logs, đánh giá tuân thủ quy trình"}
+            };
 
-                if (staffRepository.count() == 0) {
-                    com.cny.backend.admin.entity.Staff staff1 = com.cny.backend.admin.entity.Staff.builder()
-                            .email("staff1@lancerpro.com")
-                            .passwordHash("123456")
-                            .displayName("Nhân Viên Dev 1")
-                            .fullName("Trần Thị Nhân Viên")
-                            .phone("0983334444")
-                            .avatarUrl("https://ui-avatars.com/api/?name=Staff1")
-                            .status("ACTIVE")
-                            .specialization("Web Development Support")
-                            .manager(manager)
-                            .createdByAdmin(1)
-                            .isDeleted(false)
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
+            for (String[] dept : departments) {
+                if (departmentRepository.findByCode(dept[0]).isEmpty()) {
+                    com.cny.backend.department.entity.Department d = com.cny.backend.department.entity.Department.builder()
+                            .code(dept[0])
+                            .name(dept[1])
+                            .description(dept[2])
+                            .maxManagers(5)
                             .build();
-                    staffRepository.save(staff1);
-
-                    com.cny.backend.admin.entity.Staff staff2 = com.cny.backend.admin.entity.Staff.builder()
-                            .email("staff2@lancerpro.com")
-                            .passwordHash("123456")
-                            .displayName("Nhân Viên Dev 2")
-                            .fullName("Phạm Văn Nhân Viên")
-                            .phone("0985556666")
-                            .avatarUrl("https://ui-avatars.com/api/?name=Staff2")
-                            .status("ACTIVE")
-                            .specialization("Mobile App Support")
-                            .manager(manager)
-                            .createdByAdmin(1)
-                            .isDeleted(false)
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .build();
-                    staffRepository.save(staff2);
+                    departmentRepository.save(d);
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error seeding manager/staff: " + e.getMessage());
+            System.err.println("Error seeding fixed departments: " + e.getMessage());
         }
     }
 }
