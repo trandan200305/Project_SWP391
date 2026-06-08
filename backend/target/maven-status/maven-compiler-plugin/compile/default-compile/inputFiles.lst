@@ -54,6 +54,7 @@ D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\controller\EmployerC
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\controller\FreelancerController.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\dto\EmployerDto.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\dto\FreelancerDto.java
+D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\dto\KycSubmitDto.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\Employer.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\Freelancer.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\FreelancerProfile.java
