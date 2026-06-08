@@ -1385,13 +1385,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border: 1px solid #e2e8f0;
                     border-radius: 16px;
                     position: absolute;
-                    width: 48rem;
+                    width: 38rem;
                     right: 0;
                     top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
                     z-index: 99 !important;
-                    padding: 24px;
+                    padding: 20px;
                     cursor: default;
                     clip-path: inset(10% 50% 90% 50% round 16px);
                     opacity: 0;
@@ -2100,7 +2100,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
                         {}
                         <section className="filter-menu-container" onClick={e => e.stopPropagation()}>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
                               
                               {}
                               <div className="filter-item-list space-y-2">
