@@ -1386,7 +1386,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border-radius: 16px;
                     position: absolute;
                     width: 48rem;
-                    right: 0;
+                    left: 0;
                     top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
