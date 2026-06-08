@@ -1319,8 +1319,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border-radius: 12px;
                     display: flex;
                     align-items: center;
-                    height: 2.75rem;
-                    width: 12.5rem;
+                    height: 38px;
+                    width: 100%;
                     position: relative;
                     cursor: pointer;
                     justify-content: space-between;
@@ -1386,7 +1386,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border-radius: 16px;
                     position: absolute;
                     width: 48rem;
-                    left: 0;
+                    right: 0;
                     top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -1729,8 +1729,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Nhóm bên trái: Tìm kiếm và Bộ lọc nâng cao */}
-                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    {/* Nhóm bên trái: Tìm kiếm và Xuất báo cáo */}
+                    <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
 
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
                         <div className="h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
@@ -1780,7 +1780,40 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         )}
                       </div>
 
-                      <div className="relative filter-wrapper">
+                      {/* Nút xuất báo cáo Excel/PDF (bên trái) */}
+                      <div className="flex items-center gap-2">
+                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">Excel</div>
+                            <span className="icon">
+                              <Download className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">PDF</div>
+                            <span className="icon">
+                              <FileText className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Nhóm bên phải: Stack chứa Tạo tài khoản và Bộ lọc nâng cao */}
+                    <div className="flex flex-col gap-2.5 w-full sm:w-[200px] md:w-[200px]">
+                      {/* Nút Tạo Tài Khoản */}
+                      <button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="h-[38px] w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center justify-center gap-2"
+                      >
+                        + Tạo Tài Khoản
+                      </button>
+
+                      {/* Bộ lọc nâng cao */}
+                      <div className="relative filter-wrapper w-full">
                         <div className="filter-main">
                           Bộ lọc nâng cao
                           <div className="filter-bar">
@@ -2012,38 +2045,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             </div>
                           </section>
                       </div>
-                    </div>
-
-                    {/* Nhóm bên phải: Xuất báo cáo và Action chính */}
-                    <div className="flex items-center gap-3 justify-end w-full md:w-auto">
-                      <div className="flex items-center gap-2">
-                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
-                          <div className="button-wrapper">
-                            <div className="text">Excel</div>
-                            <span className="icon">
-                              <Download className="w-4 h-4" />
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
-                          <div className="button-wrapper">
-                            <div className="text">PDF</div>
-                            <span className="icon">
-                              <FileText className="w-4 h-4" />
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
-
-                      <button 
-                        onClick={() => setShowCreateModal(true)}
-                        className="h-[38px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
-                      >
-                        + Tạo Tài Khoản
-                      </button>
                     </div>
                   </div>
                 </div>
