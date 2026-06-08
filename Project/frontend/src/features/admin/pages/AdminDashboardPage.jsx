@@ -1692,15 +1692,15 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     50% { transform: scale(1.1); }
                   }
 
-                  .ios-checkbox input:checked + .checkbox-wrapper {
+                   .ios-checkbox input:checked + .checkbox-wrapper {
                     animation: ios-bounce 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                   }
 
-                  /* RADIO INPUTS TAB SWITCHER */
+                  /* FANCY RADIO INPUTS TABS */
                   .radio-inputs {
                     position: relative;
                     display: flex;
-                    flex-wrap: wrap;
+                    flex-wrap: nowrap;
                     border-radius: 1rem;
                     background: linear-gradient(145deg, #e6e6e6, #ffffff);
                     box-sizing: border-box;
@@ -1708,7 +1708,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       5px 5px 15px rgba(0, 0, 0, 0.15),
                       -5px -5px 15px rgba(255, 255, 255, 0.8);
                     padding: 0.5rem;
-                    width: 400px;
+                    width: 380px;
+                    max-width: 100%;
                     font-size: 13px;
                     gap: 0.5rem;
                   }
@@ -1730,7 +1731,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     justify-content: center;
                     border-radius: 0.7rem;
                     border: none;
-                    padding: 0.6rem 0;
+                    padding: 0.5rem 0;
                     color: #2d3748;
                     font-weight: 700;
                     font-family: inherit;
@@ -1745,7 +1746,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   .radio-inputs .radio input:checked + .name {
                     background: linear-gradient(145deg, #3b82f6, #2563eb);
                     color: white;
-                    font-weight: 700;
+                    font-weight: 800;
                     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
                     box-shadow:
                       inset 2px 2px 5px rgba(0, 0, 0, 0.2),
@@ -1786,7 +1787,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
                   .radio-inputs .radio input:checked + .name::before,
                   .radio-inputs .radio input:checked + .name::after {
-                     animation: particles 0.8s ease-out forwards;
+                    animation: particles 0.8s ease-out forwards;
                   }
 
                   .radio-inputs .radio .name::before {
@@ -1992,7 +1993,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                         <label key={tab.key} className="radio">
                           <input 
                             type="radio" 
-                            name="adminRoleTab"
+                            name="adminRoleTab" 
                             checked={selectedRoleTab === tab.key}
                             onChange={() => setSelectedRoleTab(tab.key)}
                           />
