@@ -1505,7 +1505,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     background: var(--button-color);
                     position: relative;
                     text-align: center;
-                    border-radius: 0.5rem;
+                    border-radius: 0.75rem;
                     font-family: inherit;
                     transition: background 0.3s;
                     cursor: pointer;
@@ -1728,34 +1728,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    {/* Nhóm bên trái: Tìm kiếm và Bộ lọc nâng cao */}
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                      <button 
-                        onClick={() => setShowCreateModal(true)}
-                        className="h-[38px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
-                      >
-                        + Tạo Tài Khoản
-                      </button>
-                      
-                      <div className="flex items-center gap-2">
-                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
-                          <div className="button-wrapper">
-                            <div className="text">Excel</div>
-                            <span className="icon">
-                              <Download className="w-4 h-4" />
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
-                          <div className="button-wrapper">
-                            <div className="text">PDF</div>
-                            <span className="icon">
-                              <FileText className="w-4 h-4" />
-                            </span>
-                          </div>
-                        </div>
-                      </div>
 
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
                         <div className="h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center gap-2.5 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
@@ -2037,7 +2012,38 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             </div>
                           </section>
                       </div>
+                    </div>
 
+                    {/* Nhóm bên phải: Xuất báo cáo và Action chính */}
+                    <div className="flex items-center gap-3 justify-end w-full md:w-auto">
+                      <div className="flex items-center gap-2">
+                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">Excel</div>
+                            <span className="icon">
+                              <Download className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
+                          <div className="button-wrapper">
+                            <div className="text">PDF</div>
+                            <span className="icon">
+                              <FileText className="w-4 h-4" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+
+                      <button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="h-[38px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center gap-2"
+                      >
+                        + Tạo Tài Khoản
+                      </button>
                     </div>
                   </div>
                 </div>
