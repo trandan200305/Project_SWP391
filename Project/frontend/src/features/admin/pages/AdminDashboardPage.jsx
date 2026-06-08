@@ -1375,7 +1375,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     left: 0;
                     right: 0;
                     height: 20px;
-                    z-index: 9998;
+                    z-index: 98;
                   }
 
                   .filter-menu-container {
@@ -1390,7 +1390,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-                    z-index: 9999 !important;
+                    z-index: 99 !important;
                     padding: 24px;
                     cursor: default;
                     clip-path: inset(10% 50% 90% 50% round 16px);
@@ -2501,7 +2501,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </main>
 
       {}
-      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedActivity ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedActivity ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${selectedActivity ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
             <h4 className="font-bold text-primary text-lg">Chi Tiết Hoạt Động Nhật Ký</h4>
@@ -2541,7 +2541,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </div>
 
       {}
-      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${activeUserForAction ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${activeUserForAction ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border-t-[6px] overflow-hidden transition-all duration-300 ease-out transform ${
           activeUserForAction ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         } ${
@@ -2638,7 +2638,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </div>
 
       {/* MODAL MỜI NHÂN SỰ MANAGER / STAFF (INVITATION FLOW) */}
-      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showCreateModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showCreateModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border-t-[6px] border-blue-600 overflow-hidden transition-all duration-300 ease-out transform ${
           showCreateModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}>
