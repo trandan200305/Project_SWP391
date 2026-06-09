@@ -34,4 +34,6 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     List<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword);
     
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
+    
+    int countByCategoryCategoryIdAndStatusAndIsDeletedFalse(Integer categoryId, String status);
 }

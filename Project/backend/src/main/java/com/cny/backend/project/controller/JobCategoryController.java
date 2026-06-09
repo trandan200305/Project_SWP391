@@ -28,26 +28,26 @@ import java.util.List;
 public class JobCategoryController {
 
     @Autowired
-    private JobCategoryRepository jobCategoryRepository;
+    private JobCategoryService jobCategoryService;
 
     
     @GetMapping
-    public ResponseEntity<List<JobCategory>> getAllCategories() {
-        List<JobCategory> categories = jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+    public ResponseEntity<List<JobCategoryDto>> getAllCategories() {
+        List<JobCategoryDto> categories = jobCategoryService.getAllCategoriesWithCount();
         return ResponseEntity.ok(categories);
     }
 
     
     @GetMapping("/top")
-    public ResponseEntity<List<JobCategory>> getTopCategories() {
-        List<JobCategory> categories = jobCategoryRepository.findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAsc();
+    public ResponseEntity<List<JobCategoryDto>> getTopCategories() {
+        List<JobCategoryDto> categories = jobCategoryService.getTopCategories();
         return ResponseEntity.ok(categories);
     }
 
     
     @PostMapping
-    public ResponseEntity<JobCategory> createCategory(@RequestBody JobCategory category) {
-        JobCategory saved = jobCategoryRepository.save(category);
+    public ResponseEntity<JobCategoryDto> createCategory(@RequestBody JobCategory category) {
+        JobCategoryDto saved = jobCategoryService.createCategory(category);
         return ResponseEntity.ok(saved);
     }
 }

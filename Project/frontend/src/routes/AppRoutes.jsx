@@ -6,6 +6,7 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
+import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -22,6 +23,10 @@ export default function AppRoutes({
 
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'find_jobs') {
+    return <FindJobsPage />;
   }
 
   if (currentPage === 'messenger') {

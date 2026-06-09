@@ -219,7 +219,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               onClick={(e) => {
                 e.preventDefault();
                 if (onNavigate) {
-                  onNavigate('coming_soon');
+                  onNavigate('find_jobs');
                 }
               }}
               className="font-medium text-body-md text-primary hover:text-secondary transition-colors duration-200"
@@ -384,7 +384,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             onClick={(e) => {
               e.preventDefault();
               setIsOpen(false);
-              if (onNavigate) onNavigate('coming_soon');
+              if (onNavigate) onNavigate('find_jobs');
             }}
             className="font-medium text-lg text-primary py-2 border-b border-muted-light/30"
           >

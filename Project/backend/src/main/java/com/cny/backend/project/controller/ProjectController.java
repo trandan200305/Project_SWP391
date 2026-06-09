@@ -29,37 +29,33 @@ import java.util.stream.Collectors;
 public class ProjectController {
 
     @Autowired
-    private ProjectRepository projectRepository;
+    private ProjectService projectService;
 
     
     @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
+    public ResponseEntity<List<ProjectDto>> getAllProjects() {
+        List<ProjectDto> projects = projectService.getAllPublishedProjects();
         return ResponseEntity.ok(projects);
     }
 
     
     @GetMapping("/latest")
-    public ResponseEntity<List<Project>> getLatestProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
-        List<Project> latest = projects.stream().limit(6).collect(Collectors.toList());
+    public ResponseEntity<List<ProjectDto>> getLatestProjects() {
+        List<ProjectDto> latest = projectService.getLatestPublishedProjects();
         return ResponseEntity.ok(latest);
     }
 
     
     @GetMapping("/search")
-    public ResponseEntity<List<Project>> searchProjects(@RequestParam("keyword") String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return getLatestProjects();
-        }
-        List<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", keyword.trim());
+    public ResponseEntity<List<ProjectDto>> searchProjects(@RequestParam(value = "keyword", required = false) String keyword) {
+        List<ProjectDto> projects = projectService.searchPublishedProjects(keyword);
         return ResponseEntity.ok(projects);
     }
 
     
     @PostMapping
-    public ResponseEntity<Project> createProject(@RequestBody Project project) {
-        Project saved = projectRepository.save(project);
+    public ResponseEntity<ProjectDto> createProject(@RequestBody Project project) {
+        ProjectDto saved = projectService.createProject(project);
         return ResponseEntity.ok(saved);
     }
 }
