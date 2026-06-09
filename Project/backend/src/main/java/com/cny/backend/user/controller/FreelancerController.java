@@ -48,6 +48,14 @@ public class FreelancerController {
         return ResponseEntity.ok(topFreelancers);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<FreelancerDto> getFreelancerById(@PathVariable Integer id) {
+        return freelancerRepository.findById(id)
+                .map(this::mapToDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     private FreelancerDto mapToDto(Freelancer f) {
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
