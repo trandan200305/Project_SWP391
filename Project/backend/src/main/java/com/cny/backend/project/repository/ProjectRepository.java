@@ -31,7 +31,11 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     
     @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
            "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
-           "AND (:minSalary IS NULL OR p.budgetMin >= :minSalary) " +
+           "AND (:minSalary IS NULL OR " +
+           "    (p.budgetMax IS NOT NULL AND p.budgetMax >= :minSalary) OR " +
+           "    (p.budgetFixed IS NOT NULL AND p.budgetFixed >= :minSalary) OR " +
+           "    (p.budgetMax IS NULL AND p.budgetFixed IS NULL AND p.budgetMin IS NOT NULL AND p.budgetMin >= :minSalary)" +
+           ") " +
            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
