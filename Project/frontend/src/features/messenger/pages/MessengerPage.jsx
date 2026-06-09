@@ -353,6 +353,7 @@ export default function Messenger({ user, onNavigateHome }) {
           setDeletedTickets(prev => prev.filter(t => t.ticket_id !== activeTicket.ticket_id));
           setActiveTicket(null);
           setShowUserInfo(false);
+          fetchTickets();
           setShowConfirmModal(false);
         } catch (err) {
           console.error('Failed to restore ticket', err);
