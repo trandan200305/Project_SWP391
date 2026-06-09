@@ -6,15 +6,15 @@ import FeaturedJobs from '../components/FeaturedJobs.jsx';
 import Testimonials from '../components/Testimonials.jsx';
 import CTA from '../components/CTA.jsx';
 
-export default function HomePage({ onSearch, searchQuery }) {
+export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
   return (
     <>
-      <Hero onSearch={onSearch} />
+      <Hero onSearch={onSearch} onNavigate={onNavigate} user={user} />
       <Stats />
       <HowItWorks />
       <FeaturedJobs searchQuery={searchQuery} />
       <Testimonials />
-      <CTA />
+      <CTA onNavigate={onNavigate} user={user} />
     </>
   );
 }

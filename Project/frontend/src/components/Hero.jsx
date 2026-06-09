@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, MapPin, Sparkles } from 'lucide-react';
 
-export default function Hero({ onSearch }) {
+export default function Hero({ onSearch, onNavigate, user }) {
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
 
@@ -46,6 +46,40 @@ export default function Hero({ onSearch }) {
         <p className="font-sans text-lg sm:text-xl text-muted max-w-2xl mx-auto mb-10 leading-relaxed">
           Kết nối với những chuyên gia hàng đầu về Công nghệ, Thiết kế, Marketing và Viết lách tại Việt Nam để hiện thực hóa ý tưởng của bạn một cách nhanh chóng và an toàn.
         </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-wrap justify-center gap-4 mb-10">
+          <button
+            type="button"
+            onClick={() => {
+              const findWorkSection = document.getElementById('find-work');
+              if (findWorkSection) {
+                findWorkSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="bg-primary hover:bg-primary-light text-white px-8 py-4 rounded-xl font-bold text-body-md transition-all duration-200 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Tìm việc làm / Dự án
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (onNavigate) {
+                if (!user) {
+                  localStorage.setItem('redirect_after_login', 'post_job');
+                  onNavigate('login');
+                } else if (user.role === 'EMPLOYER') {
+                  onNavigate('post_job');
+                } else {
+                  alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                }
+              }
+            }}
+            className="bg-secondary hover:bg-secondary-dark text-white px-8 py-4 rounded-xl font-bold text-body-md transition-all duration-200 shadow-lg shadow-secondary/15 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Đăng tin tuyển dụng
+          </button>
+        </div>
 
         {}
         <form 
