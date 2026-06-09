@@ -716,4 +716,44 @@ public class AuthService {
         response.put("message", "Thiết lập tài khoản thành công! Bạn hiện đã có thể đăng nhập vào hệ thống.");
         return response;
     }
+
+    public boolean changePassword(Integer userId, String role, String currentPassword, String newPassword) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            Admin admin = adminRepository.findById(userId).orElse(null);
+            if (admin != null && currentPassword.equals(admin.getPasswordHash())) {
+                admin.setPasswordHash(newPassword);
+                adminRepository.save(admin);
+                return true;
+            }
+        } else if ("FREELANCER".equalsIgnoreCase(role)) {
+            Freelancer freelancer = freelancerRepository.findById(userId).orElse(null);
+            if (freelancer != null && currentPassword.equals(freelancer.getPasswordHash())) {
+                freelancer.setPasswordHash(newPassword);
+                freelancerRepository.save(freelancer);
+                return true;
+            }
+        } else if ("EMPLOYER".equalsIgnoreCase(role)) {
+            Employer employer = employerRepository.findById(userId).orElse(null);
+            if (employer != null && currentPassword.equals(employer.getPasswordHash())) {
+                employer.setPasswordHash(newPassword);
+                employerRepository.save(employer);
+                return true;
+            }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            com.cny.backend.admin.entity.Manager manager = managerRepository.findById(userId).orElse(null);
+            if (manager != null && currentPassword.equals(manager.getPasswordHash())) {
+                manager.setPasswordHash(newPassword);
+                managerRepository.save(manager);
+                return true;
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            com.cny.backend.admin.entity.Staff staff = staffRepository.findById(userId).orElse(null);
+            if (staff != null && currentPassword.equals(staff.getPasswordHash())) {
+                staff.setPasswordHash(newPassword);
+                staffRepository.save(staff);
+                return true;
+            }
+        }
+        return false;
+    }
 }

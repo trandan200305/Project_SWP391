@@ -165,8 +165,35 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
   };
 
   // Hàm: Đổi mật khẩu tài khoản
-  const handleSavePassword = (e) => {
+  const handleSavePassword = async (e) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          role: user.role,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert(data.message || 'Đổi mật khẩu thất bại.');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối server.');
+    }
   };
 
   const handleDeleteAccount = () => {

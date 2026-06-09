@@ -153,6 +153,31 @@ public class AuthController {
     
     
     
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String role = (String) payload.get("role");
+        String currentPassword = (String) payload.get("currentPassword");
+        String newPassword = (String) payload.get("newPassword");
+        
+        Map<String, Object> response = new HashMap<>();
+        if (userId == null || role == null || currentPassword == null || newPassword == null) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        boolean success = authService.changePassword(userId, role, currentPassword, newPassword);
+        response.put("success", success);
+        if (success) {
+            response.put("message", "Đổi mật khẩu thành công!");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Mật khẩu hiện tại không chính xác.");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
