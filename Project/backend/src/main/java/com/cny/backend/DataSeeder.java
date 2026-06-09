@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -320,18 +321,24 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedFixedDepartments() {
         try {
-            // 6 phòng ban cố định — chỉ seed nếu chưa tồn tại
+            // 6 phòng ban cố định — cập nhật hoặc seed mới
             String[][] departments = {
-                {"FIN", "Phòng Tài Chính", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch tài chính"},
-                {"MOD", "Phòng Kiểm Duyệt", "Duyệt dự án, kiểm duyệt nội dung, xác minh KYC"},
-                {"DIS", "Phòng Tranh Chấp", "Xử lý tranh chấp, phân xử hợp đồng giữa các bên"},
-                {"CS", "Phòng Hỗ Trợ", "Support tickets, hỗ trợ và chăm sóc người dùng"},
-                {"IT", "Phòng Kỹ Thuật", "Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật"},
-                {"AUD", "Phòng Kiểm Toán", "Giám sát, audit logs, đánh giá tuân thủ quy trình"}
+                {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
+                {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
+                {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
+                {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
+                {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: Tất cả"},
+                {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"}
             };
 
             for (String[] dept : departments) {
-                if (departmentRepository.findByCode(dept[0]).isEmpty()) {
+                Optional<com.cny.backend.department.entity.Department> existing = departmentRepository.findByCode(dept[0]);
+                if (existing.isPresent()) {
+                    com.cny.backend.department.entity.Department d = existing.get();
+                    d.setName(dept[1]);
+                    d.setDescription(dept[2]);
+                    departmentRepository.save(d);
+                } else {
                     com.cny.backend.department.entity.Department d = com.cny.backend.department.entity.Department.builder()
                             .code(dept[0])
                             .name(dept[1])

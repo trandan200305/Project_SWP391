@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Lock, User, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Mail, User, Key, CheckCircle, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api/authApi.js';
 
 export default function Onboard({ onBackToHome, onOpenLogin }) {
@@ -10,10 +10,10 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
 
   // Form fields
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -43,10 +43,41 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
       });
   }, []);
 
+  // Verification code resend countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  const handleSendCode = () => {
+    if (sendingCode || countdown > 0) return;
+    setSendingCode(true);
+    authApi.sendInvitationCode(token)
+      .then(data => {
+        setSendingCode(false);
+        if (data.success) {
+          alert('Mã xác nhận đã được gửi về email của bạn!');
+          setCountdown(60); // 60 seconds cooldown
+        } else {
+          alert(data.message || 'Lỗi khi gửi mã xác nhận.');
+        }
+      })
+      .catch(err => {
+        setSendingCode(false);
+        alert('Không thể kết nối máy chủ để gửi mã xác nhận.');
+      });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!fullName.trim() || !phone.trim() || !password) {
-      alert('Vui lòng điền đầy đủ thông tin Họ tên, Số điện thoại và Mật khẩu!');
+    if (!fullName.trim()) {
+      alert('Vui lòng nhập Họ tên!');
+      return;
+    }
+    if (!verificationCode.trim()) {
+      alert('Vui lòng nhập Mã xác nhận đã gửi về email!');
       return;
     }
 
@@ -54,9 +85,8 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     authApi.acceptInvitation({
       token,
       fullName,
-      phone,
       displayName,
-      password
+      verificationCode
     })
       .then(data => {
         setSubmitting(false);
@@ -191,41 +221,42 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Phone */}
+          {/* Verification Code */}
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Số điện thoại <span className="text-rose-500">*</span></label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="tel"
-                required
-                placeholder="Ví dụ: 0912345678"
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-body-sm"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Đặt mật khẩu <span className="text-rose-500">*</span></label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                placeholder="Nhập mật khẩu cá nhân"
-                className="w-full pl-12 pr-12 py-3 border border-slate-200 rounded-xl text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-body-sm"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
+            <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">
+              Mã xác nhận email <span className="text-rose-500">*</span>
+            </label>
+            <p className="text-xs text-slate-400 mb-2">
+              Nhấn <strong>"Gửi mã"</strong> để nhận mã 6 chữ số qua email được mời. Đăng nhập sau này bằng Gmail không cần mật khẩu.
+            </p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Nhập mã 6 chữ số"
+                  className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-body-sm tracking-widest"
+                  value={verificationCode}
+                  onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+              </div>
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                onClick={handleSendCode}
+                disabled={sendingCode || countdown > 0}
+                className="shrink-0 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95
+                  disabled:cursor-not-allowed
+                  bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white disabled:text-slate-400
+                  shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/30 disabled:shadow-none"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {sendingCode ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : countdown > 0 ? (
+                  `${countdown}s`
+                ) : (
+                  'Gửi mã'
+                )}
               </button>
             </div>
           </div>

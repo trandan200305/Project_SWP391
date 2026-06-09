@@ -22,6 +22,7 @@ import com.cny.backend.department.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,9 @@ public class AdminService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private StaffInvitationRepository staffInvitationRepository;
@@ -286,7 +290,13 @@ public class AdminService {
             if (employerOpt.isPresent()) {
                 Employer emp = employerOpt.get();
                 String oldStatus = emp.getStatus();
-                emp.setStatus(status);
+                if ("DELETED".equalsIgnoreCase(status)) {
+                    emp.setIsDeleted(true);
+                    emp.setStatus("DELETED");
+                } else {
+                    emp.setIsDeleted(false);
+                    emp.setStatus(status);
+                }
                 employerRepository.save(emp);
                 
                 dashboardRepository.logEmployerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
@@ -303,8 +313,24 @@ public class AdminService {
             if (managerOpt.isPresent()) {
                 com.cny.backend.admin.entity.Manager mgr = managerOpt.get();
                 String oldStatus = mgr.getStatus();
-                mgr.setStatus(status);
+                if ("DELETED".equalsIgnoreCase(status)) {
+                    mgr.setIsDeleted(true);
+                    mgr.setStatus("DELETED");
+                } else {
+                    mgr.setIsDeleted(false);
+                    mgr.setStatus(status);
+                }
                 managerRepository.save(mgr);
+
+                // Broadcast real-time account status event to user's STOMP topic
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("role", "MANAGER");
+                    event.put("id", id);
+                    event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
+                    messagingTemplate.convertAndSend("/topic/account-status/MANAGER/" + id, event);
+                }
                 
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Manager #" + id + " (" + mgr.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
                 
@@ -317,8 +343,24 @@ public class AdminService {
             if (staffOpt.isPresent()) {
                 com.cny.backend.admin.entity.Staff stf = staffOpt.get();
                 String oldStatus = stf.getStatus();
-                stf.setStatus(status);
+                if ("DELETED".equalsIgnoreCase(status)) {
+                    stf.setIsDeleted(true);
+                    stf.setStatus("DELETED");
+                } else {
+                    stf.setIsDeleted(false);
+                    stf.setStatus(status);
+                }
                 staffRepository.save(stf);
+
+                // Broadcast real-time account status event to user's STOMP topic
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("role", "STAFF");
+                    event.put("id", id);
+                    event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
+                    messagingTemplate.convertAndSend("/topic/account-status/STAFF/" + id, event);
+                }
                 
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Staff #" + id + " (" + stf.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
                 
@@ -331,7 +373,13 @@ public class AdminService {
             if (freelancerOpt.isPresent()) {
                 Freelancer f = freelancerOpt.get();
                 String oldStatus = f.getStatus();
-                f.setStatus(status);
+                if ("DELETED".equalsIgnoreCase(status)) {
+                    f.setIsDeleted(true);
+                    f.setStatus("DELETED");
+                } else {
+                    f.setIsDeleted(false);
+                    f.setStatus(status);
+                }
                 freelancerRepository.save(f);
                 
                 dashboardRepository.logFreelancerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
@@ -616,11 +664,13 @@ public class AdminService {
             return response;
         }
 
-        if (adminRepository.findByEmail(email).isPresent() ||
-            freelancerRepository.findByEmail(email).isPresent() ||
-            employerRepository.findByEmail(email).isPresent() ||
-            managerRepository.findByEmail(email).isPresent() ||
-            staffRepository.findByEmail(email).isPresent()) {
+        boolean emailExists = adminRepository.findByEmail(email).isPresent() ||
+            freelancerRepository.findByEmail(email).filter(f -> !Boolean.TRUE.equals(f.getIsDeleted())).isPresent() ||
+            employerRepository.findByEmail(email).filter(e -> !Boolean.TRUE.equals(e.getIsDeleted())).isPresent() ||
+            managerRepository.findByEmail(email).filter(m -> !Boolean.TRUE.equals(m.getIsDeleted())).isPresent() ||
+            staffRepository.findByEmail(email).filter(s -> !Boolean.TRUE.equals(s.getIsDeleted())).isPresent();
+
+        if (emailExists) {
             response.put("success", false);
             response.put("message", "Email đã tồn tại trong hệ thống!");
             return response;
@@ -634,23 +684,39 @@ public class AdminService {
             dept = departmentRepository.findByCode("GEN").orElse(null);
         }
 
-        com.cny.backend.admin.entity.Manager mgr = com.cny.backend.admin.entity.Manager.builder()
-                .email(email)
-                .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
-                .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Manager")
-                .fullName(dto.getFullName())
-                .phone(dto.getPhone())
-                .status("ACTIVE")
-                .department(dept != null ? dept.getName() : "General")
-                .departmentEntity(dept)
-                .managedByAdmin(adminId)
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        mgr = managerRepository.save(mgr);
-        writeAuditLog(adminId, "CREATE_MANAGER", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Manager: " + email + " (ID: " + mgr.getManagerId() + ")");
+        Optional<com.cny.backend.admin.entity.Manager> existingManager = managerRepository.findByEmail(email);
+        com.cny.backend.admin.entity.Manager mgr;
+        if (existingManager.isPresent() && Boolean.TRUE.equals(existingManager.get().getIsDeleted())) {
+            mgr = existingManager.get();
+            mgr.setDisplayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Manager");
+            mgr.setFullName(dto.getFullName());
+            mgr.setPhone(dto.getPhone());
+            mgr.setPasswordHash(dto.getPassword() != null ? dto.getPassword() : "123456");
+            mgr.setDepartment(dept != null ? dept.getName() : "General");
+            mgr.setDepartmentEntity(dept);
+            mgr.setStatus("ACTIVE");
+            mgr.setIsDeleted(false);
+            mgr.setUpdatedAt(LocalDateTime.now());
+            mgr = managerRepository.save(mgr);
+            writeAuditLog(adminId, "REACTIVATE_MANAGER", "USER_MANAGEMENT", "Admin #" + adminId + " đã kích hoạt lại Manager: " + email);
+        } else {
+            mgr = com.cny.backend.admin.entity.Manager.builder()
+                    .email(email)
+                    .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
+                    .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Manager")
+                    .fullName(dto.getFullName())
+                    .phone(dto.getPhone())
+                    .status("ACTIVE")
+                    .department(dept != null ? dept.getName() : "General")
+                    .departmentEntity(dept)
+                    .managedByAdmin(adminId)
+                    .isDeleted(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            mgr = managerRepository.save(mgr);
+            writeAuditLog(adminId, "CREATE_MANAGER", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Manager: " + email + " (ID: " + mgr.getManagerId() + ")");
+        }
 
         response.put("success", true);
         response.put("message", "Tạo tài khoản Manager thành công.");
@@ -681,11 +747,13 @@ public class AdminService {
             return response;
         }
 
-        if (adminRepository.findByEmail(email).isPresent() ||
-            freelancerRepository.findByEmail(email).isPresent() ||
-            employerRepository.findByEmail(email).isPresent() ||
-            managerRepository.findByEmail(email).isPresent() ||
-            staffRepository.findByEmail(email).isPresent()) {
+        boolean emailExists = adminRepository.findByEmail(email).isPresent() ||
+            freelancerRepository.findByEmail(email).filter(f -> !Boolean.TRUE.equals(f.getIsDeleted())).isPresent() ||
+            employerRepository.findByEmail(email).filter(e -> !Boolean.TRUE.equals(e.getIsDeleted())).isPresent() ||
+            managerRepository.findByEmail(email).filter(m -> !Boolean.TRUE.equals(m.getIsDeleted())).isPresent() ||
+            staffRepository.findByEmail(email).filter(s -> !Boolean.TRUE.equals(s.getIsDeleted())).isPresent();
+
+        if (emailExists) {
             response.put("success", false);
             response.put("message", "Email đã tồn tại trong hệ thống!");
             return response;
@@ -714,24 +782,41 @@ public class AdminService {
             dept = departmentRepository.findByCode("GEN").orElse(null);
         }
 
-        com.cny.backend.admin.entity.Staff stf = com.cny.backend.admin.entity.Staff.builder()
-                .email(email)
-                .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
-                .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Staff")
-                .fullName(dto.getFullName())
-                .phone(dto.getPhone())
-                .status("ACTIVE")
-                .specialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General")
-                .manager(mgr)
-                .departmentEntity(dept)
-                .createdByAdmin(adminId)
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        stf = staffRepository.save(stf);
-        writeAuditLog(adminId, "CREATE_STAFF", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Staff: " + email + " (ID: " + stf.getStaffId() + ")");
+        Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
+        com.cny.backend.admin.entity.Staff stf;
+        if (existingStaff.isPresent() && Boolean.TRUE.equals(existingStaff.get().getIsDeleted())) {
+            stf = existingStaff.get();
+            stf.setDisplayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Staff");
+            stf.setFullName(dto.getFullName());
+            stf.setPhone(dto.getPhone());
+            stf.setPasswordHash(dto.getPassword() != null ? dto.getPassword() : "123456");
+            stf.setSpecialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General");
+            stf.setManager(mgr);
+            stf.setDepartmentEntity(dept);
+            stf.setStatus("ACTIVE");
+            stf.setIsDeleted(false);
+            stf.setUpdatedAt(LocalDateTime.now());
+            stf = staffRepository.save(stf);
+            writeAuditLog(adminId, "REACTIVATE_STAFF", "USER_MANAGEMENT", "Admin #" + adminId + " đã kích hoạt lại Staff: " + email);
+        } else {
+            stf = com.cny.backend.admin.entity.Staff.builder()
+                    .email(email)
+                    .passwordHash(dto.getPassword() != null ? dto.getPassword() : "123456")
+                    .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Staff")
+                    .fullName(dto.getFullName())
+                    .phone(dto.getPhone())
+                    .status("ACTIVE")
+                    .specialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General")
+                    .manager(mgr)
+                    .departmentEntity(dept)
+                    .createdByAdmin(adminId)
+                    .isDeleted(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            stf = staffRepository.save(stf);
+            writeAuditLog(adminId, "CREATE_STAFF", "USER_MANAGEMENT", "Admin #" + adminId + " đã tạo tài khoản Staff: " + email + " (ID: " + stf.getStaffId() + ")");
+        }
 
         response.put("success", true);
         response.put("message", "Tạo tài khoản Staff thành công.");
@@ -820,12 +905,12 @@ public class AdminService {
         email = email.trim().toLowerCase();
         role = role.toUpperCase();
 
-        // Check if email already exists in any table
+        // Check if email already exists in any table (ignoring soft-deleted users in key roles)
         if (adminRepository.findByEmail(email).isPresent() ||
-            freelancerRepository.findByEmail(email).isPresent() ||
-            employerRepository.findByEmail(email).isPresent() ||
-            managerRepository.findByEmail(email).isPresent() ||
-            staffRepository.findByEmail(email).isPresent()) {
+            freelancerRepository.findByEmail(email).filter(f -> !Boolean.TRUE.equals(f.getIsDeleted())).isPresent() ||
+            employerRepository.findByEmail(email).filter(e -> !Boolean.TRUE.equals(e.getIsDeleted())).isPresent() ||
+            managerRepository.findByEmail(email).filter(m -> !Boolean.TRUE.equals(m.getIsDeleted())).isPresent() ||
+            staffRepository.findByEmail(email).filter(s -> !Boolean.TRUE.equals(s.getIsDeleted())).isPresent()) {
             response.put("success", false);
             response.put("message", "Email đã tồn tại trong hệ thống!");
             return response;
@@ -850,54 +935,105 @@ public class AdminService {
             } catch (Exception e) {}
         }
 
-        // Clean up any existing pending invitations for this email to avoid duplicates
-        staffInvitationRepository.findByEmail(email).ifPresent(inv -> staffInvitationRepository.delete(inv));
-
         // Generate invitation token
         String token = java.util.UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
 
-        // Create the invitation record
-        com.cny.backend.admin.entity.StaffInvitation invitation = com.cny.backend.admin.entity.StaffInvitation.builder()
-                .email(email)
-                .role(role)
-                .token(token)
-                .expiresAt(expiresAt)
-                .status("PENDING")
-                .build();
+        // Create or update the invitation record to avoid UNIQUE KEY constraint issues
+        Optional<com.cny.backend.admin.entity.StaffInvitation> existingInvOpt = staffInvitationRepository.findByEmail(email);
+        com.cny.backend.admin.entity.StaffInvitation invitation;
+        if (existingInvOpt.isPresent()) {
+            invitation = existingInvOpt.get();
+            invitation.setRole(role);
+            invitation.setToken(token);
+            invitation.setExpiresAt(expiresAt);
+            invitation.setStatus("PENDING");
+        } else {
+            invitation = com.cny.backend.admin.entity.StaffInvitation.builder()
+                    .email(email)
+                    .role(role)
+                    .token(token)
+                    .expiresAt(expiresAt)
+                    .status("PENDING")
+                    .build();
+        }
         staffInvitationRepository.save(invitation);
 
-        // Create placeholder user account with status "INVITED"
+        // Create placeholder or reactivate soft-deleted user account with status "INVITED"
         String emailPrefix = email.split("@")[0];
+        Optional<com.cny.backend.admin.entity.Manager> existingManager = managerRepository.findByEmail(email);
+        Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
+
         if ("MANAGER".equals(role)) {
-            com.cny.backend.admin.entity.Manager managerPlaceholder = com.cny.backend.admin.entity.Manager.builder()
-                    .email(email)
-                    .passwordHash("INVITED_PENDING")
-                    .displayName(emailPrefix)
-                    .status("INVITED")
-                    .department(dept != null ? dept.getName() : "General")
-                    .departmentEntity(dept)
-                    .managedByAdmin(adminId)
-                    .isDeleted(false)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+            com.cny.backend.admin.entity.Manager managerPlaceholder;
+            if (existingManager.isPresent()) {
+                managerPlaceholder = existingManager.get();
+                managerPlaceholder.setPasswordHash("INVITED_PENDING");
+                managerPlaceholder.setStatus("INVITED");
+                managerPlaceholder.setDepartment(dept != null ? dept.getName() : "General");
+                managerPlaceholder.setDepartmentEntity(dept);
+                managerPlaceholder.setManagedByAdmin(adminId);
+                managerPlaceholder.setIsDeleted(false);
+                managerPlaceholder.setUpdatedAt(LocalDateTime.now());
+            } else {
+                managerPlaceholder = com.cny.backend.admin.entity.Manager.builder()
+                        .email(email)
+                        .passwordHash("INVITED_PENDING")
+                        .displayName(emailPrefix)
+                        .status("INVITED")
+                        .department(dept != null ? dept.getName() : "General")
+                        .departmentEntity(dept)
+                        .managedByAdmin(adminId)
+                        .isDeleted(false)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+            }
             managerRepository.save(managerPlaceholder);
+
+            // If it existed in staff table as deleted, keep it deleted
+            if (existingStaff.isPresent()) {
+                com.cny.backend.admin.entity.Staff s = existingStaff.get();
+                s.setIsDeleted(true);
+                s.setStatus("DELETED");
+                staffRepository.save(s);
+            }
         } else {
-            com.cny.backend.admin.entity.Staff stf = com.cny.backend.admin.entity.Staff.builder()
-                    .email(email)
-                    .passwordHash("INVITED_PENDING")
-                    .displayName(emailPrefix)
-                    .status("INVITED")
-                    .specialization("General")
-                    .manager(mgr)
-                    .departmentEntity(dept)
-                    .createdByAdmin(adminId)
-                    .isDeleted(false)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+            com.cny.backend.admin.entity.Staff stf;
+            if (existingStaff.isPresent()) {
+                stf = existingStaff.get();
+                stf.setPasswordHash("INVITED_PENDING");
+                stf.setStatus("INVITED");
+                stf.setSpecialization("General");
+                stf.setManager(mgr);
+                stf.setDepartmentEntity(dept);
+                stf.setCreatedByAdmin(adminId);
+                stf.setIsDeleted(false);
+                stf.setUpdatedAt(LocalDateTime.now());
+            } else {
+                stf = com.cny.backend.admin.entity.Staff.builder()
+                        .email(email)
+                        .passwordHash("INVITED_PENDING")
+                        .displayName(emailPrefix)
+                        .status("INVITED")
+                        .specialization("General")
+                        .manager(mgr)
+                        .departmentEntity(dept)
+                        .createdByAdmin(adminId)
+                        .isDeleted(false)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+            }
             staffRepository.save(stf);
+
+            // If it existed in manager table as deleted, keep it deleted
+            if (existingManager.isPresent()) {
+                com.cny.backend.admin.entity.Manager m = existingManager.get();
+                m.setIsDeleted(true);
+                m.setStatus("DELETED");
+                managerRepository.save(m);
+            }
         }
 
         // Send Email
@@ -1103,25 +1239,41 @@ public class AdminService {
 
     private void initPresetDepartments() {
         String[][] presets = {
-            {"FIN", "Khoa Quản lý Tài chính", "Quản lý và kiểm duyệt các giao dịch tài chính, rút tiền, thanh toán và phí dịch vụ."},
-            {"MOD", "Khoa Kiểm duyệt Dự án", "Đảm bảo nội dung các bài đăng tuyển dụng, dự án đúng quy định pháp luật và chính sách."},
-            {"KYC", "Khoa Xác thực Người dùng", "Xác minh thông tin danh tính, hồ sơ năng lực của các Freelancer và Employer."},
-            {"DIS", "Khoa Giải quyết Tranh chấp", "Tiếp nhận khiếu nại, giải quyết tranh chấp hợp đồng giữa Client và Freelancer."},
-            {"SUP", "Khoa Hỗ trợ Khách hàng", "Hỗ trợ kỹ thuật, giải đáp thắc mắc và phản hồi các yêu cầu từ người dùng."}
+            {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
+            {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
+            {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
+            {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
+            {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: Tất cả"},
+            {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"}
         };
 
         for (String[] preset : presets) {
             String code = preset[0];
-            if (!departmentRepository.findByCode(code).isPresent()) {
+            Optional<com.cny.backend.department.entity.Department> existing = departmentRepository.findByCode(code);
+            if (existing.isPresent()) {
+                com.cny.backend.department.entity.Department d = existing.get();
+                d.setName(preset[1]);
+                d.setDescription(preset[2]);
+                departmentRepository.save(d);
+            } else {
                 com.cny.backend.department.entity.Department d = com.cny.backend.department.entity.Department.builder()
                         .code(code)
                         .name(preset[1])
                         .description(preset[2])
+                        .maxManagers(5)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build();
                 departmentRepository.save(d);
             }
+        }
+
+        // Clean up outdated verification tasks/signoffs containing KYC or SUP department references
+        boolean hasOutdated = departmentVerificationTaskRepository.findAll().stream()
+                .anyMatch(t -> t.getRequiredDepartments().contains("KYC") || t.getRequiredDepartments().contains("SUP"));
+        if (hasOutdated) {
+            departmentTaskSignoffRepository.deleteAll();
+            departmentVerificationTaskRepository.deleteAll();
         }
 
         // Generate mock tasks if there are none to populate the list on UI load!
@@ -1130,18 +1282,27 @@ public class AdminService {
                     .taskType("WITHDRAWAL")
                     .referenceId(1)
                     .title("Yêu cầu rút tiền lớn từ Nguyễn Minh Anh")
-                    .description("Yêu cầu rút 15.000.000 VND về tài khoản Techcombank 1903xxx. Cần kiểm chứng danh tính (KYC) và số dư ví (FIN).")
+                    .description("Yêu cầu rút 15.000.000 VND về tài khoản Techcombank 1903xxx. Cần FIN (xác nhận số tiền) và AUD (kiểm tra tuân thủ) ký duyệt.")
                     .status("PENDING")
-                    .requiredDepartments("KYC,FIN")
+                    .requiredDepartments("FIN,AUD")
                     .build());
 
             departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
                     .taskType("DISPUTE_REFUND")
                     .referenceId(1)
                     .title("Hoàn tiền tranh chấp dự án Laravel Website")
-                    .description("Yêu cầu hoàn trả 50% số tiền cọc (7.500.000 VND) cho Client do Freelancer chậm tiến độ. Cần Tranh chấp (DIS) và Tài chính (FIN) duyệt.")
+                    .description("Yêu cầu hoàn trả 7.500.000 VND cho Client do Freelancer chậm tiến độ. Cần DIS (phân tích bằng chứng), FIN (tính toán hoàn tiền) và MOD (đánh giá vi phạm) ký duyệt.")
                     .status("PENDING")
-                    .requiredDepartments("DIS,FIN")
+                    .requiredDepartments("DIS,FIN,MOD")
+                    .build());
+
+            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
+                    .taskType("KYC_VERIFICATION")
+                    .referenceId(1)
+                    .title("Xác thực thông tin KYC người dùng")
+                    .description("Xác thực thông tin CCCD và ảnh selfie của Nguyễn Minh Anh. Cần MOD (xác minh giấy tờ) và AUD (kiểm tra hồ sơ) ký duyệt.")
+                    .status("PENDING")
+                    .requiredDepartments("MOD,AUD")
                     .build());
         }
     }

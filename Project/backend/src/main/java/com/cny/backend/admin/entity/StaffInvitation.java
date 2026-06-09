@@ -52,6 +52,9 @@ public class StaffInvitation {
     @Column(nullable = false)
     private String status; // 'PENDING', 'ACCEPTED', 'EXPIRED'
 
+    @Column(name = "verification_code")
+    private String verificationCode;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
