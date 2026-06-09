@@ -8,6 +8,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
   const [keyword, setKeyword] = useState('');
+  const [minSalary, setMinSalary] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   // Pagination state
@@ -29,11 +30,11 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   // Fetch data whenever filters or page changes
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchJobs(keyword, activeCategory, page, size);
+      fetchJobs(keyword, activeCategory, minSalary, page, size);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [keyword, activeCategory, page, size]);
+  }, [keyword, activeCategory, minSalary, page, size]);
 
   const fetchCategories = async () => {
     try {
@@ -47,12 +48,13 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
     }
   };
 
-  const fetchJobs = async (searchQuery, categoryFilter, currentPage, currentSize) => {
+  const fetchJobs = async (searchQuery, categoryFilter, minSalaryFilter, currentPage, currentSize) => {
     setIsLoading(true);
     try {
       let url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
       if (searchQuery) url += `&keyword=${encodeURIComponent(searchQuery)}`;
       if (categoryFilter && categoryFilter !== 'all') url += `&categoryId=${categoryFilter}`;
+      if (minSalaryFilter) url += `&minSalary=${minSalaryFilter}`;
 
       const res = await fetch(url);
       if (res.ok) {
@@ -75,6 +77,11 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const handleKeywordChange = (e) => {
     setKeyword(e.target.value);
     setPage(0); // reset to first page when searching
+  };
+
+  const handleMinSalaryChange = (e) => {
+    setMinSalary(e.target.value);
+    setPage(0); // reset to first page when filtering
   };
 
   const handleCategoryChange = (catId) => {
@@ -153,29 +160,54 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
         <div className="md:col-span-3 flex flex-col gap-6">
           
           {/* Search Bar & Filters */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center gap-3">
-            <div className="flex-1 relative w-full">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-slate-400" />
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+              <div className="flex-1 relative w-full">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-400" />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)" 
+                  value={keyword}
+                  onChange={handleKeywordChange}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <input 
-                type="text" 
-                placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)" 
-                value={keyword}
-                onChange={handleKeywordChange}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
+              
+              <button 
+                onClick={() => {
+                  setPage(0);
+                  fetchJobs(keyword, activeCategory, minSalary, 0, size);
+                }}
+                className="w-full md:w-auto px-6 py-2.5 bg-[#1e40af] text-white font-semibold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+              >
+                Tìm kiếm
+              </button>
             </div>
             
-            <button 
-              onClick={() => {
-                setPage(0);
-                fetchJobs(keyword, activeCategory, 0, size);
-              }}
-              className="w-full md:w-auto px-6 py-2.5 bg-[#1e40af] text-white font-semibold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
-            >
-              Tìm kiếm
-            </button>
+            {/* Filter by Minimum Salary */}
+            <div className="flex justify-end items-center gap-2 w-full">
+              <span className="text-sm text-slate-600 font-medium">Mức lương:</span>
+              <div className="relative w-48">
+                <input 
+                  type="number" 
+                  placeholder="Tối thiểu..." 
+                  value={minSalary}
+                  onChange={handleMinSalaryChange}
+                  className="w-full pl-3 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <button 
+                  onClick={() => {
+                    setPage(0);
+                    fetchJobs(keyword, activeCategory, minSalary, 0, size);
+                  }}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-[#1e40af] hover:bg-slate-100 rounded-r-lg transition-colors"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Job List */}

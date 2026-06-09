@@ -56,10 +56,11 @@ public class ProjectController {
     public ResponseEntity<Page<ProjectDto>> searchProjects(
             @RequestParam(value = "keyword", defaultValue = "") String keyword,
             @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            @RequestParam(value = "minSalary", required = false) java.math.BigDecimal minSalary,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, pageable));
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, minSalary, pageable));
     }
 
     

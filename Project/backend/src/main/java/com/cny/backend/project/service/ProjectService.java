@@ -42,9 +42,9 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, Pageable pageable) {
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, java.math.BigDecimal minSalary, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.trim();
-        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, pageable);
+        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, minSalary, pageable);
         return projects.map(this::mapToDto);
     }
 
