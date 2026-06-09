@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
+import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
 export default function JobDetailPage({ job, onNavigate }) {
   const [showModal, setShowModal] = useState(false);
+  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs();
+  const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
 
   if (!job) {
     return (
@@ -16,6 +19,25 @@ export default function JobDetailPage({ job, onNavigate }) {
   const handleShowComingSoon = (e) => {
     e.preventDefault();
     setShowModal(true);
+  };
+
+  const showToastNotification = (type) => {
+    setSuccessToast({ show: true, type });
+    setTimeout(() => {
+      setSuccessToast({ show: false, type: '' });
+    }, 4000);
+  };
+
+  const handleBookmarkClick = (e, jobToSave) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isJobSaved(jobToSave.id)) {
+      unsaveJob(jobToSave.id);
+      showToastNotification('unsave');
+    } else {
+      saveJob(jobToSave);
+      showToastNotification('save');
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -76,11 +98,20 @@ export default function JobDetailPage({ job, onNavigate }) {
           
           {/* Main Content (Left) */}
           <div className="lg:col-span-2">
-            <h1 className="text-3xl font-bold text-slate-800 mb-6 leading-tight">
-              {job.title}
-            </h1>
+            <div className="flex justify-between items-start gap-4 mb-6">
+              <h1 className="text-3xl font-bold text-slate-800 leading-tight">
+                {job.title}
+              </h1>
+              <button 
+                onClick={(e) => handleBookmarkClick(e, job)} 
+                className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 border-2 ${isJobSaved(job.id) ? 'bg-yellow-400 text-white border-[#8B4513]' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600'}`}
+                title={isJobSaved(job.id) ? 'Bỏ lưu' : 'Lưu công việc'}
+              >
+                <Bookmark className={`w-6 h-6 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
+              </button>
+            </div>
 
-            <div className="bg-slate-50 border border-slate-100 rounded-lg p-5 mb-8">
+            <div className={`bg-slate-50 border rounded-lg p-5 mb-8 transition-colors duration-300 ${isJobSaved(job.id) ? 'border-[#8B4513] bg-yellow-50/10' : 'border-slate-100'}`}>
               <div className="text-slate-700 font-medium mb-1">
                 Mô tả công việc: <span className="text-blue-600 font-bold">{job.categoryName || 'Dựng motion video'}</span>
               </div>
@@ -187,6 +218,28 @@ export default function JobDetailPage({ job, onNavigate }) {
       </div>
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
+      
+      {/* Success Toast for Bookmark */}
+      {successToast.show && (
+        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <Bookmark className={`w-5 h-5 ${successToast.type === 'save' ? 'text-yellow-400 fill-yellow-400' : 'text-amber-400 fill-amber-400'}`} />
+          <span className="font-medium text-sm">
+            {successToast.type === 'save' ? (
+              <>
+                Đã lưu việc làm{' '}
+                <button 
+                  onClick={() => onNavigate('your_jobs')}
+                  className="text-yellow-400 font-bold hover:underline ml-1"
+                >
+                  [Xem việc làm đã lưu]
+                </button>
+              </>
+            ) : (
+              'Đã bỏ lưu việc làm'
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

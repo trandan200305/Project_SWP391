@@ -8,6 +8,7 @@ import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
+import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -33,6 +34,10 @@ export default function AppRoutes({
 
   if (currentPage === 'job_details') {
     return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} />;
+  }
+
+  if (currentPage === 'your_jobs') {
+    return <YourJobsPage onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'messenger') {

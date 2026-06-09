@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
+import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
 export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const [showModal, setShowModal] = useState(false);
+  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs();
+  const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
@@ -85,6 +88,25 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const handleAction = (e) => {
     e.preventDefault();
     setShowModal(true);
+  };
+
+  const showToastNotification = (type) => {
+    setSuccessToast({ show: true, type });
+    setTimeout(() => {
+      setSuccessToast({ show: false, type: '' });
+    }, 4000);
+  };
+
+  const handleBookmarkClick = (e, job) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isJobSaved(job.id)) {
+      unsaveJob(job.id);
+      showToastNotification('unsave');
+    } else {
+      saveJob(job);
+      showToastNotification('save');
+    }
   };
 
   const handleKeywordChange = (e) => {
@@ -236,7 +258,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
               <div className="p-8 text-center text-slate-500">Không tìm thấy công việc nào.</div>
             ) : (
               jobs.map(job => (
-                <div key={job.id} className="p-5 hover:bg-slate-50/50 transition-colors group">
+                <div key={job.id} className={`p-5 hover:bg-slate-50/50 transition-all duration-300 group border-2 ${isJobSaved(job.id) ? 'border-[#8B4513] rounded-xl' : 'border-transparent'}`}>
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -273,8 +295,12 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
                       </p>
                     </div>
                     
-                    <button onClick={handleAction} className="text-slate-400 hover:text-slate-600 p-1">
-                      <Bookmark className="w-5 h-5" />
+                    <button 
+                      onClick={(e) => handleBookmarkClick(e, job)} 
+                      className={`p-1.5 rounded-lg transition-colors shadow-sm ${isJobSaved(job.id) ? 'bg-yellow-400 text-white hover:bg-yellow-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                      title={isJobSaved(job.id) ? 'Bỏ lưu' : 'Lưu công việc'}
+                    >
+                      <Bookmark className={`w-5 h-5 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
                     </button>
                   </div>
                   
@@ -343,6 +369,28 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
       
+      {/* Success Toast for Bookmark */}
+      {successToast.show && (
+        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <Bookmark className={`w-5 h-5 ${successToast.type === 'save' ? 'text-yellow-400 fill-yellow-400' : 'text-amber-400 fill-amber-400'}`} />
+          <span className="font-medium text-sm">
+            {successToast.type === 'save' ? (
+              <>
+                Đã lưu việc làm{' '}
+                <button 
+                  onClick={() => onNavigate('your_jobs')}
+                  className="text-yellow-400 font-bold hover:underline ml-1"
+                >
+                  [Xem việc làm đã lưu]
+                </button>
+              </>
+            ) : (
+              'Đã bỏ lưu việc làm'
+            )}
+          </span>
+        </div>
+      )}
+
       {/* Error Toast */}
       {errorToast && (
         <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
