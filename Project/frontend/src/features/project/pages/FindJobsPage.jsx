@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 
-export default function FindJobsPage() {
+export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const [showModal, setShowModal] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
   const [keyword, setKeyword] = useState('');
@@ -18,6 +18,13 @@ export default function FindJobsPage() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setActiveCategory(initialCategory);
+      setPage(0);
+    }
+  }, [initialCategory]);
 
   // Fetch data whenever filters or page changes
   useEffect(() => {
@@ -183,7 +190,7 @@ export default function FindJobsPage() {
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <a href="#" onClick={handleAction} className="text-[#1e40af] hover:underline font-bold text-lg leading-tight">
+                        <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }} className="text-[#1e40af] hover:underline font-bold text-lg leading-tight">
                           {job.title}
                         </a>
                         {job.isNew && (
@@ -212,7 +219,7 @@ export default function FindJobsPage() {
                       
                       <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         {job.description?.length > 150 ? job.description.substring(0, 150) + '.........' : job.description}
-                        <button onClick={handleAction} className="text-blue-600 hover:underline ml-1">Xem thêm</button>
+                        <button onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }} className="text-blue-600 hover:underline ml-1">Xem thêm</button>
                       </p>
                     </div>
                     

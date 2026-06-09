@@ -7,9 +7,11 @@ import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
+import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 
 export default function AppRoutes({
   currentPage,
+  pageParams,
   user,
   searchQuery,
   handleSearch,
@@ -26,7 +28,11 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'find_jobs') {
-    return <FindJobsPage />;
+    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} />;
+  }
+
+  if (currentPage === 'job_details') {
+    return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'messenger') {
