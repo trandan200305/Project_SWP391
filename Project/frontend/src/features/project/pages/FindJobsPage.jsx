@@ -10,6 +10,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const [keyword, setKeyword] = useState('');
   const [minSalary, setMinSalary] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [errorToast, setErrorToast] = useState(null);
   
   // Pagination state
   const [page, setPage] = useState(0);
@@ -27,9 +28,21 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
     }
   }, [initialCategory]);
 
+  const isValidSalary = (value) => {
+    if (!value) return true; // empty string is valid
+    // Only allow digits (1-9 followed by 0-9)
+    return /^[1-9]\d*$/.test(value);
+  };
+
   // Fetch data whenever filters or page changes
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      if (!isValidSalary(minSalary)) {
+        setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
+        setTimeout(() => setErrorToast(null), 3000);
+        return;
+      }
+      setErrorToast(null);
       fetchJobs(keyword, activeCategory, minSalary, page, size);
     }, 500);
 
@@ -82,6 +95,17 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
   const handleMinSalaryChange = (e) => {
     setMinSalary(e.target.value);
     setPage(0); // reset to first page when filtering
+  };
+
+  const handleExecuteSearch = () => {
+    if (!isValidSalary(minSalary)) {
+      setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
+      setTimeout(() => setErrorToast(null), 3000);
+      return;
+    }
+    setErrorToast(null);
+    setPage(0);
+    fetchJobs(keyword, activeCategory, minSalary, 0, size);
   };
 
   const handleCategoryChange = (catId) => {
@@ -176,10 +200,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
               </div>
               
               <button 
-                onClick={() => {
-                  setPage(0);
-                  fetchJobs(keyword, activeCategory, minSalary, 0, size);
-                }}
+                onClick={handleExecuteSearch}
                 className="w-full md:w-auto px-6 py-2.5 bg-[#1e40af] text-white font-semibold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
               >
                 Tìm kiếm
@@ -191,17 +212,14 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
               <span className="text-sm text-slate-600 font-medium">Mức lương:</span>
               <div className="relative w-48">
                 <input 
-                  type="number" 
+                  type="text" 
                   placeholder="Tối thiểu..." 
                   value={minSalary}
                   onChange={handleMinSalaryChange}
                   className="w-full pl-3 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
                 <button 
-                  onClick={() => {
-                    setPage(0);
-                    fetchJobs(keyword, activeCategory, minSalary, 0, size);
-                  }}
+                  onClick={handleExecuteSearch}
                   className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-[#1e40af] hover:bg-slate-100 rounded-r-lg transition-colors"
                 >
                   <Search className="h-4 w-4" />
@@ -324,6 +342,14 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
       </div>
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
+      
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
+          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span className="font-medium text-sm">{errorToast}</span>
+        </div>
+      )}
     </div>
   );
 }
