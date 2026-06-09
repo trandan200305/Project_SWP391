@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -31,6 +32,9 @@ public class ProjectService {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private SavedJobRepository savedJobRepository;
 
     public Page<ProjectDto> getAllPublishedProjects(Pageable pageable) {
         Page<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED", pageable);
@@ -51,6 +55,34 @@ public class ProjectService {
     public ProjectDto createProject(Project project) {
         Project saved = projectRepository.save(project);
         return mapToDto(saved);
+    }
+
+    public List<ProjectDto> getSavedProjects(Integer userId, String userRole) {
+        List<SavedJob> savedJobs = savedJobRepository.findByUserIdAndUserRoleOrderBySavedAtDesc(userId, userRole);
+        return savedJobs.stream()
+                .map(sj -> mapToDto(sj.getProject()))
+                .collect(Collectors.toList());
+    }
+
+    public void saveProject(Integer userId, String userRole, Integer projectId) {
+        Optional<SavedJob> existing = savedJobRepository.findByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
+        if (existing.isEmpty()) {
+            Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+            
+            SavedJob savedJob = SavedJob.builder()
+                .userId(userId)
+                .userRole(userRole)
+                .project(project)
+                .savedAt(LocalDateTime.now())
+                .build();
+            savedJobRepository.save(savedJob);
+        }
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void unsaveProject(Integer userId, String userRole, Integer projectId) {
+        savedJobRepository.deleteByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
     }
 
     private ProjectDto mapToDto(Project project) {

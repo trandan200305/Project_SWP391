@@ -29,15 +29,15 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'find_jobs') {
-    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} />;
+    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} user={user} />;
   }
 
   if (currentPage === 'job_details') {
-    return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} />;
+    return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} user={user} />;
   }
 
   if (currentPage === 'your_jobs') {
-    return <YourJobsPage onNavigate={handleNavigate} />;
+    return <YourJobsPage onNavigate={handleNavigate} user={user} />;
   }
 
   if (currentPage === 'messenger') {

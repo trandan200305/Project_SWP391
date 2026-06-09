@@ -3,10 +3,10 @@ import { Bookmark, AlertTriangle } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function YourJobsPage({ onNavigate }) {
+export default function YourJobsPage({ onNavigate, user }) {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved', 'received', 'completed'
   const [showComingSoon, setShowComingSoon] = useState(false);
-  const { savedJobs, unsaveJob } = useSavedJobs();
+  const { savedJobs, unsaveJob } = useSavedJobs(user);
   const [toastMessage, setToastMessage] = useState(null);
 
   const handleTabClick = (tab) => {

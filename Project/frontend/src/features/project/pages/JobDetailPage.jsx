@@ -3,9 +3,9 @@ import { AlertTriangle, CheckCircle2, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function JobDetailPage({ job, onNavigate }) {
+export default function JobDetailPage({ job, onNavigate, user }) {
   const [showModal, setShowModal] = useState(false);
-  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs();
+  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
 
   if (!job) {

@@ -3,9 +3,9 @@ import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
+export default function FindJobsPage({ onNavigate, initialCategory = 'all', user }) {
   const [showModal, setShowModal] = useState(false);
-  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs();
+  const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);

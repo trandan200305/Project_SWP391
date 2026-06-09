@@ -69,4 +69,29 @@ public class ProjectController {
         ProjectDto saved = projectService.createProject(project);
         return ResponseEntity.ok(saved);
     }
+
+    @GetMapping("/saved")
+    public ResponseEntity<List<ProjectDto>> getSavedProjects(
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        return ResponseEntity.ok(projectService.getSavedProjects(userId, userRole));
+    }
+
+    @PostMapping("/{projectId}/save")
+    public ResponseEntity<Void> saveProject(
+            @PathVariable Integer projectId,
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        projectService.saveProject(userId, userRole, projectId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{projectId}/save")
+    public ResponseEntity<Void> unsaveProject(
+            @PathVariable Integer projectId,
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        projectService.unsaveProject(userId, userRole, projectId);
+        return ResponseEntity.ok().build();
+    }
 }
