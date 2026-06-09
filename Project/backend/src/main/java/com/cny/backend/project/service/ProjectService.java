@@ -85,7 +85,7 @@ public class ProjectService {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm");
         String formattedCreatedAt = project.getCreatedAt() != null ? project.getCreatedAt().format(dtf) : "Không rõ";
 
-        String workForm = project.getProjectType() != null ? project.getProjectType() : "Làm online";
+        String workForm = "-";
         String paymentType = project.getBudgetFixed() != null ? "Trả theo dự án" : "Thỏa thuận";
 
         String employerLoc = "Chưa cập nhật";
