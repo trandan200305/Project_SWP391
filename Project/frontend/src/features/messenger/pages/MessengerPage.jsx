@@ -15,6 +15,10 @@ export default function Messenger({ user, onNavigateHome }) {
   const [tickets, setTickets] = useState([]);
   const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
+  
+  const [directChats, setDirectChats] = useState([]);
+  const [activeDirectChat, setActiveDirectChat] = useState(null);
+  const directChatSubscriptionRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -28,6 +32,7 @@ export default function Messenger({ user, onNavigateHome }) {
   const messagesEndRef = useRef(null);
   const ticketSubscriptionRef = useRef(null);
   const activeTicketIdRef = useRef(null);
+  const activeDirectChatIdRef = useRef(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -36,6 +41,9 @@ export default function Messenger({ user, onNavigateHome }) {
   const [systemUsers, setSystemUsers] = useState([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -43,6 +51,14 @@ export default function Messenger({ user, onNavigateHome }) {
       subscribeToTicket(ticketId);
     }
   }, [activeTicket, isConnected]);
+
+  useEffect(() => {
+    const chatId = activeDirectChat?.chatId;
+    activeDirectChatIdRef.current = chatId;
+    if (isConnected && chatId) {
+      subscribeToDirectChat(chatId);
+    }
+  }, [activeDirectChat, isConnected]);
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/api/ws');
     const client = new Client({
@@ -104,6 +120,21 @@ export default function Messenger({ user, onNavigateHome }) {
             });
           }
         });
+
+        // Subscribe to direct message channel
+        client.subscribe(`/topic/user.${user?.id}.direct`, (message) => {
+          const receivedMessage = JSON.parse(message.body);
+          console.log('Received on user direct channel', receivedMessage);
+          
+          if (activeDirectChatIdRef.current === receivedMessage.chatId) {
+            setMessages(prev => {
+              if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
+              return [...prev, receivedMessage];
+            });
+          } else {
+            fetchDirectChats(); // Refresh list to show unread count
+          }
+        });
       }
     };
 
@@ -118,6 +149,7 @@ export default function Messenger({ user, onNavigateHome }) {
       fetchTickets();
     } else {
       getOrCreateUserTicket();
+      fetchDirectChats();
     }
 
     return () => {
@@ -144,6 +176,16 @@ export default function Messenger({ user, onNavigateHome }) {
       setDeletedTickets(data);
     } catch (err) {
       console.error('Failed to fetch deleted support tickets', err);
+    }
+  };
+
+  const fetchDirectChats = async () => {
+    if (!user || user.role === 'ADMIN') return;
+    try {
+      const data = await messengerApi.getUserDirectChats(user.id, user.role);
+      setDirectChats(data);
+    } catch (err) {
+      console.error('Failed to fetch direct chats', err);
     }
   };
 
@@ -219,10 +261,95 @@ export default function Messenger({ user, onNavigateHome }) {
   const handleSelectTicket = async (ticket) => {
     setIsLoading(true);
     setActiveTicket(ticket);
+    setActiveDirectChat(null);
     const ticketId = ticket.ticket_id || ticket.ticketId;
     await fetchMessages(ticketId);
     subscribeToTicket(ticketId);
     setIsLoading(false);
+  };
+
+  const fetchDirectMessages = async (chatId) => {
+    try {
+      const data = await messengerApi.getDirectMessages(chatId);
+      setMessages(data);
+    } catch (err) {
+      console.error('Failed to load direct chat history', err);
+    }
+  };
+
+  const subscribeToDirectChat = (chatId) => {
+    if (!stompClientRef.current || !stompClientRef.current.connected) return;
+    if (directChatSubscriptionRef.current) {
+      directChatSubscriptionRef.current.unsubscribe();
+    }
+
+    directChatSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/directChat.${chatId}`, (message) => {
+      const receivedMessage = JSON.parse(message.body);
+      
+      // Emit read receipt if active chat
+      if (activeDirectChatIdRef.current === chatId && receivedMessage.senderId !== user?.id) {
+        if (stompClientRef.current && stompClientRef.current.connected) {
+          stompClientRef.current.publish({
+            destination: `/app/direct.chat.read`,
+            body: JSON.stringify({ ticketId: chatId, readerRole: user?.role })
+          });
+        }
+      }
+
+      setMessages(prev => {
+        if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
+        return [...prev, receivedMessage];
+      });
+    });
+  };
+
+  const handleSelectDirectChat = async (chat) => {
+    setIsLoading(true);
+    setActiveDirectChat(chat);
+    setActiveTicket(null);
+    setNavSection('direct_chats');
+    await fetchDirectMessages(chat.chatId);
+    
+    // Mark as read
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: `/app/direct.chat.read`,
+        body: JSON.stringify({ ticketId: chat.chatId, readerRole: user?.role })
+      });
+    }
+    
+    subscribeToDirectChat(chat.chatId);
+    // Refresh chats to reset unread count
+    fetchDirectChats();
+    setIsLoading(false);
+  };
+
+  const handleStartDirectChat = async (partnerId, partnerRole) => {
+    if (!user || user.role === 'ADMIN') return;
+    setIsLoading(true);
+    try {
+      const data = await messengerApi.getOrCreateDirectChat(
+        user.role === 'FREELANCER' ? user.id : partnerId,
+        user.role === 'EMPLOYER' ? user.id : partnerId
+      );
+      
+      const chatObj = {
+        chatId: data.chatId,
+        partnerId: partnerId,
+        partnerRole: partnerRole.toUpperCase(),
+        partnerName: selectedProfile?.name || 'User',
+        partnerAvatar: selectedProfile?.avatarUrl,
+        unreadCount: 0
+      };
+      
+      await handleSelectDirectChat(chatObj);
+      await fetchDirectChats(); // Refresh list to include new chat
+    } catch (err) {
+      console.error('Failed to get/create direct chat', err);
+      alert('Không thể tạo phiên chat ngay lúc này.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileChange = async (e, isImageOnly = false) => {
@@ -422,8 +549,46 @@ export default function Messenger({ user, onNavigateHome }) {
   const handleNavSectionChange = (section) => {
     setNavSection(section);
     setUserSearchQuery('');
-    if (section === 'freelancer' || section === 'employer') {
+    
+    if (section === 'chat') {
+      if (user?.role !== 'ADMIN') {
+        setActiveDirectChat(null);
+        getOrCreateUserTicket();
+      }
+    } else if (section === 'direct_chats') {
+      setActiveTicket(null);
+      setActiveDirectChat(null);
+    } else if (section === 'freelancer' || section === 'employer') {
       fetchSystemUsers();
+    }
+  };
+
+  const handleViewProfile = async (userProfile) => {
+    setSelectedProfile(userProfile);
+    setProfileDetails(null);
+    setNavSection('user_profile');
+    setIsProfileLoading(true);
+    
+    try {
+      let data;
+      if (userProfile.role === 'EMPLOYER') {
+        data = await messengerApi.getEmployerProfile(userProfile.id);
+        setProfileDetails(data.data || data); // handle standard response
+      } else if (userProfile.role === 'FREELANCER') {
+        data = await messengerApi.getFreelancerProfile(userProfile.id);
+        setProfileDetails(data.data || data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile details', err);
+      // Fallback details if API fails or doesn't exist
+      setProfileDetails({
+        ...userProfile,
+        bio: 'Chưa có thông tin giới thiệu.',
+        skills: [],
+        rating: 0
+      });
+    } finally {
+      setIsProfileLoading(false);
     }
   };
 
@@ -497,7 +662,7 @@ export default function Messenger({ user, onNavigateHome }) {
           </div>
           <nav className="px-3 mt-6 flex flex-col gap-1.5">
             <button 
-              onClick={() => setNavSection('chat')}
+              onClick={() => handleNavSectionChange('chat')}
               className={`flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold transition-all border ${
                 navSection === 'chat'
                   ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
@@ -510,6 +675,19 @@ export default function Messenger({ user, onNavigateHome }) {
               </span>
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>
             </button>
+            {user?.role !== 'ADMIN' && (
+              <button 
+                onClick={() => handleNavSectionChange('direct_chats')}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold transition-all border ${
+                  navSection === 'direct_chats'
+                    ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+                    : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                }`}
+              >
+                <MessageSquare className="w-5 h-5 shrink-0" />
+                <span>Tin nhắn riêng</span>
+              </button>
+            )}
             {user?.role === 'ADMIN' ? (
               <>
                 <button 
@@ -537,8 +715,12 @@ export default function Messenger({ user, onNavigateHome }) {
               </>
             ) : (
               <button 
-                onClick={onNavigateHome}
-                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 rounded-xl font-medium hover:text-white transition-all text-slate-400"
+                onClick={() => handleNavSectionChange(user?.role === 'FREELANCER' ? 'employer' : 'freelancer')}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
+                  (navSection === 'employer' || navSection === 'freelancer')
+                    ? 'bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold'
+                    : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                }`}
               >
                 <Users className="w-5 h-5 shrink-0" />
                 <span>{user?.role === 'FREELANCER' ? 'Tìm Employer' : 'Tìm Freelancer'}</span>
@@ -628,18 +810,28 @@ export default function Messenger({ user, onNavigateHome }) {
                     }
                   </p>
                 </>
+              ) : navSection === 'direct_chats' ? (
+                <>
+                  <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Tin nhắn riêng</h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    {user?.role === 'ADMIN' 
+                      ? 'Tin nhắn riêng tư (Không có quyền truy cập)'
+                      : 'Trò chuyện trực tiếp với đối tác'
+                    }
+                  </p>
+                </>
               ) : navSection === 'freelancer' ? (
                 <>
                   <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Tìm kiếm Freelancer</h2>
                   <p className="text-xs text-slate-400 font-semibold mt-1">
-                    Chọn freelancer để bắt đầu cuộc trò chuyện mới
+                    Chọn freelancer để xem hồ sơ
                   </p>
                 </>
               ) : (
                 <>
                   <h2 className="text-xl font-extrabold text-slate-900 leading-tight">Tìm kiếm Employer</h2>
                   <p className="text-xs text-slate-400 font-semibold mt-1">
-                    Chọn employer để bắt đầu cuộc trò chuyện mới
+                    Chọn employer để xem hồ sơ
                   </p>
                 </>
               )}
@@ -917,7 +1109,66 @@ export default function Messenger({ user, onNavigateHome }) {
                 </>
               )}
 
-              {user?.role === 'ADMIN' && navSection === 'freelancer' && (
+              {navSection === 'direct_chats' && (
+                <div className="flex flex-col">
+                  {directChats.length > 0 ? (
+                    <div>
+                      {directChats.map(chat => {
+                        const isSelected = activeDirectChat?.chatId === chat.chatId;
+                        const date = new Date(chat.updatedAt);
+                        const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <div 
+                            key={chat.chatId} 
+                            onClick={() => handleSelectDirectChat(chat)}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
+                              isSelected 
+                                ? 'bg-blue-50/50 border-l-blue-600' 
+                                : 'border-l-transparent hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="relative shrink-0">
+                              <img 
+                                src={chat.partnerAvatar || `https://ui-avatars.com/api/?name=${chat.partnerName || 'User'}&background=eff6ff&color=3b82f6`} 
+                                alt={chat.partnerName} 
+                                className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center mb-0.5">
+                                <h4 className={`font-extrabold truncate pr-2 text-sm ${chat.unreadCount > 0 ? 'text-blue-900' : 'text-slate-900'}`}>{chat.partnerName}</h4>
+                                <span className={`text-[10px] font-bold whitespace-nowrap ${chat.unreadCount > 0 ? 'text-blue-600' : 'text-slate-400'}`}>{formattedTime}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                                  chat.partnerRole === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                                }`}>{chat.partnerRole}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <p className={`text-xs truncate font-medium ${chat.unreadCount > 0 ? 'text-blue-700 font-bold' : 'text-slate-500'}`}>
+                                  {chat.lastMessage || 'Bắt đầu cuộc trò chuyện'}
+                                </p>
+                                {chat.unreadCount > 0 && (
+                                  <span className="w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center bg-blue-500 text-white shrink-0">
+                                    {chat.unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-slate-400">
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Chưa có tin nhắn riêng nào</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {navSection === 'freelancer' && (
                 <div className="flex flex-col">
                   {isUsersLoading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-slate-400 gap-2">
@@ -929,7 +1180,7 @@ export default function Messenger({ user, onNavigateHome }) {
                       {filteredSystemUsers.map(u => (
                         <div 
                           key={u.id}
-                          onClick={() => handleStartChatWithUser(u, 'FREELANCER')}
+                          onClick={() => handleViewProfile(u)}
                           className="flex gap-3.5 p-4 cursor-pointer hover:bg-slate-50 transition-all border-b border-slate-100"
                         >
                           <img 
@@ -954,7 +1205,7 @@ export default function Messenger({ user, onNavigateHome }) {
                 </div>
               )}
 
-              {user?.role === 'ADMIN' && navSection === 'employer' && (
+              {navSection === 'employer' && (
                 <div className="flex flex-col">
                   {isUsersLoading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-slate-400 gap-2">
@@ -966,7 +1217,7 @@ export default function Messenger({ user, onNavigateHome }) {
                       {filteredSystemUsers.map(u => (
                         <div 
                           key={u.id}
-                          onClick={() => handleStartChatWithUser(u, 'EMPLOYER')}
+                          onClick={() => handleViewProfile(u)}
                           className="flex gap-3.5 p-4 cursor-pointer hover:bg-slate-50 transition-all border-b border-slate-100"
                         >
                           <img 
@@ -991,47 +1242,81 @@ export default function Messenger({ user, onNavigateHome }) {
                 </div>
               )}
 
-              {user?.role !== 'ADMIN' && (
-                <div 
-                  onClick={() => {}}
-                  className="flex gap-3.5 p-4.5 bg-blue-50/30 border-l-4 border-blue-600 cursor-default"
-                >
-                  <div className="relative shrink-0">
-                    <img 
-                      src="https://ui-avatars.com/api/?name=Technical+Support&background=eff6ff&color=3b82f6" 
-                      alt="Technical Support" 
-                      className="w-12 h-12 rounded-xl object-cover border border-blue-200/80 shadow-sm"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>
+              {navSection === 'user_profile' && selectedProfile && (
+                <div className="flex flex-col h-full bg-white">
+                  <div className="flex items-center gap-3 p-4 border-b border-slate-100 shrink-0">
+                    <button 
+                      onClick={() => setNavSection(selectedProfile.role === 'FREELANCER' ? 'freelancer' : 'employer')}
+                      className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-500"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h3 className="font-bold text-slate-800">Hồ sơ chi tiết</h3>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <h4 className="font-extrabold text-slate-900 text-sm">Hỗ Trợ Kỹ Thuật LancerPro</h4>
-                      <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                        <span className="w-1 h-1 bg-emerald-500 rounded-full"></span> Online
-                      </span>
+
+                  {isProfileLoading ? (
+                    <div className="flex flex-col items-center justify-center p-12 text-slate-400 gap-3 flex-1">
+                      <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+                      <p className="text-sm font-semibold">Đang tải hồ sơ...</p>
                     </div>
-                    
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="bg-blue-100 text-blue-700 border border-blue-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        CHUYÊN VIÊN
+                  ) : profileDetails && (
+                    <div className="flex flex-col flex-1 overflow-y-auto p-6 items-center">
+                      <div className="relative mb-4 group">
+                        <img 
+                          src={profileDetails.avatarUrl || `https://ui-avatars.com/api/?name=${profileDetails.name || selectedProfile.name}&background=${selectedProfile.role === 'EMPLOYER' ? 'fdf2f8' : 'eff6ff'}&color=${selectedProfile.role === 'EMPLOYER' ? 'db2777' : '3b82f6'}&size=128`}
+                          alt={profileDetails.name || selectedProfile.name}
+                          className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg shrink-0 transition-transform group-hover:scale-105"
+                        />
+                        <div className={`absolute bottom-2 right-2 w-5 h-5 rounded-full border-2 border-white ${profileDetails.status === 'OFFLINE' ? 'bg-slate-400' : 'bg-emerald-500'}`}></div>
+                      </div>
+                      
+                      <h2 className="text-xl font-extrabold text-slate-900 mb-1">{profileDetails.name || selectedProfile.name}</h2>
+                      <p className="text-sm text-slate-500 mb-2 font-medium">{profileDetails.email || selectedProfile.email}</p>
+                      
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md border uppercase tracking-widest mb-6 ${
+                        selectedProfile.role === 'EMPLOYER' 
+                          ? 'bg-pink-50 text-pink-600 border-pink-100' 
+                          : 'bg-blue-50 text-blue-600 border-blue-100'
+                      }`}>
+                        {selectedProfile.role}
                       </span>
+
+                      <div className="w-full bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-100 shadow-sm">
+                        <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-slate-400" />
+                          Giới thiệu
+                        </h4>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          {profileDetails.bio || profileDetails.description || 'Chưa có thông tin giới thiệu chi tiết về người dùng này.'}
+                        </p>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          if (user?.role === 'ADMIN') {
+                            handleStartChatWithUser(selectedProfile, selectedProfile.role);
+                          } else {
+                            handleStartDirectChat(selectedProfile.id, selectedProfile.role);
+                          }
+                        }}
+                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        Chat ngay
+                      </button>
                     </div>
-                    
-                    <p className="text-xs text-slate-500 font-medium">
-                      Thời gian phản hồi thông thường: 1 - 2 phút
-                    </p>
-                  </div>
+                  )}
                 </div>
               )}
+
+
             </div>
           </div>
           <div className={`flex-1 flex h-full overflow-hidden ${
-            !activeTicket && 'hidden md:flex'
+            (!activeTicket && !activeDirectChat) && 'hidden md:flex'
           }`}>
             <div className="flex-1 flex flex-col bg-slate-50/50 h-full overflow-hidden relative">
-            {activeTicket ? (
+            {navSection === 'chat' && activeTicket ? (
               <>
                 <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                   <div 
@@ -1151,12 +1436,12 @@ export default function Messenger({ user, onNavigateHome }) {
                               </p>
                             )}
                             {msg.messageText && msg.messageText.trim() !== '' && !(msg.attachments && msg.attachments.length > 0 && (msg.messageText === '[Hình ảnh]' || msg.messageText === '[Tệp đính kèm]')) && (
-                              <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium ${
+                              <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
                                 isMe 
                                   ? 'bg-blue-600 text-white rounded-br-none border border-blue-500 shadow-blue-500/10' 
                                   : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none'
-                              }`}>
-                                {msg.messageText}
+                              } ${activeTab === 'deleted' ? 'blur-md opacity-50 select-none pointer-events-none' : ''}`}>
+                                {activeTab === 'deleted' ? 'Tin nhắn đã bị xóa' : msg.messageText}
                               </div>
                             )}
                             {msg.attachments && msg.attachments.length > 0 && (
@@ -1175,10 +1460,12 @@ export default function Messenger({ user, onNavigateHome }) {
                                         <img 
                                           src={att.fileUrl} 
                                           alt={att.fileName || "Image"} 
-                                          className="max-h-60 object-cover w-full group-hover:scale-[1.03] transition-all duration-300 rounded-2xl"
+                                          className={`max-h-60 object-cover w-full group-hover:scale-[1.03] transition-all duration-300 rounded-2xl ${activeTab === 'deleted' ? 'blur-md opacity-50' : ''}`}
                                         />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
-                                          <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full transition-all duration-300">Xem ảnh gốc</span>
+                                        <div className={`absolute inset-0 transition-all duration-300 flex items-center justify-center ${activeTab === 'deleted' ? 'bg-black/10 pointer-events-none' : 'bg-black/0 group-hover:bg-black/10'}`}>
+                                          <span className={`text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full transition-all duration-300 ${activeTab === 'deleted' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                            {activeTab === 'deleted' ? 'Nội dung đã bị xóa' : 'Xem ảnh gốc'}
+                                          </span>
                                         </div>
                                       </a>
                                     );
@@ -1194,7 +1481,7 @@ export default function Messenger({ user, onNavigateHome }) {
                                           isMe 
                                             ? 'bg-blue-700/35 border-blue-500/50 text-white hover:bg-blue-700/50' 
                                             : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
-                                        }`}
+                                        } ${activeTab === 'deleted' ? 'blur-md opacity-50 select-none pointer-events-none' : ''}`}
                                       >
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                                           isMe ? 'bg-blue-500/25 text-white' : 'bg-slate-100 text-slate-500'
@@ -1352,6 +1639,103 @@ export default function Messenger({ user, onNavigateHome }) {
                     })()}
                   </form>
                 )}
+              </>
+            ) : navSection === 'direct_chats' && activeDirectChat ? (
+              <>
+                <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setActiveDirectChat(null); setNavSection('direct_chats'); }}
+                      className="md:hidden p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <img 
+                      src={activeDirectChat.partnerAvatar || `https://ui-avatars.com/api/?name=${activeDirectChat.partnerName || 'User'}&background=eff6ff&color=3b82f6`} 
+                      alt="Partner" 
+                      className="w-10 h-10 rounded-xl object-cover border border-slate-200"
+                    />
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900 leading-tight">
+                        {activeDirectChat.partnerName}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                        {activeDirectChat.partnerRole === 'EMPLOYER' ? 'Nhà tuyển dụng' : 'Freelancer'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <MessageCircle className="w-12 h-12 mb-3 text-slate-300" />
+                      <p className="text-sm font-semibold">Chưa có tin nhắn nào</p>
+                      <p className="text-xs mt-1">Bắt đầu cuộc trò chuyện với {activeDirectChat.partnerName}</p>
+                    </div>
+                  ) : (
+                    messages.map((msg, index) => {
+                      const isMine = msg.senderId === user?.id && msg.senderRole === user?.role?.toUpperCase();
+                      return (
+                        <div key={index} className={`flex flex-col max-w-[80%] ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
+                          <div className={`p-3.5 rounded-2xl ${
+                            isMine 
+                              ? 'bg-blue-600 text-white rounded-br-sm shadow-md shadow-blue-500/20' 
+                              : 'bg-white text-slate-800 rounded-bl-sm border border-slate-200 shadow-sm'
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.messageText}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-bold mt-1.5 px-1">
+                            {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (inputText.trim() === '') return;
+                    
+                    const messageDto = {
+                      chatId: activeDirectChat.chatId,
+                      senderId: user.id,
+                      senderRole: user.role,
+                      messageText: inputText
+                    };
+                    
+                    if (stompClientRef.current && stompClientRef.current.connected) {
+                      stompClientRef.current.publish({
+                        destination: `/app/direct.chat.send`,
+                        body: JSON.stringify(messageDto)
+                      });
+                      setInputText('');
+                    } else {
+                      alert('Mất kết nối server, vui lòng thử lại sau.');
+                    }
+                  }}
+                  className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
+                >
+                  <input 
+                    type="text" 
+                    placeholder="Nhập tin nhắn..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={inputText.trim() === ''}
+                    className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                      inputText.trim() === '' ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
+                    }`}
+                  >
+                    <Send className="w-5 h-5 shrink-0" />
+                  </button>
+                </form>
               </>
             ) : (
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
