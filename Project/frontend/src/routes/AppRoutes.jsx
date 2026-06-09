@@ -36,6 +36,7 @@ export default function AppRoutes({
       <EmployerProfileSettings
         user={user}
         onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
       />
     );

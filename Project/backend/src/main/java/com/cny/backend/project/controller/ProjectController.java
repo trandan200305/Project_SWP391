@@ -69,4 +69,34 @@ public class ProjectController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/{projectId}")
+    public ResponseEntity<?> updateProject(@PathVariable Integer projectId, @RequestBody ProjectUpdateDto dto) {
+        try {
+            Project updated = projectService.updateProject(projectId, dto);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{projectId}/close")
+    public ResponseEntity<?> closeProject(@PathVariable Integer projectId) {
+        try {
+            Project closed = projectService.closeProject(projectId);
+            return ResponseEntity.ok(closed);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<?> deleteProject(@PathVariable Integer projectId) {
+        try {
+            Project deleted = projectService.deleteProject(projectId);
+            return ResponseEntity.ok(deleted);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
