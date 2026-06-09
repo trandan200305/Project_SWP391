@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Bookmark } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -303,6 +303,16 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
                   >
                     <MessageCircle className="w-4 h-4" /> Tin nhắn
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      if (onNavigate) onNavigate('your_jobs');
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
+                  >
+                    <Bookmark className="w-4 h-4" /> Công việc của bạn
                   </button>
 
                   {user.role === 'ADMIN' && (
