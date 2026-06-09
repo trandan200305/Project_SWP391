@@ -51,7 +51,7 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
   const [notice, setNotice] = useState(null);
 
   // Added states for projects
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'projects'
+  const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -378,11 +378,17 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
             <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h2 className="text-lg font-extrabold">
-                  {activeTab === 'profile' ? 'Company & Billing Details' : 'Tin tuyển dụng & Dự án'}
+                  {activeTab === 'company' 
+                    ? 'Thông tin công ty' 
+                    : activeTab === 'billing' 
+                    ? 'Thông tin thanh toán' 
+                    : 'Tin tuyển dụng & Dự án'}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  {activeTab === 'profile'
-                    ? 'Những thông tin này sẽ được dùng trong hồ sơ employer và thanh toán.'
+                  {activeTab === 'company'
+                    ? 'Cập nhật thông tin doanh nghiệp và người đại diện.'
+                    : activeTab === 'billing'
+                    ? 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.'
                     : 'Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án.'}
                 </p>
               </div>
@@ -402,15 +408,27 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
             <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
               <button
                 type="button"
-                onClick={() => { setActiveTab('profile'); setNotice(null); }}
+                onClick={() => { setActiveTab('company'); setNotice(null); }}
                 className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${
-                  activeTab === 'profile'
+                  activeTab === 'company'
                     ? 'border-cyan-500 text-cyan-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
               >
                 <Building2 className="w-4 h-4" />
-                Hồ sơ & Thanh toán
+                Thông tin công ty
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('billing'); setNotice(null); }}
+                className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${
+                  activeTab === 'billing'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <Banknote className="w-4 h-4" />
+                Thông tin thanh toán
               </button>
               <button
                 type="button"
@@ -432,8 +450,8 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
                 <Loader2 className="w-6 h-6 animate-spin mr-2" />
                 Đang tải dữ liệu...
               </div>
-            ) : activeTab === 'profile' ? (
-              /* Profile settings form */
+            ) : activeTab === 'company' ? (
+              /* Company info form */
               <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                 <FormSection icon={<Building2 className="w-5 h-5" />} title="Thông tin công ty">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -457,6 +475,20 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
                   </div>
                 </FormSection>
 
+                <div className="flex justify-end border-t border-slate-200 pt-5">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
+                  </button>
+                </div>
+              </form>
+            ) : activeTab === 'billing' ? (
+              /* Billing / Payment info form */
+              <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                 <FormSection icon={<Banknote className="w-5 h-5" />} title="Chi tiết thanh toán">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <TextInput label="Ngân hàng" value={form.billing.bankName} onChange={(value) => updateBilling('bankName', value)} placeholder="VD: Vietcombank" />
@@ -473,7 +505,7 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
                   </button>
                 </div>
               </form>
@@ -487,16 +519,6 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
                       <Briefcase className="w-5 h-5 text-slate-600" />
                       Danh sách tin tuyển dụng ({projects.length})
                     </h3>
-                    <button
-                      type="button"
-                      onClick={() => { 
-                        if (onNavigate) onNavigate('post_job');
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 text-white font-extrabold text-xs tracking-wide hover:bg-cyan-700 shadow-sm transition-all hover:scale-[1.02]"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Đăng tin mới
-                    </button>
                   </div>
 
                   {loadingProjects ? (
@@ -510,18 +532,9 @@ export default function EmployerProfileSettings({ user, onNavigateHome, onNaviga
                         <Briefcase className="w-6 h-6" />
                       </div>
                       <h4 className="font-bold text-slate-800 mb-1">Chưa có tin tuyển dụng nào</h4>
-                      <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
-                        Hãy ra Trang chủ hoặc bấm nút "Đăng dự án mới" trên thanh menu để kết nối với hàng nghìn freelancer tài năng.
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của bạn tại đây.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onNavigate) onNavigate('post_job');
-                        }}
-                        className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all shadow-md"
-                      >
-                        Đăng dự án ngay
-                      </button>
                     </div>
                   ) : (
                     /* Project Cards Grid */
