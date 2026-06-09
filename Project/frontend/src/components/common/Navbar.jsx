@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle, Building2 } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Building2, Plus, Briefcase } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -245,11 +245,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               Tìm việc làm
             </a>
             <a 
-              href="#hire-freelancers" 
+              href="#post-job" 
               onClick={(e) => {
                 e.preventDefault();
                 if (onNavigate) {
-                  onNavigate('coming_soon');
+                  if (!user) {
+                    localStorage.setItem('redirect_after_login', 'post_job');
+                    onNavigate('login');
+                  } else if (user.role === 'EMPLOYER') {
+                    onNavigate('post_job');
+                  } else {
+                    alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                  }
                 }
               }}
               className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200"
@@ -273,6 +280,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
 
         {}
         <div className="hidden md:flex items-center gap-5">
+          {user?.role === 'EMPLOYER' && (
+            <button
+              onClick={() => {
+                if (onNavigate) onNavigate('post_job');
+              }}
+              className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              Đăng dự án mới
+            </button>
+          )}
+
           {user ? (
             <div className="relative">
               <div 
@@ -306,6 +325,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email || user.name}</p>
                   </div>
                   
+                  {user?.role === 'EMPLOYER' && (
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate('post_job');
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
+                    >
+                      <Plus className="w-4 h-4" /> Đăng dự án mới
+                    </button>
+                  )}
+
                   <button 
                     onClick={() => {
                       setShowProfileMenu(false);
@@ -410,11 +441,20 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             Tìm việc làm
           </a>
           <a 
-            href="#hire-freelancers" 
+            href="#post-job" 
             onClick={(e) => {
               e.preventDefault();
               setIsOpen(false);
-              if (onNavigate) onNavigate('coming_soon');
+              if (onNavigate) {
+                if (!user) {
+                  localStorage.setItem('redirect_after_login', 'post_job');
+                  onNavigate('login');
+                } else if (user.role === 'EMPLOYER') {
+                  onNavigate('post_job');
+                } else {
+                  alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                }
+              }
             }}
             className="font-medium text-lg text-muted py-2 border-b border-muted-light/30"
           >
@@ -443,15 +483,26 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           )}
 
           {user && user.role === 'EMPLOYER' && (
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                if (onNavigate) onNavigate('employer_profile');
-              }}
-              className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              <Building2 className="w-4 h-4" /> Thông tin công ty & thanh toán
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigate) onNavigate('post_job');
+                }}
+                className="w-full text-center bg-secondary hover:bg-secondary-dark text-white py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-md mb-2"
+              >
+                <Plus className="w-4 h-4" /> Đăng dự án mới
+              </button>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigate) onNavigate('employer_profile');
+                }}
+                className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Building2 className="w-4 h-4" /> Thông tin công ty & thanh toán
+              </button>
+            </>
           )}
 
           {user && (

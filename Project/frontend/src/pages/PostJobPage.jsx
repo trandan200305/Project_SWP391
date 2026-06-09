@@ -116,8 +116,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             Quay lại trang chủ
           </button>
           
-          <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-150 px-3 py-1 rounded-full text-indigo-700">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-650" />
+          <div className="flex items-center gap-1.5 bg-secondary-light border border-secondary/20 px-3 py-1 rounded-full text-secondary-dark">
+            <Sparkles className="w-3.5 h-3.5 text-secondary" />
             <span className="text-xs font-bold">Employer Workspace</span>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-xl shadow-slate-100">
           <div className="border-b border-slate-100 pb-6 mb-8">
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-indigo-600" />
+              <Briefcase className="w-8 h-8 text-secondary" />
               Đăng tin tuyển dụng mới
             </h1>
             <p className="text-sm text-slate-500 mt-2">
@@ -156,7 +156,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                 value={newProject.title}
                 onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="VD: Thiết kế website bán hàng chuẩn SEO chuyên nghiệp"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
               />
             </label>
 
@@ -170,7 +170,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   required
                   value={newProject.categoryId}
                   onChange={(e) => setNewProject(prev => ({ ...prev, categoryId: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-850 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-850 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                 >
                   <option value="">-- Chọn danh mục phù hợp --</option>
                   {categories.map((cat) => (
@@ -189,12 +189,12 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   onClick={() => setNewProject(prev => ({ ...prev, projectType: 'FIXED' }))}
                   className={`p-4 rounded-2xl border text-left transition-all ${
                     newProject.projectType === 'FIXED'
-                      ? 'border-indigo-550 bg-indigo-50/25 ring-2 ring-indigo-500/10'
+                      ? 'border-secondary bg-secondary-light/25 ring-2 ring-secondary/10'
                       : 'border-slate-200 bg-slate-50/30 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Coins className={`w-4 h-4 ${newProject.projectType === 'FIXED' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                    <Coins className={`w-4 h-4 ${newProject.projectType === 'FIXED' ? 'text-secondary-dark' : 'text-slate-400'}`} />
                     <span className="text-xs font-extrabold text-slate-900">Chi phí cố định</span>
                   </div>
                   <span className="text-[10.5px] font-medium text-slate-500 block leading-relaxed">Phù hợp với dự án có yêu cầu cụ thể rõ ràng và chi phí trọn gói.</span>
@@ -205,12 +205,12 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   onClick={() => setNewProject(prev => ({ ...prev, projectType: 'RANGE' }))}
                   className={`p-4 rounded-2xl border text-left transition-all ${
                     newProject.projectType === 'RANGE'
-                      ? 'border-indigo-550 bg-indigo-50/25 ring-2 ring-indigo-500/10'
+                      ? 'border-secondary bg-secondary-light/25 ring-2 ring-secondary/10'
                       : 'border-slate-200 bg-slate-50/30 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <ArrowLeftRight className={`w-4 h-4 ${newProject.projectType === 'RANGE' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                    <ArrowLeftRight className={`w-4 h-4 ${newProject.projectType === 'RANGE' ? 'text-secondary-dark' : 'text-slate-400'}`} />
                     <span className="text-xs font-extrabold text-slate-900">Khoảng ngân sách</span>
                   </div>
                   <span className="text-[10.5px] font-medium text-slate-500 block leading-relaxed">Thương lượng trực tiếp để nhận báo giá phù hợp nhất từ Freelancer.</span>
@@ -228,7 +228,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   value={newProject.budgetFixed}
                   onChange={(e) => setNewProject(prev => ({ ...prev, budgetFixed: e.target.value }))}
                   placeholder="VD: 5000000 (Để trống nếu muốn tự thỏa thuận)"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                 />
               </label>
             ) : (
@@ -241,7 +241,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                     value={newProject.budgetMin}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMin: e.target.value }))}
                     placeholder="VD: 2000000"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>
                 <label className="block">
@@ -252,7 +252,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                     value={newProject.budgetMax}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMax: e.target.value }))}
                     placeholder="VD: 10000000"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>
               </div>
@@ -268,7 +268,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   min={new Date().toISOString().split('T')[0]}
                   value={newProject.deadline}
                   onChange={(e) => setNewProject(prev => ({ ...prev, deadline: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-850 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-850 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                 />
               </div>
             </label>
@@ -282,23 +282,22 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                 value={newProject.description}
                 onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Mô tả cụ thể dự án, danh sách các công việc cần làm, yêu cầu kỹ năng đối với Freelancer và kết quả bàn giao mong muốn..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 resize-none leading-relaxed"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10 resize-none leading-relaxed"
               />
             </label>
-
             {/* Buttons */}
             <div className="flex justify-end gap-3 border-t border-slate-100 pt-6 mt-8">
               <button
                 type="button"
                 onClick={onNavigateHome}
-                className="px-6 py-3 rounded-xl border border-slate-200 font-bold text-sm text-slate-650 hover:bg-slate-50 active:scale-98 transition-all"
+                className="px-6 py-3 rounded-xl border border-slate-200 font-bold text-sm text-slate-600 hover:bg-slate-50 active:scale-98 transition-all"
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
                 disabled={postingProject}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-650 text-white font-extrabold text-sm hover:bg-indigo-700 disabled:opacity-70 shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-secondary hover:bg-secondary-dark text-white font-extrabold text-sm disabled:opacity-70 shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 {postingProject ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {postingProject ? 'Đang gửi...' : 'Đăng tin ngay'}
