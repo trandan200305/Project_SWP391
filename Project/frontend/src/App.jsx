@@ -212,6 +212,11 @@ export default function App() {
     setUser(null);
     setCurrentPage('home');
   };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard', 'employer_profile'].includes(currentPage);
 
   const routesContent = (

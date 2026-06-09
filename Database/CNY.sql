@@ -6,11 +6,17 @@
 
 -- 1. AUTOMATIC DATABASE SETUP
 -- Checks if database 'CNY' exists; if not, creates it automatically.
-drop database CNY
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'CNY')
+USE master;
+GO
+
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'CNY')
 BEGIN
-    CREATE DATABASE CNY;
+    ALTER DATABASE CNY SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE CNY;
 END
+GO
+
+CREATE DATABASE CNY;
 GO
 
 USE CNY;

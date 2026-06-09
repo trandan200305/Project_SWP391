@@ -71,6 +71,10 @@ public class DataSeeder implements CommandLineRunner {
             seedCategories();
         }
 
+        if (adminRepository.count() == 0) {
+            seedAdminOnly();
+        }
+
         if (employerRepository.count() == 0 && freelancerRepository.count() == 0) {
             seedActors();
         }
@@ -80,6 +84,27 @@ public class DataSeeder implements CommandLineRunner {
         }
         
         seedAdminEntities();
+    }
+
+    private void seedAdminOnly() {
+        Admin admin = Admin.builder()
+                .email("admin@lancerpro.com")
+                .passwordHash(passwordEncoder.encode("123456"))
+                .displayName("Hệ Thống Admin")
+                .fullName("Administrator LancerPro")
+                .phone("0911223344")
+                .avatarUrl("https://ui-avatars.com/api/?name=Admin")
+                .status("ACTIVE")
+                .emailVerified(true)
+                .googleId("google_admin_mock")
+                .language("vi")
+                .timezone("Asia/Ho_Chi_Minh")
+                .adminLevel("SUPER_ADMIN")
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        adminRepository.save(admin);
     }
 
     private void seedCategories() {
@@ -99,26 +124,6 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedActors() {
-        
-        Admin admin = Admin.builder()
-                .email("admin@lancerpro.com")
-                .passwordHash(passwordEncoder.encode("123456"))
-                .displayName("Hệ Thống Admin")
-                .fullName("Administrator LancerPro")
-                .phone("0911223344")
-                .avatarUrl("https://ui-avatars.com/api/?name=Admin")
-                .status("ACTIVE")
-                .emailVerified(true)
-                .googleId("google_admin_mock")
-                .language("vi")
-                .timezone("Asia/Ho_Chi_Minh")
-                .adminLevel("SUPER_ADMIN")
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-        adminRepository.save(admin);
-
         
         String[] names = {"Minh Anh", "Quang Huy", "Phương Linh", "Tùng Dương"};
         String[] emails = {"minhanh@gmail.com", "quanghuy@gmail.com", "phuonglinh@gmail.com", "tungduong@gmail.com"};
