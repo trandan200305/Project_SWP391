@@ -182,7 +182,7 @@ export default function App() {
     }
   };
   const handleNavigate = (page) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
       return;
@@ -191,13 +191,28 @@ export default function App() {
       setCurrentPage('coming_soon');
       return;
     }
+    if (page === 'post_job' && user?.role !== 'EMPLOYER') {
+      alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+      setCurrentPage('home');
+      return;
+    }
+    if (page === 'employer_profile' && user?.role !== 'EMPLOYER') {
+      setCurrentPage('home');
+      return;
+    }
     setCurrentPage(page);
   };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setSuspended(null);
-    setCurrentPage('home');
+    const redirectTo = localStorage.getItem('redirect_after_login');
+    localStorage.removeItem('redirect_after_login');
+    if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
+      setCurrentPage('post_job');
+    } else {
+      setCurrentPage('home');
+    }
   };
 
   const handleLogout = () => {
