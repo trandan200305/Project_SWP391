@@ -5,7 +5,7 @@ import {
   Search, Bell, UserCheck, AlertTriangle, CheckCircle2, Ban, 
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
-  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home
+  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -38,11 +38,26 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     displayName: '',
     fullName: '',
     phone: '',
-    department: '',
+    departmentId: '',
     specialization: '',
     managerId: ''
   });
   const [managersList, setManagersList] = useState([]);
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [departmentSessions, setDepartmentSessions] = useState([]);
+  const [departmentLogs, setDepartmentLogs] = useState([]);
+  const [showCreateDeptModal, setShowCreateDeptModal] = useState(false);
+  const [deptForm, setDeptForm] = useState({ name: '', code: '', description: '' });
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetMember, setTransferTargetMember] = useState(null);
+  const [transferForm, setTransferForm] = useState({ toDepartmentId: '', reason: '' });
+  const [departmentTransfers, setDepartmentTransfers] = useState([]);
+  const [deptDetailTab, setDeptDetailTab] = useState('sessions');
+  const [verificationTasksList, setVerificationTasksList] = useState([]);
+  const [selectedVerificationTask, setSelectedVerificationTask] = useState(null);
+  const [showSignoffModal, setShowSignoffModal] = useState(false);
+  const [signoffForm, setSignoffForm] = useState({ status: 'APPROVED', note: '', departmentCode: 'FIN' });
 
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -138,7 +153,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
     }
 
     setIsLoading(true);
-    adminApi.inviteStaffOrManager(createForm.email, createRole)
+    adminApi.inviteStaffOrManager(createForm.email, createRole, createForm.departmentId, createForm.managerId)
       .then(data => {
         setIsLoading(false);
         if (data.success === false) {
@@ -152,7 +167,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             displayName: '',
             fullName: '',
             phone: '',
-            department: '',
+            departmentId: '',
             specialization: '',
             managerId: ''
           });
@@ -167,7 +182,122 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       });
   };
 
-  
+  const handleSelectDepartment = (dept) => {
+    setSelectedDepartment(dept);
+    if (dept) {
+      adminApi.getDepartmentSessions(dept.departmentId)
+        .then(data => setDepartmentSessions(Array.isArray(data) ? data : []))
+        .catch(err => console.error(err));
+      adminApi.getDepartmentLogs(dept.departmentId)
+        .then(data => setDepartmentLogs(Array.isArray(data) ? data : []))
+        .catch(err => console.error(err));
+      adminApi.getDepartmentTransfers(dept.departmentId)
+        .then(data => setDepartmentTransfers(Array.isArray(data) ? data : []))
+        .catch(err => console.error(err));
+    } else {
+      setDepartmentSessions([]);
+      setDepartmentLogs([]);
+      setDepartmentTransfers([]);
+    }
+  };
+
+  const handleCreateDepartment = (e) => {
+    e.preventDefault();
+    if (!deptForm.name.trim() || !deptForm.code.trim()) {
+      showToast('Vui lòng nhập đầy đủ tên và mã khoa!', 'error');
+      return;
+    }
+    setIsLoading(true);
+    adminApi.createDepartment(deptForm)
+      .then(res => {
+        setIsLoading(false);
+        showToast('Tạo khoa/phòng ban mới thành công!', 'success');
+        setShowCreateDeptModal(false);
+        setDeptForm({ name: '', code: '', description: '' });
+        adminApi.getDepartments()
+          .then(data => { if (Array.isArray(data)) setDepartmentsList(data); });
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
+        showToast('Có lỗi xảy ra khi tạo khoa.', 'error');
+      });
+  };
+
+  const handleOpenTransferModal = (member) => {
+    setTransferTargetMember(member);
+    const currentDeptId = member.departmentId;
+    const firstOtherDept = departmentsList.find(d => d.departmentId !== currentDeptId);
+    setTransferForm({
+      toDepartmentId: firstOtherDept ? firstOtherDept.departmentId.toString() : '',
+      reason: ''
+    });
+    setShowTransferModal(true);
+  };
+
+  const handleExecuteTransfer = (e) => {
+    e.preventDefault();
+    if (!transferTargetMember || !transferForm.toDepartmentId) return;
+    
+    setIsLoading(true);
+    const payload = {
+      userType: transferTargetMember.role,
+      userId: transferTargetMember.id,
+      toDepartmentId: parseInt(transferForm.toDepartmentId, 10),
+      adminId: user ? user.id : 1,
+      reason: transferForm.reason
+    };
+    
+    adminApi.transferDepartmentMember(payload)
+      .then(res => {
+        setIsLoading(false);
+        if (res.success || res.transfer) {
+          showToast(res.message || 'Điều chuyển nhân sự thành công!', 'success');
+          setShowTransferModal(false);
+          // Refresh users list
+          adminApi.getUsers()
+            .then(data => { if (Array.isArray(data)) setUsers(data); });
+          // Refresh department details if one is selected
+          if (selectedDepartment) {
+            handleSelectDepartment(selectedDepartment);
+          }
+        } else {
+          showToast(res.message || 'Lỗi khi điều chuyển.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
+        showToast(err.response?.data?.message || 'Có lỗi xảy ra khi gọi API điều chuyển.', 'error');
+      });
+  };
+
+  const handleSubmitTaskSignoff = (e) => {
+    e.preventDefault();
+    if (!selectedVerificationTask) return;
+
+    setIsLoading(true);
+    adminApi.submitTaskSignoff(selectedVerificationTask.taskId, signoffForm, 'admin@lancerpro.com')
+      .then(res => {
+        setIsLoading(false);
+        if (res.success === false) {
+          showToast(res.message || 'Lỗi khi ký duyệt tác vụ.', 'error');
+        } else {
+          showToast(res.message || 'Ký duyệt tác vụ thành công!', 'success');
+          setShowSignoffModal(false);
+          setSelectedVerificationTask(null);
+          // Refresh list
+          adminApi.getVerificationTasks()
+            .then(data => { if (Array.isArray(data)) setVerificationTasksList(data); });
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
+        showToast('Có lỗi xảy ra khi ký duyệt.', 'error');
+      });
+  };
+
   const loadDashboardData = () => {
     setIsLoading(true);
     fetchStats(selectedPeriod);
@@ -196,7 +326,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   useEffect(() => {
     loadDashboardData();
     
-    if (activeTab === 'users') {
+    if (activeTab === 'users' || activeTab === 'departments') {
       setIsLoading(true);
       adminApi.getUsers()
         .then(data => {
@@ -207,6 +337,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       adminApi.getManagers()
         .then(data => { if (Array.isArray(data)) setManagersList(data); })
         .catch(err => console.error('Error managers:', err));
+      adminApi.getDepartments()
+        .then(data => { if (Array.isArray(data)) setDepartmentsList(data); })
+        .catch(err => console.error('Error departments:', err));
+      adminApi.getVerificationTasks()
+        .then(data => { if (Array.isArray(data)) setVerificationTasksList(data); })
+        .catch(err => console.error('Error verification tasks:', err));
     } else if (activeTab === 'moderation') {
       setIsLoading(true);
       adminApi.getPendingProjects()
@@ -570,6 +706,25 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               </div>
 
+              {/* Departments Tab */}
+              <div 
+                onClick={() => setActiveTab('departments')}
+                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
+                  activeTab === 'departments' 
+                    ? 'bg-white border border-slate-200 shadow-md' 
+                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
+                }`}
+              >
+                {activeTab === 'departments' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full shadow-sm"></div>}
+                <div className="w-10 h-10 rounded-[14px] bg-indigo-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'departments' ? 'text-indigo-600' : 'text-slate-800'}`}>Departments</p>
+                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'departments' ? 'text-indigo-500 font-medium' : 'text-slate-500'}`}>Quản lý khoa/phòng ban</p>
+                </div>
+              </div>
+
               {}
               <div 
                 onClick={() => setActiveTab('moderation')}
@@ -672,6 +827,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hệ thống Quản trị LancerPro</>}
               {activeTab === 'dashboard' && <><Settings className="w-6 h-6 text-blue-600" /> Báo cáo & Thống kê Tổng quan</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
+              {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
               {activeTab === 'moderation' && <><ShieldAlert className="w-6 h-6 text-emerald-600" /> Job Escrow Moderation</>}
               {activeTab === 'finance' && <><BadgeDollarSign className="w-6 h-6 text-amber-600" /> Liquidation & Finance Control</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
@@ -680,6 +836,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
               {activeTab === 'dashboard' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
+              {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
               {activeTab === 'moderation' && 'Approve or reject projects awaiting moderation.'}
               {activeTab === 'finance' && 'Supervise withdrawal requests and platform fees.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
@@ -1302,7 +1459,23 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
             
             const emailSuggestions = searchQuery.trim() !== '' ? users
-              .filter(u => u.email.toLowerCase().includes(searchQuery.toLowerCase()) && u.email.toLowerCase() !== searchQuery.toLowerCase())
+              .filter(u => {
+                if (u.role === 'FREELANCER') return false;
+                
+                const matchesRole = selectedRoleTab === 'ALL' 
+                  ? (u.role === 'EMPLOYER' || u.role === 'MANAGER' || u.role === 'STAFF')
+                  : (u.role === selectedRoleTab);
+                if (!matchesRole) return false;
+
+                const queryLower = searchQuery.toLowerCase();
+                const matchesEmail = u.email.toLowerCase().includes(queryLower);
+                const matchesName = u.name && u.name.toLowerCase().includes(queryLower);
+                
+                const isExactMatch = u.email.toLowerCase() === queryLower ||
+                                     (u.name && u.name.toLowerCase() === queryLower);
+
+                return (matchesEmail || matchesName) && !isExactMatch;
+              })
               .map(u => u.email)
               .filter((value, index, self) => self.indexOf(value) === index)
               .slice(0, 5) : [];
@@ -1696,11 +1869,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     animation: ios-bounce 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                   }
 
-                  /* FANCY RADIO INPUTS TABS */
+                  /* PREMIUM SLIDING RADIO INPUTS TABS */
+                  /* USER CHOSEN RADIO INPUTS TABS WITH PARTICLE EFFECT */
                   .radio-inputs {
                     position: relative;
                     display: flex;
-                    flex-wrap: nowrap;
+                    flex-wrap: wrap;
                     border-radius: 1rem;
                     background: linear-gradient(145deg, #e6e6e6, #ffffff);
                     box-sizing: border-box;
@@ -1733,7 +1907,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     border: none;
                     padding: 0.5rem 0;
                     color: #2d3748;
-                    font-weight: 700;
+                    font-weight: 600;
                     font-family: inherit;
                     background: linear-gradient(145deg, #ffffff, #e6e6e6);
                     box-shadow:
@@ -1741,12 +1915,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                       -3px -3px 6px rgba(255, 255, 255, 0.7);
                     transition: all 0.2s ease;
                     overflow: hidden;
+                    height: 34px;
                   }
 
                   .radio-inputs .radio input:checked + .name {
                     background: linear-gradient(145deg, #3b82f6, #2563eb);
                     color: white;
-                    font-weight: 800;
+                    font-weight: 600;
                     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
                     box-shadow:
                       inset 2px 2px 5px rgba(0, 0, 0, 0.2),
@@ -2048,11 +2223,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                             ))}
                           </div>
                         )}
-                        {showSuggestions && searchQuery && emailSuggestions.length === 0 && (
-                          <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-150 rounded-xl shadow-lg z-50 p-3 text-center text-slate-400 text-body-xs font-medium">
-                            Không có gợi ý email khớp
-                          </div>
-                        )}
+                        {/* Suggestion block removed when no matches exist */}
                       </div>
 
                       {/* Nút xuất báo cáo Excel/PDF (bên trái) */}
@@ -2333,10 +2504,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           <th className="px-3 py-3.5 pl-5 w-[80px]">ID</th>
                           <th className="px-3 py-3.5 w-[140px]">Tên hiển thị</th>
                           <th className="px-3 py-3.5 w-[180px]">Email</th>
-                          <th className="px-3 py-3.5 w-[95px]">Vai trò</th>
-                          <th className="px-3 py-3.5 w-[95px]">Trạng thái</th>
+                          <th className="px-3 py-3.5 w-[80px]">Vai trò</th>
+                          <th className="px-3 py-3.5 w-[90px]">Trạng thái</th>
                           <th className="px-3 py-3.5 w-[170px]">Đăng nhập cuối</th>
-                          <th className="px-3 py-3.5 w-[100px]">Ngày gia nhập</th>
+                          <th className="px-3 py-3.5 w-[120px]">Ngày gia nhập</th>
                           <th className="px-3 py-3.5 text-center w-[140px]">Hành động bảo mật</th>
                         </tr>
                       </thead>
@@ -2362,7 +2533,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                               </td>
                               <td className="px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[140px]" title={user.name}>{user.name}</td>
                               <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[180px]" title={user.email}>{user.email}</td>
-                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[95px]">
+                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[80px]">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
                                   user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                                   user.role === 'EMPLOYER' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
@@ -2372,7 +2543,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   {user.role}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 whitespace-nowrap w-[95px]">
+                              <td className="px-3 py-3 whitespace-nowrap w-[90px]">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                   user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                                   user.status === 'LOCKED' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
@@ -2414,7 +2585,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   })()}
                                 </div>
                               </td>
-                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[100px]">{user.joined}</td>
+                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[120px]">{user.joined}</td>
                               <td className="px-3 py-3 text-center whitespace-nowrap w-[140px]">
                                 <div className="flex justify-center gap-1">
                                   {user.isProtectedAdmin ? (
@@ -2427,23 +2598,31 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                         onClick={() => { setActiveUserForAction(user); setActionType('lock'); }}
                                         className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Lock className="w-3.5 h-3.5" /> Khóa
+                                        <Lock className="w-3.5 h-3.5" /> Tạm ngưng
                                       </button>
                                       <button 
-                                        onClick={() => { setActiveUserForAction(user); setActionType('ban'); }}
+                                        onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
                                         className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Ban className="w-3.5 h-3.5" /> Cấm
+                                        <Ban className="w-3.5 h-3.5" /> Xóa quyền
                                       </button>
                                     </>
-                                  ) : (
+                                  ) : (<>
                                     <button 
                                       onClick={() => handleUserStatusChange(user.id, user.role, 'ACTIVE')}
                                       className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                     >
-                                      <Unlock className="w-3.5 h-3.5" /> Mở khóa
+                                      <Unlock className="w-3.5 h-3.5" /> Kích hoạt
                                     </button>
-                                  )}
+                                    {user.status !== 'DELETED' && (
+                                      <button 
+                                        onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
+                                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm ml-1"
+                                      >
+                                        <Ban className="w-3.5 h-3.5" /> Xóa quyền
+                                      </button>
+                                    )}
+                                  </>)}
                                 </div>
                               </td>
                             </tr>
@@ -2778,6 +2957,428 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </div>
           )}
 
+          {/* Departments Management Panel */}
+          {activeTab === 'departments' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              
+              {/* If no department is selected, display list of departments */}
+              {!selectedDepartment ? (
+                <div className="space-y-6">
+                  {/* Summary Bar */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h3 className="font-bold text-primary text-[18px]">Danh Sách Khoa / Phòng Ban</h3>
+                      <p className="text-body-sm text-slate-500 mt-1">Danh sách phòng ban trực thuộc hệ thống. Mỗi phòng ban hỗ trợ tối đa 5 Managers và bắt buộc có tối thiểu 1 Manager & 1 Staff.</p>
+                    </div>
+                  </div>
+
+                  {/* Grid of Department cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {departmentsList.map(dept => {
+                      // Dynamically calculate members
+                      const deptUsers = users.filter(u => u.departmentId === dept.departmentId && !u.isDeleted);
+                      const managersCount = deptUsers.filter(u => u.role === 'MANAGER').length;
+                      const staffCount = deptUsers.filter(u => u.role === 'STAFF').length;
+
+                      return (
+                        <div 
+                          key={dept.departmentId}
+                          className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between"
+                        >
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-start">
+                              <span className="bg-indigo-50 text-indigo-700 font-extrabold text-[12px] px-3 py-1 rounded-lg">
+                                {dept.code}
+                              </span>
+                              <div className="flex flex-col items-end text-slate-500 font-bold text-[12px] gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-purple-500" />
+                                  <span>{managersCount}/5 Managers</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-blue-500" />
+                                  <span>{staffCount} Staffs</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="font-display font-bold text-lg text-primary">{dept.name}</h4>
+                              <p className="text-body-sm text-slate-500 mt-2 line-clamp-2 min-h-[40px]">
+                                {dept.description || 'Chưa có mô tả chi tiết cho khoa này.'}
+                              </p>
+                            </div>
+
+                            {/* Warnings */}
+                            <div className="space-y-1.5 pt-2">
+                              {managersCount === 1 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Cảnh báo: Chỉ còn 1 Manager!</span>
+                                </div>
+                              )}
+                              {staffCount === 1 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Cảnh báo: Chỉ còn 1 Staff!</span>
+                                </div>
+                              )}
+                              {managersCount === 0 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 px-2 py-1 rounded-lg font-semibold animate-pulse">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Lỗi: Thiếu Manager! (Cần tối thiểu 1)</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-6 border-t border-slate-100 mt-6 flex justify-between items-center">
+                            <span className="text-[12px] text-slate-400">ID Khoa: {dept.departmentId}</span>
+                            <button
+                              onClick={() => handleSelectDepartment(dept)}
+                              className="text-indigo-600 hover:text-indigo-700 font-bold text-body-sm flex items-center gap-1 group"
+                            >
+                              Xem chi tiết <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* LIÊN KẾT KIỂM CHỨNG LIÊN KHOA (CROSS-DEPARTMENT VERIFICATION) */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 mt-8">
+                    <div>
+                      <h3 className="font-bold text-primary text-[18px] flex items-center gap-2">
+                        <ShieldAlert className="w-5 h-5 text-indigo-650" /> Liên Kết Kiểm Chứng Liên Khoa
+                      </h3>
+                      <p className="text-body-sm text-slate-500 mt-1">
+                        Quy trình phê duyệt liên kết giữa các khoa chuyên môn đối với các giao dịch tài chính và yêu cầu nhạy cảm.
+                      </p>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider">
+                            <th className="p-4">Tác Vụ</th>
+                            <th className="p-4">Loại Tác Vụ</th>
+                            <th className="p-4">Trạng Thái</th>
+                            <th className="p-4">Tiến Độ Ký Duyệt</th>
+                            <th className="p-4 text-center">Hành Động</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {verificationTasksList.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="text-center text-slate-400 py-8 text-body-sm">
+                                Không có tác vụ kiểm chứng liên khoa nào đang chờ duyệt.
+                              </td>
+                            </tr>
+                          ) : (
+                            verificationTasksList.map(task => {
+                              const reqDepts = task.requiredDepartments.split(',');
+                              return (
+                                <tr key={task.taskId} className="hover:bg-slate-55 transition-all duration-200 text-body-sm">
+                                  <td className="p-4">
+                                    <div className="font-bold text-slate-800">{task.title}</div>
+                                    <div className="text-[12px] text-slate-400 mt-0.5">{task.description}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono mt-1">ID Tác vụ: #{task.taskId} | Ref ID: #{task.referenceId}</div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="font-mono text-[11.5px] bg-slate-150 text-slate-700 px-2 py-0.5 rounded font-bold">
+                                      {task.taskType}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full ${
+                                      task.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
+                                      task.status === 'REJECTED' ? 'bg-rose-50 text-rose-700' :
+                                      'bg-amber-50 text-amber-700'
+                                    }`}>
+                                      {task.status === 'APPROVED' ? 'Đã thông qua' :
+                                       task.status === 'REJECTED' ? 'Bị từ chối' : 'Đang xử lý'}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="flex flex-wrap gap-2.5">
+                                      {reqDepts.map(dept => {
+                                        const signoff = task.signoffs?.find(s => s.departmentCode === dept);
+                                        let badgeColor = 'bg-slate-50 text-slate-500 border border-slate-200';
+                                        let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
+                                        let statusText = 'Chờ duyệt';
+                                        
+                                        if (signoff) {
+                                          if (signoff.status === 'APPROVED') {
+                                            badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                                            icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
+                                            statusText = `Duyệt bởi ${signoff.verifierEmail}`;
+                                          } else {
+                                            badgeColor = 'bg-rose-50 text-rose-700 border border-rose-100';
+                                            icon = <XCircle className="w-3.5 h-3.5 text-rose-600" />;
+                                            statusText = `Từ chối bởi ${signoff.verifierEmail}`;
+                                          }
+                                        }
+
+                                        return (
+                                          <div 
+                                            key={dept} 
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold ${badgeColor}`}
+                                            title={statusText}
+                                          >
+                                            {icon}
+                                            <span>{dept}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    {task.status === 'PENDING' ? (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedVerificationTask(task);
+                                          setShowSignoffModal(true);
+                                        }}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-bold px-4 py-2 rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm"
+                                      >
+                                        Ký duyệt
+                                      </button>
+                                    ) : (
+                                      <span className="text-slate-400 text-[12px] font-medium">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Detail View of selected Department */
+                <div className="space-y-6">
+                  {/* Back Navigation Bar */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => handleSelectDepartment(null)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all duration-200 active:scale-95"
+                        title="Quay lại danh sách"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-primary text-[20px]">{selectedDepartment.name}</h3>
+                          <span className="bg-indigo-100 text-indigo-700 font-extrabold text-[12px] px-2.5 py-0.5 rounded-md">
+                            {selectedDepartment.code}
+                          </span>
+                        </div>
+                        <p className="text-body-sm text-slate-500 mt-1">{selectedDepartment.description || 'Không có mô tả.'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => handleSelectDepartment(selectedDepartment)}
+                        className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 p-2.5 rounded-xl text-body-sm font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Làm mới dữ liệu
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3-Column Layout: Members, Sessions/Logs Toggle, Transfer History */}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    
+                    {/* Column 1: Members */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-indigo-650" /> Thành Viên Khoa ({users.filter(u => u.departmentId === selectedDepartment.departmentId).length})
+                      </h4>
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {users.filter(u => u.departmentId === selectedDepartment.departmentId).length === 0 ? (
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Khoa này chưa có Manager hay Staff nào.</p>
+                        ) : (
+                          users.filter(u => u.departmentId === selectedDepartment.departmentId).map(member => (
+                            <div key={member.id} className="py-3.5 flex justify-between items-start gap-4">
+                              <div className="min-w-0 space-y-1">
+                                <p className="font-bold text-slate-800 text-body-sm truncate">{member.name}</p>
+                                <p className="text-[12px] text-slate-400 truncate">{member.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                    member.role === 'MANAGER' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {member.role}
+                                  </span>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                    member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' :
+                                    member.status === 'INVITED' ? 'bg-amber-50 text-amber-700' :
+                                    'bg-rose-50 text-rose-700'
+                                  }`}>
+                                    {member.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">Gia nhập: {member.joined || 'N/A'}</span>
+                                <button
+                                  onClick={() => handleOpenTransferModal(member)}
+                                  className="text-indigo-600 hover:text-white hover:bg-indigo-600 text-[11px] font-bold border border-indigo-200 hover:border-indigo-600 px-2.5 py-1 rounded-lg transition-all active:scale-95 flex items-center gap-1 bg-indigo-50/50 shadow-sm"
+                                >
+                                  <RefreshCw className="w-3 h-3" /> Điều chuyển
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Column 2: Toggleable Sessions & Logs */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setDeptDetailTab('sessions')}
+                            className={`px-3 py-1 rounded-xl text-body-sm font-bold transition-all ${
+                              deptDetailTab === 'sessions' 
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            Phiên Làm Việc ({departmentSessions.length})
+                          </button>
+                          <button
+                            onClick={() => setDeptDetailTab('logs')}
+                            className={`px-3 py-1 rounded-xl text-body-sm font-bold transition-all ${
+                              deptDetailTab === 'logs' 
+                                ? 'bg-amber-50 text-amber-700 border border-amber-100 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            Nhật Ký Thao Tác ({departmentLogs.length})
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {deptDetailTab === 'sessions' ? (
+                          departmentSessions.length === 0 ? (
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có phiên làm việc nào được ghi nhận.</p>
+                          ) : (
+                            departmentSessions.map(session => (
+                              <div key={session.sessionId} className="py-3.5 space-y-1">
+                                <div className="flex justify-between items-start gap-4">
+                                  <span className="font-bold text-slate-800 text-body-sm truncate">{session.userEmail}</span>
+                                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                    session.userRole === 'MANAGER' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {session.userRole}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[12px] text-slate-500">
+                                  <span>IP: <span className="font-mono">{session.ipAddress || 'N/A'}</span></span>
+                                  <span className={`font-bold ${session.status === 'ACTIVE' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                    {session.status}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 flex flex-col gap-0.5 pt-1">
+                                  <div>Bắt đầu: {new Date(session.loginAt).toLocaleString('vi-VN')}</div>
+                                  {session.logoutAt && <div>Kết thúc: {new Date(session.logoutAt).toLocaleString('vi-VN')}</div>}
+                                </div>
+                              </div>
+                            ))
+                          )
+                        ) : (
+                          departmentLogs.length === 0 ? (
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có nhật ký hoạt động nào.</p>
+                          ) : (
+                            departmentLogs.map(log => (
+                              <div key={log.logId} className="py-3.5 space-y-1.5">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{log.userEmail}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Role: {log.userRole}</span>
+                                  </div>
+                                  <span className="text-[11px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded">
+                                    {log.action}
+                                  </span>
+                                </div>
+                                <p className="text-body-sm text-slate-650 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                  {log.description}
+                                </p>
+                                <div className="text-[10px] text-slate-400 text-right">
+                                  {new Date(log.timestamp).toLocaleString('vi-VN')}
+                                </div>
+                              </div>
+                            ))
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Column 3: Transfer History */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
+                        <History className="w-5 h-5 text-indigo-650" /> Lịch Sử Điều Chuyển ({departmentTransfers.length})
+                      </h4>
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {departmentTransfers.length === 0 ? (
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có lịch sử điều chuyển nào.</p>
+                        ) : (
+                          departmentTransfers.map(transfer => {
+                            const isIncoming = transfer.toDepartment.departmentId === selectedDepartment.departmentId;
+                            return (
+                              <div key={transfer.transferId} className="py-3.5 space-y-1.5">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{transfer.userDisplayName || 'Không rõ tên'}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono block truncate">{transfer.userEmail}</span>
+                                    <span className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                      {transfer.userType}
+                                    </span>
+                                  </div>
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                    isIncoming 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                      : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                  }`}>
+                                    {isIncoming ? 'Nhận vào' : 'Chuyển đi'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700 bg-slate-50 px-2 py-1 rounded-md">
+                                  <span>{transfer.fromDepartment.code}</span>
+                                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                                  <span>{transfer.toDepartment.code}</span>
+                                </div>
+
+                                {transfer.reason && (
+                                  <p className="text-body-sm text-slate-600 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 italic">
+                                    "{transfer.reason}"
+                                  </p>
+                                )}
+
+                                <div className="text-[10px] text-slate-400 text-right">
+                                  {new Date(transfer.transferredAt).toLocaleString('vi-VN')}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
         </div>
 
       </main>
@@ -2836,7 +3437,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               actionType === 'lock' ? 'text-amber-700' : 'text-rose-700'
             }`}>
               {actionType === 'lock' ? <Lock className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
-              {actionType === 'lock' ? 'Khóa Tài Khoản Người Dùng' : 'Cấm Tài Khoản Vĩnh Viễn'}
+              {actionType === 'lock' ? 'Tạm Ngưng Tài Khoản Người Dùng' : actionType === 'delete_gmail' ? 'Xóa Quyền Gmail Khỏi Hệ Thống' : 'Cấm Tài Khoản Vĩnh Viễn'}
             </h4>
             <button 
               onClick={() => { setActiveUserForAction(null); setBanReasons([]); setAdminPin(''); }}
@@ -2905,14 +3506,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               </button>
               <button 
                 disabled={banReasons.length === 0 || !adminPin.trim()}
-                onClick={() => handleUserStatusChange(activeUserForAction?.id, activeUserForAction?.role, actionType === 'lock' ? 'LOCKED' : 'BANNED')}
+                onClick={() => handleUserStatusChange(activeUserForAction?.id, activeUserForAction?.role, actionType === 'lock' ? 'LOCKED' : actionType === 'delete_gmail' ? 'DELETED' : 'BANNED')}
                 className={`px-6 py-2.5 rounded-xl font-bold text-body-sm text-white transition-all duration-300 ${
                   actionType === 'lock'
                     ? (banReasons.length === 0 || !adminPin.trim() ? 'bg-amber-400 cursor-not-allowed opacity-70' : 'bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/10 hover:shadow-amber-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95')
                     : (banReasons.length === 0 || !adminPin.trim() ? 'bg-rose-400 cursor-not-allowed opacity-70' : 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/10 hover:shadow-rose-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95')
                 }`}
               >
-                Xác nhận {actionType === 'lock' ? 'Khóa' : 'Cấm'}
+                Xác nhận {actionType === 'lock' ? 'Tạm ngưng' : actionType === 'delete_gmail' ? 'Xóa quyền Gmail' : 'Cấm'}
               </button>
             </div>
           </div>
@@ -2981,6 +3582,24 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               </p>
             </div>
 
+            {/* Khoa/Phòng ban Selection */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Khoa / Phòng Ban <span className="text-rose-500">*</span></label>
+              <select
+                required
+                className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium bg-white"
+                value={createForm.departmentId}
+                onChange={e => setCreateForm({ ...createForm, departmentId: e.target.value })}
+              >
+                <option value="">-- Chọn Khoa/Phòng Ban --</option>
+                {departmentsList.map(d => (
+                  <option key={d.departmentId} value={d.departmentId}>{d.name} ({d.code})</option>
+                ))}
+              </select>
+            </div>
+
+
+
             {/* Nút xác nhận */}
             <div className="flex gap-3 justify-end pt-3">
               <button 
@@ -3002,6 +3621,176 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       </div>
 
       {}
+      {/* MODAL ĐIỀU CHUYỂN NHÂN SỰ (TRANSFER PERSONNEL) */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showTransferModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${showTransferModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
+          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h4 className="font-bold text-primary text-lg flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-indigo-650" /> Điều Chuyển Phòng Ban
+            </h4>
+            <button 
+              onClick={() => setShowTransferModal(false)}
+              className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-all duration-200 hover:rotate-90 active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {transferTargetMember && (
+            <form onSubmit={handleExecuteTransfer} className="p-6 space-y-4">
+              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-indigo-500 uppercase block">Nhân viên cần chuyển</label>
+                  <span className="font-bold text-slate-800 text-body-sm">{transferTargetMember.name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Vai trò</label>
+                    <span className="font-semibold text-slate-600 text-body-xs">{transferTargetMember.role}</span>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Khoa hiện tại</label>
+                    <span className="font-bold text-slate-700 text-body-xs">
+                      {departmentsList.find(d => d.departmentId === transferTargetMember.departmentId)?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chọn khoa / phòng ban đích <span className="text-rose-500">*</span></label>
+                <select 
+                  required
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold"
+                  value={transferForm.toDepartmentId}
+                  onChange={e => setTransferForm({ ...transferForm, toDepartmentId: e.target.value })}
+                >
+                  {departmentsList
+                    .filter(d => d.departmentId !== transferTargetMember.departmentId)
+                    .map(d => (
+                      <option key={d.departmentId} value={d.departmentId}>
+                        {d.code} - {d.name}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Lý do điều chuyển <span className="text-rose-500">*</span></label>
+                <textarea 
+                  rows="3"
+                  required
+                  placeholder="Nhập lý do điều chuyển nhân viên này..." 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium resize-none"
+                  value={transferForm.reason}
+                  onChange={e => setTransferForm({ ...transferForm, reason: e.target.value })}
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-body-sm px-5 py-3 rounded-xl flex-grow transition-all duration-300 shadow-md shadow-indigo-650/15"
+                >
+                  Xác nhận điều chuyển
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowTransferModal(false)}
+                  className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 font-bold text-body-sm px-5 py-3 rounded-xl transition-all"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL KÝ DUYỆT TÁC VỤ LIÊN KHOA (SIGNOFF MODAL) */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showSignoffModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${showSignoffModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
+          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h4 className="font-bold text-primary text-lg flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-indigo-650" /> Ký Duyệt Tác Vụ Liên Khoa
+            </h4>
+            <button 
+              onClick={() => setShowSignoffModal(false)}
+              className="text-slate-400 hover:text-slate-650 p-2 rounded-full hover:bg-slate-200 transition-all duration-200 hover:rotate-90 active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {selectedVerificationTask && (
+            <form onSubmit={handleSubmitTaskSignoff} className="p-6 space-y-4">
+              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-1">
+                <p className="text-[11px] font-extrabold text-indigo-700 uppercase">Thông tin tác vụ gốc</p>
+                <h5 className="font-bold text-slate-800 text-body-sm">{selectedVerificationTask.title}</h5>
+                <p className="text-[12px] text-slate-500 leading-relaxed">{selectedVerificationTask.description}</p>
+                <div className="text-[11px] font-mono text-slate-400 pt-1">
+                  ID: #{selectedVerificationTask.taskId} | Loại: {selectedVerificationTask.taskType}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Khoa thực hiện ký duyệt <span className="text-rose-500">*</span></label>
+                <select 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                  value={signoffForm.departmentCode}
+                  onChange={e => setSignoffForm({ ...signoffForm, departmentCode: e.target.value })}
+                >
+                  <option value="FIN">Phòng Tài chính (Finance - FIN)</option>
+                  <option value="MOD">Phòng Kiểm duyệt (Moderation - MOD)</option>
+                  <option value="DIS">Phòng Tranh chấp (Dispute Resolution - DIS)</option>
+                  <option value="CS">Phòng Hỗ trợ (Customer Support - CS)</option>
+                  <option value="IT">Phòng Kỹ thuật (IT & Development - IT)</option>
+                  <option value="AUD">Phòng Kiểm toán (Audit & Compliance - AUD)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Quyết định kiểm chứng <span className="text-rose-500">*</span></label>
+                <select 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                  value={signoffForm.status}
+                  onChange={e => setSignoffForm({ ...signoffForm, status: e.target.value })}
+                >
+                  <option value="APPROVED">Chấp thuận (APPROVED)</option>
+                  <option value="REJECTED">Từ chối & Hủy tác vụ (REJECTED)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Ghi chú kiểm duyệt</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Ghi rõ lý do phê duyệt hoặc từ chối để lưu vào hệ thống..." 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium resize-none"
+                  value={signoffForm.note}
+                  onChange={e => setSignoffForm({ ...signoffForm, note: e.target.value })}
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-body-sm px-5 py-3 rounded-xl flex-grow transition-all duration-300 shadow-md shadow-indigo-650/15"
+                >
+                  Xác nhận Ký duyệt
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowSignoffModal(false)}
+                  className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-body-sm px-5 py-3 rounded-xl transition-all"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+
       <div className={`fixed top-6 right-6 z-[99999] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         toast.visible 
           ? 'translate-x-0 opacity-100 visible' 

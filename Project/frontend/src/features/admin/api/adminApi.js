@@ -5,7 +5,13 @@ export const adminApi = {
   getFeeConfig: () => api.get('/admin/fee-config'),
   updateFeeConfig: (newFee) => api.post(`/admin/fee-config?fee=${newFee}`),
   getAuditLogs: () => api.get('/admin/audit-logs'),
-  inviteStaffOrManager: (email, role) => api.post('/admin/invite', { email, role }),
+  inviteStaffOrManager: (email, role, departmentId, managerId) => api.post('/admin/invite', { email, role, departmentId, managerId }),
+  getDepartments: () => api.get('/admin/departments'),
+  getDepartmentSessions: (deptId) => api.get(`/admin/departments/${deptId}/sessions`),
+  getDepartmentLogs: (deptId) => api.get(`/admin/departments/${deptId}/logs`),
+  transferDepartmentMember: (payload) => api.post('/admin/departments/transfer', payload),
+  getDepartmentTransfers: (deptId) => api.get(`/admin/departments/${deptId}/transfers`),
+  getDepartmentMemberCounts: (deptId) => api.get(`/admin/departments/${deptId}/member-counts`),
   getUsers: () => api.get('/admin/users'),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
@@ -42,6 +48,19 @@ export const adminApi = {
     return fetch(`http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`, {
       method: 'PUT',
       headers
+    }).then(res => res.json());
+  },
+  getVerificationTasks: () => api.get('/admin/verification-tasks'),
+  submitTaskSignoff: (taskId, payload, verifierEmail) => {
+    const headers = {};
+    if (verifierEmail) headers['X-Verifier-Email'] = verifierEmail;
+    return fetch(`http://localhost:8080/api/admin/verification-tasks/${taskId}/signoff`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify(payload)
     }).then(res => res.json());
   }
 };

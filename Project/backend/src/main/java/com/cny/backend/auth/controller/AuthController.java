@@ -333,6 +333,16 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyInvitationToken(token));
     }
 
+    @PostMapping("/invitation/send-code")
+    public ResponseEntity<Map<String, Object>> sendInvitationCode(@RequestBody(required = false) Map<String, String> body, 
+                                                                  @RequestParam(value = "token", required = false) String paramToken) {
+        String token = paramToken;
+        if (token == null && body != null) {
+            token = body.get("token");
+        }
+        return ResponseEntity.ok(authService.sendInvitationVerificationCode(token));
+    }
+
     @PostMapping("/invitation/accept")
     public ResponseEntity<Map<String, Object>> acceptInvitation(@RequestBody Map<String, String> payload) {
         return ResponseEntity.ok(authService.acceptInvitation(payload));

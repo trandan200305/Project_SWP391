@@ -62,6 +62,10 @@ public class Staff {
     private String specialization;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
+    private com.cny.backend.department.entity.Department departmentEntity;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "manager_id")
     private Manager manager;
 
