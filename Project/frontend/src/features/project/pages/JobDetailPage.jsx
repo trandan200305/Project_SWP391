@@ -90,18 +90,7 @@ export default function JobDetailPage({ job, onNavigate }) {
             </div>
 
             <div className="text-slate-700 leading-relaxed mb-10 whitespace-pre-line">
-              {job.description || "Cần người dựng motion graphic đơn giản không cần quá nhiều chuyển động phức tạp, mọi thông tin đã có sẵn trên infographic của mình, không yêu cầu kinh nghiệm chỉ cần thành thạo after effect và có thể làm xong càng nhanh càng tốt"}
-            </div>
-
-            <div className="flex items-center gap-3 mb-12">
-              <span className="font-semibold text-slate-700 text-sm">Kỹ năng</span>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill, idx) => (
-                  <span key={idx} className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded uppercase tracking-wide">
-                    {skill}
-                  </span>
-                ))}
-              </div>
+              {job.description || "Chưa có mô tả công việc"}
             </div>
 
             <button onClick={handleShowComingSoon} className="flex items-center gap-2 text-red-500 text-sm hover:underline">
@@ -126,7 +115,7 @@ export default function JobDetailPage({ job, onNavigate }) {
                   <span className="font-medium text-slate-700">{createdAt}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Chỉ còn</span>
+                  <span className="text-slate-500">Thời hạn</span>
                   <span className="font-medium text-slate-700">{formatDeadline(job.deadline)}</span>
                 </div>
                 <div className="flex justify-between">
