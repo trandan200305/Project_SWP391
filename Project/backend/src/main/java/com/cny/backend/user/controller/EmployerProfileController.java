@@ -1,4 +1,4 @@
-package com.cny.backend.controller;
+package com.cny.backend.user.controller;
 
 import com.cny.backend.user.entity.Employer;
 import com.cny.backend.user.repository.EmployerRepository;
