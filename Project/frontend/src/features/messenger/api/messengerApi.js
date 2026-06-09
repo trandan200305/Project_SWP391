@@ -11,4 +11,8 @@ export const messengerApi = {
     }).then(res => res.json());
   },
   getUsers: () => api.get('/admin/users'),
+  getDeletedTickets: () => api.get('/chat/tickets/deleted'),
+  deleteTicket: (ticketId) => api.post(`/chat/tickets/${ticketId}/delete`),
+  restoreTicket: (ticketId) => api.post(`/chat/tickets/${ticketId}/restore`),
+  blockUser: (ticketId, days) => api.post(`/chat/tickets/${ticketId}/block?days=${days}`),
 };

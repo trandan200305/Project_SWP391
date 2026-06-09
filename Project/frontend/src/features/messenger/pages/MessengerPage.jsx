@@ -5,7 +5,7 @@ import {
   FolderKanban, Settings, LifeBuoy, Plus, MessageCircle,
   MoreVertical, CheckCheck, Send, ArrowLeft, Shield, Clock,
   ChevronRight, RefreshCw, AlertCircle, Paperclip, Image, 
-  FileText, X, Download
+  FileText, X, Download, Trash2
 } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -13,12 +13,16 @@ import SockJS from 'sockjs-client';
 export default function Messenger({ user, onNavigateHome }) {
   const [activeTab, setActiveTab] = useState('active'); 
   const [tickets, setTickets] = useState([]);
+  const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserInfo, setShowUserInfo] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ message: '', title: '', confirmText: 'Xác nhận', cancelText: 'Hủy', type: 'danger', onConfirm: null });
 
   const stompClientRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -134,6 +138,15 @@ export default function Messenger({ user, onNavigateHome }) {
     }
   };
 
+  const fetchDeletedTickets = async () => {
+    try {
+      const data = await messengerApi.getDeletedTickets();
+      setDeletedTickets(data);
+    } catch (err) {
+      console.error('Failed to fetch deleted support tickets', err);
+    }
+  };
+
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
@@ -145,7 +158,8 @@ export default function Messenger({ user, onNavigateHome }) {
         subject: 'Hỗ trợ kỹ thuật',
         sender_name: 'Hỗ trợ kỹ thuật',
         sender_role: 'ADMIN',
-        status: 'OPEN'
+        status: 'OPEN',
+        blocked_until: ticketData.blockedUntil
       };
       setActiveTicket(activeT);
       
@@ -174,6 +188,27 @@ export default function Messenger({ user, onNavigateHome }) {
 
     ticketSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/ticket.${ticketId}`, (message) => {
       const receivedMessage = JSON.parse(message.body);
+      
+      if (receivedMessage.senderRole === "SYSTEM") {
+        if (receivedMessage.messageText && receivedMessage.messageText.startsWith("BLOCK_UPDATE:")) {
+          const days = parseInt(receivedMessage.messageText.split(":")[1]);
+          const blockedUntil = days === -1 ? '9999-12-31T23:59:59' : days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString();
+          
+          setTickets(prev => prev.map(t => 
+            t.ticket_id === ticketId || t.ticketId === ticketId
+              ? { ...t, blocked_until: blockedUntil } 
+              : t
+          ));
+          setActiveTicket(prev => {
+            if (prev && (prev.ticket_id === ticketId || prev.ticketId === ticketId)) {
+              return { ...prev, blocked_until: blockedUntil };
+            }
+            return prev;
+          });
+        }
+        return; // Do not add SYSTEM messages to the chat view
+      }
+
       setMessages(prev => {
         if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
         return [...prev, receivedMessage];
@@ -228,12 +263,118 @@ export default function Messenger({ user, onNavigateHome }) {
   const handleRemoveAttachment = (indexToRemove) => {
     setAttachedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
+
+  const handleBlockUser = async (days) => {
+    if (!activeTicket) return;
+    
+    let confirmMsg = '';
+    let titleMsg = '';
+    let confirmBtn = '';
+    let typeBtn = 'warning';
+    
+    if (days === 0) {
+      titleMsg = 'Xác nhận gỡ chặn';
+      confirmMsg = 'Bạn có chắc chắn muốn gỡ chặn tài khoản này?';
+      confirmBtn = 'Gỡ chặn';
+      typeBtn = 'success';
+    } else if (days === -1) {
+      titleMsg = 'Xác nhận chặn vĩnh viễn';
+      confirmMsg = 'Bạn có chắc chắn muốn chặn tài khoản này vĩnh viễn?';
+      confirmBtn = 'Chặn vĩnh viễn';
+      typeBtn = 'danger';
+    } else {
+      titleMsg = `Xác nhận chặn ${days} ngày`;
+      confirmMsg = `Bạn có chắc chắn muốn chặn tài khoản này trong ${days} ngày?`;
+      confirmBtn = 'Chặn tài khoản';
+      typeBtn = 'warning';
+    }
+    
+    setConfirmConfig({
+      title: titleMsg,
+      message: confirmMsg,
+      confirmText: confirmBtn,
+      cancelText: 'Hủy',
+      type: typeBtn,
+      onConfirm: async () => {
+        try {
+          await messengerApi.blockUser(activeTicket.ticket_id, days);
+          setTickets(prev => prev.map(t => 
+            t.ticket_id === activeTicket.ticket_id 
+              ? { ...t, blocked_until: days === -1 ? '9999-12-31T23:59:59' : days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString() } 
+              : t
+          ));
+          setActiveTicket(prev => ({ ...prev, blocked_until: days === -1 ? '9999-12-31T23:59:59' : days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString() }));
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to block user', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!activeTicket) return;
+    setConfirmConfig({
+      title: 'Xóa cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Người dùng sẽ không biết cuộc trò chuyện đã bị xóa.',
+      confirmText: 'Xóa hội thoại',
+      cancelText: 'Hủy',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await messengerApi.deleteTicket(activeTicket.ticket_id);
+          setTickets(prev => prev.filter(t => t.ticket_id !== activeTicket.ticket_id));
+          setActiveTicket(null);
+          setShowUserInfo(false);
+          fetchDeletedTickets();
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to delete ticket', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleRestoreTicket = async () => {
+    if (!activeTicket) return;
+    setConfirmConfig({
+      title: 'Khôi phục cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn khôi phục cuộc trò chuyện này?',
+      confirmText: 'Khôi phục',
+      cancelText: 'Hủy',
+      type: 'success',
+      onConfirm: async () => {
+        try {
+          await messengerApi.restoreTicket(activeTicket.ticket_id);
+          setDeletedTickets(prev => prev.filter(t => t.ticket_id !== activeTicket.ticket_id));
+          setActiveTicket(null);
+          setShowUserInfo(false);
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to restore ticket', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() && attachedFiles.length === 0) return;
-
+    
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     if (!ticketId) return;
+
+    if (activeTicket?.blocked_until && new Date(activeTicket.blocked_until) > new Date()) {
+      alert(user?.role === 'ADMIN' ? 'Tài khoản này đang bị chặn, bạn không thể gửi tin nhắn.' : 'Bạn đã bị chặn gửi tin nhắn trong cuộc hội thoại này.');
+      return;
+    }
 
     if (!stompClientRef.current || !stompClientRef.current.connected) {
       alert('Kết nối chat bị gián đoạn. Đang thử kết nối lại...');
@@ -547,6 +688,21 @@ export default function Messenger({ user, onNavigateHome }) {
                           }`}>{pendingTickets.length}</span>
                         )}
                       </button>
+                      <button 
+                        onClick={() => { setActiveTab('deleted'); fetchDeletedTickets(); }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                          activeTab === 'deleted'
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đã xoá
+                        {deletedTickets.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeTab === 'deleted' ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
+                          }`}>{deletedTickets.length}</span>
+                        )}
+                      </button>
                     </div>
                   )}
                 </>
@@ -698,6 +854,59 @@ export default function Messenger({ user, onNavigateHome }) {
                       <p className="text-xs font-semibold">Không có ticket nào đang chờ xử lý</p>
                     </div>
                   )}
+                  {activeTab === 'deleted' && deletedTickets.length > 0 && (
+                    <>
+                      <div className="px-4 py-2 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-rose-500 rounded-full"></span>
+                        <p className="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider">Đã xoá ({deletedTickets.length})</p>
+                      </div>
+                      {deletedTickets.map(ticket => {
+                        const date = new Date(ticket.deleted_at_admin);
+                        const formattedTime = date.toLocaleDateString('vi-VN');
+                        const isSelected = activeTicket?.ticket_id === ticket.ticket_id;
+                        return (
+                          <div 
+                            key={ticket.ticket_id} 
+                            onClick={() => handleSelectTicket(ticket)}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
+                              isSelected 
+                                ? 'bg-rose-50/80 border-l-rose-500' 
+                                : 'border-l-transparent hover:bg-rose-50/40'
+                            }`}
+                          >
+                            <div className="relative shrink-0">
+                              <img 
+                                src={ticket.sender_avatar || `https://ui-avatars.com/api/?name=${ticket.sender_name || 'Client'}&background=ffe4e6&color=e11d48`} 
+                                  alt={ticket.sender_name} 
+                                className="w-11 h-11 rounded-xl object-cover border border-rose-200/80 shadow-sm opacity-70 grayscale"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 opacity-80">
+                              <div className="flex justify-between items-center mb-0.5">
+                                <h4 className="font-extrabold text-slate-800 truncate pr-2 text-sm line-through decoration-slate-400">{ticket.sender_name}</h4>
+                                <span className="text-[10px] font-bold text-rose-600 whitespace-nowrap">{formattedTime}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                                  ticket.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                                }`}>{ticket.sender_role}</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-rose-50 text-rose-600 border-rose-200">Đã xoá</span>
+                              </div>
+                              <p className="text-xs truncate font-medium text-slate-500">
+                                {ticket.last_message || 'Chưa có tin nhắn'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                  {activeTab === 'deleted' && deletedTickets.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Không có cuộc trò chuyện nào trong thùng rác</p>
+                    </div>
+                  )}
                   {activeTab === 'all' && tickets.length === 0 && (
                     <div className="p-8 text-center text-slate-400">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -817,15 +1026,23 @@ export default function Messenger({ user, onNavigateHome }) {
               )}
             </div>
           </div>
-          <div className={`flex-1 bg-slate-50/50 flex flex-col h-full overflow-hidden ${
+          <div className={`flex-1 flex h-full overflow-hidden ${
             !activeTicket && 'hidden md:flex'
           }`}>
+            <div className="flex-1 flex flex-col bg-slate-50/50 h-full overflow-hidden relative">
             {activeTicket ? (
               <>
                 <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-3">
+                  <div 
+                    className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-all"
+                    onClick={() => {
+                      if (user?.role === 'ADMIN') {
+                        setShowUserInfo(!showUserInfo);
+                      }
+                    }}
+                  >
                     <button 
-                      onClick={() => setActiveTicket(null)}
+                      onClick={(e) => { e.stopPropagation(); setActiveTicket(null); }}
                       className="md:hidden p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"
                     >
                       <ArrowLeft className="w-5 h-5" />
@@ -1063,69 +1280,77 @@ export default function Messenger({ user, onNavigateHome }) {
                     )}
                   </div>
                 )}
-
-                <form 
-                  onSubmit={handleSendMessage}
-                  className="p-4 bg-white border-t border-slate-200/80 flex items-center gap-3 shrink-0"
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={(e) => handleFileChange(e, false)}
-                    className="hidden"
-                    multiple
-                  />
-                  <input 
-                    type="file" 
-                    ref={imageInputRef}
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, true)}
-                    className="hidden"
-                    multiple
-                  />
-
-                  <button 
-                    type="button"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={uploading}
-                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
-                    title="Đính kèm hình ảnh"
+                {activeTicket?.blocked_until && new Date(activeTicket.blocked_until) > new Date() ? (
+                  <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-slate-200 h-[76px]">
+                    <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
+                    <span className="text-sm font-semibold text-slate-600">
+                      {user?.role === 'ADMIN' ? 'Tài khoản này đang bị chặn gửi tin nhắn' : 'Bạn đã bị chặn gửi tin nhắn tạm thời'}
+                    </span>
+                  </div>
+                ) : (
+                  <form 
+                    onSubmit={handleSendMessage}
+                    className="p-4 bg-white border-t border-slate-200/80 flex items-center gap-3 shrink-0"
                   >
-                    <Image className="w-5 h-5 shrink-0" />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
-                    title="Đính kèm tệp tin"
-                  >
-                    <Paperclip className="w-5 h-5 shrink-0" />
-                  </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={(e) => handleFileChange(e, false)}
+                      className="hidden"
+                      multiple
+                    />
+                    <input 
+                      type="file" 
+                      ref={imageInputRef}
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, true)}
+                      className="hidden"
+                      multiple
+                    />
 
-                  <input 
-                    type="text" 
-                    placeholder={user?.role === 'ADMIN' ? 'Trả lời yêu cầu kỹ thuật của khách hàng...' : 'Nhập tin nhắn gửi kỹ thuật hỗ trợ...'}
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
-                  />
-                  
-                  {(() => {
-                    const canSend = (inputText.trim() !== '' || attachedFiles.length > 0) && !uploading;
-                    return (
-                      <button 
-                        type="submit"
-                        disabled={!canSend}
-                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                          !canSend ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
-                        }`}
-                      >
-                        <Send className="w-5 h-5 shrink-0" />
-                      </button>
-                    );
-                  })()}
-                </form>
+                    <button 
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploading}
+                      className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                      title="Đính kèm hình ảnh"
+                    >
+                      <Image className="w-5 h-5 shrink-0" />
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                      title="Đính kèm tệp tin"
+                    >
+                      <Paperclip className="w-5 h-5 shrink-0" />
+                    </button>
+
+                    <input 
+                      type="text" 
+                      placeholder={user?.role === 'ADMIN' ? 'Trả lời yêu cầu kỹ thuật của khách hàng...' : 'Nhập tin nhắn gửi kỹ thuật hỗ trợ...'}
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                    />
+                    
+                    {(() => {
+                      const canSend = (inputText.trim() !== '' || attachedFiles.length > 0) && !uploading;
+                      return (
+                        <button 
+                          type="submit"
+                          disabled={!canSend}
+                          className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                            !canSend ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
+                          }`}
+                        >
+                          <Send className="w-5 h-5 shrink-0" />
+                        </button>
+                      );
+                    })()}
+                  </form>
+                )}
               </>
             ) : (
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
@@ -1138,8 +1363,136 @@ export default function Messenger({ user, onNavigateHome }) {
                 </p>
               </div>
             )}
+            </div>
+            
+            {showUserInfo && activeTicket && user?.role === 'ADMIN' && (
+              <div className="w-80 border-l border-slate-200 bg-white flex flex-col h-full shrink-0 overflow-y-auto">
+                <div className="p-6 border-b border-slate-100 flex flex-col items-center">
+                  <div className="relative mb-4">
+                    <img 
+                      src={activeTicket.sender_avatar || `https://ui-avatars.com/api/?name=${activeTicket.sender_name || 'Client'}&background=eff6ff&color=3b82f6`} 
+                      alt="User avatar" 
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                  </div>
+                  <h3 className="font-extrabold text-lg text-slate-900 mb-1">{activeTicket.sender_name}</h3>
+                  <p className="text-sm text-slate-500 font-semibold mb-3">{activeTicket.sender_email}</p>
+                  <span className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${
+                    activeTicket.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                  }`}>{activeTicket.sender_role}</span>
+                </div>
+
+                <div className="p-6 flex flex-col gap-6">
+                  {/* Status Section */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Thông tin tài khoản</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span className="text-sm font-semibold text-slate-600">Trạng thái</span>
+                        {(() => {
+                          const status = activeTicket.sender_status;
+                          if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Bị khóa</span>;
+                          if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Bị chặn</span>;
+                          return <span className="text-xs font-bold text-emerald-600">Hoạt động</span>;
+                        })()}
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span className="text-sm font-semibold text-slate-600">Ngày tham gia</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {new Date(activeTicket.sender_created_at || Date.now()).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Moderation Actions */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quản lý phiên bản</h4>
+                    
+                    {/* Blocking features */}
+                    <div className="flex flex-col gap-2 mb-4">
+                      {activeTicket.blocked_until && new Date(activeTicket.blocked_until) > new Date() ? (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                          <p className="text-xs font-semibold text-amber-800 mb-2">
+                            Đang bị chặn tin nhắn đến: <br/> 
+                            {new Date(activeTicket.blocked_until).toLocaleString('vi-VN')}
+                          </p>
+                          <button 
+                            onClick={() => handleBlockUser(0)} // Pass 0 days to unblock
+                            className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
+                          >
+                            Gỡ chặn ngay
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-slate-600 mb-2">Chặn liên hệ</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => handleBlockUser(1)} className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 ngày</button>
+                            <button onClick={() => handleBlockUser(3)} className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">3 ngày</button>
+                            <button onClick={() => handleBlockUser(7)} className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 ngày</button>
+                            <button onClick={() => handleBlockUser(-1)} className="py-2 bg-white border border-slate-200 hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Vĩnh viễn</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delete / Restore features */}
+                    {activeTab === 'deleted' ? (
+                      <button 
+                        onClick={handleRestoreTicket}
+                        className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Khôi phục hội thoại
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleDeleteTicket}
+                        className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Xóa hội thoại
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+        {/* CONFIRM MODAL */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in text-center">
+              <div className={`mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${
+                confirmConfig.type === 'danger' ? 'bg-rose-100 text-rose-600' : 
+                confirmConfig.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+              }`}>
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">{confirmConfig.title}</h3>
+              <p className="text-sm text-slate-600 mb-6">{confirmConfig.message}</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  {confirmConfig.cancelText || 'Hủy'}
+                </button>
+                <button 
+                  onClick={confirmConfig.onConfirm}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${
+                    confirmConfig.type === 'danger' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20' : 
+                    confirmConfig.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
+                  }`}
+                >
+                  {confirmConfig.confirmText || 'Xác nhận'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

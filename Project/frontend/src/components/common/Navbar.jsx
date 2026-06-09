@@ -151,16 +151,16 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
-  // 4. HANDLE PIN INPUT CHANGE, AUTO-FOCUS & PASTE
   const handlePinChange = (index, value) => {
-    if (!/^[0-9]*$/.test(value)) return;
-    
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (value && !numericValue) return;
+
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
     const setValues = isConfirmingPin ? setConfirmPinValues : setPinValues;
     const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
 
-    if (value.length > 1) {
-      const pasted = value.replace(/[^0-9]/g, '').slice(0, 4).split('');
+    if (numericValue.length > 1) {
+      const pasted = numericValue.slice(0, 4).split('');
       const newPins = [...currentValues];
       for (let i = 0; i < pasted.length; i++) newPins[i] = pasted[i];
       setValues(newPins);
@@ -172,11 +172,11 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
 
     const newPins = [...currentValues];
-    newPins[index] = value;
+    newPins[index] = numericValue;
     setValues(newPins);
     setPinError('');
 
-    if (value && index < 3) {
+    if (numericValue && index < 3) {
       const nextInput = document.getElementById(`${prefix}${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -528,7 +528,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                       value={pinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
-                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />
                   ))}
@@ -587,7 +587,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                       value={confirmPinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
-                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />
                   ))}
