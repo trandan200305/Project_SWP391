@@ -15,6 +15,7 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.project.service.ProjectService;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,37 +30,43 @@ import java.util.stream.Collectors;
 public class ProjectController {
 
     @Autowired
+    private ProjectService projectService;
+
+    @Autowired
     private ProjectRepository projectRepository;
 
-    
     @GetMapping
     public ResponseEntity<List<Project>> getAllProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
-        return ResponseEntity.ok(projects);
+        return ResponseEntity.ok(projectService.getPublishedProjects());
     }
 
-    
     @GetMapping("/latest")
     public ResponseEntity<List<Project>> getLatestProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
+        List<Project> projects = projectService.getPublishedProjects();
         List<Project> latest = projects.stream().limit(6).collect(Collectors.toList());
         return ResponseEntity.ok(latest);
     }
 
-    
     @GetMapping("/search")
     public ResponseEntity<List<Project>> searchProjects(@RequestParam("keyword") String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return getLatestProjects();
         }
-        List<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", keyword.trim());
-        return ResponseEntity.ok(projects);
+        return ResponseEntity.ok(projectService.searchProjects(keyword.trim()));
     }
 
-    
+    @GetMapping("/employer/{employerId}")
+    public ResponseEntity<List<Project>> getProjectsByEmployer(@PathVariable Integer employerId) {
+        return ResponseEntity.ok(projectService.getProjectsByEmployer(employerId));
+    }
+
     @PostMapping
-    public ResponseEntity<Project> createProject(@RequestBody Project project) {
-        Project saved = projectRepository.save(project);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<?> createProject(@RequestBody ProjectCreateDto dto) {
+        try {
+            Project saved = projectService.createProject(dto);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
