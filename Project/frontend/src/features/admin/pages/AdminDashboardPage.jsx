@@ -85,6 +85,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   
   const [jobCategories, setJobCategories] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
+  const [profileRequests, setProfileRequests] = useState([]);
   const [disputes, setDisputes] = useState([]);
   const [reports, setReports] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -364,14 +365,16 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       Promise.all([
         adminApi.getJobCategories(),
         adminApi.getKycRequests(),
+        adminApi.getProfileRequests(),
         adminApi.getDisputes(),
         adminApi.getReports(),
         adminApi.getArticles(),
         adminApi.getTickets(),
         adminApi.getSeoConfigs()
-      ]).then(([categories, kyc, disps, reps, arts, ticks, seo]) => {
+      ]).then(([categories, kyc, pReqs, disps, reps, arts, ticks, seo]) => {
         setJobCategories(Array.isArray(categories) ? categories : []);
         setKycRequests(Array.isArray(kyc) ? kyc : []);
+        setProfileRequests(Array.isArray(pReqs) ? pReqs : []);
         setDisputes(Array.isArray(disps) ? disps : []);
         setReports(Array.isArray(reps) ? reps : []);
         setArticles(Array.isArray(arts) ? arts : []);
@@ -433,6 +436,24 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
         loadDashboardData();
       })
       .catch(err => console.error(err));
+  };
+
+  const handleProfileRequestAction = (requestId, approve, reason = '') => {
+    const reasonParam = encodeURIComponent(reason);
+    adminApi.moderateProfileRequest(requestId, approve, reasonParam, user?.id)
+      .then(res => {
+        if (res.success) {
+          showToast(res.message || 'Thao tác thành công.', 'success');
+        } else {
+          showToast(res.message || 'Thao tác thất bại.', 'error');
+        }
+        adminApi.getProfileRequests()
+          .then(data => setProfileRequests(Array.isArray(data) ? data : []));
+      })
+      .catch(err => {
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      });
   };
 
   
@@ -2828,6 +2849,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   { id: 'seo', label: 'Cấu hình Hệ thống' },
                   { id: 'categories', label: 'Danh mục Việc làm', count: jobCategories.length },
                   { id: 'kyc', label: 'Duyệt KYC', count: kycRequests.length },
+                  { id: 'profileRequests', label: 'Duyệt Profile', count: profileRequests.length },
                   { id: 'disputes', label: 'Tranh chấp', count: disputes.length },
                   { id: 'reports', label: 'Báo cáo vi phạm', count: reports.length },
                   { id: 'articles', label: 'Bài viết CMS', count: articles.length },
@@ -2904,8 +2926,94 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 </div>
               )}
 
-              {}
-              {activeCmsTab !== 'seo' && (
+              {activeCmsTab === 'profileRequests' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h3 className="font-bold text-primary text-body-md mb-2">Duyệt thay đổi thông tin hồ sơ Employer</h3>
+                    <p className="text-body-sm text-slate-500">Các yêu cầu cập nhật thông tin doanh nghiệp và tài khoản ngân hàng từ phía Employer cần được Admin xem xét và phê duyệt.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-5">
+                    {profileRequests.length === 0 ? (
+                      <div className="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-sm">
+                        <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                        <h4 className="font-bold text-primary text-lg">Hoàn tất!</h4>
+                        <p className="text-slate-500 mt-2">Không có yêu cầu cập nhật hồ sơ nào đang chờ duyệt.</p>
+                      </div>
+                    ) : (
+                      profileRequests.map((req) => (
+                        <div key={req.requestId} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                              <span className="bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded text-[11px] font-bold">EMPLOYER #{req.employer.employerId}</span>
+                              <span className="text-[12px] text-slate-450 ml-2 font-medium">Email: {req.employer.email}</span>
+                              <span className="text-[11px] text-slate-400 ml-2 font-mono">Yêu cầu lúc: {new Date(req.createdAt).toLocaleString('vi-VN')}</span>
+                            </div>
+                            <span className="bg-amber-50 text-amber-700 border border-amber-250 px-2.5 py-0.5 rounded text-[10px] font-extrabold">CHỜ DUYỆT</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-body-sm">
+                            <div className="space-y-1.5">
+                              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Thông tin hiện tại</p>
+                              <div className="bg-slate-50 p-4 rounded-2xl space-y-1.5 border border-slate-100">
+                                <p><strong>Tên hiển thị:</strong> {req.employer.displayName}</p>
+                                <p><strong>Họ tên:</strong> {req.employer.fullName || 'Chưa cập nhật'}</p>
+                                <p><strong>Số điện thoại:</strong> {req.employer.phone || 'Chưa cập nhật'}</p>
+                                <p><strong>Tên công ty:</strong> {req.employer.companyName || 'Chưa cập nhật'}</p>
+                                <p><strong>Ngành nghề:</strong> {req.employer.industry || 'Chưa cập nhật'}</p>
+                                <p><strong>Quy mô:</strong> {req.employer.companySize || 'Chưa cập nhật'}</p>
+                                <p><strong>Website:</strong> {req.employer.website || 'Chưa cập nhật'}</p>
+                                <p><strong>Địa chỉ:</strong> {req.employer.address ? `${req.employer.address}, ${req.employer.city || ''}, ${req.employer.country || ''}` : 'Chưa cập nhật'}</p>
+                                <p><strong>Mô tả:</strong> {req.employer.companyDescription || 'Chưa cập nhật'}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1.5">
+                              <p className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Thông tin đề xuất thay đổi</p>
+                              <div className="bg-indigo-50/20 border border-indigo-100/70 p-4 rounded-2xl space-y-1.5">
+                                <p><strong>Tên hiển thị:</strong> <span className={req.displayName !== req.employer.displayName ? "text-indigo-650 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.displayName}</span></p>
+                                <p><strong>Họ tên:</strong> <span className={req.fullName !== req.employer.fullName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.fullName || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Số điện thoại:</strong> <span className={req.phone !== req.employer.phone ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.phone || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Tên công ty:</strong> <span className={req.companyName !== req.employer.companyName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companyName || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Ngành nghề:</strong> <span className={req.industry !== req.employer.industry ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.industry || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Quy mô:</strong> <span className={req.companySize !== req.employer.companySize ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companySize || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Website:</strong> <span className={req.website !== req.employer.website ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.website || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Địa chỉ:</strong> <span className={(req.address !== req.employer.address || req.city !== req.employer.city || req.country !== req.employer.country) ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.address ? `${req.address}, ${req.city || ''}, ${req.country || ''}` : 'Chưa cập nhật'}</span></p>
+                                <p><strong>Mô tả:</strong> <span className={req.companyDescription !== req.employer.companyDescription ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded block whitespace-pre-line" : ""}>{req.companyDescription || 'Chưa cập nhật'}</span></p>
+                                <p className="pt-2 border-t border-indigo-100/60 font-semibold text-slate-700">Thông tin Ngân hàng:</p>
+                                <p><strong>Ngân hàng:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.bankName || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Số tài khoản:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountNumber || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Chủ tài khoản:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountHolder || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Chi nhánh:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.branch || 'Chưa cập nhật'}</span></p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button
+                              onClick={() => handleProfileRequestAction(req.requestId, true)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all shadow-sm hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
+                            >
+                              Phê duyệt
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Nhập lý do từ chối yêu cầu thay đổi profile này:');
+                                if (reason !== null) handleProfileRequestAction(req.requestId, false, reason);
+                              }}
+                              className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all shadow-sm hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
+                            >
+                              Từ chối
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeCmsTab !== 'seo' && activeCmsTab !== 'profileRequests' && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-200 bg-slate-50">
                     <h3 className="font-bold text-primary text-body-md uppercase tracking-wider">

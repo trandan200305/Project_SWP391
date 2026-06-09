@@ -188,6 +188,20 @@ public class AdminController {
             @RequestHeader(value = "X-Verifier-Email", required = false, defaultValue = "admin@lancerpro.com") String verifierEmail) {
         return ResponseEntity.ok(adminService.submitTaskSignoff(id, payload, verifierEmail));
     }
+
+    @GetMapping("/profile-requests")
+    public ResponseEntity<List<EmployerProfileRequest>> getProfileRequests() {
+        return ResponseEntity.ok(adminService.getPendingProfileRequests());
+    }
+
+    @PutMapping("/profile-requests/{id}/moderate")
+    public ResponseEntity<Map<String, Object>> moderateProfileRequest(
+            @PathVariable("id") int id,
+            @RequestParam("approve") boolean approve,
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
+    }
 }
 
 
