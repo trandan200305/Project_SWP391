@@ -54,11 +54,12 @@ public class ProjectController {
     
     @GetMapping("/search")
     public ResponseEntity<Page<ProjectDto>> searchProjects(
-            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
+            @RequestParam(value = "categoryId", required = false) Integer categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, pageable));
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, pageable));
     }
 
     

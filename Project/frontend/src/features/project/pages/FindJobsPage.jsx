@@ -19,19 +19,14 @@ export default function FindJobsPage() {
     fetchCategories();
   }, []);
 
-  // Use debounce for live search
+  // Fetch data whenever filters or page changes
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      setPage(0); // reset page when search changes
-      fetchJobs(keyword, 0, size);
+      fetchJobs(keyword, activeCategory, page, size);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [keyword, size]);
-
-  useEffect(() => {
-    fetchJobs(keyword, page, size);
-  }, [page]); // trigger when only page changes
+  }, [keyword, activeCategory, page, size]);
 
   const fetchCategories = async () => {
     try {
@@ -45,12 +40,13 @@ export default function FindJobsPage() {
     }
   };
 
-  const fetchJobs = async (searchQuery, currentPage, currentSize) => {
+  const fetchJobs = async (searchQuery, categoryFilter, currentPage, currentSize) => {
     setIsLoading(true);
     try {
-      const url = searchQuery 
-        ? `http://localhost:8080/api/projects/search?keyword=${encodeURIComponent(searchQuery)}&page=${currentPage}&size=${currentSize}`
-        : `http://localhost:8080/api/projects?page=${currentPage}&size=${currentSize}`;
+      let url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
+      if (searchQuery) url += `&keyword=${encodeURIComponent(searchQuery)}`;
+      if (categoryFilter && categoryFilter !== 'all') url += `&categoryId=${categoryFilter}`;
+
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -67,6 +63,16 @@ export default function FindJobsPage() {
   const handleAction = (e) => {
     e.preventDefault();
     setShowModal(true);
+  };
+
+  const handleKeywordChange = (e) => {
+    setKeyword(e.target.value);
+    setPage(0); // reset to first page when searching
+  };
+
+  const handleCategoryChange = (catId) => {
+    setActiveCategory(catId);
+    setPage(0); // reset to first page when changing category
   };
 
   const formatCurrency = (amount) => {
@@ -93,9 +99,23 @@ export default function FindJobsPage() {
     return `${diffHours} giờ`;
   };
 
-  const displayedJobs = activeCategory === 'all' 
-    ? jobs 
-    : jobs.filter(j => j.categoryName === categories.find(c => c.id === activeCategory)?.name);
+  // Generate pagination buttons logic
+  const getPaginationButtons = () => {
+    let startPage = Math.max(0, page - 2);
+    let endPage = Math.min(totalPages - 1, startPage + 4);
+
+    if (endPage - startPage < 4) {
+      startPage = Math.max(0, endPage - 4);
+    }
+
+    const buttons = [];
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(i);
+    }
+    return { buttons, startPage, endPage };
+  };
+
+  const { buttons: pageButtons, startPage, endPage } = getPaginationButtons();
 
   return (
     <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
@@ -108,7 +128,7 @@ export default function FindJobsPage() {
             {categories.map(cat => (
               <li key={cat.id}>
                 <button
-                  onClick={() => setActiveCategory(cat.id)}
+                  onClick={() => handleCategoryChange(cat.id)}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                     activeCategory === cat.id 
                       ? 'bg-blue-50 text-blue-700 font-semibold' 
@@ -135,34 +155,30 @@ export default function FindJobsPage() {
                 type="text" 
                 placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)" 
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={handleKeywordChange}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
             
-            <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
-              <span className="text-sm text-slate-600 whitespace-nowrap">Hiển thị:</span>
-              <select 
-                value={size}
-                onChange={(e) => setSize(Number(e.target.value))}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none"
-              >
-                <option value={5}>5 công việc</option>
-                <option value={10}>10 công việc</option>
-                <option value={20}>20 công việc</option>
-                <option value={50}>50 công việc</option>
-              </select>
-            </div>
+            <button 
+              onClick={() => {
+                setPage(0);
+                fetchJobs(keyword, activeCategory, 0, size);
+              }}
+              className="w-full md:w-auto px-6 py-2.5 bg-[#1e40af] text-white font-semibold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+            >
+              Tìm kiếm
+            </button>
           </div>
 
           {/* Job List */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100">
             {isLoading ? (
               <div className="p-8 text-center text-slate-500">Đang tải dữ liệu...</div>
-            ) : displayedJobs.length === 0 ? (
+            ) : jobs.length === 0 ? (
               <div className="p-8 text-center text-slate-500">Không tìm thấy công việc nào.</div>
             ) : (
-              displayedJobs.map(job => (
+              jobs.map(job => (
                 <div key={job.id} className="p-5 hover:bg-slate-50/50 transition-colors group">
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div className="flex-1">
@@ -220,26 +236,48 @@ export default function FindJobsPage() {
             )}
           </div>
           
-          {/* Pagination Controls */}
+          {/* Custom Glassmorphism Pagination Controls */}
           {!isLoading && totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-4">
-              <button 
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${page === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-              >
-                Trang trước
-              </button>
-              <span className="text-sm text-slate-600 font-medium px-4">
-                Trang {page + 1} / {totalPages}
-              </span>
-              <button 
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page === totalPages - 1}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${page === totalPages - 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-              >
-                Trang tiếp
-              </button>
+            <div className="flex justify-center items-center gap-2 mt-4 mb-8">
+              {/* Trang X của Y */}
+              <div className="px-4 py-2 mr-2 rounded-xl text-sm font-semibold bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 shadow-sm flex items-center justify-center">
+                Trang {page + 1} của {totalPages}
+              </div>
+              
+              {/* Trang Đầu (chỉ hiện nếu nút số 1 không được hiển thị) */}
+              {startPage > 0 && (
+                <button 
+                  onClick={() => setPage(0)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
+                >
+                  Trang Đầu
+                </button>
+              )}
+              
+              {/* Page Numbers */}
+              {pageButtons.map((btnIndex) => (
+                <button
+                  key={btnIndex}
+                  onClick={() => setPage(btnIndex)}
+                  className={`min-w-[40px] h-10 px-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
+                    page === btnIndex 
+                      ? 'bg-[#1e40af] text-white border-transparent hover:-translate-y-0.5 shadow-blue-500/30' 
+                      : 'bg-white/70 border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5'
+                  }`}
+                >
+                  {btnIndex + 1}
+                </button>
+              ))}
+
+              {/* Trang Cuối (chỉ hiện nếu nút cuối cùng không được hiển thị) */}
+              {endPage < totalPages - 1 && (
+                <button 
+                  onClick={() => setPage(totalPages - 1)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
+                >
+                  Trang Cuối
+                </button>
+              )}
             </div>
           )}
 

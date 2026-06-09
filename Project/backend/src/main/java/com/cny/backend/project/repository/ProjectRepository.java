@@ -30,13 +30,14 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     Page<Project> findByIsDeletedFalseAndStatusOrderByCreatedAtDesc(String status, Pageable pageable);
     
     @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
+           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
+    Page<Project> searchProjectsByKeywordAndCategory(@Param("status") String status, @Param("keyword") String keyword, @Param("categoryId") Integer categoryId, Pageable pageable);
     
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
     
