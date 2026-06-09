@@ -97,10 +97,11 @@ export default function YourJobsPage({ onNavigate }) {
           
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-sm font-bold text-slate-700 hidden md:grid">
-            <div className="col-span-6">Tên việc</div>
+            <div className="col-span-5">Tên việc</div>
             <div className="col-span-2 text-center">Tổng hồ sơ</div>
             <div className="col-span-2 text-center">Hạn nhận hồ sơ</div>
             <div className="col-span-2 text-center">Trạng thái</div>
+            <div className="col-span-1 text-center"></div>
           </div>
 
           {/* Table Body */}
@@ -115,7 +116,7 @@ export default function YourJobsPage({ onNavigate }) {
                 <div key={job.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/50 transition-colors relative group">
                   
                   {/* Job Info */}
-                  <div className="md:col-span-6">
+                  <div className="md:col-span-5">
                     <div className="flex gap-3">
                       <div className="flex-1">
                         <a 
@@ -146,8 +147,12 @@ export default function YourJobsPage({ onNavigate }) {
                     {formatDeadline(job.deadline)}
                   </div>
 
-                  <div className="md:col-span-2 flex flex-col items-center gap-2">
-                    <span className="text-sm text-slate-600">Đang nhận hồ sơ</span>
+                  <div className="md:col-span-2 flex justify-center items-center text-sm text-slate-600">
+                    <span className="md:hidden font-medium mr-2">Trạng thái:</span>
+                    Đang nhận hồ sơ
+                  </div>
+
+                  <div className="md:col-span-1 flex justify-center items-center">
                     <button 
                       onClick={() => handleUnsave(job.id)}
                       className="text-amber-500 hover:text-slate-400 p-1 transition-colors"

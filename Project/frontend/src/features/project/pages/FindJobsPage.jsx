@@ -94,7 +94,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
     setSuccessToast({ show: true, type });
     setTimeout(() => {
       setSuccessToast({ show: false, type: '' });
-    }, 4000);
+    }, 6000);
   };
 
   const handleBookmarkClick = (e, job) => {
@@ -258,7 +258,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all' }) {
               <div className="p-8 text-center text-slate-500">Không tìm thấy công việc nào.</div>
             ) : (
               jobs.map(job => (
-                <div key={job.id} className={`p-5 hover:bg-slate-50/50 transition-all duration-300 group border-2 ${isJobSaved(job.id) ? 'border-[#8B4513] rounded-xl' : 'border-transparent'}`}>
+                <div key={job.id} className="p-5 hover:bg-slate-50/50 transition-all duration-300 group border-2 border-transparent">
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">

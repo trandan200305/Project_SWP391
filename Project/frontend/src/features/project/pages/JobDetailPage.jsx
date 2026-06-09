@@ -25,7 +25,7 @@ export default function JobDetailPage({ job, onNavigate }) {
     setSuccessToast({ show: true, type });
     setTimeout(() => {
       setSuccessToast({ show: false, type: '' });
-    }, 4000);
+    }, 6000);
   };
 
   const handleBookmarkClick = (e, jobToSave) => {
@@ -104,14 +104,14 @@ export default function JobDetailPage({ job, onNavigate }) {
               </h1>
               <button 
                 onClick={(e) => handleBookmarkClick(e, job)} 
-                className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 border-2 ${isJobSaved(job.id) ? 'bg-yellow-400 text-white border-[#8B4513]' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600'}`}
+                className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 border-2 ${isJobSaved(job.id) ? 'bg-yellow-400 text-white border-yellow-400' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600'}`}
                 title={isJobSaved(job.id) ? 'Bỏ lưu' : 'Lưu công việc'}
               >
                 <Bookmark className={`w-6 h-6 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
               </button>
             </div>
 
-            <div className={`bg-slate-50 border rounded-lg p-5 mb-8 transition-colors duration-300 ${isJobSaved(job.id) ? 'border-[#8B4513] bg-yellow-50/10' : 'border-slate-100'}`}>
+            <div className={`bg-slate-50 border rounded-lg p-5 mb-8 transition-colors duration-300 ${isJobSaved(job.id) ? 'border-amber-500 bg-amber-50/20' : 'border-slate-100'}`}>
               <div className="text-slate-700 font-medium mb-1">
                 Mô tả công việc: <span className="text-blue-600 font-bold">{job.categoryName || 'Dựng motion video'}</span>
               </div>
