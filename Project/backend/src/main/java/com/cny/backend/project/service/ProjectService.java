@@ -18,6 +18,8 @@ import com.cny.backend.chat.service.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,22 +30,22 @@ public class ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
 
-    public List<ProjectDto> getAllPublishedProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
-        return projects.stream().map(this::mapToDto).collect(Collectors.toList());
+    public Page<ProjectDto> getAllPublishedProjects(Pageable pageable) {
+        Page<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED", pageable);
+        return projects.map(this::mapToDto);
     }
 
-    public List<ProjectDto> getLatestPublishedProjects() {
-        List<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
-        return projects.stream().limit(6).map(this::mapToDto).collect(Collectors.toList());
+    public Page<ProjectDto> getLatestPublishedProjects(Pageable pageable) {
+        Page<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED", pageable);
+        return projects.map(this::mapToDto);
     }
 
-    public List<ProjectDto> searchPublishedProjects(String keyword) {
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Pageable pageable) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return getLatestPublishedProjects();
+            return getLatestPublishedProjects(pageable);
         }
-        List<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", keyword.trim());
-        return projects.stream().map(this::mapToDto).collect(Collectors.toList());
+        Page<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", keyword.trim(), pageable);
+        return projects.map(this::mapToDto);
     }
 
     public ProjectDto createProject(Project project) {

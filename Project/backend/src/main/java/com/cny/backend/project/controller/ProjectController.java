@@ -15,6 +15,10 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.project.service.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,23 +37,28 @@ public class ProjectController {
 
     
     @GetMapping
-    public ResponseEntity<List<ProjectDto>> getAllProjects() {
-        List<ProjectDto> projects = projectService.getAllPublishedProjects();
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<Page<ProjectDto>> getAllProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(projectService.getAllPublishedProjects(pageable));
     }
 
     
     @GetMapping("/latest")
     public ResponseEntity<List<ProjectDto>> getLatestProjects() {
-        List<ProjectDto> latest = projectService.getLatestPublishedProjects();
-        return ResponseEntity.ok(latest);
+        Page<ProjectDto> latestPage = projectService.getLatestPublishedProjects(PageRequest.of(0, 6));
+        return ResponseEntity.ok(latestPage.getContent());
     }
 
     
     @GetMapping("/search")
-    public ResponseEntity<List<ProjectDto>> searchProjects(@RequestParam(value = "keyword", required = false) String keyword) {
-        List<ProjectDto> projects = projectService.searchPublishedProjects(keyword);
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<Page<ProjectDto>> searchProjects(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, pageable));
     }
 
     

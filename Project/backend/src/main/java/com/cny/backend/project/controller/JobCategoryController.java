@@ -15,6 +15,7 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.project.service.*;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
