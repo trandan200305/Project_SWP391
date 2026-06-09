@@ -40,11 +40,9 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> searchPublishedProjects(String keyword, Pageable pageable) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return getLatestPublishedProjects(pageable);
-        }
-        Page<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", keyword.trim(), pageable);
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, Pageable pageable) {
+        String kw = (keyword == null) ? "" : keyword.trim();
+        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, pageable);
         return projects.map(this::mapToDto);
     }
 
