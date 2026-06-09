@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -40,4 +41,13 @@ public class ProjectDto {
     private String description;
     private Integer applications;
     private String categoryName;
+    private Integer categoryId;
+    private String createdAt;
+    private String location;
+    private String workForm;
+    private String paymentType;
+    private String employerLocation;
+    private String employerJoinDate;
+    private Integer employerJobsPosted;
+    private List<String> skills;
 }

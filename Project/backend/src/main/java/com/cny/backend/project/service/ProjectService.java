@@ -23,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 @Service
 public class ProjectService {
@@ -74,8 +76,28 @@ public class ProjectService {
         }
 
         String categoryName = "Chưa phân loại";
+        Integer categoryId = null;
         if (project.getCategory() != null) {
             categoryName = project.getCategory().getCategoryName();
+            categoryId = project.getCategory().getCategoryId();
+        }
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm");
+        String formattedCreatedAt = project.getCreatedAt() != null ? project.getCreatedAt().format(dtf) : "Không rõ";
+
+        String workForm = project.getProjectType() != null ? project.getProjectType() : "Làm online";
+        String paymentType = project.getBudgetFixed() != null ? "Trả theo dự án" : "Thỏa thuận";
+
+        String employerLoc = "Chưa cập nhật";
+        String employerJoin = "Không rõ";
+        Integer employerJobs = 0;
+        if (project.getClient() != null) {
+            employerLoc = project.getClient().getCity() != null ? project.getClient().getCity() : "Không rõ";
+            if (project.getClient().getCreatedAt() != null) {
+                DateTimeFormatter dateOnlyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                employerJoin = project.getClient().getCreatedAt().format(dateOnlyFormatter);
+            }
+            employerJobs = project.getClient().getProjectsPosted() != null ? project.getClient().getProjectsPosted() : 0;
         }
 
         return ProjectDto.builder()
@@ -90,6 +112,15 @@ public class ProjectService {
                 .description(project.getDescription())
                 .applications(project.getProposalCount() != null ? project.getProposalCount() : 0)
                 .categoryName(categoryName)
+                .categoryId(categoryId)
+                .createdAt(formattedCreatedAt)
+                .location(employerLoc)
+                .workForm(workForm)
+                .paymentType(paymentType)
+                .employerLocation(employerLoc)
+                .employerJoinDate(employerJoin)
+                .employerJobsPosted(employerJobs)
+                .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
                 .build();
     }
 }
