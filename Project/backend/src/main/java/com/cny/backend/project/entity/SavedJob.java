@@ -20,7 +20,7 @@ public class SavedJob {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "saved_job_id")
+    @Column(name = "id")
     private Integer savedJobId;
 
     @Column(name = "user_id", nullable = false)

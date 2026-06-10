@@ -40,6 +40,9 @@ public class JobCategoryService {
                     .description(cat.getDescription())
                     .isActive(cat.getIsActive())
                     .count(count)
+                    .categoryId(cat.getCategoryId())
+                    .categoryName(cat.getCategoryName())
+                    .iconUrl(cat.getIconUrl())
                     .build();
         }).collect(Collectors.toList());
     }
@@ -54,6 +57,9 @@ public class JobCategoryService {
                     .description(cat.getDescription())
                     .isActive(cat.getIsActive())
                     .count(count)
+                    .categoryId(cat.getCategoryId())
+                    .categoryName(cat.getCategoryName())
+                    .iconUrl(cat.getIconUrl())
                     .build();
         }).collect(Collectors.toList());
     }
@@ -66,6 +72,9 @@ public class JobCategoryService {
                 .description(saved.getDescription())
                 .isActive(saved.getIsActive())
                 .count(0)
+                .categoryId(saved.getCategoryId())
+                .categoryName(saved.getCategoryName())
+                .iconUrl(saved.getIconUrl())
                 .build();
     }
 }
