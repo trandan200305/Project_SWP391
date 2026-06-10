@@ -50,7 +50,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       }
     } catch (error) {
       setLoading(false);
-      setErrorMsg('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+      setErrorMsg(error.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     }
   };
 
