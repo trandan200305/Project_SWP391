@@ -212,6 +212,12 @@ public class AuthService {
                 userId = employer.getEmployerId();
             } else {
                 Employer dbEmployer = existingEmployer.get();
+                if (Boolean.TRUE.equals(dbEmployer.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa.");
+                    return response;
+                }
+                
                 if (!isOAuthLogin) {
                     if (dbEmployer.getPasswordHash() == null || !dbEmployer.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -347,6 +353,12 @@ public class AuthService {
                 userId = freelancer.getProfileId();
             } else {
                 Freelancer dbFreelancer = existingFreelancer.get();
+                if (Boolean.TRUE.equals(dbFreelancer.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa.");
+                    return response;
+                }
+                
                 if (!isOAuthLogin) {
                     if (dbFreelancer.getPasswordHash() == null || !dbFreelancer.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
