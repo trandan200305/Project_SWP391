@@ -49,6 +49,69 @@ public class EmployerProfileController {
 
         Map<String, Object> billing = asMap(payload.get("billing"));
 
+        // Backend validations
+        String displayName = text(payload.get("displayName"));
+        if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Tên hiển thị phải từ 3 đến 50 ký tự.");
+            return ResponseEntity.badRequest().body(errResponse);
+        }
+
+        String fullName = text(payload.get("fullName"));
+        if (!isBlank(fullName) && (fullName.length() < 3 || fullName.length() > 50)) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Họ và tên người đại diện phải từ 3 đến 50 ký tự.");
+            return ResponseEntity.badRequest().body(errResponse);
+        }
+
+        String phone = text(payload.get("phone"));
+        if (!isBlank(phone)) {
+            if (!phone.matches("^(0[3|5|7|8|9])[0-9]{8}$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+        }
+
+        String urlPattern = "^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*\\/?$";
+        String website = text(payload.get("website"));
+        if (!isBlank(website) && !website.matches(urlPattern)) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Địa chỉ Website không hợp lệ.");
+            return ResponseEntity.badRequest().body(errResponse);
+        }
+
+        String companyLogoUrl = text(payload.get("companyLogoUrl"));
+        if (!isBlank(companyLogoUrl) && !companyLogoUrl.matches(urlPattern)) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Đường dẫn Logo không hợp lệ.");
+            return ResponseEntity.badRequest().body(errResponse);
+        }
+
+        String bankName = text(billing.get("bankName"));
+        String accountNumber = text(billing.get("accountNumber"));
+        String accountHolder = text(billing.get("accountHolder"));
+
+        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder)) {
+            if (isBlank(bankName) || isBlank(accountNumber) || isBlank(accountHolder)) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Nếu cập nhật thông tin thanh toán, vui lòng điền đầy đủ: Ngân hàng, Số tài khoản và Chủ tài khoản.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (!accountNumber.matches("^[0-9]+$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Số tài khoản ngân hàng chỉ được phép chứa các chữ số.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+        }
+
         EmployerProfileRequest req = EmployerProfileRequest.builder()
                 .employer(employer)
                 .displayName(text(payload.get("displayName")))
