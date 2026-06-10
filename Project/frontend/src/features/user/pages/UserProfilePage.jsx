@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Plus } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 
@@ -11,6 +11,100 @@ export default function UserProfilePage({ user, onNavigate }) {
   
   // For popup coming soon
   const [isShowComingSoon, setIsShowComingSoon] = useState(false);
+
+  // For Work Profile
+  const [categories, setCategories] = useState([]);
+  const [workProfile, setWorkProfile] = useState({
+    professionalTitle: user?.professionalTitle || '',
+    bio: user?.bio || '',
+    personalWebsite: user?.personalWebsite || '',
+    expertiseField: user?.expertiseField || '',
+    experienceLevel: user?.experienceLevel || '',
+    primarySkills: user?.primarySkills || '',
+    servicesOffered: user?.servicesOffered || '',
+    isAvailable: user?.isAvailable !== false,
+    availabilityType: user?.availabilityType || 'Bán thời gian (dưới 40h/tuần)'
+  });
+
+  const [newPortfolio, setNewPortfolio] = useState({
+    title: '',
+    attachmentUrl: '',
+    description: '',
+    relatedService: '',
+    productLink: ''
+  });
+
+  const freelancerId = user?.profileId || user?.freelancerId || 1; // Default to 1 for testing if user is missing
+
+  useEffect(() => {
+    fetchCategories();
+    fetchPortfolios();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+      }
+    } catch (e) {
+      console.error('Error fetching categories:', e);
+    }
+  };
+
+  const fetchPortfolios = async () => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/portfolios`);
+      if (res.ok) {
+        const data = await res.json();
+        setPortfolios(data);
+      }
+    } catch (e) {
+      console.error('Error fetching portfolios:', e);
+    }
+  };
+
+  const handleSaveWorkProfile = async () => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/work-profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workProfile)
+      });
+      if (res.ok) {
+        alert('Lưu hồ sơ làm việc thành công!');
+      } else {
+        alert('Lưu thất bại!');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Đã xảy ra lỗi!');
+    }
+  };
+
+  const handleSavePortfolio = async () => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/portfolios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPortfolio)
+      });
+      if (res.ok) {
+        alert('Lưu hồ sơ năng lực thành công!');
+        fetchPortfolios();
+        setIsAddingPortfolio(false);
+        setNewPortfolio({
+          title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
+        });
+      } else {
+        alert('Lưu thất bại!');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Đã xảy ra lỗi!');
+    }
+  };
 
   const menuItems = [
     { id: 'Tài khoản', label: 'Tài khoản', active: true },
@@ -185,7 +279,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Chức danh <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <input type="text" placeholder="Giới thiệu ngắn gọn" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                          <input 
+                            type="text" 
+                            placeholder="Giới thiệu ngắn gọn" 
+                            value={workProfile.professionalTitle}
+                            onChange={(e) => setWorkProfile({...workProfile, professionalTitle: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                          />
                           <p className="text-xs text-slate-400 mt-1">VD: Lập trình viên web PHP / Chuyên gia thiết kế đồ hoạ với 6 năm kinh nghiệm / v.v...</p>
                         </div>
                       </div>
@@ -198,6 +298,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <textarea 
                             rows={8} 
                             placeholder="Bản giới thiệu đầy đủ này sẽ giúp người xem hiểu rõ hơn về bạn..."
+                            value={workProfile.bio}
+                            onChange={(e) => setWorkProfile({...workProfile, bio: e.target.value})}
                             className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y"
                           />
                         </div>
@@ -206,7 +308,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Website cá nhân</div>
                         <div className="flex-1">
-                          <input type="text" placeholder="Điền link website ở đây (nếu có)" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                          <input 
+                            type="text" 
+                            placeholder="Điền link website ở đây (nếu có)" 
+                            value={workProfile.personalWebsite}
+                            onChange={(e) => setWorkProfile({...workProfile, personalWebsite: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                          />
                         </div>
                       </div>
                     </div>
@@ -227,9 +335,15 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Lĩnh vực chuyên môn <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <select className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white">
-                            <option value="">Lập trình web</option>
-                            <option value="">Thiết kế đồ hoạ</option>
+                          <select 
+                            value={workProfile.expertiseField}
+                            onChange={(e) => setWorkProfile({...workProfile, expertiseField: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                          >
+                            <option value="">Chọn lĩnh vực chuyên môn</option>
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.name}>{cat.name}</option>
+                            ))}
                           </select>
                           <p className="text-xs text-slate-400 mt-1">Lĩnh vực chính mà bạn đang làm việc hoặc có nhiều kinh nghiệm nhất.</p>
                         </div>
@@ -238,11 +352,15 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Trình độ <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <select className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white">
+                          <select 
+                            value={workProfile.experienceLevel}
+                            onChange={(e) => setWorkProfile({...workProfile, experienceLevel: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                          >
                             <option value="">Chọn mức kinh nghiệm phù hợp</option>
-                            <option value="1">Mới đi làm</option>
-                            <option value="2">Đã có kinh nghiệm</option>
-                            <option value="3">Chuyên gia</option>
+                            <option value="Mới đi làm">Mới đi làm</option>
+                            <option value="Đã có kinh nghiệm">Đã có kinh nghiệm</option>
+                            <option value="Chuyên gia">Chuyên gia</option>
                           </select>
                           <div className="text-xs text-slate-400 mt-2 space-y-1">
                             <p>Hãy chọn mức "Trình độ" đúng với năng lực của bạn để được nhận những công việc phù hợp:</p>
@@ -256,7 +374,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Kỹ năng chính <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <input type="text" placeholder="Kỹ năng bạn có" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                          <input 
+                            type="text" 
+                            placeholder="Kỹ năng bạn có" 
+                            value={workProfile.primarySkills}
+                            onChange={(e) => setWorkProfile({...workProfile, primarySkills: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                          />
                           <p className="text-xs text-slate-400 mt-1">Kỹ năng của bạn không có trong danh sách trên? Hãy <a href="#" className="text-blue-500 hover:underline">gửi gợi ý cho chúng tôi</a>.</p>
                         </div>
                       </div>
@@ -278,27 +402,41 @@ export default function UserProfilePage({ user, onNavigate }) {
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="w-48 font-semibold text-slate-700 pt-2">Danh sách dịch vụ <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <input type="text" placeholder="Tên dịch vụ (VD: Thiết kế banner facebook,...)" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                          <input 
+                            type="text" 
+                            placeholder="Tên dịch vụ (VD: Thiết kế banner facebook,...)" 
+                            value={workProfile.servicesOffered}
+                            onChange={(e) => setWorkProfile({...workProfile, servicesOffered: e.target.value})}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                          />
                           <p className="text-xs text-slate-400 mt-1 leading-relaxed">Bạn cần nhập ít nhất 1 dịch vụ mà bạn có thể cung cấp cho khách hàng. Bạn sẽ nhận được thông báo việc ngay lập tức nếu khách hàng đăng việc liên quan đến dịch vụ của bạn.</p>
                         </div>
                       </div>
 
                       <div className="flex flex-col md:flex-row gap-6 items-center">
-                        <div className="w-48 font-semibold text-slate-700">Muốn nhận việc? <span className="text-red-500">*</span> <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold ml-1 uppercase">Mới</span></div>
+                        <div className="w-48 font-semibold text-slate-700">Muốn nhận việc? <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <select className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white">
-                            <option>Có</option>
-                            <option>Không</option>
+                          <select 
+                            value={workProfile.isAvailable ? 'Có' : 'Không'}
+                            onChange={(e) => setWorkProfile({...workProfile, isAvailable: e.target.value === 'Có'})}
+                            className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                          >
+                            <option value="Có">Có</option>
+                            <option value="Không">Không</option>
                           </select>
                         </div>
                       </div>
 
                       <div className="flex flex-col md:flex-row gap-6 items-center">
-                        <div className="w-48 font-semibold text-slate-700">Tôi có thể làm <span className="text-red-500">*</span> <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold ml-1 uppercase">Mới</span></div>
+                        <div className="w-48 font-semibold text-slate-700">Tôi có thể làm <span className="text-red-500">*</span></div>
                         <div className="flex-1">
-                          <select className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white">
-                            <option>Bán thời gian (dưới 40h/tuần)</option>
-                            <option>Toàn thời gian (trên 40h/tuần)</option>
+                          <select 
+                            value={workProfile.availabilityType}
+                            onChange={(e) => setWorkProfile({...workProfile, availabilityType: e.target.value})}
+                            className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                          >
+                            <option value="Bán thời gian (dưới 40h/tuần)">Bán thời gian (dưới 40h/tuần)</option>
+                            <option value="Toàn thời gian (trên 40h/tuần)">Toàn thời gian (trên 40h/tuần)</option>
                           </select>
                         </div>
                       </div>
@@ -306,7 +444,7 @@ export default function UserProfilePage({ user, onNavigate }) {
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex justify-start">
-                    <button onClick={() => setIsShowComingSoon(true)} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
+                    <button onClick={handleSaveWorkProfile} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
                       Lưu các thay đổi
                     </button>
                   </div>
@@ -338,7 +476,7 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <div key={idx} className="flex justify-between items-center p-4 border border-slate-200 rounded-lg hover:border-blue-300 transition-colors">
                             <div>
                               <h3 className="font-bold text-slate-800 text-lg">{pf.title}</h3>
-                              <p className="text-sm text-slate-500 mt-1">{pf.summary}</p>
+                              <p className="text-sm text-slate-500 mt-1">{pf.description?.length > 100 ? pf.description.substring(0, 100) + '...' : pf.description}</p>
                             </div>
                             <button 
                             onClick={() => setIsShowComingSoon(true)}
@@ -377,7 +515,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-48 font-semibold text-slate-700 pt-2">Tiêu đề <span className="text-red-500">*</span></div>
                             <div className="flex-1">
-                              <input type="text" placeholder="Tiêu đề" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                              <input 
+                                type="text" 
+                                placeholder="Tiêu đề" 
+                                value={newPortfolio.title}
+                                onChange={(e) => setNewPortfolio({...newPortfolio, title: e.target.value})}
+                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                              />
                               <p className="text-xs text-slate-400 mt-1">Tên dự án hoặc tên sản phẩm bạn đã thực hiện</p>
                             </div>
                           </div>
@@ -385,6 +529,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-48 font-semibold text-slate-700 pt-2">File đính kèm <span className="text-red-500">*</span></div>
                             <div className="flex-1">
+                              <input 
+                                type="text" 
+                                placeholder="Nhập URL file đính kèm..."
+                                value={newPortfolio.attachmentUrl}
+                                onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
+                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
+                              />
                               <input type="file" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white" />
                               <div className="text-xs text-slate-400 mt-2 space-y-1">
                                 <p>1. Kích thước không quá 5 MB</p>
@@ -406,6 +557,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                               <textarea 
                                 rows={8} 
                                 placeholder="Mô tả"
+                                value={newPortfolio.description}
+                                onChange={(e) => setNewPortfolio({...newPortfolio, description: e.target.value})}
                                 className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y mb-1"
                               />
                               <p className="text-xs text-slate-400">Hãy viết thật chi tiết về sản phẩm hoặc dự án này để người xem có thể hiểu được những công việc thực sự bạn đã làm.</p>
@@ -415,7 +568,13 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-48 font-semibold text-slate-700 pt-2">Dịch vụ liên quan</div>
                             <div className="flex-1">
-                              <input type="text" placeholder="Tên dịch vụ (VD : Thiết kế banner facebook,...)" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                              <input 
+                                type="text" 
+                                placeholder="Tên dịch vụ (VD : Thiết kế banner facebook,...)" 
+                                value={newPortfolio.relatedService}
+                                onChange={(e) => setNewPortfolio({...newPortfolio, relatedService: e.target.value})}
+                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                              />
                               <p className="text-xs text-slate-400 mt-1 leading-relaxed">Bạn cần nhập 1 dịch vụ mà bạn có thể cung cấp cho khách hàng...</p>
                             </div>
                           </div>
@@ -423,17 +582,20 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-48 font-semibold text-slate-700 pt-2">Link sản phẩm</div>
                             <div className="flex-1">
-                              <input type="text" placeholder="Link web dẫn đến dự án hoặc sản phẩm này" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" />
+                              <input 
+                                type="text" 
+                                placeholder="Link web dẫn đến dự án hoặc sản phẩm này" 
+                                value={newPortfolio.productLink}
+                                onChange={(e) => setNewPortfolio({...newPortfolio, productLink: e.target.value})}
+                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                              />
                             </div>
                           </div>
                         </div>
                         
                         <div className="pt-6 flex justify-start">
                           <button 
-                            onClick={() => {
-                              setIsShowComingSoon(true);
-                              setIsAddingPortfolio(false); // mock action
-                            }} 
+                            onClick={handleSavePortfolio} 
                             className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
                           >
                             Lưu hồ sơ
