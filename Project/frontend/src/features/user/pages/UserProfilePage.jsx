@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Plus } from 'lucide-react';
+import ComingSoon from '../../../pages/ComingSoon.jsx';
 
 export default function UserProfilePage({ user, onNavigate }) {
   const [activeTab, setActiveTab] = useState('Thông tin cá nhân');
@@ -7,13 +8,16 @@ export default function UserProfilePage({ user, onNavigate }) {
   // For Portfolio Tab
   const [portfolios, setPortfolios] = useState([]);
   const [isAddingPortfolio, setIsAddingPortfolio] = useState(false);
+  
+  // For popup coming soon
+  const [isShowComingSoon, setIsShowComingSoon] = useState(false);
 
   const menuItems = [
     { id: 'Tài khoản', label: 'Tài khoản', active: true },
-    { id: 'Cài đặt chung', label: 'Cài đặt chung', action: () => onNavigate('coming_soon') },
-    { id: 'Tài khoản ngân hàng', label: 'Tài khoản ngân hàng', action: () => onNavigate('coming_soon') },
-    { id: 'Giao dịch tiền', label: 'Giao dịch tiền', action: () => onNavigate('coming_soon') },
-    { id: 'Rút tiền', label: 'Rút tiền', action: () => onNavigate('coming_soon') },
+    { id: 'Cài đặt chung', label: 'Cài đặt chung', action: () => setIsShowComingSoon(true) },
+    { id: 'Tài khoản ngân hàng', label: 'Tài khoản ngân hàng', action: () => setIsShowComingSoon(true) },
+    { id: 'Giao dịch tiền', label: 'Giao dịch tiền', action: () => setIsShowComingSoon(true) },
+    { id: 'Rút tiền', label: 'Rút tiền', action: () => setIsShowComingSoon(true) },
   ];
 
   const tabs = [
@@ -113,11 +117,6 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <input type="email" readOnly value={user?.email || ''} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
                         </div>
                         <div className="flex flex-col gap-2">
-                          <label className="font-semibold text-slate-700 text-sm">Thay đổi mật khẩu</label>
-                          <input type="password" readOnly placeholder="Mật khẩu mới" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none mb-2" />
-                          <input type="password" readOnly placeholder="Nhập lại mật khẩu mới" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
-                        </div>
-                        <div className="flex flex-col gap-2">
                           <label className="font-semibold text-slate-700 text-sm">Điện thoại <span className="text-red-500">*</span></label>
                           <input type="text" readOnly value="0123456789" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
                         </div>
@@ -135,9 +134,35 @@ export default function UserProfilePage({ user, onNavigate }) {
                       </div>
                     </div>
                   </div>
+
+                  <div className="w-full h-px bg-slate-100"></div>
+
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                        2
+                      </div>
+                      <h2 className="text-lg font-bold text-slate-800 uppercase">Thay đổi mật khẩu</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-6 max-w-md">
+                      <div className="flex flex-col gap-2">
+                        <label className="font-semibold text-slate-700 text-sm">Mật khẩu cũ</label>
+                        <input type="password" readOnly placeholder="Mật khẩu hiện tại" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="font-semibold text-slate-700 text-sm">Mật khẩu mới</label>
+                        <input type="password" readOnly placeholder="Mật khẩu mới" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="font-semibold text-slate-700 text-sm">Nhập lại mật khẩu mới</label>
+                        <input type="password" readOnly placeholder="Nhập lại mật khẩu mới" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-slate-50 text-slate-600 outline-none" />
+                      </div>
+                    </div>
+                  </div>
                   
                   <div className="pt-4 border-t border-slate-100 flex justify-start">
-                    <button onClick={() => onNavigate('coming_soon')} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
+                    <button onClick={() => setIsShowComingSoon(true)} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
                       Lưu thông tin
                     </button>
                   </div>
@@ -281,7 +306,7 @@ export default function UserProfilePage({ user, onNavigate }) {
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex justify-start">
-                    <button onClick={() => onNavigate('coming_soon')} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
+                    <button onClick={() => setIsShowComingSoon(true)} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
                       Lưu các thay đổi
                     </button>
                   </div>
@@ -316,7 +341,7 @@ export default function UserProfilePage({ user, onNavigate }) {
                               <p className="text-sm text-slate-500 mt-1">{pf.summary}</p>
                             </div>
                             <button 
-                              onClick={() => onNavigate('coming_soon')}
+                            onClick={() => setIsShowComingSoon(true)}
                               className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
                             >
                               Xem chi tiết
@@ -406,7 +431,7 @@ export default function UserProfilePage({ user, onNavigate }) {
                         <div className="pt-6 flex justify-start">
                           <button 
                             onClick={() => {
-                              onNavigate('coming_soon');
+                              setIsShowComingSoon(true);
                               setIsAddingPortfolio(false); // mock action
                             }} 
                             className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
@@ -439,6 +464,9 @@ export default function UserProfilePage({ user, onNavigate }) {
 
         </div>
       </div>
+      {isShowComingSoon && (
+        <ComingSoon isPopup={true} onClose={() => setIsShowComingSoon(false)} />
+      )}
     </div>
   );
 }
