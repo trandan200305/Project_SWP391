@@ -1,7 +1,9 @@
 package com.cny.backend.user.controller;
 
 import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.EmployerProfileRequest;
 import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.EmployerProfileRequestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +22,9 @@ public class EmployerProfileController {
 
     @Autowired
     private EmployerRepository employerRepository;
+
+    @Autowired
+    private EmployerProfileRequestRepository employerProfileRequestRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -42,27 +47,34 @@ public class EmployerProfileController {
             return ResponseEntity.notFound().build();
         }
 
-        employer.setDisplayName(text(payload.get("displayName")));
-        employer.setFullName(text(payload.get("fullName")));
-        employer.setPhone(text(payload.get("phone")));
-        employer.setCompanyName(text(payload.get("companyName")));
-        employer.setCompanyLogoUrl(text(payload.get("companyLogoUrl")));
-        employer.setCompanyDescription(text(payload.get("companyDescription")));
-        employer.setWebsite(text(payload.get("website")));
-        employer.setAddress(text(payload.get("address")));
-        employer.setCity(text(payload.get("city")));
-        employer.setCountry(text(payload.get("country")));
-        employer.setCompanySize(text(payload.get("companySize")));
-        employer.setIndustry(text(payload.get("industry")));
-        employer.setUpdatedAt(LocalDateTime.now());
-        employer.setProfileCompleteness(calculateCompleteness(employer));
+        Map<String, Object> billing = asMap(payload.get("billing"));
 
-        Employer savedEmployer = employerRepository.save(employer);
-        upsertDefaultBankAccount(employerId, asMap(payload.get("billing")));
+        EmployerProfileRequest req = EmployerProfileRequest.builder()
+                .employer(employer)
+                .displayName(text(payload.get("displayName")))
+                .fullName(text(payload.get("fullName")))
+                .phone(text(payload.get("phone")))
+                .companyName(text(payload.get("companyName")))
+                .companyLogoUrl(text(payload.get("companyLogoUrl")))
+                .companyDescription(text(payload.get("companyDescription")))
+                .website(text(payload.get("website")))
+                .address(text(payload.get("address")))
+                .city(text(payload.get("city")))
+                .country(text(payload.get("country")))
+                .companySize(text(payload.get("companySize")))
+                .industry(text(payload.get("industry")))
+                .bankName(text(billing.get("bankName")))
+                .accountNumber(text(billing.get("accountNumber")))
+                .accountHolder(text(billing.get("accountHolder")))
+                .branch(text(billing.get("branch")))
+                .status("PENDING")
+                .build();
 
-        Map<String, Object> response = buildProfileResponse(savedEmployer);
+        employerProfileRequestRepository.save(req);
+
+        Map<String, Object> response = buildProfileResponse(employer);
         response.put("success", true);
-        response.put("message", "Đã cập nhật thông tin công ty và thanh toán.");
+        response.put("message", "Yêu cầu thay đổi thông tin của bạn đã được gửi tới Admin để phê duyệt.");
         return ResponseEntity.ok(response);
     }
 
