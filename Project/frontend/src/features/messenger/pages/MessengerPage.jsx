@@ -3,7 +3,7 @@ import { messengerApi } from '../api/messengerApi.js';
 import { 
   Search, Bell, HelpCircle, MessageSquare, Users, 
   FolderKanban, Settings, LifeBuoy, Plus, MessageCircle,
-  MoreVertical, CheckCheck, Send, ArrowLeft, Shield, Clock,
+  MoreVertical, CheckCheck, Check, Send, ArrowLeft, Shield, Clock,
   ChevronRight, RefreshCw, AlertCircle, Paperclip, Image, 
   FileText, X, Download, Trash2
 } from 'lucide-react';
@@ -204,9 +204,19 @@ export default function Messenger({ user, onNavigateHome }) {
         blocked_until: ticketData.blockedUntil
       };
       setActiveTicket(activeT);
+      activeTicketIdRef.current = ticketId;
+      activeDirectChatIdRef.current = null;
       
       await fetchMessages(ticketId);
       subscribeToTicket(ticketId);
+
+      // Emit read receipt immediately on load
+      if (stompClientRef.current && stompClientRef.current.connected) {
+        stompClientRef.current.publish({
+          destination: `/app/chat.read`,
+          body: JSON.stringify({ ticketId: ticketId, readerRole: user?.role?.toUpperCase() })
+        });
+      }
     } catch (err) {
       console.error('Failed to get/create ticket', err);
     } finally {
@@ -231,10 +241,21 @@ export default function Messenger({ user, onNavigateHome }) {
     ticketSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/ticket.${ticketId}`, (message) => {
       const receivedMessage = JSON.parse(message.body);
       
+      if (receivedMessage.readerRole) {
+        setMessages(prev => prev.map(msg => 
+          (msg.senderRole?.toUpperCase() !== receivedMessage.readerRole?.toUpperCase()) ? { ...msg, isRead: true, read: true } : msg
+        ));
+        return;
+      }
+
       if (receivedMessage.senderRole === "SYSTEM") {
         if (receivedMessage.messageText && receivedMessage.messageText.startsWith("BLOCK_UPDATE:")) {
           const days = parseInt(receivedMessage.messageText.split(":")[1]);
           const blockedUntil = days === -1 ? '9999-12-31T23:59:59' : days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString();
+          
+          setSystemUsers(prev => prev.map(u => 
+            u.id === receivedMessage.senderId ? { ...u, blockedUntil } : u
+          ));
           
           setTickets(prev => prev.map(t => 
             t.ticket_id === ticketId || t.ticketId === ticketId
@@ -251,6 +272,17 @@ export default function Messenger({ user, onNavigateHome }) {
         return; // Do not add SYSTEM messages to the chat view
       }
 
+      // If active ticket, emit read receipt for new incoming message
+      const isMyMessage = receivedMessage.senderId === user?.id && receivedMessage.senderRole?.toUpperCase() === user?.role?.toUpperCase();
+      if (activeTicketIdRef.current === ticketId && !isMyMessage) {
+        if (stompClientRef.current && stompClientRef.current.connected) {
+          stompClientRef.current.publish({
+            destination: `/app/chat.read`,
+            body: JSON.stringify({ ticketId: ticketId, readerRole: user?.role?.toUpperCase() })
+          });
+        }
+      }
+
       setMessages(prev => {
         if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
         return [...prev, receivedMessage];
@@ -263,8 +295,19 @@ export default function Messenger({ user, onNavigateHome }) {
     setActiveTicket(ticket);
     setActiveDirectChat(null);
     const ticketId = ticket.ticket_id || ticket.ticketId;
+    activeTicketIdRef.current = ticketId;
+    activeDirectChatIdRef.current = null;
     await fetchMessages(ticketId);
     subscribeToTicket(ticketId);
+    
+    // Mark as read immediately when opening
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: `/app/chat.read`,
+        body: JSON.stringify({ ticketId: ticketId, readerRole: user?.role?.toUpperCase() })
+      });
+    }
+
     setIsLoading(false);
   };
 
@@ -286,12 +329,20 @@ export default function Messenger({ user, onNavigateHome }) {
     directChatSubscriptionRef.current = stompClientRef.current.subscribe(`/topic/directChat.${chatId}`, (message) => {
       const receivedMessage = JSON.parse(message.body);
       
+      if (receivedMessage.readerRole) {
+        setMessages(prev => prev.map(msg => 
+          (msg.senderRole?.toUpperCase() !== receivedMessage.readerRole?.toUpperCase()) ? { ...msg, isRead: true, read: true } : msg
+        ));
+        return;
+      }
+
       // Emit read receipt if active chat
-      if (activeDirectChatIdRef.current === chatId && receivedMessage.senderId !== user?.id) {
+      const isMyMessage = receivedMessage.senderId === user?.id && receivedMessage.senderRole?.toUpperCase() === user?.role?.toUpperCase();
+      if (activeDirectChatIdRef.current === chatId && !isMyMessage) {
         if (stompClientRef.current && stompClientRef.current.connected) {
           stompClientRef.current.publish({
             destination: `/app/direct.chat.read`,
-            body: JSON.stringify({ ticketId: chatId, readerRole: user?.role })
+            body: JSON.stringify({ ticketId: chatId, readerRole: user?.role?.toUpperCase() })
           });
         }
       }
@@ -308,13 +359,15 @@ export default function Messenger({ user, onNavigateHome }) {
     setActiveDirectChat(chat);
     setActiveTicket(null);
     setNavSection('direct_chats');
+    activeDirectChatIdRef.current = chat.chatId;
+    activeTicketIdRef.current = null;
     await fetchDirectMessages(chat.chatId);
     
-    // Mark as read
+    // Mark as read immediately when opening
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
         destination: `/app/direct.chat.read`,
-        body: JSON.stringify({ ticketId: chat.chatId, readerRole: user?.role })
+        body: JSON.stringify({ ticketId: chat.chatId, readerRole: user?.role?.toUpperCase() })
       });
     }
     
@@ -1510,7 +1563,11 @@ export default function Messenger({ user, onNavigateHome }) {
                             }`}>
                               <Clock className="w-2.5 h-2.5" />
                               {formattedTime}
-                              {isMe && <CheckCheck className="w-3.5 h-3.5 text-blue-500 ml-0.5" />}
+                              {isMe && (
+                                (msg.isRead || msg.read) 
+                                  ? <span className="ml-1 text-[9px] text-blue-500 font-bold">Đã xem</span>
+                                  : <span className="ml-1 text-[9px] text-slate-400 font-bold">Đã gửi</span>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1685,8 +1742,13 @@ export default function Messenger({ user, onNavigateHome }) {
                           }`}>
                             <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.messageText}</p>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-bold mt-1.5 px-1">
+                          <span className="flex items-center gap-1 text-[10px] text-slate-400 font-bold mt-1.5 px-1">
                             {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {isMine && (
+                              (msg.isRead || msg.read) 
+                                ? <span className="ml-1 text-[9px] text-blue-500 font-bold">Đã xem</span>
+                                : <span className="ml-1 text-[9px] text-slate-400 font-bold">Đã gửi</span>
+                            )}
                           </span>
                         </div>
                       );
