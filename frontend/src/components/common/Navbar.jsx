@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle, Edit3, Settings } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Edit3, Settings, CheckCircle } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -267,7 +267,10 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                   className="w-8 h-8 rounded-full border border-slate-200 object-cover"
                 />
                 <div className="flex flex-col">
-                  <span className="text-[13px] font-bold text-primary leading-tight">{user.name}</span>
+                  <span className="text-[13px] font-bold text-primary leading-tight flex items-center gap-1">
+                    {user.name}
+                    {user.isVerified && <CheckCircle className="w-3.5 h-3.5 text-blue-500" title="Tài khoản đã xác thực KYC" />}
+                  </span>
                   <span className="text-[10px] font-bold text-secondary">{user.role}</span>
                 </div>
               </div>
@@ -392,10 +395,13 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 alt={user.name}
                 className="w-10 h-10 rounded-full border border-slate-200"
               />
-              <div className="flex flex-col">
-                <span className="text-base font-bold text-primary">{user.name}</span>
-                <span className="text-xs font-bold text-secondary">{user.role}</span>
-              </div>
+                <div className="flex flex-col">
+                  <span className="text-base font-bold text-primary flex items-center gap-1">
+                    {user.name}
+                    {user.isVerified && <CheckCircle className="w-4 h-4 text-blue-500" />}
+                  </span>
+                  <span className="text-xs font-bold text-secondary">{user.role}</span>
+                </div>
             </div>
           )}
 

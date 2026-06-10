@@ -28,6 +28,15 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
   const [deleteInput, setDeleteInput] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  // ================= KYC STATE =================
+  const [kycStatus, setKycStatus] = useState('UNVERIFIED');
+  const [isVerified, setIsVerified] = useState(false);
+  const [kycRejectedReason, setKycRejectedReason] = useState('');
+  const [idCardFrontUrl, setIdCardFrontUrl] = useState('');
+  const [idCardBackUrl, setIdCardBackUrl] = useState('');
+  const [portraitUrl, setPortraitUrl] = useState('');
+  const [isUploadingKyc, setIsUploadingKyc] = useState(false);
+
   // Common Read-only Stats
   const [status, setStatus] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
@@ -72,6 +81,8 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
     setProfessionalTitle(''); setHourlyRate(''); setAddress(''); setCity(''); setCountry('');
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
+    setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
+    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
     
     fetch(endpoint)
       .then(res => res.text())
@@ -92,6 +103,12 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
         if (data.emailVerified) setEmailVerified(data.emailVerified);
         if (data.createdAt) setCreatedAt(data.createdAt);
         if (data.lastLoginAt) setLastLoginAt(data.lastLoginAt);
+        if (data.kycStatus) setKycStatus(data.kycStatus);
+        if (data.isVerified !== undefined) setIsVerified(data.isVerified);
+        if (data.kycRejectedReason) setKycRejectedReason(data.kycRejectedReason);
+        if (data.idCardFrontUrl) setIdCardFrontUrl(data.idCardFrontUrl);
+        if (data.idCardBackUrl) setIdCardBackUrl(data.idCardBackUrl);
+        if (data.portraitUrl) setPortraitUrl(data.portraitUrl);
         
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
@@ -241,6 +258,7 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
     role, targetId, activeTab, setActiveTab, prefTab, setPrefTab,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage, timezone, setTimezone,
     currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, isUploadingAvatar, setIsUploadingAvatar,
+    kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
@@ -354,8 +372,9 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
                {/* Name & Actions Header */}
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
                   <div>
-                    <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight">
+                    <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
                        {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (role === 'employer' ? (displayName || companyName || 'Unnamed Company') : (displayName || fullName || 'Administrator'))}
+                       {isVerified && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
                        <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : (role === 'employer' ? industry || 'Industry' : 'System Administrator')}</span>
