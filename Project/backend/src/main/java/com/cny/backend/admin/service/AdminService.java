@@ -434,8 +434,20 @@ public class AdminService {
         }
     }
 
+    private int getValidAdminId(int adminId) {
+        if (adminRepository.existsById(adminId)) {
+            return adminId;
+        }
+        List<Admin> allAdmins = adminRepository.findAll();
+        if (!allAdmins.isEmpty()) {
+            return allAdmins.get(0).getAdminId();
+        }
+        return 1; // Fallback to 1 if no admins in DB
+    }
+
     private void writeAuditLog(int adminId, String action, String module, String description) {
-        dashboardRepository.logAudit(adminId, action, module, description);
+        int validAdminId = getValidAdminId(adminId);
+        dashboardRepository.logAudit(validAdminId, action, module, description);
     }
 
     public List<PendingProjectDto> getPendingProjects() {
@@ -491,8 +503,9 @@ public class AdminService {
     public Map<String, Object> processWithdrawal(int id, String status, int adminId) {
         Map<String, Object> response = new HashMap<>();
         try {
-            dashboardRepository.processWithdrawalRequest(id, status, adminId);
-            writeAuditLog(adminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
+            int validAdminId = getValidAdminId(adminId);
+            dashboardRepository.processWithdrawalRequest(id, status, validAdminId);
+            writeAuditLog(validAdminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
             response.put("success", true);
             response.put("message", "Đã xử lý yêu cầu rút tiền thành công.");
         } catch (Exception e) {
@@ -1217,7 +1230,7 @@ public class AdminService {
     private void approveOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", 1);
+                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 // mock process dispute refund success
                 System.out.println("Dispute refund #" + referenceId + " approved!");
@@ -1232,7 +1245,7 @@ public class AdminService {
     private void rejectOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", 1);
+                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 System.out.println("Dispute refund #" + referenceId + " rejected!");
             } else if ("KYC_VERIFICATION".equals(type)) {
@@ -1334,6 +1347,8 @@ public class AdminService {
             return response;
         }
 
+        int validAdminId = getValidAdminId(adminId);
+
         if (approve) {
             req.setStatus("APPROVED");
             Employer employer = req.getEmployer();
@@ -1362,16 +1377,16 @@ public class AdminService {
                 upsertDefaultBankAccount(employer.getEmployerId(), req.getBankName(), req.getAccountNumber(), req.getAccountHolder(), req.getBranch());
             }
 
-            writeAuditLog(adminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
-                "Admin #" + adminId + " đã phê duyệt thay đổi thông tin của Employer #" + employer.getEmployerId());
+            writeAuditLog(validAdminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
+                "Admin #" + validAdminId + " đã phê duyệt thay đổi thông tin của Employer #" + employer.getEmployerId());
             
             response.put("success", true);
             response.put("message", "Đã phê duyệt và cập nhật hồ sơ Employer thành công.");
         } else {
             req.setStatus("REJECTED");
             req.setRejectReason(reason);
-            writeAuditLog(adminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
-                "Admin #" + adminId + " đã từ chối thay đổi thông tin của Employer #" + req.getEmployer().getEmployerId() + " | Lý do: " + reason);
+            writeAuditLog(validAdminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
+                "Admin #" + validAdminId + " đã từ chối thay đổi thông tin của Employer #" + req.getEmployer().getEmployerId() + " | Lý do: " + reason);
             
             response.put("success", true);
             response.put("message", "Đã từ chối yêu cầu thay đổi thông tin.");
