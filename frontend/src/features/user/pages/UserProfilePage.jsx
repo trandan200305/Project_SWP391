@@ -362,12 +362,7 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
                         }
                     }}/>
                   </label>
-                  {emailVerified && (
-                    <div className="absolute bottom-1 right-2 w-7 h-7 bg-blue-600 rounded-full border-[3px] border-white flex items-center justify-center shadow-sm">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-               </div>
+                 </div>
 
                {/* Name & Actions Header */}
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
