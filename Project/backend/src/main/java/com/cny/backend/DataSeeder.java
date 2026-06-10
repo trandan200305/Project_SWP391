@@ -367,14 +367,16 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedFixedDepartments() {
         try {
-            // 6 phòng ban cố định — cập nhật hoặc seed mới
+            // 8 phòng ban cố định — cập nhật hoặc seed mới
             String[][] departments = {
                 {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
                 {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
                 {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
                 {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
                 {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: Tất cả"},
-                {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"}
+                {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"},
+                {"MKT", "Marketing", "Phòng Truyền thông và Marketing"},
+                {"GEN", "General", "Phòng tổng hợp"}
             };
 
             for (String[] dept : departments) {
