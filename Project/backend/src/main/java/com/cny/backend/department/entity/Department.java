@@ -25,7 +25,7 @@ public class Department {
 
     private String description;
 
-    @Column(name = "max_managers", nullable = false)
+    @Column(name = "max_managers", nullable = false, columnDefinition = "int default 5")
     @lombok.Builder.Default
     private Integer maxManagers = 5;
 

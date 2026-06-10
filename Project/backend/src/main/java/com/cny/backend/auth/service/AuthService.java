@@ -53,6 +53,9 @@ public class AuthService {
     @Autowired
     private com.cny.backend.department.service.DepartmentService departmentService;
 
+    @Autowired
+    private org.springframework.mail.javamail.JavaMailSender mailSender;
+
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
@@ -214,6 +217,11 @@ public class AuthService {
                 userId = employer.getEmployerId();
             } else {
                 Employer dbEmployer = existingEmployer.get();
+                if (Boolean.TRUE.equals(dbEmployer.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    return response;
+                }
                 if (!isOAuthLogin) {
                     if (dbEmployer.getPasswordHash() == null || !dbEmployer.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -255,6 +263,11 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Manager dbManager = existingManager.get();
+                if (Boolean.TRUE.equals(dbManager.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    return response;
+                }
                 if (!isOAuthLogin) {
                     if (dbManager.getPasswordHash() == null || !dbManager.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -290,6 +303,11 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Staff dbStaff = existingStaff.get();
+                if (Boolean.TRUE.equals(dbStaff.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    return response;
+                }
                 if (!isOAuthLogin) {
                     if (dbStaff.getPasswordHash() == null || !dbStaff.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -348,6 +366,11 @@ public class AuthService {
                 userId = freelancer.getProfileId();
             } else {
                 Freelancer dbFreelancer = existingFreelancer.get();
+                if (Boolean.TRUE.equals(dbFreelancer.getIsDeleted())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    return response;
+                }
                 if (!isOAuthLogin) {
                     if (dbFreelancer.getPasswordHash() == null || !dbFreelancer.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -643,18 +666,23 @@ public class AuthService {
         Map<String, Object> response = new HashMap<>();
         String token = payload.get("token");
         String fullName = payload.get("fullName");
-        String phone = payload.get("phone");
-        String password = payload.get("password");
         String displayName = payload.get("displayName");
+        String verificationCode = payload.get("verificationCode");
+        String phone = payload.get("phone");
 
         if (token == null || token.trim().isEmpty()) {
             response.put("success", false);
             response.put("message", "Token không được để trống!");
             return response;
         }
-        if (password == null || password.trim().isEmpty()) {
+        if (fullName == null || fullName.trim().isEmpty()) {
             response.put("success", false);
-            response.put("message", "Mật khẩu không được để trống!");
+            response.put("message", "Họ tên không được để trống!");
+            return response;
+        }
+        if (verificationCode == null || verificationCode.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận không được để trống!");
             return response;
         }
 
@@ -678,6 +706,14 @@ public class AuthService {
             return response;
         }
 
+        // Verify code
+        String savedCode = invitation.getVerificationCode();
+        if (savedCode == null || !savedCode.equals(verificationCode.trim())) {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận không chính xác!");
+            return response;
+        }
+
         String email = invitation.getEmail();
         String role = invitation.getRole();
 
@@ -686,11 +722,12 @@ public class AuthService {
             Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
             if (mgrOpt.isPresent()) {
                 com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                mgr.setPasswordHash(password); // Save plain text password as per project design
+                mgr.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 mgr.setFullName(fullName);
                 mgr.setPhone(phone);
                 mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
                 mgr.setStatus("ACTIVE");
+                mgr.setIsDeleted(false);
                 mgr.setUpdatedAt(LocalDateTime.now());
                 managerRepository.save(mgr);
             } else {
@@ -702,11 +739,12 @@ public class AuthService {
             Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
             if (stfOpt.isPresent()) {
                 com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                stf.setPasswordHash(password);
+                stf.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 stf.setFullName(fullName);
                 stf.setPhone(phone);
                 stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
                 stf.setStatus("ACTIVE");
+                stf.setIsDeleted(false);
                 stf.setUpdatedAt(LocalDateTime.now());
                 staffRepository.save(stf);
             } else {
@@ -723,6 +761,69 @@ public class AuthService {
 
         response.put("success", true);
         response.put("message", "Thiết lập tài khoản thành công! Bạn hiện đã có thể đăng nhập vào hệ thống.");
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> sendInvitationVerificationCode(String token) {
+        Map<String, Object> response = new HashMap<>();
+        if (token == null || token.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Token không được để trống!");
+            return response;
+        }
+
+        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
+        if (opt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Liên kết mời không hợp lệ!");
+            return response;
+        }
+
+        StaffInvitation invitation = opt.get();
+        if (!"PENDING".equals(invitation.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
+            return response;
+        }
+
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            invitation.setStatus("EXPIRED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời đã hết hạn!");
+            return response;
+        }
+
+        // Generate 6-digit verification code
+        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        invitation.setVerificationCode(code);
+        staffInvitationRepository.save(invitation);
+
+        // Send Email with Verification Code
+        try {
+            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setTo(invitation.getEmail());
+            message.setSubject("[LancerPro] Mã xác nhận kích hoạt tài khoản của bạn");
+
+            String emailContent = "Chào bạn,\n\n"
+                    + "Bạn đang thiết lập tài khoản quản trị hệ thống tại LancerPro.\n\n"
+                    + "Mã xác nhận của bạn là: " + code + "\n\n"
+                    + "Vui lòng nhập mã này vào form để hoàn tất thiết lập tài khoản.\n\n"
+                    + "Trân trọng,\n"
+                    + "Đội ngũ LancerPro";
+
+            message.setText(emailContent);
+            mailSender.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Không thể gửi email chứa mã xác nhận. Chi tiết: " + e.getMessage());
+            return response;
+        }
+
+        response.put("success", true);
+        response.put("message", "Mã xác nhận đã được gửi về email của bạn!");
         return response;
     }
 }
