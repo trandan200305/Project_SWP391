@@ -96,6 +96,28 @@ public class FreelancerController {
         });
     }
 
+    @PostMapping("/{id}/kyc/submit")
+    public ResponseEntity<java.util.Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody KycSubmitDto dto) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        return freelancerRepository.findById(id).map(f -> {
+            f.setIdCardFrontUrl(dto.getIdCardFrontUrl());
+            f.setIdCardBackUrl(dto.getIdCardBackUrl());
+            f.setPortraitUrl(dto.getPortraitUrl());
+            f.setKycStatus("PENDING");
+            f.setKycSubmittedAt(java.time.LocalDateTime.now());
+            f.setUpdatedAt(java.time.LocalDateTime.now());
+            
+            freelancerRepository.save(f);
+            response.put("success", true);
+            response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng.");
+            return ResponseEntity.notFound().build();
+        });
+    }
+
     private FreelancerDto mapToDto(Freelancer f) {
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -119,6 +141,15 @@ public class FreelancerController {
                 .isAvailable(f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
+                .kycStatus(f.getKycStatus())
+                .idCardFrontUrl(f.getIdCardFrontUrl())
+                .idCardBackUrl(f.getIdCardBackUrl())
+                .portraitUrl(f.getPortraitUrl())
+                .kycSubmittedAt(f.getKycSubmittedAt() != null ? f.getKycSubmittedAt().toString() : null)
+                .kycReviewedAt(f.getKycReviewedAt() != null ? f.getKycReviewedAt().toString() : null)
+                .kycReviewedByStaffId(f.getKycReviewedByStaffId())
+                .kycRejectedReason(f.getKycRejectedReason())
+                .isVerified(f.getIsVerified())
                 .build();
     }
 }
