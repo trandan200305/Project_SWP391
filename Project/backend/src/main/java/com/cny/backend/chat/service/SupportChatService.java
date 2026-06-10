@@ -35,6 +35,9 @@ public class SupportChatService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
     @Transactional
     public Integer getOrCreateTicket(Integer userId, String role) {
         String roleUpper = role.toUpperCase();
@@ -72,9 +75,6 @@ public class SupportChatService {
     }
 
     public List<ChatMessageDto> getChatHistory(Integer ticketId) {
-        
-        jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL", ticketId);
-
         String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.is_read, tm.sent_at, " +
                      "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, " +
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, " +
@@ -141,18 +141,19 @@ public class SupportChatService {
     }
 
     public List<Map<String, Object>> getAllOpenTickets() {
-        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, " +
-                     "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, " +
-                     "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, " +
+        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, " +
+                     "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, f.status as freelancer_user_status, f.last_login_at as freelancer_last_login, " +
+                     "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, e.status as employer_user_status, e.last_login_at as employer_last_login, " +
                      "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
                      "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
                      "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND is_read = 0) as unread_count, " +
                      "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id) as total_messages, " +
-                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE '👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL) as user_message_count, " +
+                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
                      "FROM support_tickets t " +
                      "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
                      "LEFT JOIN employers e ON t.employer_id = e.employer_id " +
-                     "WHERE t.status = 'OPEN' " +
+                     "WHERE t.status = 'OPEN' AND ISNULL(t.deleted_by_admin, 0) = 0 " +
                      "ORDER BY t.updated_at DESC";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
@@ -179,29 +180,99 @@ public class SupportChatService {
                 ticket.put("sender_email", row.get("freelancer_email"));
                 ticket.put("sender_role", "FREELANCER");
                 ticket.put("sender_id", row.get("freelancer_id"));
+                ticket.put("sender_status", row.get("freelancer_user_status"));
+                ticket.put("sender_last_login", row.get("freelancer_last_login") != null ? row.get("freelancer_last_login").toString() : null);
             } else if (row.get("employer_id") != null) {
                 ticket.put("sender_name", row.get("employer_name"));
                 ticket.put("sender_avatar", row.get("employer_avatar"));
                 ticket.put("sender_email", row.get("employer_email"));
                 ticket.put("sender_role", "EMPLOYER");
                 ticket.put("sender_id", row.get("employer_id"));
+                ticket.put("sender_status", row.get("employer_user_status"));
+                ticket.put("sender_last_login", row.get("employer_last_login") != null ? row.get("employer_last_login").toString() : null);
             }
 
-            
             Object hasReplied = row.get("has_admin_replied");
             ticket.put("has_admin_replied", hasReplied != null && ((Number) hasReplied).intValue() == 1);
-
-            
             Object unreadCount = row.get("unread_count");
             ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
 
             Object totalMessages = row.get("total_messages");
             ticket.put("total_messages", totalMessages != null ? ((Number) totalMessages).intValue() : 0);
 
+            Object userMsgCount = row.get("user_message_count");
+            ticket.put("user_message_count", userMsgCount != null ? ((Number) userMsgCount).intValue() : 0);
+
             tickets.add(ticket);
         }
 
         return tickets;
+    }
+
+    public List<Map<String, Object>> getDeletedTickets() {
+        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, t.deleted_at_admin, " +
+                     "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, " +
+                     "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, " +
+                     "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
+                     "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at " +
+                     "FROM support_tickets t " +
+                     "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
+                     "LEFT JOIN employers e ON t.employer_id = e.employer_id " +
+                     "WHERE t.status = 'OPEN' AND t.deleted_by_admin = 1 AND DATEDIFF(day, t.deleted_at_admin, GETDATE()) <= 10 " +
+                     "ORDER BY t.deleted_at_admin DESC";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+        List<Map<String, Object>> tickets = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> ticket = new HashMap<>(row);
+            if (row.get("freelancer_id") != null) {
+                ticket.put("sender_name", row.get("freelancer_name"));
+                ticket.put("sender_avatar", row.get("freelancer_avatar"));
+                ticket.put("sender_role", "FREELANCER");
+                ticket.put("sender_id", row.get("freelancer_id"));
+            } else if (row.get("employer_id") != null) {
+                ticket.put("sender_name", row.get("employer_name"));
+                ticket.put("sender_avatar", row.get("employer_avatar"));
+                ticket.put("sender_role", "EMPLOYER");
+                ticket.put("sender_id", row.get("employer_id"));
+            }
+            if (row.get("deleted_at_admin") != null) {
+                ticket.put("deleted_at_admin", row.get("deleted_at_admin").toString());
+            }
+            tickets.add(ticket);
+        }
+        return tickets;
+    }
+
+    @Transactional
+    public void deleteTicket(Integer ticketId) {
+        jdbcTemplate.update("UPDATE support_tickets SET deleted_by_admin = 1, deleted_at_admin = GETDATE() WHERE ticket_id = ?", ticketId);
+    }
+
+    @Transactional
+    public void restoreTicket(Integer ticketId) {
+        jdbcTemplate.update("UPDATE support_tickets SET deleted_by_admin = 0, deleted_at_admin = NULL WHERE ticket_id = ?", ticketId);
+    }
+
+    @Transactional
+    public void blockUser(Integer ticketId, Integer days) {
+        if (days == -1) {
+            // Permanent block: year 9999
+            jdbcTemplate.update("UPDATE support_tickets SET blocked_until = '9999-12-31 23:59:59' WHERE ticket_id = ?", ticketId);
+        } else if (days == 0) {
+            // Unblock
+            jdbcTemplate.update("UPDATE support_tickets SET blocked_until = NULL WHERE ticket_id = ?", ticketId);
+        } else {
+            jdbcTemplate.update("UPDATE support_tickets SET blocked_until = DATEADD(day, ?, GETDATE()) WHERE ticket_id = ?", days, ticketId);
+        }
+        
+        // Broadcast block update to the ticket topic
+        ChatMessageDto sysMsg = new ChatMessageDto();
+        sysMsg.setTicketId(ticketId);
+        sysMsg.setSenderRole("SYSTEM");
+        sysMsg.setMessageText("BLOCK_UPDATE:" + days);
+        sysMsg.setSentAt(LocalDateTime.now());
+        messagingTemplate.convertAndSend("/topic/ticket." + ticketId, sysMsg);
     }
 
     @Transactional
@@ -232,12 +303,12 @@ public class SupportChatService {
             adminId = messageDto.getSenderId();
         }
 
-        int isReadValue = (adminId != null) ? 1 : 0;
+        int isReadValue = 0;
         jdbcTemplate.update(sql, ticketId, freelancerId, employerId, adminId, messageDto.getMessageText(), isReadValue);
         Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
         messageDto.setMessageId(messageId);
         messageDto.setSentAt(LocalDateTime.now());
-        messageDto.setIsRead(isReadValue == 1);
+        messageDto.setIsRead(false);
 
         
         if (messageDto.getAttachments() != null) {
@@ -249,10 +320,7 @@ public class SupportChatService {
             }
         }
 
-        
         jdbcTemplate.update("UPDATE support_tickets SET updated_at = GETDATE() WHERE ticket_id = ?", ticketId);
-
-        
         if (messageDto.getSenderName() == null || messageDto.getSenderAvatar() == null) {
             if ("FREELANCER".equals(role)) {
                 List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM freelancers WHERE freelancer_id = ?", freelancerId);
@@ -288,6 +356,13 @@ public class SupportChatService {
         return ids.isEmpty() ? null : ids.get(0);
     }
 
+    public String getTicketBlockedUntil(Integer ticketId) {
+        String sql = "SELECT blocked_until FROM support_tickets WHERE ticket_id = ?";
+        List<java.sql.Timestamp> list = jdbcTemplate.queryForList(sql, java.sql.Timestamp.class, ticketId);
+        if (list.isEmpty() || list.get(0) == null) return null;
+        return list.get(0).toLocalDateTime().toString();
+    }
+
     public Map<String, Object> getTicketRecipient(Integer ticketId) {
         String sql = "SELECT freelancer_id, employer_id FROM support_tickets WHERE ticket_id = ?";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, ticketId);
@@ -311,7 +386,7 @@ public class SupportChatService {
     }
 
     public boolean hasAdminReplied(Integer ticketId) {
-        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND message_text NOT LIKE '👋 Xin chào! Cảm ơn bạn%'";
+        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%'";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, ticketId);
         return count != null && count > 0;
     }
@@ -327,12 +402,20 @@ public class SupportChatService {
         }
 
         String sql = "INSERT INTO ticket_messages (ticket_id, sender_admin_id, message_text, is_read, sent_at) " +
-                     "VALUES (?, ?, ?, 1, GETDATE())";
+                     "VALUES (?, ?, ?, 0, GETDATE())";
         jdbcTemplate.update(sql, autoReply.getTicketId(), adminId, autoReply.getMessageText());
         Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
         autoReply.setMessageId(messageId);
         autoReply.setSentAt(LocalDateTime.now());
-        autoReply.setIsRead(true);
+        autoReply.setIsRead(false);
         return autoReply;
+    }
+    @Transactional
+    public void markMessagesAsRead(Integer ticketId, String readerRole) {
+        if ("ADMIN".equalsIgnoreCase(readerRole)) {
+            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL AND is_read = 0", ticketId);
+        } else {
+            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND is_read = 0", ticketId);
+        }
     }
 }

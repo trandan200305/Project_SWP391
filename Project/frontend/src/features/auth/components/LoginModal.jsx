@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from '../api/authApi.js';
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
+  // State đăng nhập thông thường
   const [role, setRole] = useState('freelancer'); 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -14,21 +15,25 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [accountLocked, setAccountLocked] = useState(null);
 
-  
+  // State xử lý quên mật khẩu và OTP
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [successMsg, setSuccessMsg] = useState('');
   const [timer, setTimer] = useState(0);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  
+  // Đếm ngược thời gian gửi lại mã OTP
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Xử lý gọi API đăng nhập hệ thống
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg('');
@@ -50,10 +55,11 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       }
     } catch (error) {
       setLoading(false);
-      setErrorMsg('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+      setErrorMsg(error.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     }
   };
 
+  // Đăng nhập bằng Email và Mật khẩu
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -66,6 +72,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
+  // Đăng nhập bằng tài khoản Google
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -77,7 +84,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  
+  // Gửi mã OTP xác nhận về Email
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -95,13 +102,13 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         setErrorMsg(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
     } finally {
       setLoading(false);
     }
   };
 
-  
+  // Xác thực mã OTP
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join('');
@@ -112,19 +119,52 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     try {
       const data = await authApi.verifyCode({ email: forgotEmail, code });
       if (data.success) {
-        setSuccessMsg('✅ Xác nhận thành công! Mật khẩu mới đã được gửi vào email của bạn.');
+        setSuccessMsg('✅ Xác nhận mã OTP thành công! Vui lòng đặt mật khẩu mới.');
+        setIsResettingPassword(true);
         setCodeSent(false);
         setOtp(['', '', '', '', '', '']);
-        setTimeout(() => {
-          setIsForgotPassword(false);
-          setSuccessMsg('');
-          setForgotEmail('');
-        }, 3000);
       } else {
         setErrorMsg(data.message || 'Mã không chính xác!');
       }
     } catch (err) {
-      setErrorMsg('Lỗi kết nối đến máy chủ!');
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Đặt lại mật khẩu mới
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Mật khẩu xác nhận không khớp!');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg('Mật khẩu phải có ít nhất 6 ký tự!');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const data = await authApi.resetPassword({ email: forgotEmail, newPassword });
+      if (data.success) {
+        setSuccessMsg('✅ Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay.');
+        setTimeout(() => {
+          setIsForgotPassword(false);
+          setIsResettingPassword(false);
+          setSuccessMsg('');
+          setForgotEmail('');
+          setNewPassword('');
+          setConfirmPassword('');
+        }, 3000);
+      } else {
+        setErrorMsg(data.message || 'Có lỗi xảy ra!');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Lỗi kết nối đến máy chủ!');
     } finally {
       setLoading(false);
     }
@@ -192,12 +232,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             {isForgotPassword ? (
               <>
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
-                  {codeSent ? 'Nhập mã xác nhận' : 'Quên mật khẩu'}
+                  {isResettingPassword
+                    ? 'Đặt lại mật khẩu mới'
+                    : codeSent
+                      ? 'Nhập mã xác nhận'
+                      : 'Quên mật khẩu'}
                 </h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
-                  {codeSent
-                    ? `Mã 6 chữ số đã được gửi về ${forgotEmail}.`
-                    : 'Nhập email đã đăng ký để nhận mã xác nhận.'}
+                  {isResettingPassword
+                    ? 'Vui lòng nhập mật khẩu mới cho tài khoản của bạn.'
+                    : codeSent
+                      ? `Mã 6 chữ số đã được gửi về ${forgotEmail}.`
+                      : 'Nhập email đã đăng ký để nhận mã xác nhận.'}
                 </p>
 
                 {/* Error / Success messages */}
@@ -212,124 +258,168 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </div>
                 )}
 
-                <form onSubmit={codeSent ? handleVerifyCode : handleSendCode} className="space-y-4">
-                  {/* Email input */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-primary mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      required
-                      disabled={codeSent}
-                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium disabled:opacity-60"
-                    />
-                  </div>
-
-                  {/* OTP input boxes (hiện ra khi đã gửi mã) */}
-                  {codeSent && (
+                {isResettingPassword ? (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-primary mb-2">
-                        Mã xác nhận (6 chữ số)
+                      <label className="block text-[11px] font-bold text-primary mb-1">
+                        Mật khẩu mới
                       </label>
-                      <div className="flex gap-2 justify-between">
-                        {otp.map((digit, index) => (
-                          <input
-                            key={index}
-                            id={`otp-${index}`}
-                            type="text"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/, '');
-                              const newOtp = [...otp];
-                              newOtp[index] = val;
-                              setOtp(newOtp);
-                              if (val && index < 5) {
-                                document.getElementById(`otp-${index + 1}`).focus();
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
-                                const newOtp = [...otp];
-                                newOtp[index - 1] = '';
-                                setOtp(newOtp);
-                                document.getElementById(`otp-${index - 1}`).focus();
-                              }
-                            }}
-                            className="w-11 h-11 text-center bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg text-[16px] font-bold focus:outline-none transition-all text-primary"
-                          />
-                        ))}
-                      </div>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-primary mb-1">
+                        Xác nhận mật khẩu mới
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        'Đổi mật khẩu'
+                      )}
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={codeSent ? handleVerifyCode : handleSendCode} className="space-y-4">
+                    {/* Email input */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-primary mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        required
+                        disabled={codeSent}
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium disabled:opacity-60"
+                      />
+                    </div>
 
-                      {/* Đếm ngược và gửi lại mã */}
-                      <div className="mt-2 text-center text-[11px] font-semibold">
-                        {timer > 0 ? (
-                          <span className="text-muted">Gửi lại mã sau {timer}s</span>
-                        ) : (
-                          <span className="text-muted">
-                            Bạn không nhận được mã?{' '}
-                            <a
-                              href="#resend"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                setLoading(true);
-                                try {
-                                  const data = await authApi.forgotPassword(forgotEmail);
-                                  if (data.success) {
-                                    setSuccessMsg('Mã mới đã được gửi!');
-                                    setTimer(60);
-                                    setOtp(['', '', '', '', '', '']);
-                                    setErrorMsg('');
-                                  } else {
-                                    setErrorMsg(data.message);
-                                  }
-                                } catch {
-                                  setErrorMsg('Lỗi kết nối máy chủ');
-                                } finally {
-                                  setLoading(false);
+                    {/* OTP input boxes (hiện ra khi đã gửi mã) */}
+                    {codeSent && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-primary mb-2">
+                          Mã xác nhận (6 chữ số)
+                        </label>
+                        <div className="flex gap-2 justify-between">
+                          {otp.map((digit, index) => (
+                            <input
+                              key={index}
+                              id={`otp-${index}`}
+                              type="text"
+                              maxLength={1}
+                              value={digit}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/, '');
+                                const newOtp = [...otp];
+                                newOtp[index] = val;
+                                setOtp(newOtp);
+                                if (val && index < 5) {
+                                  document.getElementById(`otp-${index + 1}`).focus();
                                 }
                               }}
-                              className="text-secondary hover:underline"
-                            >
-                              Gửi lại mã
-                            </a>
-                          </span>
-                        )}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
+                                  const newOtp = [...otp];
+                                  newOtp[index - 1] = '';
+                                  setOtp(newOtp);
+                                  document.getElementById(`otp-${index - 1}`).focus();
+                                }
+                              }}
+                              className="w-11 h-11 text-center bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg text-[16px] font-bold focus:outline-none transition-all text-primary"
+                            />
+                          ))}
+                        </div>
+
+                        {/* Đếm ngược và gửi lại mã */}
+                        <div className="mt-2 text-center text-[11px] font-semibold">
+                          {timer > 0 ? (
+                            <span className="text-muted">Gửi lại mã sau {timer}s</span>
+                          ) : (
+                            <span className="text-muted">
+                              Bạn không nhận được mã?{' '}
+                              <a
+                                href="#resend"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  setLoading(true);
+                                  try {
+                                    const data = await authApi.forgotPassword(forgotEmail);
+                                    if (data.success) {
+                                      setSuccessMsg('Mã mới đã được gửi!');
+                                      setTimer(60);
+                                      setOtp(['', '', '', '', '', '']);
+                                      setErrorMsg('');
+                                    } else {
+                                      setErrorMsg(data.message);
+                                    }
+                                  } catch (err) {
+                                    setErrorMsg(err.message || 'Lỗi kết nối máy chủ');
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }}
+                                className="text-secondary hover:underline"
+                              >
+                                Gửi lại mã
+                              </a>
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : !codeSent ? (
-                      'Gửi mã xác nhận'
-                    ) : (
-                      'Xác nhận mã OTP'
                     )}
-                  </button>
-                </form>
 
-                {}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-2.5 rounded-lg font-bold text-[13px] bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : !codeSent ? (
+                        'Gửi mã xác nhận'
+                      ) : (
+                        'Xác nhận mã OTP'
+                      )}
+                    </button>
+                  </form>
+                )}
+
                 <div className="mt-4 text-center text-[12px] text-muted font-medium">
                   <a
                     href="#login"
                     onClick={(e) => {
                       e.preventDefault();
                       setIsForgotPassword(false);
+                      setIsResettingPassword(false);
                       setCodeSent(false);
                       setOtp(['', '', '', '', '', '']);
                       setErrorMsg('');
                       setSuccessMsg('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setForgotEmail('');
                     }}
                     className="text-secondary font-bold hover:underline"
                   >
@@ -485,16 +575,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded cursor-pointer"
-                    />
-                    <label htmlFor="remember" className="text-[11px] text-muted font-semibold cursor-pointer select-none">
-                      Keep me logged in for 30 days
-                    </label>
-                  </div>
+
 
                   <button
                     type="submit"

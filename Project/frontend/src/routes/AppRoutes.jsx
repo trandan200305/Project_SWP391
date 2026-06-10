@@ -6,26 +6,71 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
+import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
+import PostJobPage from '../pages/PostJobPage.jsx';
+import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
+import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
+import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
+import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 
 export default function AppRoutes({
   currentPage,
+  pageParams,
   user,
   searchQuery,
   handleSearch,
   handleNavigate,
   handleLoginSuccess,
+  onUserUpdate,
   onCloseAuth
 }) {
   if (currentPage === 'admin') {
     return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
   }
 
+  if (currentPage === 'profile') {
+    return <UserProfilePage user={user} onNavigate={handleNavigate} />;
+  }
+
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
   }
 
+  if (currentPage === 'find_jobs') {
+    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} user={user} />;
+  }
+
+  if (currentPage === 'job_details') {
+    return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} user={user} />;
+  }
+
+  if (currentPage === 'your_jobs') {
+    return <YourJobsPage onNavigate={handleNavigate} user={user} />;
+  }
+
   if (currentPage === 'messenger') {
     return <MessengerPage user={user} onNavigateHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'employer_profile') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
+  if (currentPage === 'post_job') {
+    return (
+      <PostJobPage
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+      />
+    );
   }
 
   if (currentPage === 'onboard') {
@@ -42,7 +87,7 @@ export default function AppRoutes({
 
   return (
     <>
-      <HomePage onSearch={handleSearch} searchQuery={searchQuery} />
+      <HomePage onSearch={handleSearch} searchQuery={searchQuery} onNavigate={handleNavigate} user={user} />
       
       {currentPage === 'login' && (
         <LoginModal 

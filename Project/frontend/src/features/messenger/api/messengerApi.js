@@ -11,4 +11,13 @@ export const messengerApi = {
     }).then(res => res.json());
   },
   getUsers: () => api.get('/admin/users'),
+  getDeletedTickets: () => api.get('/chat/tickets/deleted'),
+  deleteTicket: (ticketId) => api.post(`/chat/tickets/${ticketId}/delete`),
+  restoreTicket: (ticketId) => api.post(`/chat/tickets/${ticketId}/restore`),
+  blockUser: (ticketId, days) => api.post(`/chat/tickets/${ticketId}/block?days=${days}`),
+  getEmployerProfile: (employerId) => api.get(`/employers/${employerId}/profile`),
+  getFreelancerProfile: (freelancerId) => api.get(`/freelancers/${freelancerId}`),
+  getOrCreateDirectChat: (freelancerId, employerId) => api.get(`/v1/direct-chats/get-or-create?freelancerId=${freelancerId}&employerId=${employerId}`),
+  getUserDirectChats: (userId, role) => api.get(`/v1/direct-chats/user/${userId}?role=${role}`),
+  getDirectMessages: (chatId) => api.get(`/v1/direct-chats/${chatId}/messages`),
 };

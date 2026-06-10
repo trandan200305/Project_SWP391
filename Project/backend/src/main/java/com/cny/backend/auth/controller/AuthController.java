@@ -40,14 +40,15 @@ public class AuthController {
 
     
     private final Map<String, String> verificationCodes = new ConcurrentHashMap<>();
+
     private final Map<String, Long> codeTimestamps = new ConcurrentHashMap<>();
 
-    
-    
-    
+    private final Map<String, Boolean> verifiedForReset = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> tempPinUsers = new ConcurrentHashMap<>();
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> payload) {
         Map<String, Object> response = authService.login(payload);
+
         if (response.containsKey("success") && !(Boolean) response.get("success")) {
             if (response.containsKey("accountStatus")) {
                 return ResponseEntity.status(403).body(response);
@@ -58,16 +59,14 @@ public class AuthController {
     }
 
     
-    
-    
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> payload) {
-        String email       = payload.get("email");
-        String password    = payload.get("password");
-        String fullName    = payload.get("name");
+        String email = payload.get("email");
+        String password = payload.get("password");
+        String fullName = payload.get("name");
         String displayName = payload.get("displayName");
-        String phone       = payload.get("phone");
-        String role        = payload.getOrDefault("requestedRole", "FREELANCER").toUpperCase();
+        String phone = payload.get("phone");
+        String role = payload.getOrDefault("requestedRole", "FREELANCER").toUpperCase();
 
         Map<String, Object> response = new HashMap<>();
 
@@ -80,20 +79,22 @@ public class AuthController {
 
         
         try {
-            String table        = role.equals("EMPLOYER") ? "employers" : "freelancers";
-            String idColumn     = role.equals("EMPLOYER") ? "employer_id"  : "freelancer_id";
+            
+            String table = role.equals("EMPLOYER") ? "employers" : "freelancers";
+            String idColumn = role.equals("EMPLOYER") ? "employer_id" : "freelancer_id";
 
             
             Integer emailInEmployers = authService.countBy("employers", "email", email);
             Integer emailInFreelancers = authService.countBy("freelancers", "email", email);
             Integer emailInAdmins = authService.countBy("admins", "email", email);
-            
-            if ((emailInEmployers != null && emailInEmployers > 0) || 
-                (emailInFreelancers != null && emailInFreelancers > 0) ||
-                (emailInAdmins != null && emailInAdmins > 0)) {
+
+            if ((emailInEmployers != null && emailInEmployers > 0) ||
+                    (emailInFreelancers != null && emailInFreelancers > 0) ||
+                    (emailInAdmins != null && emailInAdmins > 0)) {
                 response.put("success", false);
-                response.put("field",   "email");
-                response.put("message", "Email này đã được đăng ký trên hệ thống. Vui lòng dùng email khác hoặc đăng nhập đúng vai trò!");
+                response.put("field", "email");
+                response.put("message",
+                        "Email này đã được đăng ký trên hệ thống. Vui lòng dùng email khác hoặc đăng nhập đúng vai trò!");
                 return ResponseEntity.badRequest().body(response);
             }
 
@@ -102,7 +103,7 @@ public class AuthController {
                 Integer phoneCount = authService.countBy(table, "phone", phone);
                 if (phoneCount != null && phoneCount > 0) {
                     response.put("success", false);
-                    response.put("field",   "phone");
+                    response.put("field", "phone");
                     response.put("message", "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác!");
                     return ResponseEntity.badRequest().body(response);
                 }
@@ -113,7 +114,7 @@ public class AuthController {
                 Integer displayNameCount = authService.countBy(table, "display_name", displayName);
                 if (displayNameCount != null && displayNameCount > 0) {
                     response.put("success", false);
-                    response.put("field",   "displayName");
+                    response.put("field", "displayName");
                     response.put("message", "Tên hiển thị này đã được người khác sử dụng. Vui lòng chọn tên khác!");
                     return ResponseEntity.badRequest().body(response);
                 }
@@ -121,15 +122,16 @@ public class AuthController {
 
             
             Map<String, String> registerPayload = new HashMap<>();
-            registerPayload.put("email",         email);
-            registerPayload.put("name",          fullName != null ? fullName : email.split("@")[0]);
-            registerPayload.put("fullName",      fullName != null ? fullName : email.split("@")[0]);
-            registerPayload.put("displayName",   displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
-            registerPayload.put("phone",         phone);
-            registerPayload.put("password",      password);
+            registerPayload.put("email", email);
+            registerPayload.put("name", fullName != null ? fullName : email.split("@")[0]);
+            registerPayload.put("fullName", fullName != null ? fullName : email.split("@")[0]);
+            registerPayload.put("displayName",
+            displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+            registerPayload.put("phone", phone);
+            registerPayload.put("password", password);
             registerPayload.put("requestedRole", role);
-            registerPayload.put("googleId",      null);
-            registerPayload.put("isRegistration", "true"); 
+            registerPayload.put("googleId", null);
+            registerPayload.put("isRegistration", "true");
 
             Map<String, Object> result = authService.login(registerPayload);
             if ((Boolean) result.getOrDefault("success", false)) {
@@ -149,9 +151,6 @@ public class AuthController {
         }
     }
 
-
-    
-    
     
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> payload) {
@@ -164,22 +163,19 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        
-        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        String code = String.format("%06d", (int) (Math.random() * 1000000));
         verificationCodes.put(email, code);
         codeTimestamps.put(email, System.currentTimeMillis());
-
-        
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("[LancerPro] Mã xác nhận đặt lại mật khẩu");
 
         String emailContent = "Chào bạn,\n\n"
-            + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại LancerPro.\n\n"
-            + "Mã xác nhận của bạn là: " + code + "\n\n"
-            + "Mã này có hiệu lực trong vòng 60 giây. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
-            + "Trân trọng,\n"
-            + "Đội ngũ LancerPro";
+                + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại LancerPro.\n\n"
+                + "Mã xác nhận của bạn là: " + code + "\n\n"
+                + "Mã này có hiệu lực trong vòng 60 giây. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
+                + "Trân trọng,\n"
+                + "Đội ngũ LancerPro";
 
         message.setText(emailContent);
         mailSender.send(message);
@@ -189,8 +185,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    
-    
     
     @PostMapping("/verify-code")
     public ResponseEntity<Map<String, Object>> verifyCode(@RequestBody Map<String, String> payload) {
@@ -206,14 +200,13 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        
         String savedCode = verificationCodes.get(email);
         if (savedCode != null && savedCode.equals(code)) {
-            
             verificationCodes.remove(email);
             codeTimestamps.remove(email);
+            verifiedForReset.put(email, true);
             response.put("success", true);
-            response.put("message", "Xác nhận mã thành công!");
+            response.put("message", "Xác nhận mã thành công! Vui lòng nhập mật khẩu mới.");
             return ResponseEntity.ok(response);
         } else {
             response.put("success", false);
@@ -222,72 +215,117 @@ public class AuthController {
         }
     }
 
-    
-    
-    
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, Object>> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String newPassword = payload.get("newPassword");
+        Map<String, Object> response = new HashMap<>();
+
+        if (email == null || newPassword == null || newPassword.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ!");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (!verifiedForReset.getOrDefault(email, false)) {
+            response.put("success", false);
+            response.put("message", "Vui lòng xác thực OTP trước khi đặt lại mật khẩu!");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        boolean success = authService.resetPassword(email, newPassword);
+        if (success) {
+            verifiedForReset.remove(email);
+            response.put("success", true);
+            response.put("message", "Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay.");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "Tài khoản không tồn tại hoặc có lỗi xảy ra!");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
     @PostMapping("/set-messenger-pin")
     public ResponseEntity<Map<String, Object>> setMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");
         String role = (String) payload.get("role");
         String pin = (String) payload.get("pin");
-        
+
         Map<String, Object> response = new HashMap<>();
         if (userId == null || role == null || pin == null || pin.length() != 4) {
             response.put("success", false);
             response.put("message", "Dữ liệu không hợp lệ.");
             return ResponseEntity.badRequest().body(response);
         }
-        
+
         boolean success = authService.setMessengerPin(userId, role, pin);
+        if (success) {
+            tempPinUsers.remove(role.toUpperCase() + ":" + userId);
+        }
         response.put("success", success);
         response.put("message", success ? "Cài đặt mã PIN thành công." : "Có lỗi xảy ra.");
         return ResponseEntity.ok(response);
     }
 
+    // API: POST /api/auth/verify-messenger-pin
     @PostMapping("/verify-messenger-pin")
     public ResponseEntity<Map<String, Object>> verifyMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");
         String role = (String) payload.get("role");
         String pin = (String) payload.get("pin");
-        
+
         Map<String, Object> response = new HashMap<>();
         if (userId == null || role == null || pin == null) {
             response.put("success", false);
             response.put("message", "Dữ liệu không hợp lệ.");
             return ResponseEntity.badRequest().body(response);
         }
-        
+
         boolean isValid = authService.verifyMessengerPin(userId, role, pin);
         response.put("success", isValid);
         response.put("message", isValid ? "Mã PIN chính xác." : "Mã PIN không khớp.");
-        
+
         if (!isValid) {
             return ResponseEntity.badRequest().body(response);
         }
+
+        String key = role.toUpperCase() + ":" + userId;
+        if (tempPinUsers.getOrDefault(key, false)) {
+            response.put("isTemporary", true);
+        }
+
         return ResponseEntity.ok(response);
     }
 
+    // API: POST /api/auth/forgot-messenger-pin
     @PostMapping("/forgot-messenger-pin")
     public ResponseEntity<Map<String, Object>> forgotMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");
         String role = (String) payload.get("role");
-        
+
         Map<String, Object> response = new HashMap<>();
         if (userId == null || role == null) {
             response.put("success", false);
             response.put("message", "Dữ liệu không hợp lệ.");
             return ResponseEntity.badRequest().body(response);
         }
-        
-        String resetEmail = authService.resetAndEmailMessengerPin(userId, role, mailSender);
-        if (resetEmail != null) {
-            response.put("success", true);
-            response.put("message", "Mã PIN mới đã được gửi về email: " + resetEmail);
-        } else {
+
+        try {
+            String resetEmail = authService.resetAndEmailMessengerPin(userId, role, mailSender);
+            if (resetEmail != null) {
+                tempPinUsers.put(role.toUpperCase() + ":" + userId, true);
+                response.put("success", true);
+                response.put("message", "Mã PIN mới đã được gửi về email: " + resetEmail);
+            } else {
+                response.put("success", false);
+                response.put("message", "Không thể gửi email đặt lại mã PIN.");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
             response.put("success", false);
-            response.put("message", "Không thể gửi email đặt lại mã PIN.");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/invitation/verify")

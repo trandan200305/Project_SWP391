@@ -58,6 +58,12 @@ public class AdminService {
     private DashboardRepository dashboardRepository;
 
     @Autowired
+    private EmployerProfileRequestRepository employerProfileRequestRepository;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private com.cny.backend.admin.repository.ManagerRepository managerRepository;
 
     @Autowired
@@ -76,7 +82,7 @@ public class AdminService {
     private com.cny.backend.department.repository.DepartmentTaskSignoffRepository departmentTaskSignoffRepository;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
-        "illyasviel1252004@gmail.com",
+        "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
     );
 
@@ -428,8 +434,20 @@ public class AdminService {
         }
     }
 
+    private int getValidAdminId(int adminId) {
+        if (adminRepository.existsById(adminId)) {
+            return adminId;
+        }
+        List<Admin> allAdmins = adminRepository.findAll();
+        if (!allAdmins.isEmpty()) {
+            return allAdmins.get(0).getAdminId();
+        }
+        return 1; // Fallback to 1 if no admins in DB
+    }
+
     private void writeAuditLog(int adminId, String action, String module, String description) {
-        dashboardRepository.logAudit(adminId, action, module, description);
+        int validAdminId = getValidAdminId(adminId);
+        dashboardRepository.logAudit(validAdminId, action, module, description);
     }
 
     public List<PendingProjectDto> getPendingProjects() {
@@ -485,8 +503,9 @@ public class AdminService {
     public Map<String, Object> processWithdrawal(int id, String status, int adminId) {
         Map<String, Object> response = new HashMap<>();
         try {
-            dashboardRepository.processWithdrawalRequest(id, status, adminId);
-            writeAuditLog(adminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
+            int validAdminId = getValidAdminId(adminId);
+            dashboardRepository.processWithdrawalRequest(id, status, validAdminId);
+            writeAuditLog(validAdminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
             response.put("success", true);
             response.put("message", "Đã xử lý yêu cầu rút tiền thành công.");
         } catch (Exception e) {
@@ -1211,7 +1230,7 @@ public class AdminService {
     private void approveOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", 1);
+                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 // mock process dispute refund success
                 System.out.println("Dispute refund #" + referenceId + " approved!");
@@ -1226,7 +1245,7 @@ public class AdminService {
     private void rejectOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", 1);
+                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 System.out.println("Dispute refund #" + referenceId + " rejected!");
             } else if ("KYC_VERIFICATION".equals(type)) {
@@ -1304,6 +1323,124 @@ public class AdminService {
                     .status("PENDING")
                     .requiredDepartments("MOD,AUD")
                     .build());
+        }
+    }
+
+    public List<EmployerProfileRequest> getPendingProfileRequests() {
+        return employerProfileRequestRepository.findByStatusOrderByCreatedAtDesc("PENDING");
+    }
+
+    @Transactional
+    public Map<String, Object> moderateProfileRequest(int requestId, boolean approve, String reason, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<EmployerProfileRequest> reqOpt = employerProfileRequestRepository.findById(requestId);
+        if (!reqOpt.isPresent()) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy yêu cầu với ID: " + requestId);
+            return response;
+        }
+
+        EmployerProfileRequest req = reqOpt.get();
+        if (!"PENDING".equals(req.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Yêu cầu này đã được xử lý trước đó!");
+            return response;
+        }
+
+        int validAdminId = getValidAdminId(adminId);
+
+        if (approve) {
+            req.setStatus("APPROVED");
+            Employer employer = req.getEmployer();
+            
+            // Copy fields from request to employer
+            if (req.getDisplayName() != null) employer.setDisplayName(req.getDisplayName());
+            if (req.getFullName() != null) employer.setFullName(req.getFullName());
+            if (req.getPhone() != null) employer.setPhone(req.getPhone());
+            if (req.getCompanyName() != null) employer.setCompanyName(req.getCompanyName());
+            if (req.getCompanyLogoUrl() != null) employer.setCompanyLogoUrl(req.getCompanyLogoUrl());
+            if (req.getCompanyDescription() != null) employer.setCompanyDescription(req.getCompanyDescription());
+            if (req.getWebsite() != null) employer.setWebsite(req.getWebsite());
+            if (req.getAddress() != null) employer.setAddress(req.getAddress());
+            if (req.getCity() != null) employer.setCity(req.getCity());
+            if (req.getCountry() != null) employer.setCountry(req.getCountry());
+            if (req.getCompanySize() != null) employer.setCompanySize(req.getCompanySize());
+            if (req.getIndustry() != null) employer.setIndustry(req.getIndustry());
+            employer.setUpdatedAt(LocalDateTime.now());
+            
+            // Calculate completeness
+            employer.setProfileCompleteness(calculateCompleteness(employer));
+            employerRepository.save(employer);
+
+            // Update bank details if provided
+            if (req.getBankName() != null || req.getAccountNumber() != null || req.getAccountHolder() != null || req.getBranch() != null) {
+                upsertDefaultBankAccount(employer.getEmployerId(), req.getBankName(), req.getAccountNumber(), req.getAccountHolder(), req.getBranch());
+            }
+
+            writeAuditLog(validAdminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
+                "Admin #" + validAdminId + " đã phê duyệt thay đổi thông tin của Employer #" + employer.getEmployerId());
+            
+            response.put("success", true);
+            response.put("message", "Đã phê duyệt và cập nhật hồ sơ Employer thành công.");
+        } else {
+            req.setStatus("REJECTED");
+            req.setRejectReason(reason);
+            writeAuditLog(validAdminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
+                "Admin #" + validAdminId + " đã từ chối thay đổi thông tin của Employer #" + req.getEmployer().getEmployerId() + " | Lý do: " + reason);
+            
+            response.put("success", true);
+            response.put("message", "Đã từ chối yêu cầu thay đổi thông tin.");
+        }
+        
+        employerProfileRequestRepository.save(req);
+        return response;
+    }
+
+    private int calculateCompleteness(Employer employer) {
+        String[] fields = {
+            employer.getDisplayName(),
+            employer.getFullName(),
+            employer.getPhone(),
+            employer.getCompanyName(),
+            employer.getCompanyDescription(),
+            employer.getWebsite(),
+            employer.getAddress(),
+            employer.getCity(),
+            employer.getCountry(),
+            employer.getCompanySize(),
+            employer.getIndustry()
+        };
+        int filled = 0;
+        for (String field : fields) {
+            if (field != null && !field.trim().isEmpty()) {
+                filled++;
+            }
+        }
+        return Math.round((filled * 100f) / fields.length);
+    }
+
+    private void upsertDefaultBankAccount(Integer employerId, String bankName, String accountNumber, String accountHolder, String branch) {
+        Integer existingId = jdbcTemplate.query(
+                "SELECT TOP 1 bank_account_id FROM bank_accounts WHERE employer_id = ? ORDER BY is_default DESC, created_at DESC",
+                rs -> rs.next() ? rs.getInt("bank_account_id") : null,
+                employerId
+        );
+
+        String bName = bankName != null ? bankName.trim() : "Chưa cập nhật";
+        String accNum = accountNumber != null ? accountNumber.trim() : "Chưa cập nhật";
+        String accHolder = accountHolder != null ? accountHolder.trim() : "Chưa cập nhật";
+        String br = branch != null ? branch.trim() : null;
+
+        if (existingId == null) {
+            jdbcTemplate.update(
+                    "INSERT INTO bank_accounts (employer_id, bank_name, account_number, account_holder, branch, is_default) VALUES (?, ?, ?, ?, ?, 1)",
+                    employerId, bName, accNum, accHolder, br
+            );
+        } else {
+            jdbcTemplate.update(
+                    "UPDATE bank_accounts SET bank_name = ?, account_number = ?, account_holder = ?, branch = ?, is_default = 1 WHERE bank_account_id = ?",
+                    bName, accNum, accHolder, br, existingId
+            );
         }
     }
 }

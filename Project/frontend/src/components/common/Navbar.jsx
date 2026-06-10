@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Building2, Plus, Briefcase, Bookmark } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +14,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pinAttempts, setPinAttempts] = useState(0);
   const [resetPinSuccess, setResetPinSuccess] = useState('');
+  const [isResettingTempPin, setIsResettingTempPin] = useState(false);
 
+  // 1. RESET AND OPEN MESSENGER PIN MODAL
   const handleMessengerClick = () => {
     setShowProfileMenu(false);
     setIsOpen(false);
@@ -25,8 +27,10 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     setIsConfirmingPin(false);
     setPinAttempts(0);
     setResetPinSuccess('');
+    setIsResettingTempPin(false);
   };
 
+  // 2. REQUEST TEMPORARY MESSENGER PIN VIA EMAIL
   const handleForgotPin = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -52,10 +56,11 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
+  // 3. SUBMIT PIN (VERIFY CURRENT OR SET NEW)
   const handlePinSubmit = async () => {
     if (isSubmitting) return;
 
-    if (user?.hasMessengerPin) {
+    if (user?.hasMessengerPin && !isResettingTempPin) {
       const pin = pinValues.join('');
       if (pin.length !== 4) {
         setPinError('Vui lòng nhập đủ 4 chữ số.');
@@ -72,8 +77,16 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
         });
         const data = await response.json();
         if (data.success) {
-          setShowPinModal(false);
-          if (onNavigate) onNavigate('messenger');
+          if (data.isTemporary) {
+            setIsResettingTempPin(true);
+            setPinValues(['', '', '', '']);
+            setConfirmPinValues(['', '', '', '']);
+            setIsConfirmingPin(false);
+            setPinError('');
+          } else {
+            setShowPinModal(false);
+            if (onNavigate) onNavigate('messenger');
+          }
         } else {
           setPinError(data.message || 'Mã PIN không đúng.');
           setPinAttempts(prev => prev + 1);
@@ -123,6 +136,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           if (user) user.hasMessengerPin = true;
           setShowPinModal(false);
           setIsConfirmingPin(false);
+          setIsResettingTempPin(false);
           if (onNavigate) {
             onNavigate('messenger');
           }
@@ -138,14 +152,15 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   };
 
   const handlePinChange = (index, value) => {
-    if (!/^[0-9]*$/.test(value)) return;
-    
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (value && !numericValue) return;
+
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
     const setValues = isConfirmingPin ? setConfirmPinValues : setPinValues;
     const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
 
-    if (value.length > 1) {
-      const pasted = value.replace(/[^0-9]/g, '').slice(0, 4).split('');
+    if (numericValue.length > 1) {
+      const pasted = numericValue.slice(0, 4).split('');
       const newPins = [...currentValues];
       for (let i = 0; i < pasted.length; i++) newPins[i] = pasted[i];
       setValues(newPins);
@@ -157,16 +172,17 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
 
     const newPins = [...currentValues];
-    newPins[index] = value;
+    newPins[index] = numericValue;
     setValues(newPins);
     setPinError('');
 
-    if (value && index < 3) {
+    if (numericValue && index < 3) {
       const nextInput = document.getElementById(`${prefix}${index + 1}`);
       if (nextInput) nextInput.focus();
     }
   };
 
+  // 5. HANDLE BACKSPACE KEY TO AUTO-FOCUS PREVIOUS INPUT
   const handlePinKeyDown = (index, e) => {
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
     const prefix = isConfirmingPin ? 'pin-confirm-' : 'pin-';
@@ -177,6 +193,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
     }
   };
 
+  // 6. LISTEN TO SCROLL EVENTS TO TOGGLE HEADER STYLE
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 20) {
@@ -190,8 +207,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-      scrolled 
+    <>
+      <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        scrolled 
         ? 'bg-surface/90 backdrop-blur-md border-b border-muted-light/60 shadow-sm py-4' 
         : 'bg-transparent py-6'
     }`}>
@@ -219,7 +237,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               onClick={(e) => {
                 e.preventDefault();
                 if (onNavigate) {
-                  onNavigate('coming_soon');
+                  onNavigate('find_jobs');
                 }
               }}
               className="font-medium text-body-md text-primary hover:text-secondary transition-colors duration-200"
@@ -227,11 +245,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               Tìm việc làm
             </a>
             <a 
-              href="#hire-freelancers" 
+              href="#post-job" 
               onClick={(e) => {
                 e.preventDefault();
                 if (onNavigate) {
-                  onNavigate('coming_soon');
+                  if (!user) {
+                    localStorage.setItem('redirect_after_login', 'post_job');
+                    onNavigate('login');
+                  } else if (user.role === 'EMPLOYER') {
+                    onNavigate('post_job');
+                  } else {
+                    alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                  }
                 }
               }}
               className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200"
@@ -255,6 +280,18 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
 
         {}
         <div className="hidden md:flex items-center gap-5">
+          {user?.role === 'EMPLOYER' && (
+            <button
+              onClick={() => {
+                if (onNavigate) onNavigate('post_job');
+              }}
+              className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              Đăng dự án mới
+            </button>
+          )}
+
           {user ? (
             <div className="relative">
               <div 
@@ -288,15 +325,51 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email || user.name}</p>
                   </div>
                   
-                  <button 
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('coming_soon');
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                  >
-                    <User className="w-4 h-4" /> Sửa thông tin cá nhân
-                  </button>
+                  {user?.role === 'EMPLOYER' && (
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate('post_job');
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
+                    >
+                      <Plus className="w-4 h-4" /> Đăng dự án mới
+                    </button>
+                  )}
+
+                  {user?.role === 'EMPLOYER' ? (
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate('employer_profile');
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                    >
+                      <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
+                    </button>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                      >
+                        <User className="w-4 h-4" /> Hồ sơ cá nhân
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('your_jobs');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
+                      >
+                        <Bookmark className="w-4 h-4" /> Công việc của bạn
+                      </button>
+                    </>
+                  )}
 
                   <button 
                     onClick={handleMessengerClick}
@@ -384,18 +457,27 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             onClick={(e) => {
               e.preventDefault();
               setIsOpen(false);
-              if (onNavigate) onNavigate('coming_soon');
+              if (onNavigate) onNavigate('find_jobs');
             }}
             className="font-medium text-lg text-primary py-2 border-b border-muted-light/30"
           >
             Tìm việc làm
           </a>
           <a 
-            href="#hire-freelancers" 
+            href="#post-job" 
             onClick={(e) => {
               e.preventDefault();
               setIsOpen(false);
-              if (onNavigate) onNavigate('coming_soon');
+              if (onNavigate) {
+                if (!user) {
+                  localStorage.setItem('redirect_after_login', 'post_job');
+                  onNavigate('login');
+                } else if (user.role === 'EMPLOYER') {
+                  onNavigate('post_job');
+                } else {
+                  alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                }
+              }
             }}
             className="font-medium text-lg text-muted py-2 border-b border-muted-light/30"
           >
@@ -421,6 +503,29 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             >
               <Shield className="w-4 h-4" /> Admin Control Panel
             </button>
+          )}
+
+          {user && user.role === 'EMPLOYER' && (
+            <>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigate) onNavigate('post_job');
+                }}
+                className="w-full text-center bg-secondary hover:bg-secondary-dark text-white py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-md mb-2"
+              >
+                <Plus className="w-4 h-4" /> Đăng dự án mới
+              </button>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigate) onNavigate('employer_profile');
+                }}
+                className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Building2 className="w-4 h-4" /> Thông tin
+              </button>
+            </>
           )}
 
           {user && (
@@ -468,6 +573,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           </div>
         </div>
       )}
+      </header>
 
       {}
       {showPinModal && (
@@ -475,11 +581,15 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in">
             {!isConfirmingPin ? (
               <>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Bảo mật Messenger</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  {isResettingTempPin ? 'Đặt lại mã PIN' : 'Bảo mật Messenger'}
+                </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  {user?.hasMessengerPin 
-                    ? 'Vui lòng nhập mã PIN để truy cập tin nhắn.' 
-                    : 'Vui lòng đặt mật khẩu cho đoạn chat của bạn (gồm 4 chữ số).'}
+                  {isResettingTempPin 
+                    ? 'Vui lòng thiết lập mã PIN mới gồm 4 chữ số theo ý bạn để sử dụng lâu dài.' 
+                    : (user?.hasMessengerPin 
+                        ? 'Vui lòng nhập mã PIN để truy cập tin nhắn.' 
+                        : 'Vui lòng đặt mật khẩu cho đoạn chat của bạn (gồm 4 chữ số).')}
                 </p>
                 
                 <div className="flex justify-center gap-3 mb-4">
@@ -492,7 +602,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                       value={pinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
-                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />
                   ))}
@@ -500,7 +610,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                 
                 {pinError && <p className="text-rose-500 text-sm mb-2 text-center">{pinError}</p>}
                 
-                {pinAttempts >= 1 && (
+                {isResettingTempPin && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">✓ Xác thực mã PIN hệ thống thành công!</p>}
+                
+                {!isResettingTempPin && pinAttempts >= 1 && (
                   <p className="text-xs text-slate-500 mb-3 text-center">
                     Bạn quên mã PIN?{' '}
                     <button
@@ -512,7 +624,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     </button>
                   </p>
                 )}
-                {resetPinSuccess && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">{resetPinSuccess}</p>}
+                {!isResettingTempPin && resetPinSuccess && <p className="text-emerald-600 text-xs mb-3 text-center font-bold">{resetPinSuccess}</p>}
                 
                 <div className="flex gap-3 mt-4">
                   <button 
@@ -526,15 +638,17 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     disabled={isSubmitting}
                     className="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-70"
                   >
-                    {isSubmitting ? 'Đang xử lý...' : (user?.hasMessengerPin ? 'Xác nhận' : 'Tiếp tục')}
+                    {isSubmitting ? 'Đang xử lý...' : ((user?.hasMessengerPin && !isResettingTempPin) ? 'Xác nhận' : 'Tiếp tục')}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Xác nhận mật khẩu</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  {isResettingTempPin ? 'Xác nhận mã PIN mới' : 'Xác nhận mật khẩu'}
+                </h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  Vui lòng nhập lại mã PIN gồm 4 chữ số để xác nhận.
+                  Vui lòng nhập lại mã PIN mới gồm 4 chữ số để xác nhận.
                 </p>
                 
                 <div className="flex justify-center gap-3 mb-4">
@@ -547,7 +661,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                       value={confirmPinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
-                      className="w-14 h-14 text-center text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
+                      className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />
                   ))}
@@ -579,6 +693,6 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

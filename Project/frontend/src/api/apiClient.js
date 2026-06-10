@@ -23,7 +23,8 @@ export async function request(endpoint, options = {}) {
     throw new Error(errorData.message || 'Có lỗi xảy ra khi kết nối máy chủ.');
   }
 
-  return response.json();
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export const api = {

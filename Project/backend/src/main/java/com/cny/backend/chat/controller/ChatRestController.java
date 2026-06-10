@@ -50,8 +50,11 @@ public class ChatRestController {
             @RequestParam("userId") Integer userId,
             @RequestParam("role") String role) {
         Integer ticketId = chatService.getOrCreateTicket(userId, role);
+        String blockedUntil = chatService.getTicketBlockedUntil(ticketId);
+        
         Map<String, Object> response = new HashMap<>();
         response.put("ticketId", ticketId);
+        response.put("blockedUntil", blockedUntil);
         return ResponseEntity.ok(response);
     }
 
@@ -65,5 +68,39 @@ public class ChatRestController {
     @GetMapping("/messages/{ticketId}")
     public ResponseEntity<List<ChatMessageDto>> getChatHistory(@PathVariable("ticketId") Integer ticketId) {
         return ResponseEntity.ok(chatService.getChatHistory(ticketId));
+    }
+
+    @GetMapping("/tickets/deleted")
+    public ResponseEntity<List<Map<String, Object>>> getDeletedTickets() {
+        return ResponseEntity.ok(chatService.getDeletedTickets());
+    }
+
+    @PostMapping("/tickets/{ticketId}/delete")
+    public ResponseEntity<Void> deleteTicket(@PathVariable("ticketId") Integer ticketId) {
+        chatService.deleteTicket(ticketId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/tickets/{ticketId}/restore")
+    public ResponseEntity<Void> restoreTicket(@PathVariable("ticketId") Integer ticketId) {
+        chatService.restoreTicket(ticketId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    @PostMapping("/tickets/{ticketId}/block")
+    public ResponseEntity<Void> blockUser(@PathVariable("ticketId") Integer ticketId, @RequestParam("days") Integer days) {
+        chatService.blockUser(ticketId, days);
+        
+        // Notify clients immediately
+        ChatMessageDto sysMsg = new ChatMessageDto();
+        sysMsg.setTicketId(ticketId);
+        sysMsg.setSenderRole("SYSTEM");
+        sysMsg.setMessageText("BLOCK_UPDATE:" + days);
+        messagingTemplate.convertAndSend("/topic/ticket." + ticketId, sysMsg);
+        
+        return ResponseEntity.ok().build();
     }
 }

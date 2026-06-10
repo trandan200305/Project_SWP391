@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import MainLayout from './components/layouts/MainLayout.jsx';
 import AppRoutes from './routes/AppRoutes.jsx';
 
-const GOOGLE_CLIENT_ID = "797982589939-262485ee5cl31or6j7rnhjgjgfp9s7os.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // ─── Suspended Overlay ───────────────────────────────────────────────────────
 function SuspendedOverlay({ reason, onGoHome }) {
@@ -119,6 +119,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [pageParams, setPageParams] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [user, setUser] = useState(null);
@@ -178,12 +179,12 @@ export default function App() {
     setSearchLocation(location);
     const projectsSection = document.getElementById('find-work');
     if (projectsSection) {
-      projectsSection.scrollIntoView({ behavior: 'smooth' });
+      projectsSection.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  const handleNavigate = (page) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger'];
+  const handleNavigate = (page, params = null) => {
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
       return;
@@ -192,13 +193,29 @@ export default function App() {
       setCurrentPage('coming_soon');
       return;
     }
+    if (page === 'post_job' && user?.role !== 'EMPLOYER') {
+      alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+      setCurrentPage('home');
+      return;
+    }
+    if (page === 'employer_profile' && user?.role !== 'EMPLOYER') {
+      setCurrentPage('home');
+      return;
+    }
     setCurrentPage(page);
+    setPageParams(params);
   };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setSuspended(null);
-    setCurrentPage('home');
+    const redirectTo = localStorage.getItem('redirect_after_login');
+    localStorage.removeItem('redirect_after_login');
+    if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
+      setCurrentPage('post_job');
+    } else {
+      setCurrentPage('home');
+    }
   };
 
   const handleLogout = () => {
@@ -214,16 +231,22 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard'].includes(currentPage);
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
+  const isLayoutPage = !['admin', 'coming_soon', 'messenger', 'onboard', 'employer_profile'].includes(currentPage);
 
   const routesContent = (
     <AppRoutes
       currentPage={currentPage}
+      pageParams={pageParams}
       user={user}
       searchQuery={searchQuery}
       handleSearch={handleSearch}
       handleNavigate={handleNavigate}
       handleLoginSuccess={handleLoginSuccess}
+      onUserUpdate={handleUserUpdate}
       onCloseAuth={() => handleNavigate('home')}
     />
   );

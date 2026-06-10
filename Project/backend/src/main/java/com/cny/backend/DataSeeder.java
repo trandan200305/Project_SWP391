@@ -20,6 +20,7 @@ import com.cny.backend.chat.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,6 +31,9 @@ import java.util.Optional;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
@@ -67,7 +71,15 @@ public class DataSeeder implements CommandLineRunner {
             seedCategories();
         }
 
-        if (employerRepository.count() == 0 && freelancerRepository.count() == 0) {
+        if (adminRepository.count() == 0) {
+            seedAdminOnly();
+        }
+
+        if (employerRepository.count() == 0) {
+            seedEmployer();
+        }
+
+        if (freelancerRepository.count() == 0) {
             seedActors();
         }
 
@@ -76,6 +88,27 @@ public class DataSeeder implements CommandLineRunner {
         }
         
         seedAdminEntities();
+    }
+
+    private void seedAdminOnly() {
+        Admin admin = Admin.builder()
+                .email("admin@lancerpro.com")
+                .passwordHash(passwordEncoder.encode("123456"))
+                .displayName("Hệ Thống Admin")
+                .fullName("Administrator LancerPro")
+                .phone("0911223344")
+                .avatarUrl("https://ui-avatars.com/api/?name=Admin")
+                .status("ACTIVE")
+                .emailVerified(true)
+                .googleId("google_admin_mock")
+                .language("vi")
+                .timezone("Asia/Ho_Chi_Minh")
+                .adminLevel("SUPER_ADMIN")
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        adminRepository.save(admin);
     }
 
     private void seedCategories() {
@@ -96,26 +129,6 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedActors() {
         
-        Admin admin = Admin.builder()
-                .email("admin@lancerpro.com")
-                .passwordHash("OAUTH_GOOGLE_LOGGED")
-                .displayName("Hệ Thống Admin")
-                .fullName("Administrator LancerPro")
-                .phone("0911223344")
-                .avatarUrl("https://ui-avatars.com/api/?name=Admin")
-                .status("ACTIVE")
-                .emailVerified(true)
-                .googleId("google_admin_mock")
-                .language("vi")
-                .timezone("Asia/Ho_Chi_Minh")
-                .adminLevel("SUPER_ADMIN")
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-        adminRepository.save(admin);
-
-        
         String[] names = {"Minh Anh", "Quang Huy", "Phương Linh", "Tùng Dương"};
         String[] emails = {"minhanh@gmail.com", "quanghuy@gmail.com", "phuonglinh@gmail.com", "tungduong@gmail.com"};
         String[] titles = {
@@ -131,7 +144,7 @@ public class DataSeeder implements CommandLineRunner {
         for (int i = 0; i < names.length; i++) {
             Freelancer freelancer = Freelancer.builder()
                     .email(emails[i])
-                    .passwordHash("OAUTH_GOOGLE_LOGGED")
+                    .passwordHash(passwordEncoder.encode("123456"))
                     .displayName(names[i])
                     .fullName(names[i])
                     .phone("098765432" + i)
@@ -158,6 +171,39 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
             freelancerRepository.save(freelancer);
         }
+    }
+
+    private void seedEmployer() {
+        Employer employer = Employer.builder()
+                .email("client@lancerpro.vn")
+                .passwordHash(passwordEncoder.encode("123456"))
+                .displayName("LancerPro Client")
+                .fullName("Client LancerPro")
+                .phone("0912345678")
+                .avatarUrl("https://ui-avatars.com/api/?name=Client")
+                .status("ACTIVE")
+                .emailVerified(true)
+                .googleId("google_client_mock")
+                .language("vi")
+                .timezone("Asia/Ho_Chi_Minh")
+                .companyName("TechFlow Corporation")
+                .companyLogoUrl("https://ui-avatars.com/api/?name=TechFlow")
+                .companyDescription("Công ty công nghệ hàng đầu chuyên cung cấp giải pháp chuyển đổi số.")
+                .website("https://techflow.vn")
+                .address("123 Đường Láng")
+                .city("Hà Nội")
+                .country("Việt Nam")
+                .companySize("50-100")
+                .industry("Công nghệ thông tin")
+                .profileCompleteness(100)
+                .totalSpent(BigDecimal.ZERO)
+                .projectsPosted(0)
+                .averageRating(BigDecimal.valueOf(5.0))
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        employerRepository.save(employer);
     }
 
     private void seedProjects() {

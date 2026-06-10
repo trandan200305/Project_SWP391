@@ -1,26 +1,26 @@
-import React, { useState } from 'react';
-import { Chrome, Eye, EyeOff, Sparkles, CheckCircle, X } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
+import React, { useState } from "react";
+import { Chrome, Eye, EyeOff, Sparkles, CheckCircle, X } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { authApi } from '../api/authApi.js';
 
 export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
-  const [role, setRole] = useState('freelancer'); 
+  const [role, setRole] = useState("freelancer"); // 'freelancer' or 'employer'
   const [showPassword, setShowPassword] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [errorField, setErrorField] = useState(''); 
+  const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState("");
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const decoded = jwtDecode(credentialResponse.credential);
       const data = await authApi.login({
@@ -36,10 +36,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           if (onLoginSuccess) onLoginSuccess(data.user);
         }, 1200);
       } else {
-        setError(data.message || 'Đăng ký bằng Google thất bại.');
+        setError(data.message || "Đăng ký bằng Google thất bại.");
       }
     } catch (err) {
-      setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
+      setError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -47,11 +47,20 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!fullName || !displayName || !phoneNumber || !email || !password || !agreeTerms) return;
+
+    if (
+      !fullName ||
+      !displayName ||
+      !phoneNumber ||
+      !email ||
+      !password ||
+      !agreeTerms
+    )
+      return;
 
     setLoading(true);
-    setError('');
-    setErrorField('');
+    setError("");
+    setErrorField("");
 
     try {
       const data = await authApi.register({
@@ -70,28 +79,28 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           if (onSwitchToLogin) onSwitchToLogin();
         }, 1500);
       } else {
-        setError(data.message || 'Đăng ký thất bại!');
-        setErrorField(data.field || ''); 
+        setError(data.message || "Đăng ký thất bại!");
+        setErrorField(data.field || "");
       }
     } catch (err) {
-      setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
+      setError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div 
-      onClick={onClose} 
+    <div
+      onClick={onClose}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-primary/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
-      {}
-      <div 
-        onClick={(e) => e.stopPropagation()} 
+      {/* Centered Modal Card Container */}
+      <div
+        onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[580px] animate-scale-up border border-slate-100"
       >
-        {}
-        <button 
+        {/* Floating Close Button */}
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
           title="Đóng"
@@ -119,7 +128,8 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
               Join the world's finest digital workforce.
             </h1>
             <p className="text-white/60 text-[12px] mt-2 font-medium">
-              Start building your professional profile, connecting with top-tier partners, and securing projects.
+              Start building your professional profile, connecting with top-tier
+              partners, and securing projects.
             </p>
           </div>
 
@@ -128,28 +138,45 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
             <div className="flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-secondary shrink-0" />
               <div>
-                <h4 className="font-bold text-white text-[12px]">Top International Projects</h4>
-                <p className="text-[10px] text-white/50">Gain access to clients looking for skilled talent worldwide.</p>
+                <h4 className="font-bold text-white text-[12px]">
+                  Top International Projects
+                </h4>
+                <p className="text-[10px] text-white/50">
+                  Gain access to clients looking for skilled talent worldwide.
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-secondary shrink-0" />
               <div>
-                <h4 className="font-bold text-white text-[12px]">Secure Escrow System</h4>
-                <p className="text-[10px] text-white/50">Your funds are completely protected via smart milestone contracts.</p>
+                <h4 className="font-bold text-white text-[12px]">
+                  Secure Escrow System
+                </h4>
+                <p className="text-[10px] text-white/50">
+                  Your funds are completely protected via smart milestone
+                  contracts.
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="w-full flex justify-between border-t border-white/10 pt-3 text-white">
                 <div>
-                  <span className="block text-[15px] font-extrabold text-secondary">1.5M+</span>
-                  <span className="text-[9px] text-white/40 uppercase font-semibold">Freelancers</span>
+                  <span className="block text-[15px] font-extrabold text-secondary">
+                    1.5M+
+                  </span>
+                  <span className="text-[9px] text-white/40 uppercase font-semibold">
+                    Freelancers
+                  </span>
                 </div>
                 <div>
-                  <span className="block text-[15px] font-extrabold text-secondary">850k+</span>
-                  <span className="text-[9px] text-white/40 uppercase font-semibold">Completed Projects</span>
+                  <span className="block text-[15px] font-extrabold text-secondary">
+                    850k+
+                  </span>
+                  <span className="text-[9px] text-white/40 uppercase font-semibold">
+                    Completed Projects
+                  </span>
                 </div>
               </div>
             </div>
@@ -161,7 +188,9 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           {/* Main Content Area */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
             {/* Form Headers */}
-            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Create your free profile</h2>
+            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+              Create your free profile
+            </h2>
             <p className="font-sans text-muted text-[13px] mb-2.5">
               Start your professional ecosystem today.
             </p>
@@ -178,22 +207,22 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
             <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-2">
               <button
                 type="button"
-                onClick={() => setRole('freelancer')}
+                onClick={() => setRole("freelancer")}
                 className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'freelancer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
+                  role === "freelancer"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-muted hover:text-primary"
                 }`}
               >
                 Freelancer
               </button>
               <button
                 type="button"
-                onClick={() => setRole('employer')}
+                onClick={() => setRole("employer")}
                 className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === 'employer'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-muted hover:text-primary'
+                  role === "employer"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-muted hover:text-primary"
                 }`}
               >
                 Employer
@@ -204,7 +233,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
             <div className="mb-2 flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
-                onError={() => setError('Đăng ký bằng Google thất bại')}
+                onError={() => setError("Đăng ký bằng Google thất bại")}
                 useOneTap
                 theme="outline"
                 size="large"
@@ -235,27 +264,34 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <input
                     type="text"
                     value={fullName}
-                    onChange={(e) => { setFullName(e.target.value); }}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                    }}
                     required
                     className="w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium border-muted-light/60 focus:border-secondary focus:ring-secondary"
                   />
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'displayName' ? 'text-rose-600' : 'text-primary'}`}>
+                  <label
+                    className={`block text-[11px] font-bold mb-1 ${errorField === "displayName" ? "text-rose-600" : "text-primary"}`}
+                  >
                     Display Name
                   </label>
                   <input
                     type="text"
                     value={displayName}
-                    onChange={(e) => { setDisplayName(e.target.value); if (errorField === 'displayName') setErrorField(''); }}
+                    onChange={(e) => {
+                      setDisplayName(e.target.value);
+                      if (errorField === "displayName") setErrorField("");
+                    }}
                     required
                     className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === 'displayName'
-                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
-                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                      errorField === "displayName"
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
                     }`}
                   />
-                  {errorField === 'displayName' && (
+                  {errorField === "displayName" && (
                     <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
                       Tên đã tồn tại
@@ -267,21 +303,26 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
               {/* Email & Phone Number (Dual Column) */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'email' ? 'text-rose-600' : 'text-primary'}`}>
+                  <label
+                    className={`block text-[11px] font-bold mb-1 ${errorField === "email" ? "text-rose-600" : "text-primary"}`}
+                  >
                     Email Address
                   </label>
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); if (errorField === 'email') setErrorField(''); }}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorField === "email") setErrorField("");
+                    }}
                     required
                     className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === 'email'
-                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
-                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                      errorField === "email"
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
                     }`}
                   />
-                  {errorField === 'email' && (
+                  {errorField === "email" && (
                     <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
                       Email đã tồn tại
@@ -289,21 +330,26 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   )}
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-bold mb-1 ${errorField === 'phone' ? 'text-rose-600' : 'text-primary'}`}>
+                  <label
+                    className={`block text-[11px] font-bold mb-1 ${errorField === "phone" ? "text-rose-600" : "text-primary"}`}
+                  >
                     Phone Number
                   </label>
                   <input
                     type="tel"
                     value={phoneNumber}
-                    onChange={(e) => { setPhoneNumber(e.target.value); if (errorField === 'phone') setErrorField(''); }}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      if (errorField === "phone") setErrorField("");
+                    }}
                     required
                     className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === 'phone'
-                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50'
-                        : 'border-muted-light/60 focus:border-secondary focus:ring-secondary'
+                      errorField === "phone"
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
                     }`}
                   />
-                  {errorField === 'phone' && (
+                  {errorField === "phone" && (
                     <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
                       SĐT đã được dùng
@@ -321,7 +367,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                 </div>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -332,7 +378,11 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4.5 h-4.5" />
+                    ) : (
+                      <Eye className="w-4.5 h-4.5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -344,11 +394,22 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   id="agree"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  required
+                  required // <--- ĐÂY LÀ KHÓA RÀNG BUỘC CỦA TRÌNH DUYỆT
                   className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded mt-0.5 cursor-pointer"
                 />
-                <label htmlFor="agree" className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal">
-                  I agree to the <a href="#terms" className="text-secondary hover:underline">Terms of Service</a> & <a href="#privacy" className="text-secondary hover:underline">Privacy Policy</a>.
+                <label
+                  htmlFor="agree"
+                  className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal"
+                >
+                  I agree to the{" "}
+                  <a href="#terms" className="text-secondary hover:underline">
+                    Terms of Service
+                  </a>{" "}
+                  &{" "}
+                  <a href="#privacy" className="text-secondary hover:underline">
+                    Privacy Policy
+                  </a>
+                  .
                 </label>
               </div>
 
@@ -357,15 +418,15 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                 type="submit"
                 disabled={loading || success}
                 className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                  success 
-                    ? 'bg-emerald-600 text-white shadow-lg animate-pulse' 
-                    : 'bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]'
+                  success
+                    ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                    : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
                 }`}
               >
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : success ? (
-                  'Tạo tài khoản thành công!'
+                  "Tạo tài khoản thành công!"
                 ) : (
                   `Create free profile`
                 )}
@@ -374,9 +435,9 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
 
             {/* Switch to Login */}
             <div className="mt-2.5 text-center text-[12px] text-muted font-medium">
-              Already have an account?{' '}
-              <a 
-                href="#login" 
+              Already have an account?{" "}
+              <a
+                href="#login"
                 onClick={(e) => {
                   e.preventDefault();
                   if (onSwitchToLogin) onSwitchToLogin();
@@ -392,9 +453,18 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-2.5">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">
-              <a href="#privacy" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#terms" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#help" className="hover:text-primary transition-colors">Help</a>
+              <a
+                href="#privacy"
+                className="hover:text-primary transition-colors"
+              >
+                Privacy
+              </a>
+              <a href="#terms" className="hover:text-primary transition-colors">
+                Terms
+              </a>
+              <a href="#help" className="hover:text-primary transition-colors">
+                Help
+              </a>
             </div>
           </div>
         </div>

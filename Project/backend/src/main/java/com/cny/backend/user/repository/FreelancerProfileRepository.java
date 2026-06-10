@@ -25,7 +25,7 @@ import java.util.Optional;
 
 @Repository
 public interface FreelancerProfileRepository extends JpaRepository<FreelancerProfile, Integer> {
-    Optional<FreelancerProfile> findByFreelancerProfileId(Integer freelancerId);
+    Optional<FreelancerProfile> findByFreelancer_ProfileId(Integer freelancerId);
 
     List<FreelancerProfile> findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
 
