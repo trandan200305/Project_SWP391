@@ -184,7 +184,7 @@ export default function App() {
   };
 
   const handleNavigate = (page, params = null) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'profile'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
       return;

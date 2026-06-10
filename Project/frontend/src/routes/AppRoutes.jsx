@@ -9,6 +9,7 @@ import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
+import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -22,6 +23,10 @@ export default function AppRoutes({
 }) {
   if (currentPage === 'admin') {
     return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+  }
+
+  if (currentPage === 'profile') {
+    return <UserProfilePage user={user} onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'coming_soon') {

@@ -291,11 +291,11 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                   <button 
                     onClick={() => {
                       setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('coming_soon');
+                      if (onNavigate) onNavigate('profile');
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                   >
-                    <User className="w-4 h-4" /> Sửa thông tin cá nhân
+                    <User className="w-4 h-4" /> Hồ sơ cá nhân
                   </button>
 
                   <button 
