@@ -34,7 +34,21 @@ export default function UserProfilePage({ user, onNavigate }) {
     productLink: ''
   });
 
+  const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(true);
+  const [successToast, setSuccessToast] = useState(null);
+  const [errorToast, setErrorToast] = useState(null);
+
   const freelancerId = user?.profileId || user?.freelancerId || 1; // Default to 1 for testing if user is missing
+
+  const showSuccess = (msg) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(null), 3000);
+  };
+
+  const showError = (msg) => {
+    setErrorToast(msg);
+    setTimeout(() => setErrorToast(null), 3000);
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -66,6 +80,13 @@ export default function UserProfilePage({ user, onNavigate }) {
   };
 
   const handleSaveWorkProfile = async () => {
+    // Validation
+    if (!workProfile.professionalTitle || !workProfile.bio || !workProfile.expertiseField || 
+        !workProfile.experienceLevel || !workProfile.primarySkills || !workProfile.servicesOffered) {
+      showError('Vui lòng nhập đầy đủ các trường bắt buộc (*)');
+      return;
+    }
+
     try {
       const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/work-profile`, {
         method: 'PUT',
@@ -73,17 +94,23 @@ export default function UserProfilePage({ user, onNavigate }) {
         body: JSON.stringify(workProfile)
       });
       if (res.ok) {
-        alert('Lưu hồ sơ làm việc thành công!');
+        showSuccess('Lưu hồ sơ làm việc thành công!');
+        setIsEditingWorkProfile(false);
       } else {
-        alert('Lưu thất bại!');
+        showError('Lưu thất bại! Hãy thử lại.');
       }
     } catch (e) {
       console.error(e);
-      alert('Đã xảy ra lỗi!');
+      showError('Đã xảy ra lỗi kết nối đến server!');
     }
   };
 
   const handleSavePortfolio = async () => {
+    if (!newPortfolio.title || !newPortfolio.attachmentUrl || !newPortfolio.description) {
+      showError('Vui lòng nhập đầy đủ các trường bắt buộc (*)');
+      return;
+    }
+
     try {
       const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/portfolios`, {
         method: 'POST',
@@ -91,18 +118,18 @@ export default function UserProfilePage({ user, onNavigate }) {
         body: JSON.stringify(newPortfolio)
       });
       if (res.ok) {
-        alert('Lưu hồ sơ năng lực thành công!');
+        showSuccess('Lưu hồ sơ năng lực thành công!');
         fetchPortfolios();
         setIsAddingPortfolio(false);
         setNewPortfolio({
           title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
         });
       } else {
-        alert('Lưu thất bại!');
+        showError('Lưu thất bại! Hãy thử lại.');
       }
     } catch (e) {
       console.error(e);
-      alert('Đã xảy ra lỗi!');
+      showError('Đã xảy ra lỗi kết nối đến server!');
     }
   };
 
@@ -284,7 +311,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                             placeholder="Giới thiệu ngắn gọn" 
                             value={workProfile.professionalTitle}
                             onChange={(e) => setWorkProfile({...workProfile, professionalTitle: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
                           />
                           <p className="text-xs text-slate-400 mt-1">VD: Lập trình viên web PHP / Chuyên gia thiết kế đồ hoạ với 6 năm kinh nghiệm / v.v...</p>
                         </div>
@@ -300,7 +328,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                             placeholder="Bản giới thiệu đầy đủ này sẽ giúp người xem hiểu rõ hơn về bạn..."
                             value={workProfile.bio}
                             onChange={(e) => setWorkProfile({...workProfile, bio: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y"
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`}
                           />
                         </div>
                       </div>
@@ -313,7 +342,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                             placeholder="Điền link website ở đây (nếu có)" 
                             value={workProfile.personalWebsite}
                             onChange={(e) => setWorkProfile({...workProfile, personalWebsite: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
                           />
                         </div>
                       </div>
@@ -338,7 +368,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <select 
                             value={workProfile.expertiseField}
                             onChange={(e) => setWorkProfile({...workProfile, expertiseField: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
                           >
                             <option value="">Chọn lĩnh vực chuyên môn</option>
                             {categories.map(cat => (
@@ -355,7 +386,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <select 
                             value={workProfile.experienceLevel}
                             onChange={(e) => setWorkProfile({...workProfile, experienceLevel: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
                           >
                             <option value="">Chọn mức kinh nghiệm phù hợp</option>
                             <option value="Mới đi làm">Mới đi làm</option>
@@ -379,7 +411,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                             placeholder="Kỹ năng bạn có" 
                             value={workProfile.primarySkills}
                             onChange={(e) => setWorkProfile({...workProfile, primarySkills: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
                           />
                           <p className="text-xs text-slate-400 mt-1">Kỹ năng của bạn không có trong danh sách trên? Hãy <a href="#" className="text-blue-500 hover:underline">gửi gợi ý cho chúng tôi</a>.</p>
                         </div>
@@ -407,7 +440,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                             placeholder="Tên dịch vụ (VD: Thiết kế banner facebook,...)" 
                             value={workProfile.servicesOffered}
                             onChange={(e) => setWorkProfile({...workProfile, servicesOffered: e.target.value})}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                            disabled={!isEditingWorkProfile}
+                            className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
                           />
                           <p className="text-xs text-slate-400 mt-1 leading-relaxed">Bạn cần nhập ít nhất 1 dịch vụ mà bạn có thể cung cấp cho khách hàng. Bạn sẽ nhận được thông báo việc ngay lập tức nếu khách hàng đăng việc liên quan đến dịch vụ của bạn.</p>
                         </div>
@@ -419,7 +453,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <select 
                             value={workProfile.isAvailable ? 'Có' : 'Không'}
                             onChange={(e) => setWorkProfile({...workProfile, isAvailable: e.target.value === 'Có'})}
-                            className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                            disabled={!isEditingWorkProfile}
+                            className={`w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
                           >
                             <option value="Có">Có</option>
                             <option value="Không">Không</option>
@@ -433,7 +468,8 @@ export default function UserProfilePage({ user, onNavigate }) {
                           <select 
                             value={workProfile.availabilityType}
                             onChange={(e) => setWorkProfile({...workProfile, availabilityType: e.target.value})}
-                            className="w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 bg-white"
+                            disabled={!isEditingWorkProfile}
+                            className={`w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
                           >
                             <option value="Bán thời gian (dưới 40h/tuần)">Bán thời gian (dưới 40h/tuần)</option>
                             <option value="Toàn thời gian (trên 40h/tuần)">Toàn thời gian (trên 40h/tuần)</option>
@@ -443,10 +479,22 @@ export default function UserProfilePage({ user, onNavigate }) {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-start">
-                    <button onClick={handleSaveWorkProfile} className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors">
-                      Lưu các thay đổi
-                    </button>
+                  <div className="pt-4 border-t border-slate-100 flex justify-start gap-4">
+                    {!isEditingWorkProfile ? (
+                      <button 
+                        onClick={() => setIsEditingWorkProfile(true)} 
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
+                      >
+                        Chỉnh sửa hồ sơ
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleSaveWorkProfile} 
+                        className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
+                      >
+                        Lưu các thay đổi
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -628,6 +676,24 @@ export default function UserProfilePage({ user, onNavigate }) {
       </div>
       {isShowComingSoon && (
         <ComingSoon isPopup={true} onClose={() => setIsShowComingSoon(false)} />
+      )}
+
+      {/* Success Toast */}
+      {successToast && (
+        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="bg-emerald-500 rounded-full p-1">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <span className="font-medium text-sm">{successToast}</span>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
+          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span className="font-medium text-sm">{errorToast}</span>
+        </div>
       )}
     </div>
   );

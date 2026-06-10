@@ -29,8 +29,14 @@ public class FreelancerService {
 
     @Transactional
     public WorkProfileDto updateWorkProfile(Integer freelancerId, WorkProfileDto dto) {
-        FreelancerProfile profile = profileRepository.findByFreelancerProfileId(freelancerId)
-                .orElseThrow(() -> new RuntimeException("Freelancer profile not found"));
+        FreelancerProfile profile = profileRepository.findByFreelancer_ProfileId(freelancerId)
+                .orElseGet(() -> {
+                    Freelancer freelancer = freelancerRepository.findById(freelancerId)
+                            .orElseThrow(() -> new RuntimeException("Freelancer not found"));
+                    FreelancerProfile newProfile = new FreelancerProfile();
+                    newProfile.setFreelancer(freelancer);
+                    return newProfile;
+                });
 
         profile.setProfessionalTitle(dto.getProfessionalTitle());
         profile.setBio(dto.getBio());
