@@ -37,6 +37,7 @@ export default function UserProfilePage({ user, onNavigate }) {
   const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(true);
   const [successToast, setSuccessToast] = useState(null);
   const [errorToast, setErrorToast] = useState(null);
+  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
 
   const freelancerId = user?.profileId || user?.freelancerId || 1; // Default to 1 for testing if user is missing
 
@@ -107,7 +108,7 @@ export default function UserProfilePage({ user, onNavigate }) {
 
   const handleSavePortfolio = async () => {
     if (!newPortfolio.title || !newPortfolio.attachmentUrl || !newPortfolio.description) {
-      showError('Vui lòng nhập đầy đủ các trường bắt buộc (*)');
+      showError('Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc (*)');
       return;
     }
 
@@ -118,14 +119,33 @@ export default function UserProfilePage({ user, onNavigate }) {
         body: JSON.stringify(newPortfolio)
       });
       if (res.ok) {
-        showSuccess('Lưu hồ sơ năng lực thành công!');
+        showSuccess('Thêm hồ sơ năng lực thành công!');
         fetchPortfolios();
         setIsAddingPortfolio(false);
         setNewPortfolio({
           title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
         });
       } else {
-        showError('Lưu thất bại! Hãy thử lại.');
+        showError('Thêm hồ sơ thất bại! Hãy thử lại.');
+      }
+    } catch (e) {
+      console.error(e);
+      showError('Đã xảy ra lỗi kết nối đến server!');
+    }
+  };
+
+  const handleDeletePortfolio = async (portfolioId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa hồ sơ năng lực này không?")) return;
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/freelancers/portfolios/${portfolioId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        showSuccess('Xóa hồ sơ năng lực thành công!');
+        fetchPortfolios();
+      } else {
+        showError('Xóa hồ sơ thất bại!');
       }
     } catch (e) {
       console.error(e);
@@ -526,12 +546,20 @@ export default function UserProfilePage({ user, onNavigate }) {
                               <h3 className="font-bold text-slate-800 text-lg">{pf.title}</h3>
                               <p className="text-sm text-slate-500 mt-1">{pf.description?.length > 100 ? pf.description.substring(0, 100) + '...' : pf.description}</p>
                             </div>
-                            <button 
-                            onClick={() => setIsShowComingSoon(true)}
-                              className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                            >
-                              Xem chi tiết
-                            </button>
+                            <div className="flex gap-4">
+                              <button 
+                                onClick={() => setSelectedPortfolio(pf)}
+                                className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                Xem chi tiết
+                              </button>
+                              <button 
+                                onClick={() => handleDeletePortfolio(pf.portfolioId)}
+                                className="text-sm font-semibold text-red-500 hover:text-red-700 hover:underline"
+                              >
+                                Xóa
+                              </button>
+                            </div>
                           </div>
                         ))}
                         
@@ -676,6 +704,74 @@ export default function UserProfilePage({ user, onNavigate }) {
       </div>
       {isShowComingSoon && (
         <ComingSoon isPopup={true} onClose={() => setIsShowComingSoon(false)} />
+      )}
+
+      {/* Portfolio Detail Modal */}
+      {selectedPortfolio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg text-slate-800">Chi tiết hồ sơ năng lực</h3>
+              <button 
+                onClick={() => setSelectedPortfolio(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">{selectedPortfolio.title}</h2>
+              {selectedPortfolio.relatedService && (
+                <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded-full mb-6">
+                  {selectedPortfolio.relatedService}
+                </span>
+              )}
+              
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Mô tả dự án</h4>
+                  <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{selectedPortfolio.description}</p>
+                </div>
+                
+                {selectedPortfolio.attachmentUrl && (
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">File đính kèm</h4>
+                    <a href={selectedPortfolio.attachmentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      {selectedPortfolio.attachmentUrl}
+                    </a>
+                  </div>
+                )}
+
+                {selectedPortfolio.productLink && (
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Link sản phẩm</h4>
+                    <a href={selectedPortfolio.productLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      {selectedPortfolio.productLink}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedPortfolio(null)}
+                className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Success Toast */}
