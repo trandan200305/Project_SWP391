@@ -275,14 +275,7 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
       <div className="flex-1 flex flex-col min-w-0 pt-24 pb-12">
         
         <main className="flex-1 px-4 sm:px-8">
-          <div className="max-w-[1000px] mx-auto mb-6 flex justify-between items-center gap-4">
-              {/* MENU CHUYỂN TAB ĐƯỢC THÊM VÀO ĐÂY */}
-              <div className="flex items-center gap-2 bg-white shadow-sm rounded-lg p-1 border border-gray-200">
-                  <button onClick={() => setActiveTab('profile')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeTab==='profile'?'bg-blue-100 text-blue-700':'text-gray-600 hover:bg-gray-50'}`}>Hồ Sơ</button>
-                  <button onClick={() => setActiveTab('edit_profile')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeTab==='edit_profile'?'bg-blue-100 text-blue-700':'text-gray-600 hover:bg-gray-50'}`}>Sửa Hồ Sơ</button>
-                  <button onClick={() => setActiveTab('preferences')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeTab==='preferences'?'bg-blue-100 text-blue-700':'text-gray-600 hover:bg-gray-50'}`}>Cài Đặt Chung</button>
-              </div>
-          </div>
+
           
           <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             
