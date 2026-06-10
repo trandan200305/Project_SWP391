@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Shield, LogOut, User, MessageCircle, Building2, Plus, Briefcase } from 'lucide-react';
+import { Menu, X, Shield, LogOut, User, MessageCircle, Building2, Plus, Briefcase, Bookmark } from 'lucide-react';
 
 export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -237,7 +237,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               onClick={(e) => {
                 e.preventDefault();
                 if (onNavigate) {
-                  onNavigate('coming_soon');
+                  onNavigate('find_jobs');
                 }
               }}
               className="font-medium text-body-md text-primary hover:text-secondary transition-colors duration-200"
@@ -337,16 +337,39 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     </button>
                   )}
 
-                  <button 
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      if (onNavigate) onNavigate(user?.role === 'EMPLOYER' ? 'employer_profile' : 'coming_soon');
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                  >
-                    {user?.role === 'EMPLOYER' ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                    {user?.role === 'EMPLOYER' ? 'Thông tin' : 'Sửa thông tin cá nhân'}
-                  </button>
+                  {user?.role === 'EMPLOYER' ? (
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate('employer_profile');
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                    >
+                      <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
+                    </button>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                      >
+                        <User className="w-4 h-4" /> Hồ sơ cá nhân
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('your_jobs');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
+                      >
+                        <Bookmark className="w-4 h-4" /> Công việc của bạn
+                      </button>
+                    </>
+                  )}
 
                   <button 
                     onClick={handleMessengerClick}
@@ -434,7 +457,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             onClick={(e) => {
               e.preventDefault();
               setIsOpen(false);
-              if (onNavigate) onNavigate('coming_soon');
+              if (onNavigate) onNavigate('find_jobs');
             }}
             className="font-medium text-lg text-primary py-2 border-b border-muted-light/30"
           >

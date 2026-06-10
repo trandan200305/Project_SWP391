@@ -16,7 +16,9 @@ import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 import com.cny.backend.project.service.ProjectService;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +34,15 @@ public class ProjectController {
     @Autowired
     private ProjectService projectService;
 
-    @Autowired
-    private ProjectRepository projectRepository;
-
     @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getPublishedProjects());
+    public ResponseEntity<?> getAllProjects(
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
+        if (page == null || size == null) {
+            return ResponseEntity.ok(projectService.getPublishedProjects());
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(projectService.getAllPublishedProjects(pageable));
     }
 
     @GetMapping("/latest")
@@ -48,11 +53,20 @@ public class ProjectController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Project>> searchProjects(@RequestParam("keyword") String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return getLatestProjects();
+    public ResponseEntity<?> searchProjects(
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
+            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            @RequestParam(value = "minSalary", required = false) java.math.BigDecimal minSalary,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
+        if (page == null || size == null) {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return getLatestProjects();
+            }
+            return ResponseEntity.ok(projectService.searchProjects(keyword.trim()));
         }
-        return ResponseEntity.ok(projectService.searchProjects(keyword.trim()));
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, minSalary, pageable));
     }
 
     @GetMapping("/employer/{employerId}")
@@ -98,5 +112,30 @@ public class ProjectController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/saved")
+    public ResponseEntity<List<ProjectDto>> getSavedProjects(
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        return ResponseEntity.ok(projectService.getSavedProjects(userId, userRole));
+    }
+
+    @PostMapping("/{projectId}/save")
+    public ResponseEntity<Void> saveProject(
+            @PathVariable Integer projectId,
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        projectService.saveProject(userId, userRole, projectId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{projectId}/save")
+    public ResponseEntity<Void> unsaveProject(
+            @PathVariable Integer projectId,
+            @RequestParam Integer userId,
+            @RequestParam String userRole) {
+        projectService.unsaveProject(userId, userRole, projectId);
+        return ResponseEntity.ok().build();
     }
 }

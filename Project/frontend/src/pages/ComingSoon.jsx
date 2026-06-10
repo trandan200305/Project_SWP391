@@ -1,10 +1,9 @@
 import React from 'react';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, X } from 'lucide-react';
 
-export default function ComingSoon({ onNavigateHome }) {
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {}
+export default function ComingSoon({ onNavigateHome, isPopup, onClose }) {
+  const content = (
+    <>
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -23,13 +22,29 @@ export default function ComingSoon({ onNavigateHome }) {
         </p>
 
         <button 
-          onClick={onNavigateHome}
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary-light text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          onClick={isPopup ? onClose : onNavigateHome}
+          className="inline-flex items-center gap-2 bg-[#0F172A] hover:bg-slate-800 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
         >
-          <ArrowLeft className="w-5 h-5" />
-          Quay lại Trang Chủ
+          {isPopup ? <X className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
+          {isPopup ? "Đóng" : "Quay lại Trang Chủ"}
         </button>
       </div>
+    </>
+  );
+
+  if (isPopup) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#F8FAFC] px-4 overflow-hidden">
+        <div className="relative w-full max-w-2xl animate-fade-in flex items-center justify-center">
+           {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {content}
     </div>
   );
 }

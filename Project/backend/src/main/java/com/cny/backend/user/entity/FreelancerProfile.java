@@ -60,6 +60,24 @@ public class FreelancerProfile {
     @Column(length = 100)
     private String country;
 
+    @Column(name = "personal_website")
+    private String personalWebsite;
+
+    @Column(name = "expertise_field")
+    private String expertiseField;
+
+    @Column(name = "experience_level")
+    private String experienceLevel;
+
+    @Column(name = "primary_skills", columnDefinition = "NVARCHAR(MAX)")
+    private String primarySkills;
+
+    @Column(name = "services_offered", columnDefinition = "NVARCHAR(MAX)")
+    private String servicesOffered;
+
+    @Column(name = "availability_type")
+    private String availabilityType;
+
     @Column(name = "profile_completeness")
     @Builder.Default
     private Integer profileCompleteness = 0;

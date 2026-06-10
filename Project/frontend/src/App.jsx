@@ -119,6 +119,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [pageParams, setPageParams] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [user, setUser] = useState(null);
@@ -181,8 +182,8 @@ export default function App() {
       projectsSection.scrollIntoView({ behavior: "smooth" });
     }
   };
-  const handleNavigate = (page) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile'];
+  const handleNavigate = (page, params = null) => {
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
       return;
@@ -201,6 +202,7 @@ export default function App() {
       return;
     }
     setCurrentPage(page);
+    setPageParams(params);
   };
 
   const handleLoginSuccess = (userData) => {
@@ -237,6 +239,7 @@ export default function App() {
   const routesContent = (
     <AppRoutes
       currentPage={currentPage}
+      pageParams={pageParams}
       user={user}
       searchQuery={searchQuery}
       handleSearch={handleSearch}

@@ -82,7 +82,7 @@ public class AdminService {
     private com.cny.backend.department.repository.DepartmentTaskSignoffRepository departmentTaskSignoffRepository;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
-        "illyasviel1252004@gmail.com",
+        "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
     );
 
