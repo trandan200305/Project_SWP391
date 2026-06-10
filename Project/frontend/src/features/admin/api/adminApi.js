@@ -26,6 +26,15 @@ export const adminApi = {
   getArticles: () => api.get('/admin/articles'),
   getTickets: () => api.get('/admin/tickets'),
   getSeoConfigs: () => api.get('/admin/seo-configs'),
+  getProfileRequests: () => api.get('/admin/profile-requests'),
+  moderateProfileRequest: (requestId, approve, reasonParam, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/profile-requests/${requestId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   updateUserStatus: (userId, role, status, reasonParam, adminPin, adminId) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
