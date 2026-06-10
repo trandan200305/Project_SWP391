@@ -227,7 +227,7 @@ export default function FeaturedJobs({ searchQuery }) {
                 
                 return (
                   <div 
-                    key={project.projectId} 
+                    key={project.id} 
                     className={`bg-surface p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between group hover:shadow-lg ${
                       isEnterprise 
                         ? 'border-secondary/40 shadow-sm shadow-secondary/5 bg-gradient-to-b from-white to-secondary-light/10' 
@@ -235,7 +235,7 @@ export default function FeaturedJobs({ searchQuery }) {
                     }`}
                   >
                     <div>
-                      {}
+                      {/* Job Header */}
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-3 py-1 rounded-full text-body-sm font-bold ${
@@ -254,14 +254,14 @@ export default function FeaturedJobs({ searchQuery }) {
                           )}
                         </div>
                         <button 
-                          onClick={() => toggleBookmark(project.projectId)}
+                          onClick={() => toggleBookmark(project.id)}
                           className={`p-1.5 rounded-lg border transition-colors ${
-                            savedJobs[project.projectId] 
+                            savedJobs[project.id] 
                               ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100' 
                               : 'bg-muted-light/20 border-muted-light/60 text-muted hover:bg-muted-light/50'
                           }`}
                         >
-                          <Bookmark className="w-4 h-4" fill={savedJobs[project.projectId] ? "currentColor" : "none"} />
+                          <Bookmark className="w-4 h-4" fill={savedJobs[project.id] ? "currentColor" : "none"} />
                         </button>
                       </div>
 
