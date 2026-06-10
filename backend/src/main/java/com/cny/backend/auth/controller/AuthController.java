@@ -167,6 +167,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
         
+        if (currentPassword.equals(newPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu mới không được trùng với mật khẩu cũ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
         boolean success = authService.changePassword(userId, role, currentPassword, newPassword);
         response.put("success", success);
         if (success) {

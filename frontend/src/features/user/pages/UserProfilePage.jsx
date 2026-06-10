@@ -188,6 +188,10 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
       alert('Mật khẩu xác nhận không khớp');
       return;
     }
+    if (newPassword === currentPassword) {
+      alert('Mật khẩu mới không được trùng với mật khẩu cũ');
+      return;
+    }
     try {
       const response = await fetch('http://localhost:8080/api/auth/change-password', {
         method: 'POST',
