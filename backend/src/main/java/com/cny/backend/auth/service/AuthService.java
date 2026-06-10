@@ -115,6 +115,7 @@ public class AuthService {
         String assignedRole = requestedRole;
         String userStatus = "ACTIVE";
         boolean hasMessengerPin = false;
+        boolean isVerified = false;
 
         if ("ADMIN".equals(assignedRole)) {
             if (totalRoles > 0 && emailInAdmins == 0) {
@@ -221,6 +222,7 @@ public class AuthService {
 
                 userId = dbEmployer.getEmployerId();
                 userStatus = dbEmployer.getStatus();
+                isVerified = Boolean.TRUE.equals(dbEmployer.getIsVerified());
                 
                 boolean updated = false;
                 if (googleId != null && dbEmployer.getGoogleId() == null) {
@@ -355,6 +357,7 @@ public class AuthService {
 
                 userId = dbFreelancer.getProfileId();
                 userStatus = dbFreelancer.getStatus();
+                isVerified = Boolean.TRUE.equals(dbFreelancer.getIsVerified());
                 
                 boolean updated = false;
                 if (googleId != null && dbFreelancer.getGoogleId() == null) {
@@ -439,6 +442,7 @@ public class AuthService {
         userObj.put("role", assignedRole);
         userObj.put("avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name);
         userObj.put("hasMessengerPin", hasMessengerPin);
+        userObj.put("isVerified", isVerified);
         
         response.put("user", userObj);
         return response;
