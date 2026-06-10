@@ -110,37 +110,7 @@ public class Freelancer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
-    // ==========================================
-    // KYC Verification Fields
-    // ==========================================
-    @Column(name = "kyc_status", columnDefinition = "VARCHAR(20) DEFAULT 'UNVERIFIED'")
-    private String kycStatus = "UNVERIFIED";
-
-    @Column(name = "id_card_front_url")
-    private String idCardFrontUrl;
-
-    @Column(name = "id_card_back_url")
-    private String idCardBackUrl;
-
-    @Column(name = "portrait_url")
-    private String portraitUrl;
-
-    @Column(name = "kyc_submitted_at")
-    private LocalDateTime kycSubmittedAt;
-
-    @Column(name = "kyc_reviewed_at")
-    private LocalDateTime kycReviewedAt;
-
-    @Column(name = "kyc_reviewed_by_staff_id")
-    private Integer kycReviewedByStaffId;
-
-    @Column(name = "kyc_rejected_reason")
-    private String kycRejectedReason;
-
-    @Column(name = "is_verified", nullable = false, columnDefinition = "boolean default false")
-    private Boolean isVerified = false;
-    // ==========================================
-
+    
     @Transient
     private TransientUser user;
 
