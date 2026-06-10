@@ -46,6 +46,37 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
+    // Validate budget range
+    if (newProject.projectType === 'RANGE') {
+      const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
+      const maxStr = newProject.budgetMax ? String(newProject.budgetMax).trim() : '';
+      if (minStr || maxStr) {
+        if (!minStr || !maxStr) {
+          setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.' });
+          return;
+        }
+        const min = parseFloat(minStr);
+        const max = parseFloat(maxStr);
+        if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
+          setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
+          return;
+        }
+        if (min > max) {
+          setNotice({ type: 'error', message: 'Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.' });
+          return;
+        }
+      }
+    } else if (newProject.projectType === 'FIXED') {
+      const fixedStr = newProject.budgetFixed ? String(newProject.budgetFixed).trim() : '';
+      if (fixedStr) {
+        const fixed = parseFloat(fixedStr);
+        if (isNaN(fixed) || fixed <= 0) {
+          setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
+          return;
+        }
+      }
+    }
+
     setPostingProject(true);
     setNotice(null);
 
