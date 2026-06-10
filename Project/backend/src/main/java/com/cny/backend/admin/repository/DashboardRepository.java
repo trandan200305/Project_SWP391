@@ -168,7 +168,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     List<AuditLogProjection> getAuditLogs();
 
     
-    @Query(value = "SELECT category_id as id, name, description, is_active as isActive FROM job_categories ORDER BY name ASC", nativeQuery = true)
+    @Query(value = "SELECT category_id as id, category_name as name, description, is_active as isActive FROM job_categories ORDER BY category_name ASC", nativeQuery = true)
     List<JobCategoryProjection> getJobCategories();
     
     

@@ -64,15 +64,37 @@ public class ProjectService {
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
 
+        String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED";
+
+        if ("RANGE".equals(type)) {
+            if (dto.getBudgetMin() != null || dto.getBudgetMax() != null) {
+                if (dto.getBudgetMin() == null || dto.getBudgetMax() == null) {
+                    throw new IllegalArgumentException("Vui lòng điền đầy đủ ngân sách tối thiểu và tối đa.");
+                }
+                if (dto.getBudgetMin().compareTo(java.math.BigDecimal.ZERO) <= 0 || dto.getBudgetMax().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Ngân sách tối thiểu và tối đa phải lớn hơn 0.");
+                }
+                if (dto.getBudgetMin().compareTo(dto.getBudgetMax()) > 0) {
+                    throw new IllegalArgumentException("Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.");
+                }
+            }
+        } else {
+            if (dto.getBudgetFixed() != null) {
+                if (dto.getBudgetFixed().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Ngân sách cố định phải lớn hơn 0.");
+                }
+            }
+        }
+
         Project project = Project.builder()
                 .client(client)
                 .category(category)
                 .title(dto.getTitle())
                 .description(dto.getDescription())
-                .projectType(dto.getProjectType() != null ? dto.getProjectType() : "FIXED")
-                .budgetMin(dto.getBudgetMin())
-                .budgetMax(dto.getBudgetMax())
-                .budgetFixed(dto.getBudgetFixed())
+                .projectType(type)
+                .budgetMin("RANGE".equals(type) ? dto.getBudgetMin() : null)
+                .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
+                .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
                 .postingExpires(LocalDate.now().plusDays(30)) // Hạn đăng tin mặc định 30 ngày
                 .status("PUBLISHED") // Published directly
@@ -96,11 +118,36 @@ public class ProjectService {
 
         if (dto.getTitle() != null) project.setTitle(dto.getTitle());
         if (dto.getDescription() != null) project.setDescription(dto.getDescription());
-        if (dto.getProjectType() != null) project.setProjectType(dto.getProjectType());
         
-        project.setBudgetMin(dto.getBudgetMin());
-        project.setBudgetMax(dto.getBudgetMax());
-        project.setBudgetFixed(dto.getBudgetFixed());
+        String type = dto.getProjectType() != null ? dto.getProjectType() : project.getProjectType();
+        if (dto.getProjectType() != null) project.setProjectType(type);
+
+        if ("RANGE".equals(type)) {
+            if (dto.getBudgetMin() != null || dto.getBudgetMax() != null) {
+                if (dto.getBudgetMin() == null || dto.getBudgetMax() == null) {
+                    throw new IllegalArgumentException("Vui lòng điền đầy đủ ngân sách tối thiểu và tối đa.");
+                }
+                if (dto.getBudgetMin().compareTo(java.math.BigDecimal.ZERO) <= 0 || dto.getBudgetMax().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Ngân sách tối thiểu và tối đa phải lớn hơn 0.");
+                }
+                if (dto.getBudgetMin().compareTo(dto.getBudgetMax()) > 0) {
+                    throw new IllegalArgumentException("Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.");
+                }
+            }
+            project.setBudgetMin(dto.getBudgetMin());
+            project.setBudgetMax(dto.getBudgetMax());
+            project.setBudgetFixed(null);
+        } else {
+            if (dto.getBudgetFixed() != null) {
+                if (dto.getBudgetFixed().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Ngân sách cố định phải lớn hơn 0.");
+                }
+            }
+            project.setBudgetFixed(dto.getBudgetFixed());
+            project.setBudgetMin(null);
+            project.setBudgetMax(null);
+        }
+        
         project.setDeadline(dto.getDeadline());
 
         return projectRepository.save(project);
