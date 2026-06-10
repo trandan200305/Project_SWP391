@@ -48,7 +48,7 @@ public class FreelancerProfile {
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String bio;
 
-    @Column(name = "hourly_rate")
+    @Column(name = "hourly_rate", precision = 15, scale = 2)
     private BigDecimal hourlyRate;
 
     @Column(length = 500)
@@ -82,7 +82,7 @@ public class FreelancerProfile {
     @Builder.Default
     private Integer profileCompleteness = 0;
 
-    @Column(name = "total_earnings")
+    @Column(name = "total_earnings", precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal totalEarnings = BigDecimal.ZERO;
 
@@ -90,7 +90,7 @@ public class FreelancerProfile {
     @Builder.Default
     private Integer projectsCompleted = 0;
 
-    @Column(name = "average_rating")
+    @Column(name = "average_rating", precision = 3, scale = 2)
     @Builder.Default
     private BigDecimal averageRating = BigDecimal.ZERO;
 

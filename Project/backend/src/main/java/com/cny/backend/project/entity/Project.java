@@ -56,13 +56,13 @@ public class Project {
     @Column(name = "project_type", nullable = false, length = 20)
     private String projectType;
 
-    @Column(name = "budget_min")
+    @Column(name = "budget_min", precision = 15, scale = 2)
     private BigDecimal budgetMin;
 
-    @Column(name = "budget_max")
+    @Column(name = "budget_max", precision = 15, scale = 2)
     private BigDecimal budgetMax;
 
-    @Column(name = "budget_fixed")
+    @Column(name = "budget_fixed", precision = 15, scale = 2)
     private BigDecimal budgetFixed;
 
     private LocalDate deadline;

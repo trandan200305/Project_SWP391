@@ -656,6 +656,23 @@ public class AuthService {
         return updated;
     }
 
+    private boolean isUserSuspendedOrDeleted(String email, String role) {
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                return Boolean.TRUE.equals(mgr.getIsDeleted()) || "LOCKED".equalsIgnoreCase(mgr.getStatus()) || "DELETED".equalsIgnoreCase(mgr.getStatus()) || "BANNED".equalsIgnoreCase(mgr.getStatus());
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                return Boolean.TRUE.equals(stf.getIsDeleted()) || "LOCKED".equalsIgnoreCase(stf.getStatus()) || "DELETED".equalsIgnoreCase(stf.getStatus()) || "BANNED".equalsIgnoreCase(stf.getStatus());
+            }
+        }
+        return false;
+    }
+
     public Map<String, Object> verifyInvitationToken(String token) {
         Map<String, Object> response = new HashMap<>();
         Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
@@ -668,6 +685,13 @@ public class AuthService {
         if (!"PENDING".equals(invitation.getStatus())) {
             response.put("success", false);
             response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
+            return response;
+        }
+        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
+            invitation.setStatus("REVOKED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
             return response;
         }
         if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -718,6 +742,13 @@ public class AuthService {
         if (!"PENDING".equals(invitation.getStatus())) {
             response.put("success", false);
             response.put("message", "Lời mời đã được sử dụng hoặc hết hạn!");
+            return response;
+        }
+        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
+            invitation.setStatus("REVOKED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
             return response;
         }
         if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -806,6 +837,13 @@ public class AuthService {
         if (!"PENDING".equals(invitation.getStatus())) {
             response.put("success", false);
             response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
+            return response;
+        }
+        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
+            invitation.setStatus("REVOKED");
+            staffInvitationRepository.save(invitation);
+            response.put("success", false);
+            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
             return response;
         }
 
