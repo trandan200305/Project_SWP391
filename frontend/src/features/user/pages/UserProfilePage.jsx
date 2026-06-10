@@ -6,7 +6,7 @@ import UserSettings from '../components/UserSettings.jsx';
 
 export default function UserProfilePage({ user, onNavigate, defaultTab = 'profile' }) {
   const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
-  const [targetId, setTargetId] = useState(1);
+  const [targetId, setTargetId] = useState(user?.id || 1);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
   const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger'
   
@@ -282,23 +282,6 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
                   <button onClick={() => setActiveTab('edit_profile')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeTab==='edit_profile'?'bg-blue-100 text-blue-700':'text-gray-600 hover:bg-gray-50'}`}>Sửa Hồ Sơ</button>
                   <button onClick={() => setActiveTab('preferences')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeTab==='preferences'?'bg-blue-100 text-blue-700':'text-gray-600 hover:bg-gray-50'}`}>Cài Đặt Chung</button>
               </div>
-             
-             {/* INLINE ROLE TOGGLE FOR EASY MANIPULATION */}
-             <div className="flex items-center bg-white shadow-sm rounded-lg p-1 border border-gray-200">
-                <span className="text-xs font-bold text-gray-500 ml-3 mr-2 uppercase tracking-wide">ID:</span>
-                <input 
-                   type="number" 
-                   value={targetId} 
-                   onChange={e => setTargetId(e.target.value)} 
-                   className="w-16 text-sm font-bold text-gray-900 bg-gray-50 border border-gray-200 rounded px-2 py-1 mr-4 outline-none focus:border-blue-500" 
-                   min="1"
-                />
-                
-                <span className="text-xs font-bold text-gray-500 mr-2 uppercase tracking-wide">Role:</span>
-                <button onClick={() => setRole('freelancer')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${role==='freelancer'?'bg-[#1a73e8] shadow-sm text-white':'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Freelancer</button>
-                <button onClick={() => setRole('employer')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${role==='employer'?'bg-green-600 shadow-sm text-white':'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Employer</button>
-                <button onClick={() => setRole('admin')} className={`px-4 py-1.5 text-xs rounded-md font-bold transition-all ${role==='admin'?'bg-purple-600 shadow-sm text-white':'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Admin</button>
-             </div>
           </div>
           
           <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
