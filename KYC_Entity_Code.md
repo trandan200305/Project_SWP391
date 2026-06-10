@@ -37,27 +37,29 @@
     // --- KẾT THÚC PHẦN KYC ---
 
 
-// 2. Lệnh SQL tương ứng nếu cần chạy trực tiếp cập nhật Database trong MySQL/SQL Server:
+// 2. Lệnh SQL tương ứng để cập nhật Database (Dành cho SQL Server):
 /*
 ALTER TABLE freelancer 
-ADD COLUMN kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
-ADD COLUMN id_card_front_url VARCHAR(500),
-ADD COLUMN id_card_back_url VARCHAR(500),
-ADD COLUMN portrait_url VARCHAR(500),
-ADD COLUMN kyc_submitted_at DATETIME,
-ADD COLUMN kyc_reviewed_at DATETIME,
-ADD COLUMN kyc_reviewed_by_staff_id INT,
-ADD COLUMN kyc_rejected_reason VARCHAR(500),
-ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+ADD 
+    kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
+    id_card_front_url VARCHAR(500),
+    id_card_back_url VARCHAR(500),
+    portrait_url VARCHAR(500),
+    kyc_submitted_at DATETIME,
+    kyc_reviewed_at DATETIME,
+    kyc_reviewed_by_staff_id INT,
+    kyc_rejected_reason VARCHAR(500),
+    is_verified BIT DEFAULT 0;
 
 ALTER TABLE employer 
-ADD COLUMN kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
-ADD COLUMN id_card_front_url VARCHAR(500),
-ADD COLUMN id_card_back_url VARCHAR(500),
-ADD COLUMN portrait_url VARCHAR(500),
-ADD COLUMN kyc_submitted_at DATETIME,
-ADD COLUMN kyc_reviewed_at DATETIME,
-ADD COLUMN kyc_reviewed_by_staff_id INT,
-ADD COLUMN kyc_rejected_reason VARCHAR(500),
-ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+ADD 
+    kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
+    id_card_front_url VARCHAR(500),
+    id_card_back_url VARCHAR(500),
+    portrait_url VARCHAR(500),
+    kyc_submitted_at DATETIME,
+    kyc_reviewed_at DATETIME,
+    kyc_reviewed_by_staff_id INT,
+    kyc_rejected_reason VARCHAR(500),
+    is_verified BIT DEFAULT 0;
 */
