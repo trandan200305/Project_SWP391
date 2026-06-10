@@ -39,7 +39,7 @@
 
 // 2. Lệnh SQL tương ứng để cập nhật Database (Dành cho SQL Server):
 /*
-ALTER TABLE freelancer 
+ALTER TABLE freelancers 
 ADD 
     kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
     id_card_front_url VARCHAR(500),
@@ -51,7 +51,7 @@ ADD
     kyc_rejected_reason VARCHAR(500),
     is_verified BIT DEFAULT 0;
 
-ALTER TABLE employer 
+ALTER TABLE employers 
 ADD 
     kyc_status VARCHAR(20) DEFAULT 'UNVERIFIED',
     id_card_front_url VARCHAR(500),
