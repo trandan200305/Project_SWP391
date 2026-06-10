@@ -4,7 +4,7 @@ import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
 
-export default function UserProfilePage({ user, onNavigate, defaultTab = 'profile' }) {
+export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab = 'profile' }) {
   const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
   const [targetId, setTargetId] = useState(user?.id || 1);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
@@ -226,7 +226,7 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
       .then(data => {
         if (data.success) {
           alert(data.message || 'Tài khoản của bạn đã được xóa.');
-          if (onNavigate) onNavigate('home');
+          if (onLogout) onLogout();
         } else {
           alert(data.message || 'Xóa tài khoản thất bại!');
         }
