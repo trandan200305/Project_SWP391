@@ -337,7 +337,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     </button>
                   )}
 
-                  {user?.role === 'EMPLOYER' ? (
+                  {user?.role === 'EMPLOYER' && (
                     <button 
                       onClick={() => {
                         setShowProfileMenu(false);
@@ -347,7 +347,9 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     >
                       <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
                     </button>
-                  ) : (
+                  )}
+
+                  {user?.role === 'FREELANCER' && (
                     <>
                       <button 
                         onClick={() => {

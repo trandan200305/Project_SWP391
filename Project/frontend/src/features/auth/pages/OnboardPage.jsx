@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Key, CheckCircle, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api/authApi.js';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 export default function Onboard({ onBackToHome, onOpenLogin }) {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(true);
   const [inviteInfo, setInviteInfo] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [revoked, setRevoked] = useState(false);
+  const [revokedMsg, setRevokedMsg] = useState('');
 
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -42,6 +46,37 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         setErrorMsg('Không thể kết nối tới máy chủ để xác thực lời mời.');
       });
   }, []);
+
+  // Real-time revocation WebSocket listener
+  useEffect(() => {
+    if (!token) return;
+
+    const topic = `/topic/invitation-status/${token}`;
+    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        client.subscribe(topic, (message) => {
+          try {
+            const event = JSON.parse(message.body);
+            if (event.status === 'REVOKED') {
+              setRevoked(true);
+              setRevokedMsg(event.message || 'Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.');
+            }
+          } catch (_) {}
+        });
+      },
+      onStompError: (frame) => {
+        console.warn('[STOMP] error:', frame);
+      },
+    });
+
+    client.activate();
+
+    return () => {
+      try { client.deactivate(); } catch (_) {}
+    };
+  }, [token]);
 
   // Verification code resend countdown timer
   useEffect(() => {
@@ -103,6 +138,31 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         alert('Lỗi kết nối máy chủ.');
       });
   };
+
+  if (revoked) {
+    return (
+      <div className="min-h-screen bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 fixed inset-0 z-[99999] animate-in fade-in duration-300">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-rose-100 text-center transform scale-100 transition-all duration-300 ease-out">
+          <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-rose-500/10 animate-bounce">
+            <AlertTriangle className="w-10 h-10" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 mb-3">Thao tác bị hủy bỏ</h2>
+          <p className="text-slate-600 mb-6 font-medium leading-relaxed">
+            {revokedMsg || 'Yêu cầu thiết lập tài khoản này đã bị thu hồi hoặc tài khoản đã bị vô hiệu hóa bởi Quản trị viên.'}
+          </p>
+          <button
+            onClick={() => {
+              window.history.replaceState({}, document.title, "/");
+              onBackToHome();
+            }}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30"
+          >
+            Quay lại Trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

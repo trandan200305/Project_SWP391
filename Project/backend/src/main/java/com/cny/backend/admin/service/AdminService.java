@@ -19,6 +19,9 @@ import com.cny.backend.department.entity.*;
 import com.cny.backend.department.repository.*;
 
 
+import com.cny.backend.email.service.EmailService;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -35,6 +38,12 @@ public class AdminService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -337,6 +346,21 @@ public class AdminService {
                     event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
                     messagingTemplate.convertAndSend("/topic/account-status/MANAGER/" + id, event);
                 }
+
+                // Invalidate and revoke invitation if deleted or suspended
+                if ("DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "SUSPENDED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
+                    Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(mgr.getEmail());
+                    if (invOpt.isPresent()) {
+                        com.cny.backend.admin.entity.StaffInvitation invitation = invOpt.get();
+                        invitation.setStatus("REVOKED");
+                        staffInvitationRepository.save(invitation);
+
+                        Map<String, Object> revokeEvent = new HashMap<>();
+                        revokeEvent.put("status", "REVOKED");
+                        revokeEvent.put("message", "Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.");
+                        messagingTemplate.convertAndSend("/topic/invitation-status/" + invitation.getToken(), revokeEvent);
+                    }
+                }
                 
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Manager #" + id + " (" + mgr.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
                 
@@ -366,6 +390,21 @@ public class AdminService {
                     event.put("id", id);
                     event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
                     messagingTemplate.convertAndSend("/topic/account-status/STAFF/" + id, event);
+                }
+
+                // Invalidate and revoke invitation if deleted or suspended
+                if ("DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "SUSPENDED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
+                    Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(stf.getEmail());
+                    if (invOpt.isPresent()) {
+                        com.cny.backend.admin.entity.StaffInvitation invitation = invOpt.get();
+                        invitation.setStatus("REVOKED");
+                        staffInvitationRepository.save(invitation);
+
+                        Map<String, Object> revokeEvent = new HashMap<>();
+                        revokeEvent.put("status", "REVOKED");
+                        revokeEvent.put("message", "Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.");
+                        messagingTemplate.convertAndSend("/topic/invitation-status/" + invitation.getToken(), revokeEvent);
+                    }
                 }
                 
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Staff #" + id + " (" + stf.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
@@ -958,6 +997,10 @@ public class AdminService {
         String token = java.util.UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
 
+        // Auto-generate a random password (10 chars: letters + digits)
+        String rawPassword = generateRandomPassword(10);
+        String hashedPassword = passwordEncoder.encode(rawPassword);
+
         // Create or update the invitation record to avoid UNIQUE KEY constraint issues
         Optional<com.cny.backend.admin.entity.StaffInvitation> existingInvOpt = staffInvitationRepository.findByEmail(email);
         com.cny.backend.admin.entity.StaffInvitation invitation;
@@ -987,8 +1030,8 @@ public class AdminService {
             com.cny.backend.admin.entity.Manager managerPlaceholder;
             if (existingManager.isPresent()) {
                 managerPlaceholder = existingManager.get();
-                managerPlaceholder.setPasswordHash("INVITED_PENDING");
-                managerPlaceholder.setStatus("INVITED");
+                managerPlaceholder.setPasswordHash(hashedPassword);
+                managerPlaceholder.setStatus("ACTIVE");
                 managerPlaceholder.setDepartment(dept != null ? dept.getName() : "General");
                 managerPlaceholder.setDepartmentEntity(dept);
                 managerPlaceholder.setManagedByAdmin(adminId);
@@ -997,9 +1040,9 @@ public class AdminService {
             } else {
                 managerPlaceholder = com.cny.backend.admin.entity.Manager.builder()
                         .email(email)
-                        .passwordHash("INVITED_PENDING")
+                        .passwordHash(hashedPassword)
                         .displayName(emailPrefix)
-                        .status("INVITED")
+                        .status("ACTIVE")
                         .department(dept != null ? dept.getName() : "General")
                         .departmentEntity(dept)
                         .managedByAdmin(adminId)
@@ -1021,8 +1064,8 @@ public class AdminService {
             com.cny.backend.admin.entity.Staff stf;
             if (existingStaff.isPresent()) {
                 stf = existingStaff.get();
-                stf.setPasswordHash("INVITED_PENDING");
-                stf.setStatus("INVITED");
+                stf.setPasswordHash(hashedPassword);
+                stf.setStatus("ACTIVE");
                 stf.setSpecialization("General");
                 stf.setManager(mgr);
                 stf.setDepartmentEntity(dept);
@@ -1032,9 +1075,9 @@ public class AdminService {
             } else {
                 stf = com.cny.backend.admin.entity.Staff.builder()
                         .email(email)
-                        .passwordHash("INVITED_PENDING")
+                        .passwordHash(hashedPassword)
                         .displayName(emailPrefix)
-                        .status("INVITED")
+                        .status("ACTIVE")
                         .specialization("General")
                         .manager(mgr)
                         .departmentEntity(dept)
@@ -1055,35 +1098,49 @@ public class AdminService {
             }
         }
 
-        // Send Email
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("[LancerPro] Mời tham gia quản trị hệ thống");
+        // Send Email Asynchronously - notify with setup link, NO password included
+        String roleLabel = "MANAGER".equals(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
+        String deptName = dept != null ? dept.getName() + " (" + dept.getCode() + ")" : "Chưa phân bổ";
+        String setupLink = "http://localhost:3000/?token=" + token;
+        String emailContent = "Chào bạn,\n\n"
+                + "Quản trị viên hệ thống LancerPro đã thêm bạn vào đội ngũ quản trị / vận hành.\n\n"
+                + "══════════════════════════════════\n"
+                + "  THÔNG TIN VAI TRÒ\n"
+                + "══════════════════════════════════\n"
+                + "  Vai trò  : " + roleLabel + "\n"
+                + "  Phòng ban: " + deptName + "\n"
+                + "══════════════════════════════════\n\n"
+                + "Vui lòng bấm vào liên kết dưới đây để tiến hành thiết lập thông tin cá nhân và hoàn tất kích hoạt tài khoản của bạn:\n"
+                + setupLink + "\n\n"
+                + "Lưu ý: Liên kết có hiệu lực trong vòng 24 giờ.\n"
+                + "Nếu bạn có thắc mắc, vui lòng liên hệ quản trị viên để được hỗ trợ.\n\n"
+                + "Trân trọng,\n"
+                + "Đội ngũ LancerPro";
 
-            String onboardingUrl = "http://localhost:3000/onboard?token=" + token;
-            String emailContent = "Chào bạn,\n\n"
-                    + "Bạn được quản trị viên mời tham gia quản trị hệ thống LancerPro với vai trò: " + role + ".\n\n"
-                    + "Vui lòng truy cập liên kết dưới đây để thiết lập tài khoản của bạn (liên kết có hiệu lực trong 24 giờ):\n"
-                    + onboardingUrl + "\n\n"
-                    + "Trân trọng,\n"
-                    + "Đội ngũ LancerPro";
+        emailService.sendEmailAsync(email, "[LancerPro] Thư mời tham gia đội ngũ quản trị hệ thống", emailContent);
 
-            message.setText(emailContent);
-            mailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            // We can still return success, just warn about email send failure
-            writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Mời " + email + " làm " + role + " (Email gửi lỗi: " + e.getMessage() + ")");
-            response.put("success", true);
-            response.put("message", "Tạo lời mời thành công (Nhưng có lỗi gửi email: " + e.getMessage() + "). Link kích hoạt: http://localhost:3000/onboard?token=" + token);
-            return response;
-        }
-
-        writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã gửi lời mời kích hoạt tài khoản cho " + email + " làm " + role);
+        writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã tạo tài khoản " + role + " cho " + email + " tại phòng ban " + deptName);
         response.put("success", true);
-        response.put("message", "Đã gửi email lời mời kích hoạt tài khoản thành công!");
+        response.put("message", "Đã tạo tài khoản thành công!");
+        // Return credentials to admin for management (NOT sent to invited user)
+        response.put("generatedEmail", email);
+        response.put("generatedPassword", rawPassword);
+        response.put("role", role);
+        response.put("department", deptName);
         return response;
+    }
+
+    /**
+     * Generates a random password with uppercase, lowercase, and digits.
+     */
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        StringBuilder sb = new StringBuilder();
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     // --- VERIFICATION TASKS ENDPOINTS ---
