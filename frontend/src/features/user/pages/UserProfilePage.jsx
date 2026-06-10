@@ -254,8 +254,8 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
   };
 
-  const allProps = {
-    role, targetId, activeTab, setActiveTab, prefTab, setPrefTab,
+    const allProps = {
+      role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage, timezone, setTimezone,
     currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
@@ -352,23 +352,6 @@ export default function UserProfilePage({ user, onNavigate, defaultTab = 'profil
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                     {activeTab === 'profile' ? (
-                       <>
-                         <button onClick={() => setActiveTab('edit_profile')} className="flex-1 sm:flex-none px-5 py-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-xl text-sm font-bold transition-all shadow-sm">
-                            Chỉnh sửa
-                         </button>
-                         <button onClick={() => setActiveTab('preferences')} className="flex-1 sm:flex-none px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-all">
-                            Cài đặt
-                         </button>
-                       </>
-                     ) : (
-                       <button onClick={() => setActiveTab('profile')} className="flex-1 sm:flex-none px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-all">
-                          Quay lại Hồ sơ
-                       </button>
-                     )}
                   </div>
                </div>
             </div>
