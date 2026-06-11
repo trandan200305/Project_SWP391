@@ -126,6 +126,7 @@ public class AuthService {
         String assignedRole = requestedRole;
         String userStatus = "ACTIVE";
         boolean hasMessengerPin = false;
+        boolean isVerified = false;
 
         if ("ADMIN".equals(assignedRole)) {
             if (totalRoles > 0 && emailInAdmins == 0) {
@@ -191,6 +192,8 @@ public class AuthService {
                         .projectsPosted(0)
                         .averageRating(new java.math.BigDecimal("5.0"))
                         .isDeleted(false)
+                        .isVerified(false)
+                        .kycStatus("UNVERIFIED")
                         .build();
                 employer = employerRepository.save(employer);
                 userId = employer.getEmployerId();
@@ -213,6 +216,7 @@ public class AuthService {
 
                 userId = dbEmployer.getEmployerId();
                 userStatus = dbEmployer.getStatus();
+                isVerified = Boolean.TRUE.equals(dbEmployer.getIsVerified());
 
                 boolean updated = false;
                 if (googleId != null && dbEmployer.getGoogleId() == null) {
@@ -344,6 +348,8 @@ public class AuthService {
                         .averageRating(new java.math.BigDecimal("5.0"))
                         .isAvailable(true)
                         .isDeleted(false)
+                        .isVerified(false)
+                        .kycStatus("UNVERIFIED")
                         .build();
                 freelancer = freelancerRepository.save(freelancer);
                 userId = freelancer.getProfileId();
@@ -366,6 +372,7 @@ public class AuthService {
 
                 userId = dbFreelancer.getProfileId();
                 userStatus = dbFreelancer.getStatus();
+                isVerified = Boolean.TRUE.equals(dbFreelancer.getIsVerified());
 
                 boolean updated = false;
                 if (googleId != null && dbFreelancer.getGoogleId() == null) {
@@ -458,6 +465,7 @@ public class AuthService {
         userObj.put("role", assignedRole);
         userObj.put("avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name);
         userObj.put("hasMessengerPin", hasMessengerPin);
+        userObj.put("isVerified", isVerified);
 
         response.put("user", userObj);
         return response;
@@ -847,5 +855,45 @@ public class AuthService {
         response.put("success", true);
         response.put("message", "Mã xác nhận đã được gửi về email của bạn!");
         return response;
+    }
+
+    public boolean changePassword(Integer userId, String role, String currentPassword, String newPassword) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            Admin admin = adminRepository.findById(userId).orElse(null);
+            if (admin != null && passwordEncoder.matches(currentPassword, admin.getPasswordHash())) {
+                admin.setPasswordHash(passwordEncoder.encode(newPassword));
+                adminRepository.save(admin);
+                return true;
+            }
+        } else if ("FREELANCER".equalsIgnoreCase(role)) {
+            Freelancer freelancer = freelancerRepository.findById(userId).orElse(null);
+            if (freelancer != null && passwordEncoder.matches(currentPassword, freelancer.getPasswordHash())) {
+                freelancer.setPasswordHash(passwordEncoder.encode(newPassword));
+                freelancerRepository.save(freelancer);
+                return true;
+            }
+        } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
+            Employer employer = employerRepository.findById(userId).orElse(null);
+            if (employer != null && passwordEncoder.matches(currentPassword, employer.getPasswordHash())) {
+                employer.setPasswordHash(passwordEncoder.encode(newPassword));
+                employerRepository.save(employer);
+                return true;
+            }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            com.cny.backend.admin.entity.Manager manager = managerRepository.findById(userId).orElse(null);
+            if (manager != null && passwordEncoder.matches(currentPassword, manager.getPasswordHash())) {
+                manager.setPasswordHash(passwordEncoder.encode(newPassword));
+                managerRepository.save(manager);
+                return true;
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            com.cny.backend.admin.entity.Staff staff = staffRepository.findById(userId).orElse(null);
+            if (staff != null && passwordEncoder.matches(currentPassword, staff.getPasswordHash())) {
+                staff.setPasswordHash(passwordEncoder.encode(newPassword));
+                staffRepository.save(staff);
+                return true;
+            }
+        }
+        return false;
     }
 }

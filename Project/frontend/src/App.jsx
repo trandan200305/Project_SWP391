@@ -247,6 +247,7 @@ export default function App() {
       handleLoginSuccess={handleLoginSuccess}
       onUserUpdate={handleUserUpdate}
       onCloseAuth={() => handleNavigate('home')}
+      onLogout={handleLogout}
     />
   );
 

@@ -131,6 +131,7 @@ public class AuthController {
             String code = String.format("%06d", (int) (Math.random() * 1000000));
             registrationCodes.put(email, code);
             registrationTimestamps.put(email, System.currentTimeMillis());
+            System.out.println("[REGISTRATION OTP] Email: " + email + ", OTP: " + code);
 
             Map<String, String> pendingPayload = new HashMap<>(payload);
             pendingRegistrations.put(email, pendingPayload);
@@ -236,7 +237,37 @@ public class AuthController {
         }
     }
 
-    
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String role = (String) payload.get("role");
+        String currentPassword = (String) payload.get("currentPassword");
+        String newPassword = (String) payload.get("newPassword");
+        
+        Map<String, Object> response = new HashMap<>();
+        if (userId == null || role == null || currentPassword == null || newPassword == null) {
+            response.put("success", false);
+            response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (currentPassword.equals(newPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu mới không được trùng với mật khẩu cũ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        boolean success = authService.changePassword(userId, role, currentPassword, newPassword);
+        response.put("success", success);
+        if (success) {
+            response.put("message", "Đổi mật khẩu thành công!");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Mật khẩu hiện tại không chính xác.");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");

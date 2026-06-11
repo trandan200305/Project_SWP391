@@ -10,6 +10,9 @@ import {
   Plus,
   Briefcase,
   Bookmark,
+  Edit3,
+  Settings,
+  CheckCircle,
 } from "lucide-react";
 
 export default function Navbar({
@@ -349,8 +352,9 @@ export default function Navbar({
                     className="w-8 h-8 rounded-full border border-slate-200 object-cover"
                   />
                   <div className="flex flex-col">
-                    <span className="text-[13px] font-bold text-primary leading-tight">
+                    <span className="text-[13px] font-bold text-primary leading-tight flex items-center gap-1">
                       {user.name}
+                      {user.isVerified && <CheckCircle className="w-3.5 h-3.5 text-blue-500" title="Tài khoản đã xác minh KYC" />}
                     </span>
                     <span className="text-[10px] font-bold text-secondary">
                       {user.role}
@@ -393,7 +397,7 @@ export default function Navbar({
                       </button>
                     )}
 
-                    {user?.role === "EMPLOYER" ? (
+                    {user?.role === "EMPLOYER" && (
                       <button
                         onClick={() => {
                           setShowProfileMenu(false);
@@ -403,28 +407,48 @@ export default function Navbar({
                       >
                         <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
                       </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("profile");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                        >
-                          <User className="w-4 h-4" /> Hồ sơ cá nhân
-                        </button>
+                    )}
 
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("your_jobs");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
-                        >
-                          <Bookmark className="w-4 h-4" /> Công việc của bạn
-                        </button>
-                      </>
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate("profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <User className="w-4 h-4" /> Hồ sơ cá nhân
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate("edit_profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate("preferences");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+
+                    {user?.role !== "EMPLOYER" && (
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("your_jobs");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
+                      >
+                        <Bookmark className="w-4 h-4" /> Công việc của bạn
+                      </button>
                     )}
 
                     <button
@@ -505,10 +529,11 @@ export default function Navbar({
                   className="w-10 h-10 rounded-full border border-slate-200"
                 />
                 <div className="flex flex-col">
-                  <span className="text-base font-bold text-primary">
+                  <span className="text-base font-bold text-primary flex items-center gap-1">
                     {user.name}
+                    {user.isVerified && <CheckCircle className="w-4 h-4 text-blue-500" />}
                   </span>
-                  <span className="text-xs font-bold text-secondary">
+                  <span className="text-xs font-bold text-secondary text-left">
                     {user.role}
                   </span>
                 </div>
@@ -597,12 +622,32 @@ export default function Navbar({
             )}
 
             {user && (
-              <button
-                onClick={handleMessengerClick}
-                className="w-full text-center bg-indigo-50 text-indigo-600 border border-indigo-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-              >
-                <MessageCircle className="w-4 h-4" /> Tin nhắn
-              </button>
+              <>
+                <button 
+                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('profile'); }}
+                  className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <User className="w-4 h-4" /> Hồ sơ cá nhân
+                </button>
+                <button 
+                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('edit_profile'); }}
+                  className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                </button>
+                <button 
+                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('preferences'); }}
+                  className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <Settings className="w-4 h-4" /> Cài đặt chung
+                </button>
+                <button
+                  onClick={handleMessengerClick}
+                  className="w-full text-center bg-indigo-50 text-indigo-600 border border-indigo-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <MessageCircle className="w-4 h-4" /> Tin nhắn
+                </button>
+              </>
             )}
 
             <div className="flex flex-col gap-4 mt-2">
