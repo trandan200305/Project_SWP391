@@ -1,10 +1,13 @@
 @echo off
-title LancerPro - Quick Start
-echo.
+title LancerPro - Khoi dong du an
 echo =======================================================
-echo   LancerPro - Khoi dong nhanh toan bo du an
+echo   LancerPro - Dang khoi dong Backend va Frontend...
 echo =======================================================
 echo.
-echo Dang chuyen vao thu muc Project de khoi chay...
-cd /d "%~dp0Project"
-call START_ALL.bat
+echo Khoi dong Backend (Spring Boot) tren cong 8080...
+start "LancerPro - Backend" cmd /k "cd /d %~dp0backend && .\mvnw spring-boot:run"
+echo Khoi dong Frontend (React/Vite)...
+start "LancerPro - Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
+echo.
+echo Da gui lenh khoi dong! Vui long xem chi tiet o 2 cua so CMD moi mo.
+pause

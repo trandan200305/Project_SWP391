@@ -22,10 +22,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [language, setLanguage] = useState('vi');
   const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh');
   
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [deleteInput, setDeleteInput] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // ================= KYC STATE =================
@@ -181,60 +177,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     });
   };
 
-  // Hàm: Đổi mật khẩu tài khoản
-  const handleSavePassword = async (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp');
-      return;
-    }
-    if (newPassword === currentPassword) {
-      alert('Mật khẩu mới không được trùng với mật khẩu cũ');
-      return;
-    }
-    try {
-      const response = await fetch('http://localhost:8080/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          role: user.role,
-          currentPassword,
-          newPassword
-        })
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert('Đổi mật khẩu thành công!');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        alert(data.message || 'Đổi mật khẩu thất bại.');
-      }
-    } catch (error) {
-      alert('Lỗi kết nối server.');
-    }
-  };
 
-  const handleDeleteAccount = () => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?')) return;
-    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=${deleteInput}` : `http://localhost:8080/api/employers/${targetId}?confirmationText=${deleteInput}`;
-    
-    fetch(endpoint, { method: 'DELETE' })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert(data.message || 'Tài khoản của bạn đã được xóa.');
-          if (onLogout) onLogout();
-        } else {
-          alert(data.message || 'Xóa tài khoản thất bại!');
-        }
-      })
-      .catch(error => {
-        alert('Lỗi kết nối máy chủ!');
-      });
-  };
 
   const formatDate = (dateString) => {
     if(!dateString) return 'N/A';
@@ -259,9 +202,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   };
 
     const allProps = {
+      user, onLogout,
       role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage, timezone, setTimezone,
-    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, isUploadingAvatar, setIsUploadingAvatar,
+    isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
@@ -269,7 +213,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
-    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatCurrency, formatCompactCurrency
+    handleSaveProfile, formatDate, formatCurrency, formatCompactCurrency
   };
 
   return (
