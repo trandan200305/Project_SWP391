@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Submit Proposal | LancerPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0edef",
+                        "on-background": "#1b1b1d",
+                        "surface-variant": "#e4e2e4",
+                        "primary": "#000000",
+                        "inverse-on-surface": "#f3f0f2",
+                        "surface-dim": "#dcd9db",
+                        "primary-fixed-dim": "#bec6e0",
+                        "surface": "#fcf8fa",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#271901",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#fcf8fa",
+                        "inverse-primary": "#bec6e0",
+                        "background": "#fcf8fa",
+                        "on-secondary-container": "#006172",
+                        "surface-container-low": "#f6f3f5",
+                        "surface-tint": "#565e74",
+                        "secondary-container": "#57dffe",
+                        "surface-container-highest": "#e4e2e4",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-tertiary-container": "#98805d",
+                        "tertiary-container": "#271901",
+                        "inverse-surface": "#303032",
+                        "outline": "#76777d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "tertiary-fixed": "#fcdeb5",
+                        "outline-variant": "#c6c6cd",
+                        "on-surface": "#1b1b1d",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-primary-fixed": "#131b2e",
+                        "tertiary": "#000000",
+                        "on-surface-variant": "#45464d",
+                        "on-error": "#ffffff",
+                        "primary-container": "#131b2e",
+                        "on-error-container": "#93000a",
+                        "secondary": "#00687a",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#7c839b",
+                        "secondary-fixed": "#acedff",
+                        "surface-container-high": "#eae7e9",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "stack-md": "1rem",
+                        "container-max": "1280px",
+                        "stack-sm": "0.5rem",
+                        "margin-desktop": "2.5rem",
+                        "gutter": "1.5rem",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Manrope"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-secondary-fixed/30">
+<!-- TopNavBar Shell -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto bg-surface/80 dark:bg-surface-container/80 backdrop-blur-md border-b border-outline-variant dark:border-outline shadow-sm">
+<div class="flex items-center gap-8">
+<span class="font-display-lg text-headline-md font-extrabold text-primary dark:text-primary-fixed">LancerPro</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="font-body-md text-body-md text-secondary dark:text-secondary-fixed-dim font-bold border-b-2 border-secondary transition-colors" href="#">Find Work</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Hire Freelancers</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Solutions</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-body-md text-body-md text-primary dark:text-primary-fixed px-4 py-2 hover:opacity-80 transition-opacity">Login</button>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-xl font-body-md text-body-md font-bold hover:scale-[0.98] transition-transform">Sign Up</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-stack-lg px-margin-mobile md:px-margin-desktop max-w-[800px] mx-auto min-h-screen">
+<!-- Header Info -->
+<div class="mb-stack-lg animate-fade-in">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-4 group" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<span class="font-label-md text-label-md">BACK TO JOB LISTING</span>
+</a>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Submit Proposal</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Applying for: <span class="font-semibold text-on-surface">Senior UX/UI Designer for FinTech Dashboard</span></p>
+</div>
+<!-- Glassmorphic Proposal Form Card -->
+<div class="glass-morphism rounded-[16px] p-8 shadow-lg border border-outline-variant/30 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-fixed/10 blur-3xl -z-10 rounded-full"></div>
+<form class="flex flex-col gap-8">
+<!-- Cover Letter -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant flex items-center justify-between">
+<span>COVER LETTER</span>
+<span class="text-[10px] opacity-60">MIN. 100 CHARACTERS</span>
+</label>
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 font-body-md text-body-md focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all placeholder:text-on-surface-variant/40" placeholder="Explain why you're the best fit for this role. Highlight your relevant experience and specific approach to FinTech UI/UX challenges..." rows="8"></textarea>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Bid Amount -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">PROPOSED BID AMOUNT</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-body-md text-on-surface-variant">$</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-xl py-4 pl-8 pr-4 font-body-md text-body-md focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all" placeholder="0.00" type="number"/>
+</div>
+<p class="text-[11px] text-on-surface-variant/60 px-1">LancerPro service fee (10%): - <span class="font-semibold">$0.00</span></p>
+</div>
+<!-- Timeline -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">ESTIMATED TIMELINE</label>
+<div class="relative">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">schedule</span>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-xl py-4 pl-4 pr-10 font-body-md text-body-md focus:ring-2 focus:ring-secondary focus:border-secondary outline-none appearance-none transition-all">
+<option>Less than 1 week</option>
+<option>1 to 2 weeks</option>
+<option>2 to 4 weeks</option>
+<option>1 to 3 months</option>
+<option>Over 3 months</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Attachment Upload -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">RELEVANT ATTACHMENTS (OPTIONAL)</label>
+<div class="group relative border-2 border-dashed border-outline-variant rounded-xl p-8 flex flex-col items-center justify-center bg-surface/40 hover:bg-surface-container-high transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[40px] text-secondary mb-3">cloud_upload</span>
+<p class="font-body-md text-on-surface font-semibold">Drag and drop or browse files</p>
+<p class="font-body-sm text-on-surface-variant text-[12px] mt-1">PDF, JPG, or PNG. Max size 20MB per file.</p>
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file"/>
+</div>
+</div>
+<!-- Action Section -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-gutter pt-4 border-t border-outline-variant/30">
+<div class="flex items-center gap-3">
+<input class="w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary" id="terms" type="checkbox"/>
+<label class="font-body-sm text-on-surface-variant" for="terms">I agree to the LancerPro <a class="text-secondary font-semibold hover:underline" href="#">Marketplace Terms</a></label>
+</div>
+<button class="w-full md:w-auto bg-[#F59E0B] text-white px-10 py-4 rounded-xl font-headline-md text-headline-md shadow-lg shadow-orange-500/20 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all">
+                        Submit Proposal
+                    </button>
+</div>
+</form>
+</div>
+<!-- Featured Designer Tip -->
+<div class="mt-stack-lg p-6 bg-secondary-fixed/5 rounded-xl border-l-4 border-secondary-fixed flex gap-4 items-start">
+<span class="material-symbols-outlined text-secondary" data-weight="fill">lightbulb</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Pro Tip for Freelancers</h4>
+<p class="font-body-sm text-on-surface-variant mt-1">Personalized proposals are 3x more likely to get noticed. Mention specific details from the job description to show you've read it carefully.</p>
+</div>
+</div>
+</main>
+<!-- Footer Shell -->
+<footer class="w-full py-stack-lg bg-surface-container-highest dark:bg-surface-container-lowest border-t border-outline-variant dark:border-outline">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-container-max mx-auto">
+<div class="col-span-1">
+<span class="font-display-lg text-headline-md font-bold text-primary dark:text-primary-fixed">LancerPro</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-4">Connecting elite talent with world-class opportunities. Build your future today.</p>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-md text-label-md font-bold text-on-surface mb-2">Marketplace</span>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Find Work</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Hire Freelancers</a>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-md text-label-md font-bold text-on-surface mb-2">Legal &amp; Help</span>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Help Center</a>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-md text-label-md font-bold text-on-surface mb-2">Community</span>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Blog</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Events</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">About Us</a>
+</div>
+</div>
+<div class="px-margin-desktop max-w-container-max mx-auto mt-stack-lg pt-8 border-t border-outline-variant/30 flex justify-between items-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-60">© 2024 LancerPro Marketplace. All rights reserved.</p>
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-all">
+<span class="material-symbols-outlined text-[18px]">share</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-all">
+<span class="material-symbols-outlined text-[18px]">public</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

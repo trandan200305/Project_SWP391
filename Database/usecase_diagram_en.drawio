@@ -1,0 +1,412 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="usecase_diagram_en" name="UseCase Diagram (EN)">
+    <mxGraphModel dx="2000" dy="2000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="5000" pageHeight="3700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="system_boundary" value="vLance Freelancer Marketplace System" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;verticalAlign=top;fontStyle=1;fontSize=24;fontColor=#000000;spacingTop=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="500" y="80" width="3600" height="3500" as="geometry" />
+        </mxCell>
+        <mxCell id="group_label_Freelancer" value="Freelancer Sub-System" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=0;fontSize=18;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="150" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_Freelancer" value="Freelancer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1;fontSize=18;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="300" width="70" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-01" value="Register Freelancer\n(UC-01)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="180" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-02" value="Freelancer Profile\n(UC-02)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="180" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-03" value="Search Jobs\n(UC-03)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="180" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-04" value="Saved Jobs\n(UC-04)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="300" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-05" value="Freelancer Workspace\n(UC-05)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="300" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-06" value="Confirm Milestone\n(UC-06)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="300" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-07" value="Request Withdrawal\n(UC-07)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="420" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-08" value="Freelancer Guide\n(UC-08)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="420" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="group_label_Client" value="Client Sub-System" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=0;fontSize=18;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="660" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_Client" value="Client" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1;fontSize=18;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="4300" y="870" width="70" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sep_Client" value="" style="line;html=1;strokeWidth=1;strokeColor=#aaaaaa;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="600" y="630" width="3400" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-09" value="Register Client\n(UC-09)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="690" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-10" value="Employer Profile\n(UC-10)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="690" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-11" value="Post Job\n(UC-11)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="690" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-12" value="Manage Projects\n(UC-12)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="810" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-13" value="Select Freelancer\n(UC-13)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="810" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-14" value="Client Workspace\n(UC-14)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="810" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-15" value="Create Milestone\n(UC-15)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="930" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-16" value="Top-up Wallet\n(UC-16)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="930" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-17" value="Release Funds\n(UC-17)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="930" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-18" value="Review Freelancer\n(UC-18)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1050" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-19" value="Search Freelancers\n(UC-19)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1050" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-20" value="Top Freelancers\n(UC-20)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1050" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="group_label_Admin" value="Admin Sub-System" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=0;fontSize=18;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="1290" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_Admin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1;fontSize=18;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="4300" y="1680" width="70" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sep_Admin" value="" style="line;html=1;strokeWidth=1;strokeColor=#aaaaaa;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1260" width="3400" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-21" value="Dashboard Overview\n(UC-21)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1320" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-29" value="Revenue Statistics\n(UC-29)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1320" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-35" value="Growth Statistics\n(UC-35)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1320" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-22" value="Manage Accounts\n(UC-22)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1440" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-23" value="User Details\n(UC-23)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1440" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-24" value="Internal Permissions\n(UC-24)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1440" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-25" value="Moderate Projects\n(UC-25)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1560" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-26" value="Manage Job Categories\n(UC-26)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1560" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-33" value="Manage Reviews\n(UC-33)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1560" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-34" value="Manage Violation Reports\n(UC-34)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1680" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-27" value="Monitor Transactions\n(UC-27)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1680" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-28" value="Process Withdrawals\n(UC-28)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1680" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-30" value="Manage Service Fees\n(UC-30)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1800" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-32" value="Resolve Disputes\n(UC-32)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1800" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-31" value="Approve KYC\n(UC-31)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1800" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-41" value="Manage Support Tickets\n(UC-41)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1920" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-36" value="Manage Policies\n(UC-36)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="1920" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-37" value="Activity Logs\n(UC-37)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="1920" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-39" value="Manage Footer Content\n(UC-39)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2040" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-40" value="Manage CMS Articles\n(UC-40)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2040" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-42" value="SEO Configuration\n(UC-42)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2040" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="group_label_Common User" value="Common User Sub-System" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=0;fontSize=18;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="2280" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_Common User" value="Common User" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1;fontSize=18;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="2610" width="70" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sep_Common User" value="" style="line;html=1;strokeWidth=1;strokeColor=#aaaaaa;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="600" y="2250" width="3400" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-43" value="Login\n(UC-43)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2310" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-46" value="General Settings\n(UC-46)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2310" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-45" value="Home Page\n(UC-45)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2310" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-47" value="Project Details\n(UC-47)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2430" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-55" value="Leaderboard\n(UC-55)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2430" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-56" value="Most Popular Jobs\n(UC-56)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2430" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-48" value="Chat &amp; Messaging\n(UC-48)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2550" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-50" value="Open Dispute\n(UC-50)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2550" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-51" value="Report Violation\n(UC-51)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2550" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-52" value="Request KYC\n(UC-52)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2670" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-53" value="Transaction History\n(UC-53)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2670" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-54" value="Notification Settings\n(UC-54)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2670" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-57" value="Platform Knowledge Base\n(UC-57)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2790" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-58" value="Help &amp; FAQ\n(UC-58)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2790" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-59" value="Submit Bug Report\n(UC-59)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2790" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-60" value="Platform Introduction\n(UC-60)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="2910" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-61" value="Subscribe Newsletter\n(UC-61)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2910" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-62" value="Terms of Service\n(UC-62)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="2910" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-44" value="Forgot Password\n(UC-44)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2310" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_node_UC-49" value="Send Attachments\n(UC-49)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontStyle=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2550" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-01" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-02" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-03" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-03">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-04" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-04">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-05" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-05">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-06" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-06">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-07" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-07">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-08" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Freelancer" target="uc_node_UC-08">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-09" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-09">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-10" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-11" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-12" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-13" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-14" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-15" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-16" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-17" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-18" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-19" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-20" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Client" target="uc_node_UC-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-21" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-29" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-35" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-22" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-23" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-24" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-25" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-26" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-33" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-34" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-27" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-28" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-30" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-32" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-31" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-41" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-36" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-37" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-39" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-40" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-42" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Admin" target="uc_node_UC-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-43" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-46" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-45" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-47" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-47">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-55" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-55">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-56" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-56">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-48" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-48">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-50" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-51" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-52" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-52">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-53" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-54" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-54">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-57" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-58" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-58">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-59" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-60" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-60">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-61" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-61">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_uc_node_UC-62" style="endArrow=none;html=1;strokeWidth=1.2;strokeColor=#000000;endFill=0;" edge="1" parent="1" source="actor_Common User" target="uc_node_UC-62">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_uc_node_UC-44" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;strokeColor=#000000;endFill=0;fontStyle=2;" edge="1" parent="1" source="uc_node_UC-44" target="uc_node_UC-43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_uc_node_UC-49" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;strokeColor=#000000;endFill=0;fontStyle=2;" edge="1" parent="1" source="uc_node_UC-49" target="uc_node_UC-48">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LancerPro | Find Work</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0edef",
+                        "on-background": "#1b1b1d",
+                        "surface-variant": "#e4e2e4",
+                        "primary": "#000000",
+                        "inverse-on-surface": "#f3f0f2",
+                        "surface-dim": "#dcd9db",
+                        "primary-fixed-dim": "#bec6e0",
+                        "surface": "#fcf8fa",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#271901",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#fcf8fa",
+                        "inverse-primary": "#bec6e0",
+                        "background": "#fcf8fa",
+                        "on-secondary-container": "#006172",
+                        "surface-container-low": "#f6f3f5",
+                        "surface-tint": "#565e74",
+                        "secondary-container": "#57dffe",
+                        "surface-container-highest": "#e4e2e4",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-tertiary-container": "#98805d",
+                        "tertiary-container": "#271901",
+                        "inverse-surface": "#303032",
+                        "outline": "#76777d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "tertiary-fixed": "#fcdeb5",
+                        "outline-variant": "#c6c6cd",
+                        "on-surface": "#1b1b1d",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-primary-fixed": "#131b2e",
+                        "tertiary": "#000000",
+                        "on-surface-variant": "#45464d",
+                        "on-error": "#ffffff",
+                        "primary-container": "#131b2e",
+                        "on-error-container": "#93000a",
+                        "secondary": "#00687a",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#7c839b",
+                        "secondary-fixed": "#acedff",
+                        "surface-container-high": "#eae7e9",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "stack-md": "1rem",
+                        "container-max": "1280px",
+                        "stack-sm": "0.5rem",
+                        "margin-desktop": "2.5rem",
+                        "gutter": "1.5rem",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Manrope"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #E2E8F0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen">
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto bg-surface/80 dark:bg-surface-container/80 backdrop-blur-md border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-8">
+<span class="font-display-lg text-headline-md font-extrabold text-primary">LancerPro</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="font-body-md text-body-md text-secondary border-b-2 border-secondary font-bold transition-colors" href="#">Find Work</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Hire Freelancers</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Solutions</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-body-md text-body-md text-on-surface px-4 py-2 hover:opacity-80 transition-opacity">Login</button>
+<button class="bg-primary text-on-primary font-body-md text-body-md px-6 py-2 rounded-full font-bold hover:opacity-80 transition-opacity">Sign Up</button>
+</div>
+</nav>
+<div class="pt-20 flex min-h-screen max-w-container-max mx-auto">
+<aside class="hidden md:flex flex-col gap-stack-md p-6 h-[calc(100vh-80px)] w-[280px] fixed left-margin-desktop top-20 border-r border-outline-variant bg-surface-container-lowest">
+<div class="flex flex-col gap-1 mb-4">
+<h2 class="font-headline-md text-headline-md text-primary">Filters</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">Narrow your search</p>
+</div>
+<div class="flex flex-col gap-6 overflow-y-auto pr-2">
+<section>
+<label class="font-label-md text-label-md uppercase text-on-surface-variant mb-3 block">Category</label>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline text-secondary focus:ring-secondary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-secondary">Development</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline text-secondary focus:ring-secondary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-secondary">Design &amp; Creative</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline text-secondary focus:ring-secondary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-secondary">Marketing</span>
+</label>
+</div>
+</section>
+<section>
+<label class="font-label-md text-label-md uppercase text-on-surface-variant mb-3 block">Budget Range</label>
+<div class="flex flex-col gap-3">
+<input class="w-full accent-secondary" max="10000" min="0" step="500" type="range"/>
+<div class="flex justify-between font-label-md text-label-md text-on-surface-variant">
+<span>$0</span>
+<span>$10k+</span>
+</div>
+</div>
+</section>
+<section>
+<label class="font-label-md text-label-md uppercase text-on-surface-variant mb-3 block">Job Type</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-full border border-outline-variant font-label-md text-label-md bg-secondary-container text-on-secondary-container">Fixed Price</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant font-label-md text-label-md hover:bg-surface-variant">Hourly</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant font-label-md text-label-md hover:bg-surface-variant">Full-time</button>
+</div>
+</section>
+<section>
+<label class="font-label-md text-label-md uppercase text-on-surface-variant mb-3 block">Experience Level</label>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 border-outline text-secondary focus:ring-secondary" name="level" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">Entry Level</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="w-4 h-4 border-outline text-secondary focus:ring-secondary" name="level" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">Intermediate</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 border-outline text-secondary focus:ring-secondary" name="level" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">Expert</span>
+</label>
+</div>
+</section>
+</div>
+<button class="mt-auto bg-on-secondary-container text-white py-3 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="filter_list">filter_list</span>
+                Apply Filters
+            </button>
+</aside>
+<main class="flex-1 ml-0 md:ml-[320px] p-6 lg:p-10">
+<div class="mb-10">
+<div class="relative max-w-2xl">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border border-outline-variant rounded-2xl focus:ring-2 focus:ring-secondary focus:border-transparent font-body-md shadow-sm transition-all" placeholder="Search for 'React Developer' or 'UI Designer'..." type="text"/>
+</div>
+</div>
+<div class="flex justify-between items-center mb-6">
+<h1 class="font-headline-lg text-headline-lg text-on-background">Recommended Jobs</h1>
+<div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
+<span>Sort by:</span>
+<select class="bg-transparent border-none focus:ring-0 cursor-pointer font-bold text-on-surface">
+<option>Newest first</option>
+<option>Highest budget</option>
+<option>Relevant</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<div class="glass-card p-8 rounded-[16px] shadow-sm hover:shadow-md transition-all group border-l-4 border-l-secondary">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-[12px] uppercase">Featured</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Posted 2 hours ago</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background group-hover:text-secondary transition-colors cursor-pointer">Senior Frontend Engineer (React/Next.js)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-3xl">We are seeking a high-caliber React developer to lead the reconstruction of our core dashboard. Must have experience with complex state management and high-performance rendering...</p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary block">$4,500 - $6,000</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Fixed Price</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">React</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">Tailwind CSS</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">TypeScript</span>
+</div>
+<div class="flex justify-between items-center pt-6 border-t border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Corporate professional logo for a high-end tech startup, featuring a minimalist geometric design. The aesthetic is clean and modern, using a monochrome palette with sharp lines and high-quality digital rendering in a bright studio environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDggQIQslG_ihxIKbyBo_lWhFRA_Okcm7Z59uMlY3I6U-53uyiwKpIQmRmQ0HaMIQ9MXNW2iAPG03gb-22t8MwcZxs1llK6Ndc2_Bhg7Dpd24CfNew4rRUiifHBMQ3oHjlSdE7dnKsY3tBdueDuvrMYkVWcna152YuRH4fiG5-vOkPpyEsjDJ5HabI63b19oNsvYdqbxoE1A6mTQo1MukGsn9mxK6VaRxejZM_2TpLpLMN1uWFAO3OSeJSeVOyEApO1u0uWs4NFQmc"/>
+</div>
+<div>
+<span class="font-label-md text-label-md block text-on-surface">Stellar Systems Inc.</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Verified Client • 4.9 stars</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-xl font-label-md text-label-md hover:scale-[1.02] active:scale-[0.98] transition-all">Apply Now</button>
+</div>
+</div>
+<div class="glass-card p-8 rounded-[16px] shadow-sm hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Posted 5 hours ago</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background group-hover:text-secondary transition-colors cursor-pointer">Mobile App UI/UX Designer</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-3xl">Looking for a minimalist designer to create a 12-screen flow for a fintech application. Focus on high-trust visuals and accessible design patterns...</p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary block">$85/hr</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Hourly Rate</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">Figma</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">UI Design</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">Mobile UX</span>
+</div>
+<div class="flex justify-between items-center pt-6 border-t border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional abstract brand emblem for a creative agency, showcasing vibrant teal and blue color gradients. The design is presented in a high-key light mode setting with clean architectural shadows and a premium corporate feeling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5wvg-Wg0aESbGVTL0gSm1x4ST7m_eG-dnC4OhOsUDdD3YynD86KOA6RROnTWi8Ef2AteHS8SITS1LQO8seGRdjzCV8fHqN14X49lvTfV4PAYsQ1aMt2KKenOWEuk62EnwETlK09fPtqpMh4lHijEZTIYIMtrGjSJSTATSW9dlbvUl4h2rrTpSLdTMnjz2ZOStLjUnh85ugX8m-Gv200Oabxmi29-Mp6NO7LR-ej20CGJYK02tWwhe7lzJPNdNPXzoSk3L-7-edQs"/>
+</div>
+<div>
+<span class="font-label-md text-label-md block text-on-surface">Creative Logic</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">San Francisco, CA • Verified</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-xl font-label-md text-label-md hover:scale-[1.02] active:scale-[0.98] transition-all">Apply Now</button>
+</div>
+</div>
+<div class="glass-card p-8 rounded-[16px] shadow-sm hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Posted Yesterday</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background group-hover:text-secondary transition-colors cursor-pointer">Technical Content Writer (Cloud Computing)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-3xl">We need deep-dive whitepapers and blog posts about AWS infrastructure and serverless architecture. Must have a strong portfolio of technical writing...</p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary block">$1,200</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Per Article</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">Technical Writing</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">AWS</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg font-label-md text-label-md">Cloud</span>
+</div>
+<div class="flex justify-between items-center pt-6 border-t border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Minimalist modern logo for a cloud infrastructure company, emphasizing security and reliability. The visual style is professional and high-tech, using deep navy blues and clean white backgrounds with soft, ambient lighting and a sense of vast digital space." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdNtm_f6UGvuzAqJ8SBJPZw2KmbC6ODuxtUSNHwelU-ckJJ3CffiQEbH9Fi-rcZCca6mu8LDqnlpQAlwSvWtGdrU90H-cdZZHId9HDPigQk4i6cCUc5LbtnWNOUldNnKHYGmo0YZiuJZGMP9c3aXIb4e_BONs3FH4AbFvjAbuf9Ne6gnszY-nXI7E4oGvBbjB4l9r-LNbocpVs9c2SuYOVBN-vnktxVHQowYjwoA2mvMwoHGNFOTFqR4RpwQka_oC7CZMeJHDD4M0"/>
+</div>
+<div>
+<span class="font-label-md text-label-md block text-on-surface">CloudNode</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">London, UK • Top Client</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-xl font-label-md text-label-md hover:scale-[1.02] active:scale-[0.98] transition-all">Apply Now</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<footer class="bg-surface-container-highest w-full py-stack-lg border-t border-outline-variant mt-20">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-container-max mx-auto">
+<div class="col-span-1 md:col-span-1">
+<span class="font-display-lg text-headline-md font-bold text-primary block mb-4">LancerPro</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">The premium marketplace for top-tier freelancers and visionary companies.</p>
+</div>
+<div class="flex flex-col gap-3">
+<h4 class="font-label-md text-label-md text-on-surface font-bold uppercase">Platform</h4>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Find Work</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Hire Freelancers</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">About Us</a>
+</div>
+<div class="flex flex-col gap-3">
+<h4 class="font-label-md text-label-md text-on-surface font-bold uppercase">Support</h4>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Help Center</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Terms of Service</a>
+</div>
+<div class="flex flex-col gap-3">
+<h4 class="font-label-md text-label-md text-on-surface font-bold uppercase">Connect</h4>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-secondary" data-icon="share">share</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-secondary" data-icon="mail">mail</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-secondary" data-icon="language">language</span>
+</div>
+</div>
+</div>
+<div class="px-margin-desktop max-w-container-max mx-auto mt-12 pt-8 border-t border-outline-variant text-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 LancerPro Marketplace. All rights reserved.</p>
+</div>
+</footer>
+</body></html>
