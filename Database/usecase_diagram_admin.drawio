@@ -1,0 +1,307 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="admin_uc" name="Admin UseCase">
+    <mxGraphModel dx="2000" dy="2000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2120" pageHeight="3510" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cat_CAT-1" value="Dashboard &amp; Stats" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="230" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-21" value="Dashboard Overview\n(UC-21)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="100" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_1" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="110" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-29" value="Revenue Statistics\n(UC-29)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="230" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_2" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="240" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-35" value="Growth Statistics\n(UC-35)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="360" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_3" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="370" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cat_CAT-2" value="User &amp; Permission Mgmt" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="700" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-22" value="Manage Accounts\n(UC-22)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="570" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_4" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="580" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-23" value="User Details\n(UC-23)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="700" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_5" value="Extend" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="710" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-24" value="Internal Permissions\n(UC-24)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="830" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_6" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="840" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cat_CAT-3" value="Moderation Mgmt" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="1235" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-25" value="Moderate Projects\n(UC-25)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1040" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_7" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1050" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-26" value="Manage Job Categories\n(UC-26)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1170" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_8" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1180" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-33" value="Manage Reviews\n(UC-33)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1300" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_9" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1310" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-34" value="Manage Violation Reports\n(UC-34)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1430" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_10" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1440" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cat_CAT-4" value="Finance &amp; Transactions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="1835" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-27" value="Monitor Transactions\n(UC-27)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1640" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_11" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1650" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-28" value="Process Withdrawals\n(UC-28)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1770" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_12" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1780" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-30" value="Manage Service Fees\n(UC-30)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="1900" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_13" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1910" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-32" value="Resolve Disputes\n(UC-32)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2030" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_14" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2040" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cat_CAT-5" value="Support &amp; Verification" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="2305" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-31" value="Approve KYC\n(UC-31)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2240" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_15" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2250" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-41" value="Manage Support Tickets\n(UC-41)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2370" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_16" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2380" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cat_CAT-6" value="System &amp; CMS" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="2840" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-36" value="Manage Policies\n(UC-36)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2580" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_17" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2590" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-37" value="Activity Logs\n(UC-37)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2710" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_18" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2720" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-39" value="Manage Footer Content\n(UC-39)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2840" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_19" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2850" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-40" value="Manage CMS Articles\n(UC-40)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="2970" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_20" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="2980" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_UC-42" value="SEO Configuration\n(UC-42)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontStyle=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="3100" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dia_21" value="Include" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="3110" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_Admin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1;fontSize=18;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1655" width="80" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="red_line" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#e81123;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="380" y="50" as="sourcePoint" />
+            <mxPoint x="380" y="3510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea_cat_CAT-1" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_1_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-1" target="dia_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_1_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_1" target="uc_UC-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_2_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-1" target="dia_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_2_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_2" target="uc_UC-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_3_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-1" target="dia_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_3_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_3" target="uc_UC-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea_cat_CAT-2" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_4_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-2" target="dia_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_4_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_4" target="uc_UC-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_5_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="uc_UC-22" target="dia_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_5_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_5" target="uc_UC-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_6_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-2" target="dia_6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_6_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_6" target="uc_UC-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea_cat_CAT-3" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_7_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-3" target="dia_7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_7_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_7" target="uc_UC-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_8_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-3" target="dia_8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_8_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_8" target="uc_UC-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_9_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-3" target="dia_9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_9_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_9" target="uc_UC-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_10_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-3" target="dia_10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_10_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_10" target="uc_UC-34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea_cat_CAT-4" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_11_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-4" target="dia_11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_11_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_11" target="uc_UC-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_12_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-4" target="dia_12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_12_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_12" target="uc_UC-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_13_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-4" target="dia_13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_13_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_13" target="uc_UC-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_14_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-4" target="dia_14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_14_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_14" target="uc_UC-32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea_cat_CAT-5" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_15_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-5" target="dia_15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_15_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_15" target="uc_UC-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_16_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-5" target="dia_16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_16_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_16" target="uc_UC-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea_cat_CAT-6" style="endArrow=classic;endFill=1;html=1;strokeWidth=1.5;strokeColor=#000000;" edge="1" parent="1" source="actor_Admin" target="cat_CAT-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_17_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-6" target="dia_17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_17_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_17" target="uc_UC-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_18_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-6" target="dia_18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_18_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_18" target="uc_UC-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_19_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-6" target="dia_19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_19_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_19" target="uc_UC-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_20_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-6" target="dia_20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_20_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_20" target="uc_UC-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_21_a" style="endArrow=none;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="cat_CAT-6" target="dia_21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dia_21_b" style="endArrow=block;endSize=10;endFill=1;dashed=1;html=1;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1" source="dia_21" target="uc_UC-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

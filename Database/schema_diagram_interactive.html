@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>CNY Database Schema - Interactive View</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#ffffff;overflow:hidden;font-family:'Segoe UI',Consolas,monospace;width:100vw;height:100vh}
+#wrap{width:100%;height:100%;position:relative;overflow:hidden;
+  background-image:linear-gradient(rgba(208,215,222,0.4) 1px,transparent 1px),linear-gradient(90deg,rgba(208,215,222,0.4) 1px,transparent 1px);
+  background-size:50px 50px}
+#pan{position:absolute;transform-origin:0 0;transition:opacity 0.2s}
+.nd{position:absolute;background:#f6f8fa;border:1.5px solid #d0d7de;border-radius:6px;padding:9px 18px;color:#24292f;font-size:12.5px;font-weight:500;cursor:grab;user-select:none;white-space:nowrap;z-index:10;transition:all 0.2s}
+.nd.dim{opacity:0.25;filter:grayscale(100%)}
+.nd.active{border-color:#0969da;box-shadow:0 0 15px rgba(9,105,218,0.3);z-index:30;transform:scale(1.05)}
+.nd.related{border-color:#54aeff;box-shadow:0 0 10px rgba(84,174,255,0.2);z-index:20}
+.nd.a{border-left:4px solid #3fb950}.nd.j{border-left:4px solid #d29922}
+svg{position:absolute;pointer-events:none;z-index:5}
+svg line{stroke:#d0d7de;stroke-width:1.5;transition:all 0.2s}
+svg line.active{stroke:#0969da;stroke-width:2.5;filter:drop-shadow(0 0 4px rgba(9,105,218,0.5));z-index:25}
+svg line.dim{opacity:0.04}
+svg polygon{fill:rgba(9,105,218,0.15);transition:all 0.2s}
+svg polygon.active{fill:#0969da}
+svg polygon.dim{opacity:0.04}
+
+svg polygon.diamond { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; transition: all 0.2s; }
+svg polygon.diamond.active { stroke: #0969da; fill: #ffffff; }
+svg polygon.diamond.dim { opacity: 0.04; }
+svg text.card-label { fill: #57606a; font-size: 11px; font-family: monospace; font-weight: bold; pointer-events: none; transition: all 0.2s; text-anchor: middle; dominant-baseline: middle; }
+svg text.card-label.active { fill: #0969da; }
+svg text.card-label.dim { opacity: 0.04; }
+
+svg text.edge-label{fill:#24292f;font-size:9px;font-family:'Segoe UI',sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle;transition:all 0.2s}
+svg text.edge-label.active{fill:#0969da;font-weight:600}
+svg text.edge-label.dim{opacity:0.04}
+
+#hud{position:fixed;top:12px;left:12px;z-index:100;color:#0969da;font-size:15px;font-weight:600;background:rgba(255,255,255,0.9);box-shadow:0 1px 3px rgba(0,0,0,0.1);padding:8px;border-radius:8px;backdrop-filter:blur(4px)}
+#hud span{color:#57606a;font-weight:400;font-size:12px;display:block;margin-top:4px}
+#ctrl{position:fixed;top:12px;right:12px;z-index:100;display:flex;gap:6px}
+#ctrl button{background:#f6f8fa;border:1px solid #d0d7de;color:#24292f;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:background 0.2s}
+#ctrl button:hover{background:#e1e4e8}
+</style>
+</head>
+<body>
+<div id="hud">CNY Interactive Schema<br><span>Hover vào bảng bất kỳ để xem các kết nối của nó.<br>Kéo/thả để sắp xếp lại.<br>Cuộn chuột để Zoom.</span></div>
+<div id="ctrl"><button onclick="saveLayout()">Save Layout</button><button onclick="fit()">Fit All</button><button onclick="resetV()">Reset</button></div>
+<div id="wrap"><div id="pan"></div></div>
+<script>
+const T=[
+// ---- FREELANCER ZONE (left) ----
+{id:'freelancers',x:760,y:100,t:'a'},
+{id:'educations',x:60,y:500,t:''},{id:'experiences',x:440,y:500,t:''},{id:'portfolios',x:840,y:500,t:''},
+{id:'freelancer_skills',x:320,y:840,t:'j'},{id:'portfolio_files',x:840,y:840,t:''},
+{id:'wallets',x:160,y:1160,t:''},{id:'bank_accounts',x:600,y:1160,t:''},
+{id:'transactions',x:160,y:1480,t:''},{id:'withdrawal_requests',x:600,y:1480,t:''},
+{id:'payment_gateway_logs',x:160,y:1800,t:''},
+{id:'conversations',x:1040,y:1160,t:''},{id:'conversation_participants',x:980,y:1480,t:'j'},
+{id:'messages',x:1380,y:1480,t:''},{id:'message_attachments',x:1380,y:1800,t:''},
+
+// ---- PROJECT ZONE (center) ----
+{id:'job_categories',x:2100,y:0,t:''},{id:'skills',x:1660,y:340,t:''},
+{id:'employers',x:2400,y:100,t:'a'},
+{id:'projects',x:2100,y:560,t:''},
+{id:'project_skills',x:1660,y:860,t:'j'},{id:'project_attachments',x:2100,y:860,t:''},
+{id:'saved_jobs',x:1260,y:860,t:'j'},{id:'proposals',x:1560,y:1160,t:''},
+{id:'contracts',x:2200,y:1160,t:''},{id:'reviews',x:2700,y:860,t:''},
+{id:'milestones',x:2200,y:1480,t:''},{id:'escrow_transactions',x:2640,y:1480,t:''},
+{id:'deliverables',x:2200,y:1800,t:''},{id:'deliverable_files',x:2200,y:2120,t:''},
+
+// ---- SHARED (bottom center) ----
+{id:'notifications',x:1660,y:1800,t:''},{id:'newsletter_subscribers',x:1240,y:1800,t:''},
+{id:'login_history',x:1040,y:2120,t:''},{id:'user_status_history',x:1500,y:2120,t:''},
+
+// ---- ADMIN ZONE (right) ----
+{id:'admins',x:3800,y:100,t:'a'},
+{id:'platform_fee_configs',x:3400,y:500,t:''},{id:'admin_audit_logs',x:3860,y:500,t:''},
+{id:'user_warnings',x:4240,y:800,t:''},{id:'kyc_requests',x:3800,y:860,t:''},
+{id:'kyc_documents',x:3800,y:1200,t:''},
+{id:'support_tickets',x:3400,y:1060,t:''},{id:'ticket_messages',x:3400,y:1400,t:''},{id:'ticket_attachments',x:3400,y:1740,t:''},
+{id:'disputes',x:4200,y:1120,t:''},{id:'dispute_evidences',x:4100,y:1460,t:''},{id:'dispute_decisions',x:4560,y:1460,t:''}
+];
+const rawE=[
+  ['login_history','freelancers','logs','M','1'],['login_history','employers','logs','M','1'],['login_history','admins','logs','M','1'],
+  ['user_status_history','freelancers','tracks','M','1'],['user_status_history','employers','tracks','M','1'],
+  ['job_categories','job_categories','parent_of','M','1'],['skills','job_categories','belongs_to','M','1'],
+  ['freelancer_skills','freelancers','has_skill','M','1'],['freelancer_skills','skills','skilled_in','M','1'],
+  ['educations','freelancers','studied_at','M','1'],['experiences','freelancers','worked_at','M','1'],['portfolios','freelancers','showcases','M','1'],['portfolio_files','portfolios','contains','M','1'],
+  ['projects','employers','posts','M','1'],['projects','job_categories','categorized','M','1'],['projects','admins','approved_by','M','1'],
+  ['project_skills','projects','requires','M','1'],['project_skills','skills','uses','M','1'],['project_attachments','projects','attached_to','M','1'],
+  ['saved_jobs','freelancers','saves','M','1'],['saved_jobs','projects','bookmarks','M','1'],
+  ['proposals','projects','bids_on','M','1'],['proposals','freelancers','submits','M','1'],
+  ['contracts','projects','executes','M','1'],['contracts','freelancers','works_on','M','1'],['contracts','employers','hires','M','1'],
+  ['milestones','contracts','milestone_of','M','1'],['deliverables','milestones','delivers','M','1'],['deliverable_files','deliverables','file_of','M','1'],
+  ['wallets','freelancers','owns','1','1'],['wallets','employers','owns','1','1'],['transactions','wallets','transacts','M','1'],
+  ['escrow_transactions','contracts','escrow_for','M','1'],['escrow_transactions','milestones','escrow_of','M','1'],
+  ['bank_accounts','freelancers','has_bank','M','1'],['bank_accounts','employers','has_bank','M','1'],
+  ['withdrawal_requests','freelancers','withdraws','M','1'],['withdrawal_requests','bank_accounts','withdraw_to','M','1'],['withdrawal_requests','admins','reviewed_by','M','1'],
+  ['payment_gateway_logs','transactions','gateway_log','1','1'],['platform_fee_configs','admins','configured_by','M','1'],
+  ['reviews','contracts','reviews','M','1'],['reviews','freelancers','reviewed_by','M','1'],['reviews','employers','reviewed_by','M','1'],
+  ['user_warnings','freelancers','warned','M','1'],['user_warnings','employers','warned','M','1'],['user_warnings','admins','issued_by','M','1'],
+  ['disputes','contracts','disputes','M','1'],['disputes','freelancers','raised_by','M','1'],['disputes','employers','raised_by','M','1'],
+  ['dispute_evidences','disputes','evidence_of','M','1'],['dispute_evidences','freelancers','submitted_by','M','1'],['dispute_evidences','employers','submitted_by','M','1'],
+  ['dispute_decisions','disputes','decided','1','1'],['dispute_decisions','admins','decided_by','1','1'],
+  ['kyc_requests','freelancers','verifies','M','1'],['kyc_requests','employers','verifies','M','1'],['kyc_requests','admins','reviewed_by','M','1'],['kyc_documents','kyc_requests','doc_of','M','1'],
+  ['conversation_participants','conversations','joins','M','1'],['conversation_participants','freelancers','participates','M','1'],['conversation_participants','employers','participates','M','1'],
+  ['messages','conversations','sent_in','M','1'],['messages','freelancers','sent_by','M','1'],['messages','employers','sent_by','M','1'],['message_attachments','messages','attached','M','1'],
+  ['support_tickets','freelancers','opens','M','1'],['support_tickets','employers','opens','M','1'],['support_tickets','admins','assigned_to','M','1'],
+  ['ticket_messages','support_tickets','replies_to','M','1'],['ticket_messages','freelancers','sent_by','M','1'],['ticket_messages','employers','sent_by','M','1'],['ticket_messages','admins','sent_by','M','1'],
+  ['ticket_attachments','ticket_messages','attached','M','1'],
+  ['notifications','freelancers','notifies','M','1'],['notifications','employers','notifies','M','1'],['notifications','admins','notifies','M','1'],
+  ['newsletter_subscribers','freelancers','subscribes','M','1'],['newsletter_subscribers','employers','subscribes','M','1'],
+  ['admin_audit_logs','admins','audits','M','1']
+];
+const seen=new Set();
+const E=rawE.filter(([a,b])=>{if(a===b)return false;const k=[a,b].sort().join('|');if(seen.has(k))return false;seen.add(k);return true;});
+
+const pan=document.getElementById('pan'),wrap=document.getElementById('wrap');
+let sc=1,ox=0,oy=0,nodes={},edges=[],drag=null,mx=0,my=0,hoverId=null;
+
+
+// Load saved layout
+const saved = localStorage.getItem('cny_schema_layout');
+if(saved){
+  try {
+    const layout = JSON.parse(saved);
+    T.forEach(t => {
+      if(layout[t.id]){
+        t.x = layout[t.id].x;
+        t.y = layout[t.id].y;
+      }
+    });
+  } catch(e){}
+}
+
+function saveLayout(){
+  const layout = {};
+  Object.values(nodes).forEach(n => {
+    layout[n.el.dataset.id] = {x: n.x, y: n.y};
+  });
+  localStorage.setItem('cny_schema_layout', JSON.stringify(layout));
+  
+  const btn = document.querySelector('button[onclick="saveLayout()"]');
+  const oldText = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  btn.style.background = '#2da44e';
+  btn.style.color = 'white';
+  setTimeout(()=>{
+    btn.textContent = oldText;
+    btn.style.background = '';
+    btn.style.color = '';
+  }, 1500);
+}
+
+T.forEach(t=>{
+  const d=document.createElement('div');
+  d.className='nd'+(t.t==='a'?' a':t.t==='j'?' j':'');
+  d.textContent=t.id;d.style.left=t.x+'px';d.style.top=t.y+'px';d.dataset.id=t.id;
+  
+  // Interactive Hover Effects
+  d.addEventListener('mouseenter',()=>{
+    hoverId=t.id;
+    updateHighlights();
+  });
+  d.addEventListener('mouseleave',()=>{
+    hoverId=null;
+    updateHighlights();
+  });
+  
+  pan.appendChild(d);
+  nodes[t.id]={el:d,x:t.x,y:t.y,w:0,h:0,adj:new Set()};
+});
+Object.values(nodes).forEach(n=>{n.w=n.el.offsetWidth;n.h=n.el.offsetHeight});
+
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.id = 'lines'; 
+svg.setAttribute('viewBox', '-5000 -5000 10000 10000');
+svg.style.position = 'absolute';
+svg.style.left = '-5000px';
+svg.style.top = '-5000px';
+svg.style.width = '10000px';
+svg.style.height = '10000px';
+pan.insertBefore(svg, pan.firstChild);
+
+const g_lines = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+const g_diamonds = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+const g_texts = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+svg.appendChild(g_lines);
+svg.appendChild(g_diamonds);
+svg.appendChild(g_texts);
+
+function edgePt(a,b){
+  let ax=a.x+a.w/2,ay=a.y+a.h/2,bx=b.x+b.w/2,by=b.y+b.h/2;
+  let dx=bx-ax,dy=by-ay;
+  let sx,sy;
+  if(Math.abs(dx)*a.h>Math.abs(dy)*a.w){sx=ax+(dx>0?a.w/2:-a.w/2);sy=ay+dy*(a.w/2)/Math.abs(dx||1)}
+  else{sy=ay+(dy>0?a.h/2:-a.h/2);sx=ax+dx*(a.h/2)/Math.abs(dy||1)}
+  let ex,ey;dx=-dx;dy=-dy;
+  if(Math.abs(dx)*b.h>Math.abs(dy)*b.w){ex=bx+(dx>0?b.w/2:-b.w/2);ey=by+dy*(b.w/2)/Math.abs(dx||1)}
+  else{ey=by+(dy>0?b.h/2:-b.h/2);ex=bx+dx*(b.h/2)/Math.abs(dy||1)}
+  return{x1:sx,y1:sy,x2:ex,y2:ey}
+}
+
+function arrowPts(x1,y1,x2,y2){
+  let a=Math.atan2(y2-y1,x2-x1),s=8;
+  return `${x2},${y2} ${x2-s*Math.cos(a-0.45)},${y2-s*Math.sin(a-0.45)} ${x2-s*Math.cos(a+0.45)},${y2-s*Math.sin(a+0.45)}`;
+}
+
+E.forEach((e_data)=>{
+  let [f,t,label]=e_data;
+  if(!nodes[f]||!nodes[t])return;
+  nodes[f].adj.add(t);nodes[t].adj.add(f);
+  
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  const d_pg=document.createElementNS('http://www.w3.org/2000/svg','polygon'); // diamond
+  d_pg.classList.add('diamond');
+  
+  const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.classList.add('edge-label');
+  txt.textContent=label||'';
+  
+  const cF=document.createElementNS('http://www.w3.org/2000/svg','text'); // card from
+  cF.classList.add('card-label'); cF.textContent = e_data[3] || '';
+  
+  const cT=document.createElementNS('http://www.w3.org/2000/svg','text'); // card to
+  cT.classList.add('card-label'); cT.textContent = e_data[4] || '';
+  
+  g_lines.appendChild(l); 
+  g_diamonds.appendChild(d_pg); 
+  g_texts.appendChild(txt);
+  g_texts.appendChild(cF); 
+  g_texts.appendChild(cT);
+  
+  edges.push({f,t,l,d_pg,txt,cF,cT,label});
+
+});
+
+function drawLines(){
+  edges.forEach(e=>{
+    const a = nodes[e.f], b = nodes[e.t];
+    if(!a.w || a.w === 0) { a.w = a.el.offsetWidth; a.h = a.el.offsetHeight; }
+    if(!b.w || b.w === 0) { b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; }
+    const p=edgePt(a,b);
+    
+    e.l.setAttribute('x1',p.x1);e.l.setAttribute('y1',p.y1);e.l.setAttribute('x2',p.x2);e.l.setAttribute('y2',p.y2);
+    
+    // Diamond at center
+    const mx=(p.x1+p.x2)/2, my=(p.y1+p.y2)/2;
+    const dw = 40, dh = 20; // diamond size
+    e.d_pg.setAttribute('points', `${mx},${my-dh} ${mx+dw},${my} ${mx},${my+dh} ${mx-dw},${my}`);
+    
+    e.txt.setAttribute('x',mx);
+    e.txt.setAttribute('y',my); // centered in diamond
+    
+    // Cardinalities near endpoints
+    const angle = Math.atan2(p.y2-p.y1, p.x2-p.x1);
+    // Push them a bit along the line, and a bit perpendicular so they don't overlap line
+    const off = 25;
+    const px = 10;
+    
+    const cx1 = p.x1 + Math.cos(angle)*off + Math.sin(angle)*px;
+    const cy1 = p.y1 + Math.sin(angle)*off - Math.cos(angle)*px;
+    
+    const cx2 = p.x2 - Math.cos(angle)*off + Math.sin(angle)*px;
+    const cy2 = p.y2 - Math.sin(angle)*off - Math.cos(angle)*px;
+    
+    e.cF.setAttribute('x', cx1); e.cF.setAttribute('y', cy1);
+    e.cT.setAttribute('x', cx2); e.cT.setAttribute('y', cy2);
+
+  });
+}
+drawLines();
+
+function updateHighlights(){
+  if(!hoverId){
+    Object.values(nodes).forEach(n=>{n.el.classList.remove('dim','active','related');});
+    edges.forEach(e=>{e.l.classList.remove('dim','active');e.d_pg.classList.remove('dim','active'); e.cF.classList.remove('dim','active'); e.cT.classList.remove('dim','active');e.txt.classList.remove('dim','active');});
+    return;
+  }
+  const main=nodes[hoverId];
+  Object.values(nodes).forEach(n=>{
+    if(n.el.dataset.id===hoverId){n.el.classList.remove('dim','related');n.el.classList.add('active');}
+    else if(main.adj.has(n.el.dataset.id)){n.el.classList.remove('dim','active');n.el.classList.add('related');}
+    else{n.el.classList.remove('active','related');n.el.classList.add('dim');}
+  });
+  edges.forEach(e=>{
+    if(e.f===hoverId||e.t===hoverId){
+      e.l.classList.remove('dim');e.l.classList.add('active');
+      e.d_pg.classList.remove('dim');e.d_pg.classList.add('active'); e.cF.classList.add('active'); e.cT.classList.add('active');
+      e.txt.classList.remove('dim');e.txt.classList.add('active');
+    } else {
+      e.l.classList.remove('active');e.l.classList.add('dim');
+      e.d_pg.classList.remove('active');e.d_pg.classList.add('dim'); e.cF.classList.add('dim'); e.cT.classList.add('dim');
+      e.txt.classList.remove('active');e.txt.classList.add('dim');
+    }
+  });
+}
+
+pan.addEventListener('mousedown',e=>{
+  const nd=e.target.closest('.nd');
+  if(nd){drag=nodes[nd.dataset.id];mx=e.clientX;my=e.clientY;nd.style.cursor='grabbing';e.preventDefault()}
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  drag.x+=(e.clientX-mx)/sc;drag.y+=(e.clientY-my)/sc;
+  drag.el.style.left=drag.x+'px';drag.el.style.top=drag.y+'px';
+  mx=e.clientX;my=e.clientY;drawLines();
+});
+window.addEventListener('mouseup',()=>{if(drag){drag.el.style.cursor='grab';drag=null}});
+
+let panning=false,px,py;
+wrap.addEventListener('mousedown',e=>{
+  if(e.target===wrap||e.target===pan||e.target===svg){panning=true;px=e.clientX;py=e.clientY;wrap.style.cursor='grabbing'}
+});
+window.addEventListener('mousemove',e=>{
+  if(!panning)return;
+  ox+=e.clientX-px;oy+=e.clientY-py;px=e.clientX;py=e.clientY;
+  pan.style.transform=`translate(${ox}px,${oy}px) scale(${sc})`;
+});
+window.addEventListener('mouseup',()=>{if(panning){panning=false;wrap.style.cursor='default'}});
+wrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  let d=e.deltaY>0?.92:1.08,ns=Math.max(.15,Math.min(3,sc*d));
+  let r=wrap.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;
+  ox=cx-(cx-ox)*(ns/sc);oy=cy-(cy-oy)*(ns/sc);sc=ns;
+  pan.style.transform=`translate(${ox}px,${oy}px) scale(${sc})`;
+},{passive:false});
+
+function resetV(){sc=1;ox=0;oy=0;pan.style.transform='translate(0,0) scale(1)'}
+function fit(){
+  Object.values(nodes).forEach(n=>{
+    if(!n.w || n.w === 0) { n.w = n.el.offsetWidth; n.h = n.el.offsetHeight; }
+  });
+  let mn={x:Infinity,y:Infinity},mx2={x:-Infinity,y:-Infinity};
+  Object.values(nodes).forEach(n=>{
+    if(n.x<mn.x)mn.x=n.x;if(n.y<mn.y)mn.y=n.y;
+    if(n.x+n.w>mx2.x)mx2.x=n.x+n.w;if(n.y+n.h>mx2.y)mx2.y=n.y+n.h;
+  });
+  let w=mx2.x-mn.x+100,h=mx2.y-mn.y+100;
+  sc=Math.min(wrap.clientWidth/w,wrap.clientHeight/h,1.5);
+  ox=-mn.x*sc+(wrap.clientWidth-w*sc)/2+50*sc;
+  oy=-mn.y*sc+(wrap.clientHeight-h*sc)/2+50*sc;
+  pan.style.transform=`translate(${ox}px,${oy}px) scale(${sc})`;
+}
+setTimeout(fit,80);
+</script>
+</body>
+</html>
