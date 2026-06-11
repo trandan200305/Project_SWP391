@@ -21,4 +21,8 @@ public class DirectChatDto {
     private LocalDateTime lastMessageAt;
     private long unreadCount;
     private LocalDateTime updatedAt;
+    private Boolean isDeleted;
+    private Boolean isBlocked;
+    private Boolean isBlockedByMe;
+    private Boolean isBlockedByPartner;
 }

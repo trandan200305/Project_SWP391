@@ -38,4 +38,40 @@ public class DirectChatRestController {
         List<DirectMessageDto> messages = chatService.getChatMessages(chatId);
         return ResponseEntity.ok(messages);
     }
+
+    @PostMapping("/{chatId}/delete")
+    public ResponseEntity<Void> deleteChat(
+            @PathVariable Integer chatId,
+            @RequestParam Integer userId,
+            @RequestParam String role) {
+        chatService.deleteChat(chatId, userId, role);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{chatId}/restore")
+    public ResponseEntity<Void> restoreChat(
+            @PathVariable Integer chatId,
+            @RequestParam Integer userId,
+            @RequestParam String role) {
+        chatService.restoreChat(chatId, userId, role);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{chatId}/block")
+    public ResponseEntity<Void> blockChat(
+            @PathVariable Integer chatId,
+            @RequestParam Integer userId,
+            @RequestParam String role) {
+        chatService.blockChat(chatId, userId, role);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{chatId}/unblock")
+    public ResponseEntity<Void> unblockChat(
+            @PathVariable Integer chatId,
+            @RequestParam Integer userId,
+            @RequestParam String role) {
+        chatService.unblockChat(chatId, userId, role);
+        return ResponseEntity.ok().build();
+    }
 }

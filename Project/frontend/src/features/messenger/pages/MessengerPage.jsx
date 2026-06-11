@@ -12,6 +12,7 @@ import SockJS from 'sockjs-client';
 
 export default function Messenger({ user, onNavigateHome }) {
   const [activeTab, setActiveTab] = useState('active'); 
+  const [activeDirectTab, setActiveDirectTab] = useState('active'); // 'active' | 'blocked' | 'deleted' 
   const [tickets, setTickets] = useState([]);
   const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -131,9 +132,8 @@ export default function Messenger({ user, onNavigateHome }) {
               if (prev.some(msg => msg.messageId === receivedMessage.messageId)) return prev;
               return [...prev, receivedMessage];
             });
-          } else {
-            fetchDirectChats(); // Refresh list to show unread count
           }
+          fetchDirectChats(); // Always refresh list to update last message/unread count
         });
       }
     };
@@ -358,6 +358,7 @@ export default function Messenger({ user, onNavigateHome }) {
     setIsLoading(true);
     setActiveDirectChat(chat);
     setActiveTicket(null);
+    setShowUserInfo(false);
     setNavSection('direct_chats');
     activeDirectChatIdRef.current = chat.chatId;
     activeTicketIdRef.current = null;
@@ -587,6 +588,123 @@ export default function Messenger({ user, onNavigateHome }) {
     setAttachedFiles([]);
   };
 
+  const handleDeleteDirectChat = async (chatId) => {
+    setConfirmConfig({
+      title: 'Xóa cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Đối tác của bạn vẫn sẽ nhìn thấy cuộc trò chuyện từ phía họ.',
+      confirmText: 'Xóa hội thoại',
+      cancelText: 'Hủy',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await messengerApi.deleteDirectChat(chatId, user.id, user.role);
+          setDirectChats(prev => prev.map(c => c.chatId === chatId ? { ...c, isDeleted: true } : c));
+          setActiveDirectChat(null);
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to delete direct chat', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleRestoreDirectChat = async (chatId) => {
+    setConfirmConfig({
+      title: 'Khôi phục cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn khôi phục cuộc trò chuyện này?',
+      confirmText: 'Khôi phục',
+      cancelText: 'Hủy',
+      type: 'success',
+      onConfirm: async () => {
+        try {
+          await messengerApi.restoreDirectChat(chatId, user.id, user.role);
+          setDirectChats(prev => prev.map(c => c.chatId === chatId ? { ...c, isDeleted: false } : c));
+          setActiveDirectChat(null);
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to restore direct chat', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleBlockDirectChat = async (chatId, days = -1) => {
+    let titleMsg = '';
+    let confirmMsg = '';
+    let confirmBtn = '';
+    let typeBtn = 'warning';
+
+    if (days === -1) {
+      titleMsg = 'Chặn vĩnh viễn';
+      confirmMsg = 'Bạn có chắc chắn muốn chặn người dùng này vĩnh viễn? Cả hai sẽ không thể gửi tin nhắn cho nhau.';
+      confirmBtn = 'Chặn vĩnh viễn';
+      typeBtn = 'danger';
+    } else {
+      titleMsg = `Chặn ${days} ngày`;
+      confirmMsg = `Bạn có chắc chắn muốn chặn người dùng này trong ${days} ngày? Cả hai sẽ không thể gửi tin nhắn cho nhau.`;
+      confirmBtn = `Chặn ${days} ngày`;
+      typeBtn = 'warning';
+    }
+
+    setConfirmConfig({
+      title: titleMsg,
+      message: confirmMsg,
+      confirmText: confirmBtn,
+      cancelText: 'Hủy',
+      type: typeBtn,
+      onConfirm: async () => {
+        try {
+          await messengerApi.blockDirectChat(chatId, user.id, user.role);
+          setDirectChats(prev => prev.map(c => c.chatId === chatId ? { ...c, isBlocked: true, isBlockedByMe: true } : c));
+          setActiveDirectChat(prev => prev ? { ...prev, isBlocked: true, isBlockedByMe: true } : null);
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to block direct chat', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleUnblockDirectChat = async (chatId) => {
+    setConfirmConfig({
+      title: 'Bỏ chặn người dùng',
+      message: 'Bạn có chắc chắn muốn bỏ chặn người dùng này để tiếp tục gửi tin nhắn?',
+      confirmText: 'Bỏ chặn',
+      cancelText: 'Hủy',
+      type: 'success',
+      onConfirm: async () => {
+        try {
+          await messengerApi.unblockDirectChat(chatId, user.id, user.role);
+          setDirectChats(prev => {
+            return prev.map(c => {
+              if (c.chatId === chatId) {
+                const isBlockedByPartner = c.isBlockedByPartner;
+                return { ...c, isBlocked: isBlockedByPartner, isBlockedByMe: false };
+              }
+              return c;
+            });
+          });
+          setActiveDirectChat(prev => {
+            if (!prev) return null;
+            const isBlockedByPartner = prev.isBlockedByPartner;
+            return { ...prev, isBlocked: isBlockedByPartner, isBlockedByMe: false };
+          });
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Failed to unblock direct chat', err);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
   const fetchSystemUsers = async () => {
     setIsUsersLoading(true);
     try {
@@ -611,6 +729,9 @@ export default function Messenger({ user, onNavigateHome }) {
     } else if (section === 'direct_chats') {
       setActiveTicket(null);
       setActiveDirectChat(null);
+      setActiveDirectTab('active');
+      setSearchQuery('');
+      fetchDirectChats();
     } else if (section === 'freelancer' || section === 'employer') {
       fetchSystemUsers();
     }
@@ -687,22 +808,38 @@ export default function Messenger({ user, onNavigateHome }) {
     (ticket.sender_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ticket.sender_email || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-  const pendingTickets = tickets.filter(t => !t.has_admin_replied && t.user_message_count > 0 && matchesSearch(t));
-  const activeTickets = tickets.filter(t => t.has_admin_replied && matchesSearch(t));
+  const blockedTickets = tickets.filter(t => t.blocked_until && new Date(t.blocked_until) > new Date() && matchesSearch(t));
+  const pendingTickets = tickets.filter(t => !t.has_admin_replied && t.user_message_count > 0 && matchesSearch(t) && !(t.blocked_until && new Date(t.blocked_until) > new Date()));
+  const activeTickets = tickets.filter(t => t.has_admin_replied && matchesSearch(t) && !(t.blocked_until && new Date(t.blocked_until) > new Date()));
 
   const filteredTickets = activeTab === 'pending'
     ? pendingTickets
     : activeTab === 'active'
     ? activeTickets
+    : activeTab === 'blocked'
+    ? blockedTickets
     : [...activeTickets, ...pendingTickets]; 
+
+  const matchesDirectSearch = (chat) =>
+    (chat.partnerName || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+  const activeDirectChats = (directChats || []).filter(c => !c.isDeleted && !c.isBlocked && matchesDirectSearch(c));
+  const blockedDirectChats = (directChats || []).filter(c => c.isBlocked && matchesDirectSearch(c));
+  const deletedDirectChats = (directChats || []).filter(c => c.isDeleted && matchesDirectSearch(c));
+
+  const filteredDirectChats = activeDirectTab === 'blocked'
+    ? blockedDirectChats
+    : activeDirectTab === 'deleted'
+    ? deletedDirectChats
+    : activeDirectChats; 
 
   return (
     <div className="flex h-screen bg-slate-50/50 text-slate-800 font-sans overflow-hidden">
-      <div className="w-[260px] border-r border-slate-200 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
+      <div className="w-[260px] border-r border-slate-200 bg-gradient-to-b from-[#253c6e] to-[#162548] text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
-          {}
+          {/* Logo / Branding */}
           <div 
-            className="p-6 flex items-center gap-3 cursor-pointer border-b border-slate-800/80"
+            className="p-6 flex items-center gap-3 cursor-pointer border-b border-white/10"
             onClick={onNavigateHome}
           >
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-blue-500/30 shrink-0">
@@ -779,17 +916,10 @@ export default function Messenger({ user, onNavigateHome }) {
                 <span>{user?.role === 'FREELANCER' ? 'Tìm Employer' : 'Tìm Freelancer'}</span>
               </button>
             )}
-            <button 
-              onClick={onNavigateHome}
-              className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 rounded-xl font-medium hover:text-white transition-all text-slate-400"
-            >
-              <FolderKanban className="w-5 h-5 shrink-0" />
-              <span>Dự Án Đăng Tuyển</span>
-            </button>
           </nav>
         </div>
 
-        <div className="p-4 border-t border-slate-800/50">
+        <div className="p-4 border-t border-white/10">
           <button 
             onClick={onNavigateHome}
             className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/50 hover:text-white text-slate-400 font-medium rounded-xl transition-all"
@@ -889,24 +1019,24 @@ export default function Messenger({ user, onNavigateHome }) {
                 </>
               )}
 
-              {user?.role === 'ADMIN' && (
+              {(user?.role === 'ADMIN' || navSection === 'direct_chats') && (
                 <>
                   <div className="relative mt-4">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                       type="text" 
                       placeholder="Tìm theo tên hoặc email..." 
-                      value={navSection === 'chat' ? searchQuery : userSearchQuery}
-                      onChange={(e) => navSection === 'chat' ? setSearchQuery(e.target.value) : setUserSearchQuery(e.target.value)}
+                      value={(navSection === 'chat' || navSection === 'direct_chats') ? searchQuery : userSearchQuery}
+                      onChange={(e) => (navSection === 'chat' || navSection === 'direct_chats') ? setSearchQuery(e.target.value) : setUserSearchQuery(e.target.value)}
                       className="pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl text-sm font-medium w-full transition-all outline-none"
                     />
                   </div>
 
-                  {navSection === 'chat' && (
-                    <div className="flex gap-2 mt-4">
+                  {navSection === 'chat' && user?.role === 'ADMIN' && (
+                    <div className="flex gap-1.5 mt-4 items-center justify-between">
                       <button 
-                        onClick={() => setActiveTab('active')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                        onClick={() => { setActiveTab('active'); setActiveTicket(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
                           activeTab === 'active'
                             ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' 
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -920,8 +1050,8 @@ export default function Messenger({ user, onNavigateHome }) {
                         )}
                       </button>
                       <button 
-                        onClick={() => setActiveTab('pending')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                        onClick={() => { setActiveTab('pending'); setActiveTicket(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
                           activeTab === 'pending'
                             ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20' 
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -935,8 +1065,23 @@ export default function Messenger({ user, onNavigateHome }) {
                         )}
                       </button>
                       <button 
-                        onClick={() => { setActiveTab('deleted'); fetchDeletedTickets(); }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border flex items-center gap-1.5 ${
+                        onClick={() => { setActiveTab('blocked'); setActiveTicket(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                          activeTab === 'blocked'
+                            ? 'bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đã chặn
+                        {blockedTickets.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeTab === 'blocked' ? 'bg-white/25 text-white' : 'bg-slate-500 text-white'
+                          }`}>{blockedTickets.length}</span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => { setActiveTab('deleted'); setActiveTicket(null); fetchDeletedTickets(); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
                           activeTab === 'deleted'
                             ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20' 
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -947,6 +1092,56 @@ export default function Messenger({ user, onNavigateHome }) {
                           <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                             activeTab === 'deleted' ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
                           }`}>{deletedTickets.length}</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {navSection === 'direct_chats' && (
+                    <div className="flex gap-2.5 mt-4 items-center justify-start">
+                      <button 
+                        onClick={() => { setActiveDirectTab('active'); setActiveDirectChat(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                          activeDirectTab === 'active'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đang chat
+                        {activeDirectChats.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeDirectTab === 'active' ? 'bg-white/25' : 'bg-blue-500 text-white'
+                          }`}>{activeDirectChats.length}</span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => { setActiveDirectTab('blocked'); setActiveDirectChat(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                          activeDirectTab === 'blocked'
+                            ? 'bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đã chặn
+                        {blockedDirectChats.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeDirectTab === 'blocked' ? 'bg-white/25' : 'bg-slate-500 text-white'
+                          }`}>{blockedDirectChats.length}</span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => { setActiveDirectTab('deleted'); setActiveDirectChat(null); }}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                          activeDirectTab === 'deleted'
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Đã xoá
+                        {deletedDirectChats.length > 0 && (
+                          <span className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
+                            activeDirectTab === 'deleted' ? 'bg-white/25' : 'bg-rose-500 text-white'
+                          }`}>{deletedDirectChats.length}</span>
                         )}
                       </button>
                     </div>
@@ -1100,6 +1295,60 @@ export default function Messenger({ user, onNavigateHome }) {
                       <p className="text-xs font-semibold">Không có ticket nào đang chờ xử lý</p>
                     </div>
                   )}
+                  {activeTab === 'blocked' && blockedTickets.length > 0 && (
+                    <>
+                      <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-slate-500 rounded-full"></span>
+                        <p className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider">Đã chặn ({blockedTickets.length})</p>
+                      </div>
+                      {blockedTickets.map(ticket => {
+                        const date = ticket.last_message_at ? new Date(ticket.last_message_at) : new Date(ticket.updated_at);
+                        const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const isSelected = activeTicket?.ticket_id === ticket.ticket_id;
+                        return (
+                          <div 
+                            key={ticket.ticket_id} 
+                            onClick={() => handleSelectTicket(ticket)}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
+                              isSelected 
+                                ? 'bg-slate-100 border-l-slate-700' 
+                                : 'border-l-transparent hover:bg-slate-50/50'
+                            }`}
+                          >
+                            <div className="relative shrink-0">
+                              <img 
+                                src={ticket.sender_avatar || `https://ui-avatars.com/api/?name=${ticket.sender_name || 'Client'}&background=f1f5f9&color=64748b`} 
+                                alt={ticket.sender_name} 
+                                className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm opacity-70 grayscale"
+                              />
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-white"></div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center mb-0.5">
+                                <h4 className="font-extrabold text-slate-800 truncate pr-2 text-sm">{ticket.sender_name}</h4>
+                                <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{formattedTime}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                                  ticket.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                                }`}>{ticket.sender_role}</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-slate-100 text-slate-600 border-slate-200">Đã chặn</span>
+                              </div>
+                              <p className="text-xs truncate font-medium text-slate-500">
+                                {ticket.last_message || 'Chưa có tin nhắn'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                  {activeTab === 'blocked' && blockedTickets.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Không có cuộc trò chuyện nào bị chặn</p>
+                    </div>
+                  )}
                   {activeTab === 'deleted' && deletedTickets.length > 0 && (
                     <>
                       <div className="px-4 py-2 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
@@ -1164,9 +1413,9 @@ export default function Messenger({ user, onNavigateHome }) {
 
               {navSection === 'direct_chats' && (
                 <div className="flex flex-col">
-                  {directChats.length > 0 ? (
+                  {filteredDirectChats.length > 0 ? (
                     <div>
-                      {directChats.map(chat => {
+                      {filteredDirectChats.map(chat => {
                         const isSelected = activeDirectChat?.chatId === chat.chatId;
                         const date = new Date(chat.updatedAt);
                         const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1176,32 +1425,48 @@ export default function Messenger({ user, onNavigateHome }) {
                             onClick={() => handleSelectDirectChat(chat)}
                             className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
                               isSelected 
-                                ? 'bg-blue-50/50 border-l-blue-600' 
+                                ? (chat.isDeleted ? 'bg-rose-50/50 border-l-rose-500' : 'bg-blue-50/50 border-l-blue-600')
                                 : 'border-l-transparent hover:bg-slate-50'
-                            }`}
+                            } ${chat.isDeleted ? 'opacity-80' : ''}`}
                           >
                             <div className="relative shrink-0">
                               <img 
                                 src={chat.partnerAvatar || `https://ui-avatars.com/api/?name=${chat.partnerName || 'User'}&background=eff6ff&color=3b82f6`} 
                                 alt={chat.partnerName} 
-                                className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm"
+                                className={`w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm ${
+                                  chat.isDeleted ? 'opacity-70 grayscale' : ''
+                                }`}
                               />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-center mb-0.5">
-                                <h4 className={`font-extrabold truncate pr-2 text-sm ${chat.unreadCount > 0 ? 'text-blue-900' : 'text-slate-900'}`}>{chat.partnerName}</h4>
-                                <span className={`text-[10px] font-bold whitespace-nowrap ${chat.unreadCount > 0 ? 'text-blue-600' : 'text-slate-400'}`}>{formattedTime}</span>
+                                <h4 className={`font-extrabold truncate pr-2 text-sm ${
+                                  chat.isDeleted ? 'line-through text-slate-500' : (chat.unreadCount > 0 ? 'text-blue-900' : 'text-slate-900')
+                                }`}>
+                                  {chat.partnerName}
+                                </h4>
+                                <span className={`text-[10px] font-bold whitespace-nowrap ${
+                                  chat.unreadCount > 0 ? 'text-blue-600' : 'text-slate-400'
+                                }`}>
+                                  {formattedTime}
+                                </span>
                               </div>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
                                   chat.partnerRole === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
                                 }`}>{chat.partnerRole}</span>
+                                {chat.isBlocked && (
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-slate-100 text-slate-600 border-slate-200">Đã chặn</span>
+                                )}
+                                {chat.isDeleted && (
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider bg-rose-50 text-rose-600 border-rose-200">Đã xoá</span>
+                                )}
                               </div>
                               <div className="flex justify-between items-center">
                                 <p className={`text-xs truncate font-medium ${chat.unreadCount > 0 ? 'text-blue-700 font-bold' : 'text-slate-500'}`}>
-                                  {chat.lastMessage || 'Bắt đầu cuộc trò chuyện'}
+                                  {chat.isDeleted ? 'Tin nhắn đã bị ẩn' : (chat.lastMessage || 'Bắt đầu cuộc trò chuyện')}
                                 </p>
-                                {chat.unreadCount > 0 && (
+                                {chat.unreadCount > 0 && !chat.isDeleted && (
                                   <span className="w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center bg-blue-500 text-white shrink-0">
                                     {chat.unreadCount}
                                   </span>
@@ -1214,8 +1479,22 @@ export default function Messenger({ user, onNavigateHome }) {
                     </div>
                   ) : (
                     <div className="p-8 text-center text-slate-400">
-                      <MessageCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                      <p className="text-xs font-semibold">Chưa có tin nhắn riêng nào</p>
+                      {activeDirectTab === 'blocked' ? (
+                        <>
+                          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                          <p className="text-xs font-semibold">Không có cuộc trò chuyện nào bị chặn</p>
+                        </>
+                      ) : activeDirectTab === 'deleted' ? (
+                        <>
+                          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                          <p className="text-xs font-semibold">Thùng rác trống</p>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                          <p className="text-xs font-semibold">Chưa có tin nhắn riêng nào</p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1468,7 +1747,7 @@ export default function Messenger({ user, onNavigateHome }) {
                       return (
                         <div 
                           key={msg.messageId || index} 
-                          className={`flex items-end gap-2.5 max-w-[80%] ${
+                          className={`flex items-start gap-2.5 max-w-[80%] ${
                             isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'
                           }`}
                         >
@@ -1476,23 +1755,29 @@ export default function Messenger({ user, onNavigateHome }) {
                             <img 
                               src={msg.senderAvatar || `https://ui-avatars.com/api/?name=${msg.senderName || 'Staff'}&background=3b82f6&color=fff`} 
                               alt={msg.senderName} 
-                              className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0"
+                              className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 mt-0.5"
                             />
                           )}
-                          <div>
+                          <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-full`}>
                             {!isMe && (
-                              <p className="text-[10px] font-extrabold text-slate-400 mb-0.5 ml-1 flex items-center gap-1">
-                                {msg.senderName}
-                                <span className="bg-slate-200/80 text-[8px] font-extrabold text-slate-500 px-1 py-0.2 rounded uppercase">
+                              <div className="flex items-center gap-1.5 mb-1.5 ml-1 select-none">
+                                <span className="text-xs font-bold text-slate-700">{msg.senderName}</span>
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                                  msg.senderRole?.toUpperCase() === 'ADMIN'
+                                    ? 'bg-rose-50 text-rose-600 border border-rose-100/50'
+                                    : msg.senderRole?.toUpperCase() === 'EMPLOYER'
+                                    ? 'bg-purple-50 text-purple-600 border border-purple-100/50'
+                                    : 'bg-blue-50 text-blue-600 border border-blue-100/50'
+                                }`}>
                                   {msg.senderRole}
                                 </span>
-                              </p>
+                              </div>
                             )}
                             {msg.messageText && msg.messageText.trim() !== '' && !(msg.attachments && msg.attachments.length > 0 && (msg.messageText === '[Hình ảnh]' || msg.messageText === '[Tệp đính kèm]')) && (
                               <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
                                 isMe 
-                                  ? 'bg-blue-600 text-white rounded-br-none border border-blue-500 shadow-blue-500/10' 
-                                  : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none'
+                                  ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10' 
+                                  : 'bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm'
                               } ${activeTab === 'deleted' ? 'blur-md opacity-50 select-none pointer-events-none' : ''}`}>
                                 {activeTab === 'deleted' ? 'Tin nhắn đã bị xóa' : msg.messageText}
                               </div>
@@ -1558,7 +1843,7 @@ export default function Messenger({ user, onNavigateHome }) {
                                 })}
                               </div>
                             )}
-                            <p className={`text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1 ${
+                            <p className={`text-[9px] font-bold text-slate-400 mt-1.5 flex items-center gap-1 ${
                               isMe ? 'justify-end mr-1' : 'ml-1'
                             }`}>
                               <Clock className="w-2.5 h-2.5" />
@@ -1700,9 +1985,12 @@ export default function Messenger({ user, onNavigateHome }) {
             ) : navSection === 'direct_chats' && activeDirectChat ? (
               <>
                 <div className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-3">
+                  <div 
+                    className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-all"
+                    onClick={() => setShowUserInfo(!showUserInfo)}
+                  >
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setActiveDirectChat(null); setNavSection('direct_chats'); }}
+                      onClick={(e) => { e.stopPropagation(); setActiveDirectChat(null); setNavSection('direct_chats'); setShowUserInfo(false); }}
                       className="md:hidden p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"
                     >
                       <ArrowLeft className="w-5 h-5" />
@@ -1720,6 +2008,20 @@ export default function Messenger({ user, onNavigateHome }) {
                         {activeDirectChat.partnerRole === 'EMPLOYER' ? 'Nhà tuyển dụng' : 'Freelancer'}
                       </p>
                     </div>
+                    <ChevronRight className={`w-4 h-4 text-slate-300 transition-transform duration-200 ${showUserInfo ? 'rotate-180' : ''}`} />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {activeDirectChat.isBlocked && (
+                      <span className="px-2.5 py-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 rounded-full uppercase tracking-wider">
+                        Đã chặn
+                      </span>
+                    )}
+                    {activeDirectChat.isDeleted && (
+                      <span className="px-2.5 py-1 text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 rounded-full uppercase tracking-wider">
+                        Đã xoá
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1734,22 +2036,37 @@ export default function Messenger({ user, onNavigateHome }) {
                     messages.map((msg, index) => {
                       const isMine = msg.senderId === user?.id && msg.senderRole === user?.role?.toUpperCase();
                       return (
-                        <div key={index} className={`flex flex-col max-w-[80%] ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
-                          <div className={`p-3.5 rounded-2xl ${
-                            isMine 
-                              ? 'bg-blue-600 text-white rounded-br-sm shadow-md shadow-blue-500/20' 
-                              : 'bg-white text-slate-800 rounded-bl-sm border border-slate-200 shadow-sm'
-                          }`}>
-                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.messageText}</p>
+                        <div 
+                          key={index} 
+                          className={`flex items-start gap-2.5 max-w-[80%] ${
+                            isMine ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                          }`}
+                        >
+                          {!isMine && (
+                            <img 
+                              src={activeDirectChat?.partnerAvatar || `https://ui-avatars.com/api/?name=${activeDirectChat?.partnerName || 'User'}&background=3b82f6&color=fff`} 
+                              alt={activeDirectChat?.partnerName} 
+                              className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0 mt-0.5"
+                            />
+                          )}
+                          <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-full`}>
+                            <div className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
+                              isMine 
+                                ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10' 
+                                : 'bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm'
+                            } ${activeDirectChat.isDeleted ? 'blur-md opacity-50 select-none pointer-events-none' : ''}`}>
+                              <p className="whitespace-pre-wrap">{activeDirectChat.isDeleted ? 'Tin nhắn đã bị ẩn' : msg.messageText}</p>
+                            </div>
+                            <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold mt-1.5 px-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {isMine && (
+                                (msg.isRead || msg.read) 
+                                  ? <span className="ml-1 text-[9px] text-blue-500 font-bold">Đã xem</span>
+                                  : <span className="ml-1 text-[9px] text-slate-400 font-bold">Đã gửi</span>
+                              )}
+                            </span>
                           </div>
-                          <span className="flex items-center gap-1 text-[10px] text-slate-400 font-bold mt-1.5 px-1">
-                            {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            {isMine && (
-                              (msg.isRead || msg.read) 
-                                ? <span className="ml-1 text-[9px] text-blue-500 font-bold">Đã xem</span>
-                                : <span className="ml-1 text-[9px] text-slate-400 font-bold">Đã gửi</span>
-                            )}
-                          </span>
                         </div>
                       );
                     })
@@ -1757,47 +2074,66 @@ export default function Messenger({ user, onNavigateHome }) {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (inputText.trim() === '') return;
-                    
-                    const messageDto = {
-                      chatId: activeDirectChat.chatId,
-                      senderId: user.id,
-                      senderRole: user.role,
-                      messageText: inputText
-                    };
-                    
-                    if (stompClientRef.current && stompClientRef.current.connected) {
-                      stompClientRef.current.publish({
-                        destination: `/app/direct.chat.send`,
-                        body: JSON.stringify(messageDto)
-                      });
-                      setInputText('');
-                    } else {
-                      alert('Mất kết nối server, vui lòng thử lại sau.');
-                    }
-                  }}
-                  className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
-                >
-                  <input 
-                    type="text" 
-                    placeholder="Nhập tin nhắn..."
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
-                  />
-                  <button 
-                    type="submit"
-                    disabled={inputText.trim() === ''}
-                    className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                      inputText.trim() === '' ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
-                    }`}
+                {activeDirectChat.isBlocked ? (
+                  <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-slate-200 h-[76px] shrink-0">
+                    <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
+                    <span className="text-sm font-semibold text-slate-600">
+                      {activeDirectChat.isBlockedByMe 
+                        ? 'Bạn đã chặn người dùng này. Hãy bỏ chặn để tiếp tục gửi tin nhắn.' 
+                        : 'Người dùng này đã chặn bạn. Bạn không thể gửi tin nhắn.'
+                      }
+                    </span>
+                  </div>
+                ) : activeDirectChat.isDeleted ? (
+                  <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-slate-200 h-[76px] shrink-0">
+                    <AlertCircle className="w-5 h-5 text-slate-400 mr-2 shrink-0" />
+                    <span className="text-sm font-semibold text-slate-600">
+                      Cuộc trò chuyện đang nằm trong thùng rác. Hãy khôi phục để tiếp tục nhắn tin.
+                    </span>
+                  </div>
+                ) : (
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (inputText.trim() === '') return;
+                      
+                      const messageDto = {
+                        chatId: activeDirectChat.chatId,
+                        senderId: user.id,
+                        senderRole: user.role,
+                        messageText: inputText
+                      };
+                      
+                      if (stompClientRef.current && stompClientRef.current.connected) {
+                        stompClientRef.current.publish({
+                          destination: `/app/direct.chat.send`,
+                          body: JSON.stringify(messageDto)
+                        });
+                        setInputText('');
+                      } else {
+                        alert('Mất kết nối server, vui lòng thử lại sau.');
+                      }
+                    }}
+                    className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
                   >
-                    <Send className="w-5 h-5 shrink-0" />
-                  </button>
-                </form>
+                    <input 
+                      type="text" 
+                      placeholder="Nhập tin nhắn..."
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={inputText.trim() === ''}
+                      className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                        inputText.trim() === '' ? 'opacity-50 cursor-not-allowed bg-slate-300 shadow-none' : ''
+                      }`}
+                    >
+                      <Send className="w-5 h-5 shrink-0" />
+                    </button>
+                  </form>
+                )}
               </>
             ) : (
               <div className="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50/50">
@@ -1902,6 +2238,126 @@ export default function Messenger({ user, onNavigateHome }) {
                         Xóa hội thoại
                       </button>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showUserInfo && activeDirectChat && navSection === 'direct_chats' && (
+              <div className="w-80 border-l border-slate-200 bg-white flex flex-col h-full shrink-0 overflow-y-auto">
+                <div className="p-6 border-b border-slate-100 flex flex-col items-center">
+                  <div className="relative mb-4">
+                    <img 
+                      src={activeDirectChat.partnerAvatar || `https://ui-avatars.com/api/?name=${activeDirectChat.partnerName || 'User'}&background=eff6ff&color=3b82f6`} 
+                      alt="Partner avatar" 
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                  </div>
+                  <h3 className="font-extrabold text-lg text-slate-900 mb-1">{activeDirectChat.partnerName}</h3>
+                  <p className="text-sm text-slate-500 font-semibold mb-3">
+                    {activeDirectChat.partnerRole === 'EMPLOYER' ? 'Nhà tuyển dụng' : 'Freelancer'}
+                  </p>
+                  <span className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${
+                    activeDirectChat.partnerRole === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                  }`}>{activeDirectChat.partnerRole}</span>
+                </div>
+
+                <div className="p-6 flex flex-col gap-6">
+                  {/* Status Section */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Trạng thái</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span className="text-sm font-semibold text-slate-600">Cuộc trò chuyện</span>
+                        {activeDirectChat.isDeleted ? (
+                          <span className="text-xs font-bold text-rose-600">Đã xoá</span>
+                        ) : activeDirectChat.isBlocked ? (
+                          <span className="text-xs font-bold text-amber-600">Đã chặn</span>
+                        ) : (
+                          <span className="text-xs font-bold text-emerald-600">Hoạt động</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Hành động</h4>
+                    <div className="flex flex-col gap-3">
+                      {/* Block / Unblock */}
+                      {activeDirectChat.isBlockedByMe ? (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                          <p className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5" />
+                            Bạn đang chặn người dùng này
+                          </p>
+                          <button
+                            onClick={() => handleUnblockDirectChat(activeDirectChat.chatId)}
+                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
+                          >
+                            Bỏ chặn ngay
+                          </button>
+                        </div>
+                      ) : activeDirectChat.isBlocked && !activeDirectChat.isBlockedByMe ? (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-amber-800">
+                            Người dùng này đã chặn bạn
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5" />
+                            Chặn liên hệ
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleBlockDirectChat(activeDirectChat.chatId, 1)}
+                              className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all"
+                            >
+                              1 ngày
+                            </button>
+                            <button
+                              onClick={() => handleBlockDirectChat(activeDirectChat.chatId, 3)}
+                              className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all"
+                            >
+                              3 ngày
+                            </button>
+                            <button
+                              onClick={() => handleBlockDirectChat(activeDirectChat.chatId, 7)}
+                              className="py-2 bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all"
+                            >
+                              7 ngày
+                            </button>
+                            <button
+                              onClick={() => handleBlockDirectChat(activeDirectChat.chatId, -1)}
+                              className="py-2 bg-white border border-slate-200 hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all"
+                            >
+                              Vĩnh viễn
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Delete / Restore */}
+                      {activeDirectChat.isDeleted ? (
+                        <button
+                          onClick={() => handleRestoreDirectChat(activeDirectChat.chatId)}
+                          className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Khôi phục hội thoại
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteDirectChat(activeDirectChat.chatId)}
+                          className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Xóa hội thoại
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

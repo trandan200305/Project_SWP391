@@ -33,6 +33,22 @@ public class DirectChat {
     @JoinColumn(name = "employer_id", nullable = false)
     private Employer employer;
 
+    @Column(name = "is_deleted_by_freelancer")
+    @Builder.Default
+    private Boolean isDeletedByFreelancer = false;
+
+    @Column(name = "is_deleted_by_employer")
+    @Builder.Default
+    private Boolean isDeletedByEmployer = false;
+
+    @Column(name = "is_blocked_by_freelancer")
+    @Builder.Default
+    private Boolean isBlockedByFreelancer = false;
+
+    @Column(name = "is_blocked_by_employer")
+    @Builder.Default
+    private Boolean isBlockedByEmployer = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
