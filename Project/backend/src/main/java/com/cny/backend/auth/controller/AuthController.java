@@ -45,6 +45,10 @@ public class AuthController {
 
     private final Map<String, Boolean> verifiedForReset = new ConcurrentHashMap<>();
     private final Map<String, Boolean> tempPinUsers = new ConcurrentHashMap<>();
+
+    private final Map<String, Map<String, String>> pendingRegistrations = new ConcurrentHashMap<>();
+    private final Map<String, String> registrationCodes = new ConcurrentHashMap<>();
+    private final Map<String, Long> registrationTimestamps = new ConcurrentHashMap<>();
     
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> payload) {
@@ -101,8 +105,10 @@ public class AuthController {
 
             
             if (phone != null && !phone.trim().isEmpty()) {
-                Integer phoneCount = authService.countBy(table, "phone", phone);
-                if (phoneCount != null && phoneCount > 0) {
+                Integer phoneInEmployers = authService.countBy("employers", "phone", phone);
+                Integer phoneInFreelancers = authService.countBy("freelancers", "phone", phone);
+                if ((phoneInEmployers != null && phoneInEmployers > 0) ||
+                        (phoneInFreelancers != null && phoneInFreelancers > 0)) {
                     response.put("success", false);
                     response.put("field", "phone");
                     response.put("message", "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác!");
@@ -122,26 +128,30 @@ public class AuthController {
             }
 
             
-            Map<String, String> registerPayload = new HashMap<>();
-            registerPayload.put("email", email);
-            registerPayload.put("name", fullName != null ? fullName : email.split("@")[0]);
-            registerPayload.put("fullName", fullName != null ? fullName : email.split("@")[0]);
-            registerPayload.put("displayName",
-            displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
-            registerPayload.put("phone", phone);
-            registerPayload.put("password", password);
-            registerPayload.put("requestedRole", role);
-            registerPayload.put("googleId", null);
-            registerPayload.put("isRegistration", "true");
+            String code = String.format("%06d", (int) (Math.random() * 1000000));
+            registrationCodes.put(email, code);
+            registrationTimestamps.put(email, System.currentTimeMillis());
 
-            Map<String, Object> result = authService.login(registerPayload);
-            if ((Boolean) result.getOrDefault("success", false)) {
-                response.put("success", true);
-                response.put("message", "Đăng ký thành công! Bạn có thể đăng nhập ngay.");
-            } else {
-                response.put("success", false);
-                response.put("message", result.getOrDefault("message", "Đăng ký thất bại!"));
-            }
+            Map<String, String> pendingPayload = new HashMap<>(payload);
+            pendingRegistrations.put(email, pendingPayload);
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[LancerPro] Xác nhận đăng ký tài khoản");
+
+            String emailContent = "Chào bạn,\n\n"
+                    + "Cảm ơn bạn đã đăng ký tài khoản tại LancerPro.\n\n"
+                    + "Mã xác nhận đăng ký của bạn là: " + code + "\n\n"
+                    + "Mã này có hiệu lực trong vòng 60 giây. Vui lòng nhập mã này vào trang đăng ký để hoàn tất quy trình.\n\n"
+                    + "Trân trọng,\n"
+                    + "Đội ngũ LancerPro";
+
+            message.setText(emailContent);
+            mailSender.send(message);
+
+            response.put("success", true);
+            response.put("requireOtp", true);
+            response.put("message", "Mã xác nhận đăng ký đã được gửi về email của bạn!");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -149,6 +159,80 @@ public class AuthController {
             response.put("success", false);
             response.put("message", "Lỗi server: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/verify-registration")
+    public ResponseEntity<Map<String, Object>> verifyRegistration(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String code = payload.get("code");
+        Map<String, Object> response = new HashMap<>();
+
+        if (email == null || email.trim().isEmpty() || code == null || code.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Email và mã xác nhận không được để trống!");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        Long timestamp = registrationTimestamps.get(email);
+        if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 60 giây)!");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String savedCode = registrationCodes.get(email);
+        if (savedCode != null && savedCode.equals(code)) {
+            Map<String, String> registerPayload = pendingRegistrations.get(email);
+            if (registerPayload == null) {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy thông tin đăng ký tương ứng hoặc thông tin đã hết hạn!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            try {
+                String fullName = registerPayload.get("name");
+                String displayName = registerPayload.get("displayName");
+                String phone = registerPayload.get("phone");
+                String password = registerPayload.get("password");
+                String role = registerPayload.getOrDefault("requestedRole", "FREELANCER").toUpperCase();
+
+                Map<String, String> finalPayload = new HashMap<>();
+                finalPayload.put("email", email);
+                finalPayload.put("name", fullName != null ? fullName : email.split("@")[0]);
+                finalPayload.put("fullName", fullName != null ? fullName : email.split("@")[0]);
+                finalPayload.put("displayName",
+                        displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                finalPayload.put("phone", phone);
+                finalPayload.put("password", password);
+                finalPayload.put("requestedRole", role);
+                finalPayload.put("googleId", null);
+                finalPayload.put("isRegistration", "true");
+
+                Map<String, Object> result = authService.login(finalPayload);
+                if ((Boolean) result.getOrDefault("success", false)) {
+                    registrationCodes.remove(email);
+                    registrationTimestamps.remove(email);
+                    pendingRegistrations.remove(email);
+
+                    response.put("success", true);
+                    response.put("message", "Đăng ký thành công! Bạn có thể đăng nhập ngay.");
+                    return ResponseEntity.ok(response);
+                } else {
+                    response.put("success", false);
+                    response.put("message", result.getOrDefault("message", "Đăng ký thất bại!"));
+                    return ResponseEntity.badRequest().body(response);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.put("success", false);
+                response.put("message", "Lỗi server trong quá trình lưu tài khoản: " + e.getMessage());
+                return ResponseEntity.internalServerError().body(response);
+            }
+        } else {
+            response.put("success", false);
+            response.put("message", "Mã xác nhận không chính xác!");
+            return ResponseEntity.badRequest().body(response);
         }
     }
 

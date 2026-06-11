@@ -344,22 +344,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       adminApi.getVerificationTasks()
         .then(data => { if (Array.isArray(data)) setVerificationTasksList(data); })
         .catch(err => console.error('Error verification tasks:', err));
-    } else if (activeTab === 'moderation') {
-      setIsLoading(true);
-      adminApi.getPendingProjects()
-        .then(data => {
-          setPendingProjects(Array.isArray(data) ? data : []);
-          setIsLoading(false);
-        })
-        .catch(err => console.error('Error projects:', err));
-    } else if (activeTab === 'finance') {
-      setIsLoading(true);
-      adminApi.getWithdrawals()
-        .then(data => {
-          setWithdrawals(Array.isArray(data) ? data : []);
-          setIsLoading(false);
-        })
-        .catch(err => console.error('Error withdrawals:', err));
     } else if (activeTab === 'cms') {
       setIsLoading(true);
       Promise.all([
@@ -748,54 +732,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
               {}
               <div 
-                onClick={() => setActiveTab('moderation')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'moderation' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'moderation' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#22c55e] rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-[#22c55e] flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <ShieldAlert className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'moderation' ? 'text-[#22c55e]' : 'text-slate-800'}`}>Moderation</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'moderation' ? 'text-[#22c55e] font-medium' : 'text-slate-500'}`}>Kiểm duyệt dự án</p>
-                </div>
-                {pendingProjects.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm animate-bounce z-10">
-                    {pendingProjects.length}
-                  </span>
-                )}
-              </div>
-
-              {}
-              <div 
-                onClick={() => setActiveTab('finance')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'finance' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'finance' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-cyan-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <BadgeDollarSign className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'finance' ? 'text-cyan-600' : 'text-slate-800'}`}>Finance</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'finance' ? 'text-cyan-500 font-medium' : 'text-slate-500'}`}>Quản lý giao dịch</p>
-                </div>
-                {withdrawals.filter(w => w.status === 'PENDING').length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 flex items-center justify-center rounded-full shadow-sm z-10">
-                    {withdrawals.filter(w => w.status === 'PENDING').length}
-                  </span>
-                )}
-              </div>
-
-              {}
-              <div 
                 onClick={() => setActiveTab('cms')}
                 className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
                   activeTab === 'cms' 
@@ -849,8 +785,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {activeTab === 'dashboard' && <><Settings className="w-6 h-6 text-blue-600" /> Báo cáo & Thống kê Tổng quan</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
               {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
-              {activeTab === 'moderation' && <><ShieldAlert className="w-6 h-6 text-emerald-600" /> Job Escrow Moderation</>}
-              {activeTab === 'finance' && <><BadgeDollarSign className="w-6 h-6 text-amber-600" /> Liquidation & Finance Control</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
             </h1>
             <p className="text-body-sm text-muted mt-1 ml-9">
@@ -858,8 +792,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               {activeTab === 'dashboard' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
-              {activeTab === 'moderation' && 'Approve or reject projects awaiting moderation.'}
-              {activeTab === 'finance' && 'Supervise withdrawal requests and platform fees.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
             </p>
           </div>
@@ -953,46 +885,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <h4 className="text-lg font-bold text-slate-800 mb-2">Quản lý Người dùng</h4>
                     <p className="text-sm text-slate-500 mb-6 line-clamp-2">Khóa/mở khóa tài khoản, ban vĩnh viễn, xem lịch sử truy cập của hệ thống.</p>
                     <p className="text-xs font-bold text-rose-600">{stats.totalUsers} người dùng</p>
-                  </div>
-
-                  {}
-                  <div 
-                    onClick={() => setActiveTab('moderation')}
-                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-green-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <ShieldAlert className="w-6 h-6" />
-                      </div>
-                      {pendingProjects.length > 0 ? (
-                        <span className="bg-rose-50 text-rose-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">CẦN XỬ LÝ</span>
-                      ) : (
-                        <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
-                      )}
-                    </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2">Kiểm duyệt Dự án</h4>
-                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Phê duyệt dự án mới đăng, kiểm tra nội dung vi phạm chính sách nền tảng.</p>
-                    <p className="text-xs font-bold text-green-600">{pendingProjects.length} dự án chờ duyệt</p>
-                  </div>
-
-                  {}
-                  <div 
-                    onClick={() => setActiveTab('finance')}
-                    className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <BadgeDollarSign className="w-6 h-6" />
-                      </div>
-                      {stats.pendingWithdrawals > 0 ? (
-                        <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">CẦN XỬ LÝ</span>
-                      ) : (
-                        <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
-                      )}
-                    </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2">Quản lý Tài chính</h4>
-                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Phê duyệt lệnh rút tiền, kiểm soát giao dịch Escrow, giải quyết tranh chấp (Dispute).</p>
-                    <p className="text-xs font-bold text-cyan-600">{stats.pendingWithdrawals} yêu cầu rút tiền</p>
                   </div>
 
                   {}
@@ -2714,131 +2606,6 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               </div>
             );
           })()}
-
-          {}
-          {activeTab === 'moderation' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-bold text-primary text-body-md mb-2">Đang Chờ Kiểm Duyệt Dự Án (Pending Review)</h3>
-                <p className="text-body-sm text-slate-500">Các tin đăng tuyển dụng mới từ doanh nghiệp cần Admin phê duyệt nội dung trước khi xuất bản công khai.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-5">
-                {pendingProjects.length === 0 ? (
-                  <div className="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-sm">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                    <h4 className="font-bold text-primary text-lg">Sạch sẽ!</h4>
-                    <p className="text-slate-500 mt-2">Không còn dự án nào đang chờ kiểm duyệt.</p>
-                  </div>
-                ) : (
-                  pendingProjects.map((project) => (
-                    <div key={project.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded text-[11px] font-bold">{project.type || 'N/A'}</span>
-                          <span className="text-[12px] text-slate-400">Gửi lúc {project.createdAt ? new Date(project.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
-                        </div>
-                        <h4 className="font-display font-bold text-lg text-primary">{project.title}</h4>
-                        <p className="text-body-sm text-slate-600">Đăng bởi: <span className="font-bold text-slate-800">{project.clientName || 'N/A'}</span> • Ngân sách: <span className="font-bold text-emerald-600">{project.budget ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(project.budget) : 'Thỏa thuận'}</span></p>
-                      </div>
-
-                      <div className="flex gap-3 w-full md:w-auto">
-                        <button 
-                          onClick={() => handleProjectAction(project.id, true)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-300 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-emerald-600/30 shadow-emerald-600/10 flex-grow md:flex-grow-0 justify-center"
-                        >
-                          <Check className="w-4 h-4" /> Duyệt
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const reason = prompt('Nhập lý do từ chối kiểm duyệt dự án:');
-                            if (reason !== null) handleProjectAction(project.id, false, reason);
-                          }}
-                          className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-300 ease-out hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center gap-1.5 flex-grow md:flex-grow-0 justify-center hover:shadow-sm"
-                        >
-                          <X className="w-4 h-4" /> Từ chối
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {}
-          {activeTab === 'finance' && (
-            <div className="space-y-8">
-              {}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200">
-                  <h3 className="font-bold text-primary text-body-md">Yêu cầu rút tiền đang chờ duyệt (Withdrawal Escrow)</h3>
-                  <p className="text-body-sm text-slate-500 mt-1">Xác nhận chuyển tiền cho các freelancer sau khi họ hoàn tất dự án an toàn.</p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
-                        <th className="p-4 pl-6">ID</th>
-                        <th className="p-4">Freelancer</th>
-                        <th className="p-4">Số tiền yêu cầu</th>
-                        <th className="p-4">Thông tin ngân hàng</th>
-                        <th className="p-4">Ngày yêu cầu</th>
-                        <th className="p-4">Trạng thái</th>
-                        <th className="p-4 text-center">Hành động duyệt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {withdrawals.length === 0 ? (
-                        <tr>
-                          <td colSpan="7" className="p-8 text-center text-slate-400">Không có yêu cầu rút tiền nào</td>
-                        </tr>
-                      ) : (
-                        withdrawals.map((w) => (
-                          <tr key={w.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
-                            <td className="p-4 pl-6 text-slate-500">#{w.id}</td>
-                            <td className="p-4 font-bold text-primary">{w.userEmail || w.userName || 'N/A'}</td>
-                            <td className="p-4 font-extrabold text-emerald-600">{w.amount ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(w.amount) : '0 ₫'}</td>
-                            <td className="p-4 font-mono text-[12px]">{w.bankName ? `${w.bankName}` : 'N/A'}</td>
-                            <td className="p-4 text-slate-500">{w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
-                            <td className="p-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                w.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
-                                w.status === 'REJECTED' ? 'bg-rose-50 text-rose-700' :
-                                'bg-amber-50 text-amber-700'
-                              }`}>
-                                {w.status}
-                              </span>
-                            </td>
-                            <td className="p-4 text-center">
-                              {w.status === 'PENDING' ? (
-                                <div className="flex justify-center gap-2">
-                                  <button 
-                                    onClick={() => handleWithdrawalAction(w.id, true)}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-1 shadow-sm hover:shadow-emerald-600/30"
-                                  >
-                                    <Check className="w-3.5 h-3.5" /> Approve
-                                  </button>
-                                  <button 
-                                    onClick={() => handleWithdrawalAction(w.id, false)}
-                                    className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 px-3 py-1.5 rounded-lg font-bold text-[12px] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-1 shadow-sm"
-                                  >
-                                    <X className="w-3.5 h-3.5" /> Từ chối
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-[12px] text-slate-400 font-medium">Đã xử lý</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
 
           {}
           {activeTab === 'cms' && (

@@ -18,6 +18,62 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
 
+  const [step, setStep] = useState(1); // 1: form, 2: OTP verification
+  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
+  const otp = otpValues.join("");
+  const otpRefs = React.useRef([]);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [otpError, setOtpError] = useState("");
+
+  React.useEffect(() => {
+    let interval = null;
+    if (step === 2 && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step, otpTimer]);
+
+  const handleOtpChange = (value, index) => {
+    const cleanValue = value.replace(/\D/g, "").slice(-1);
+    const newValues = [...otpValues];
+    newValues[index] = cleanValue;
+    setOtpValues(newValues);
+    setOtpError("");
+
+    if (cleanValue && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace") {
+      if (!otpValues[index] && index > 0) {
+        const newValues = [...otpValues];
+        newValues[index - 1] = "";
+        setOtpValues(newValues);
+        otpRefs.current[index - 1]?.focus();
+      } else if (otpValues[index]) {
+        const newValues = [...otpValues];
+        newValues[index] = "";
+        setOtpValues(newValues);
+      }
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasteData.length === 6) {
+      const newValues = pasteData.split("");
+      setOtpValues(newValues);
+      otpRefs.current[5]?.focus();
+    }
+  };
+
   // Handle Google OAuth signup/login success
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
@@ -76,16 +132,86 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       });
 
       if (data.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          if (onSwitchToLogin) onSwitchToLogin();
-        }, 1500);
+        if (data.requireOtp) {
+          setStep(2);
+          setOtpTimer(60);
+          setOtpValues(["", "", "", "", "", ""]);
+          setOtpError("");
+        } else {
+          setSuccess(true);
+          setTimeout(() => {
+            if (onSwitchToLogin) onSwitchToLogin();
+          }, 1500);
+        }
       } else {
         setError(data.message || "Đăng ký thất bại!");
         setErrorField(data.field || "");
       }
     } catch (err) {
       setError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp) {
+      setOtpError("Mã OTP không được để trống!");
+      return;
+    }
+    if (otp.length !== 6) {
+      setOtpError("Vui lòng nhập đầy đủ 6 chữ số!");
+      return;
+    }
+
+    setLoading(true);
+    setOtpError("");
+
+    try {
+      const data = await authApi.verifyRegistration({
+        email,
+        code: otp
+      });
+
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          if (onSwitchToLogin) onSwitchToLogin();
+        }, 1500);
+      } else {
+        setOtpError(data.message || "Xác thực OTP thất bại!");
+      }
+    } catch (err) {
+      setOtpError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    setOtpError("");
+    setOtpValues(["", "", "", "", "", ""]);
+
+    try {
+      const data = await authApi.register({
+        email,
+        password,
+        name: fullName,
+        fullName,
+        displayName,
+        phone: phoneNumber,
+        requestedRole: role.toUpperCase()
+      });
+
+      if (data.success) {
+        setOtpTimer(60);
+      } else {
+        setOtpError(data.message || "Không thể gửi lại mã xác nhận!");
+      }
+    } catch (err) {
+      setOtpError(err.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -189,266 +315,360 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         <div className="w-full md:w-[52%] p-6 flex flex-col justify-between bg-white relative overflow-y-auto no-scrollbar h-full">
           {/* Main Content Area */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
-            {/* Form Headers */}
-            <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
-              Create your free profile
-            </h2>
-            <p className="font-sans text-muted text-[13px] mb-2.5">
-              Start your professional ecosystem today.
-            </p>
+            {step === 1 ? (
+              <>
+                {/* Form Headers */}
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  Create your free profile
+                </h2>
+                <p className="font-sans text-muted text-[13px] mb-2.5">
+                  Start your professional ecosystem today.
+                </p>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-2 p-2 bg-rose-50 border border-rose-200 text-rose-600 text-[11px] rounded-lg font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-rose-600 rounded-full flex-shrink-0"></span>
-                {error}
-              </div>
-            )}
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-2 p-2 bg-rose-50 border border-rose-200 text-rose-600 text-[11px] rounded-lg font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full flex-shrink-0"></span>
+                    {error}
+                  </div>
+                )}
 
-            {/* Role Switcher */}
-            <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-2">
-              <button
-                type="button"
-                onClick={() => setRole("freelancer")}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === "freelancer"
-                    ? "bg-white text-primary shadow-sm"
-                    : "text-muted hover:text-primary"
-                }`}
-              >
-                Freelancer
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole("employer")}
-                className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                  role === "employer"
-                    ? "bg-white text-primary shadow-sm"
-                    : "text-muted hover:text-primary"
-                }`}
-              >
-                Employer
-              </button>
-            </div>
-
-            {/* Social Google Registration */}
-            <div className="mb-2 flex justify-center w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError("Đăng ký bằng Google thất bại")}
-                useOneTap
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                width="320"
-                text="signup_with"
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="relative flex items-center justify-center mb-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-muted-light/60"></div>
-              </div>
-              <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
-                OR REGISTER WITH EMAIL
-              </span>
-            </div>
-
-            {/* Input Form */}
-            <form onSubmit={handleSubmit} className="space-y-2">
-              {/* Full Name & Display Name (Dual Column) */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-primary mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => {
-                      setFullName(e.target.value);
-                    }}
-                    required
-                    className="w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                  />
-                </div>
-                <div>
-                  <label
-                    className={`block text-[11px] font-bold mb-1 ${errorField === "displayName" ? "text-rose-600" : "text-primary"}`}
-                  >
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => {
-                      setDisplayName(e.target.value);
-                      if (errorField === "displayName") setErrorField("");
-                    }}
-                    required
-                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === "displayName"
-                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
-                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                    }`}
-                  />
-                  {errorField === "displayName" && (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
-                      Tên đã tồn tại
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Email & Phone Number (Dual Column) */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label
-                    className={`block text-[11px] font-bold mb-1 ${errorField === "email" ? "text-rose-600" : "text-primary"}`}
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (errorField === "email") setErrorField("");
-                    }}
-                    required
-                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === "email"
-                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
-                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                    }`}
-                  />
-                  {errorField === "email" && (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
-                      Email đã tồn tại
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    className={`block text-[11px] font-bold mb-1 ${errorField === "phone" ? "text-rose-600" : "text-primary"}`}
-                  >
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => {
-                      setPhoneNumber(e.target.value);
-                      if (errorField === "phone") setErrorField("");
-                    }}
-                    required
-                    className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                      errorField === "phone"
-                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
-                        : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                    }`}
-                  />
-                  {errorField === "phone" && (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
-                      SĐT đã được dùng
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] font-bold text-primary">
-                    Password
-                  </label>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
-                  />
+                {/* Role Switcher */}
+                <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-2">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                    onClick={() => setRole("freelancer")}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === "freelancer"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted hover:text-primary"
+                    }`}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4.5 h-4.5" />
-                    ) : (
-                      <Eye className="w-4.5 h-4.5" />
-                    )}
+                    Freelancer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("employer")}
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
+                      role === "employer"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted hover:text-primary"
+                    }`}
+                  >
+                    Employer
                   </button>
                 </div>
-              </div>
 
-              {/* Agree Terms Checkbox */}
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  id="agree"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  required // Browser validation constraint
-                  className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded mt-0.5 cursor-pointer"
-                />
-                <label
-                  htmlFor="agree"
-                  className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal"
-                >
-                  I agree to the{" "}
-                  <a href="#terms" className="text-secondary hover:underline">
-                    Terms of Service
-                  </a>{" "}
-                  &{" "}
-                  <a href="#privacy" className="text-secondary hover:underline">
-                    Privacy Policy
+                {/* Social Google Registration */}
+                <div className="mb-2 flex justify-center w-full">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError("Đăng ký bằng Google thất bại")}
+                    useOneTap
+                    theme="outline"
+                    size="large"
+                    shape="rectangular"
+                    width="320"
+                    text="signup_with"
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="relative flex items-center justify-center mb-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted-light/60"></div>
+                  </div>
+                  <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
+                    OR REGISTER WITH EMAIL
+                  </span>
+                </div>
+
+                {/* Input Form */}
+                <form onSubmit={handleSubmit} className="space-y-2">
+                  {/* Full Name & Display Name (Dual Column) */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-primary mb-1">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                        }}
+                        required
+                        className="w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium border-muted-light/60 focus:border-secondary focus:ring-secondary"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-[11px] font-bold mb-1 ${errorField === "displayName" ? "text-rose-600" : "text-primary"}`}
+                      >
+                        Display Name
+                      </label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => {
+                          setDisplayName(e.target.value);
+                          if (errorField === "displayName") setErrorField("");
+                        }}
+                        required
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                          errorField === "displayName"
+                            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                            : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
+                        }`}
+                      />
+                      {errorField === "displayName" && (
+                        <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                          Tên đã tồn tại
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Email & Phone Number (Dual Column) */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label
+                        className={`block text-[11px] font-bold mb-1 ${errorField === "email" ? "text-rose-600" : "text-primary"}`}
+                      >
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (errorField === "email") setErrorField("");
+                        }}
+                        required
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                          errorField === "email"
+                            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                            : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
+                        }`}
+                      />
+                      {errorField === "email" && (
+                        <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                          Email đã tồn tại
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-[11px] font-bold mb-1 ${errorField === "phone" ? "text-rose-600" : "text-primary"}`}
+                      >
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (errorField === "phone") setErrorField("");
+                        }}
+                        required
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
+                          errorField === "phone"
+                            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
+                            : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
+                        }`}
+                      />
+                      {errorField === "phone" && (
+                        <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-rose-600 inline-block flex-shrink-0" />
+                          SĐT đã được dùng
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-primary">
+                        Password
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4.5 h-4.5" />
+                        ) : (
+                          <Eye className="w-4.5 h-4.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Agree Terms Checkbox */}
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="agree"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      required // Browser validation constraint
+                      className="w-3.5 h-3.5 text-primary border-muted-light/60 focus:ring-0 rounded mt-0.5 cursor-pointer"
+                    />
+                    <label
+                      htmlFor="agree"
+                      className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal"
+                    >
+                      I agree to the{" "}
+                      <a href="#terms" className="text-secondary hover:underline">
+                        Terms of Service
+                      </a>{" "}
+                      &{" "}
+                      <a href="#privacy" className="text-secondary hover:underline">
+                        Privacy Policy
+                      </a>
+                      .
+                    </label>
+                  </div>
+
+                  {/* Sign Up CTA */}
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
+                      success
+                        ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                        : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      "Tạo tài khoản thành công!"
+                    ) : (
+                      `Create free profile`
+                    )}
+                  </button>
+                </form>
+
+                {/* Switch to Login */}
+                <div className="mt-2.5 text-center text-[12px] text-muted font-medium">
+                  Already have an account?{" "}
+                  <a
+                    href="#login"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onSwitchToLogin) onSwitchToLogin();
+                    }}
+                    className="text-secondary font-bold hover:underline"
+                  >
+                    Sign In
                   </a>
-                  .
-                </label>
-              </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* OTP Verification Headers */}
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  Xác thực Email
+                </h2>
+                <p className="font-sans text-muted text-[13px] mb-2.5 leading-relaxed">
+                  Mã xác nhận gồm 6 chữ số đã được gửi đến <span className="font-bold text-primary">{email}</span>. Vui lòng nhập mã để tiếp tục.
+                </p>
 
-              {/* Sign Up CTA */}
-              <button
-                type="submit"
-                disabled={loading || success}
-                className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                  success
-                    ? "bg-emerald-600 text-white shadow-lg animate-pulse"
-                    : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
-                }`}
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : success ? (
-                  "Tạo tài khoản thành công!"
-                ) : (
-                  `Create free profile`
+                {/* OTP Error Message */}
+                {otpError && (
+                  <div className="mb-2.5 p-2 bg-rose-50 border border-rose-200 text-rose-600 text-[11px] rounded-lg font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full flex-shrink-0"></span>
+                    {otpError}
+                  </div>
                 )}
-              </button>
-            </form>
 
-            {/* Switch to Login */}
-            <div className="mt-2.5 text-center text-[12px] text-muted font-medium">
-              Already have an account?{" "}
-              <a
-                href="#login"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (onSwitchToLogin) onSwitchToLogin();
-                }}
-                className="text-secondary font-bold hover:underline"
-              >
-                Sign In
-              </a>
-            </div>
+                {/* OTP Verification Form */}
+                <form onSubmit={handleVerifyOtp} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Mã xác nhận (OTP)
+                    </label>
+                    <div className="flex justify-between gap-2 my-2">
+                      {otpValues.map((val, idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => (otpRefs.current[idx] = el)}
+                          type="text"
+                          maxLength={1}
+                          value={val}
+                          onChange={(e) => handleOtpChange(e.target.value, idx)}
+                          onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                          onPaste={handleOtpPaste}
+                          className="w-10 h-11 text-center text-[16px] font-bold border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg focus:outline-none transition-all bg-[#F8FAFC] text-primary"
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Verification CTA */}
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
+                      success
+                        ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                        : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] cursor-pointer"
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      "Xác nhận thành công!"
+                    ) : (
+                      "Xác nhận tài khoản"
+                    )}
+                  </button>
+
+                  {/* Resend Logic */}
+                  <div className="flex justify-between items-center text-[12px] pt-1.5 font-semibold">
+                    <span className="text-muted">Không nhận được mã?</span>
+                    {otpTimer > 0 ? (
+                      <span className="text-sky-500 font-bold">Gửi lại sau ({otpTimer}s)</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        className="text-secondary hover:underline cursor-pointer font-bold"
+                      >
+                        Gửi lại mã
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Go Back Link */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep(1);
+                      setOtpValues(["", "", "", "", "", ""]);
+                      setOtpError("");
+                    }}
+                    className="w-full text-center text-[12px] text-secondary font-bold hover:underline mt-2.5 block cursor-pointer"
+                  >
+                    Quay lại chỉnh sửa thông tin
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           {/* Footer Copyright & Links */}
