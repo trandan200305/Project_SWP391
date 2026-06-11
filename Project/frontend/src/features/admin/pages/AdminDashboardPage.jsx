@@ -26,7 +26,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [activeOnlineChecked, setActiveOnlineChecked] = useState(true);
   const [activeOfflineChecked, setActiveOfflineChecked] = useState(true);
   
-  const [selectedRoleTab, setSelectedRoleTab] = useState('ALL'); // 'ALL', 'EMPLOYER', 'MANAGER', 'STAFF'
+  const [selectedRoleTab, setSelectedRoleTab] = useState('ALL'); // all, employer, manager, staff
   const [filterEmployer, setFilterEmployer] = useState(true);
   const [filterManager, setFilterManager] = useState(true);
   const [filterStaff, setFilterStaff] = useState(true);
@@ -2563,7 +2563,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Nhóm bên trái: Tìm kiếm và Xuất báo cáo */}
+                    {/* xuất báo cáo, button bên trái */}
                     <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
 
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">

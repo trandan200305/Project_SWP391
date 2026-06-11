@@ -12,7 +12,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
   const [revoked, setRevoked] = useState(false);
   const [revokedMsg, setRevokedMsg] = useState('');
 
-  // Form fields
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -31,7 +30,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     }
     setToken(tokenVal);
 
-    // Call API to verify token
     authApi.verifyInvitation(tokenVal)
       .then(data => {
         setLoading(false);
@@ -47,7 +45,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
       });
   }, []);
 
-  // Real-time revocation WebSocket listener
   useEffect(() => {
     if (!token) return;
 
@@ -78,7 +75,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     };
   }, [token]);
 
-  // Verification code resend countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -236,7 +232,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
-          {/* Email (Readonly) */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Email tài khoản</label>
             <div className="relative">
@@ -250,7 +245,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Full Name */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Họ và tên <span className="text-rose-500">*</span></label>
             <div className="relative">
@@ -266,7 +260,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Display Name */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Tên hiển thị (DisplayName)</label>
             <div className="relative">
@@ -281,7 +274,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Verification Code */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">
               Mã xác nhận email <span className="text-rose-500">*</span>
@@ -321,7 +313,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Submit */}
           <div className="pt-3">
             <button
               type="submit"
