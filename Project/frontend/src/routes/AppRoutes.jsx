@@ -22,14 +22,15 @@ export default function AppRoutes({
   handleNavigate,
   handleLoginSuccess,
   onUserUpdate,
-  onCloseAuth
+  onCloseAuth,
+  onLogout
 }) {
   if (currentPage === 'admin') {
     return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
   }
 
-  if (currentPage === 'profile') {
-    return <UserProfilePage user={user} onNavigate={handleNavigate} />;
+  if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {
+    return <UserProfilePage user={user} defaultTab={currentPage} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
   if (currentPage === 'coming_soon') {

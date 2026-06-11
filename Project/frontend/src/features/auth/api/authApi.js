@@ -4,6 +4,7 @@ import { ENDPOINTS } from '../../../api/endpoints.js';
 export const authApi = {
   login: (credentials) => api.post(ENDPOINTS.AUTH.LOGIN, credentials),
   register: (userData) => api.post(ENDPOINTS.AUTH.REGISTER, userData),
+  verifyRegistration: (data) => api.post(ENDPOINTS.AUTH.VERIFY_REGISTRATION, data),
   forgotPassword: (email) => api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { email }),
   verifyCode: (data) => api.post(ENDPOINTS.AUTH.VERIFY_CODE, data),
   setPin: (pinData) => api.post(ENDPOINTS.AUTH.SET_PIN, pinData),

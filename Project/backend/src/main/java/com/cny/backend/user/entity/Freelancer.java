@@ -110,7 +110,37 @@ public class Freelancer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
+    // --- BẮT ĐẦU PHẦN KYC ---
     
+    @Column(name = "kyc_status", length = 20)
+    private String kycStatus = "UNVERIFIED";
+
+    @Column(name = "id_card_front_url", length = 500)
+    private String idCardFrontUrl;
+
+    @Column(name = "id_card_back_url", length = 500)
+    private String idCardBackUrl;
+
+    @Column(name = "portrait_url", length = 500)
+    private String portraitUrl;
+
+    @Column(name = "kyc_submitted_at")
+    private LocalDateTime kycSubmittedAt;
+
+    @Column(name = "kyc_reviewed_at")
+    private LocalDateTime kycReviewedAt;
+
+    @Column(name = "kyc_reviewed_by_staff_id")
+    private Integer kycReviewedByStaffId;
+
+    @Column(name = "kyc_rejected_reason", length = 500)
+    private String kycRejectedReason;
+
+    @Column(name = "is_verified", nullable = false)
+    private Boolean isVerified = false;
+
+    // --- KẾT THÚC PHẦN KYC ---
+
     @Transient
     private TransientUser user;
 
