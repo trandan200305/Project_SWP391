@@ -220,7 +220,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-primary/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
       {/* Centered Modal Card Container */}
       <div
