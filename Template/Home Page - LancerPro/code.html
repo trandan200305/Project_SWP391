@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LancerPro | Find Your Next Expert Freelancer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0edef",
+                        "on-background": "#1b1b1d",
+                        "surface-variant": "#e4e2e4",
+                        "primary": "#000000",
+                        "inverse-on-surface": "#f3f0f2",
+                        "surface-dim": "#dcd9db",
+                        "primary-fixed-dim": "#bec6e0",
+                        "surface": "#fcf8fa",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#271901",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#fcf8fa",
+                        "inverse-primary": "#bec6e0",
+                        "background": "#fcf8fa",
+                        "on-secondary-container": "#006172",
+                        "surface-container-low": "#f6f3f5",
+                        "surface-tint": "#565e74",
+                        "secondary-container": "#57dffe",
+                        "surface-container-highest": "#e4e2e4",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-tertiary-container": "#98805d",
+                        "tertiary-container": "#271901",
+                        "inverse-surface": "#303032",
+                        "outline": "#76777d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "tertiary-fixed": "#fcdeb5",
+                        "outline-variant": "#c6c6cd",
+                        "on-surface": "#1b1b1d",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-primary-fixed": "#131b2e",
+                        "tertiary": "#000000",
+                        "on-surface-variant": "#45464d",
+                        "on-error": "#ffffff",
+                        "primary-container": "#131b2e",
+                        "on-error-container": "#93000a",
+                        "secondary": "#00687a",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#7c839b",
+                        "secondary-fixed": "#acedff",
+                        "surface-container-high": "#eae7e9",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "stack-md": "1rem",
+                        "container-max": "1280px",
+                        "stack-sm": "0.5rem",
+                        "margin-desktop": "2.5rem",
+                        "gutter": "1.5rem",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Manrope"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-8">
+<span class="font-display-lg text-headline-md font-extrabold text-primary">LancerPro</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-body-md text-body-md text-secondary font-bold border-b-2 border-secondary transition-colors" href="#">Find Work</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Hire Freelancers</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Solutions</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Login</button>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold hover:opacity-80 transition-opacity">Sign Up</button>
+</div>
+</header>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[819px] flex items-center justify-center overflow-hidden bg-surface-container-low">
+<div class="absolute inset-0 z-0 opacity-10">
+<img class="w-full h-full object-cover" data-alt="A diverse group of professional freelancers working collaboratively in a bright, modern, high-tech co-working space. The atmosphere is energetic and focused, featuring sleek minimalist furniture, large windows with natural morning light, and subtle cyan and dark navy design accents that align with a professional SaaS aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVSvu5y2R9M_6BFYTcCqUtvJiIbCKMjCTyfeE6xv8PeYvum_vtBpYGoDkU8MbGbeqo6z6cVS5AYZuTZmsR6eHDBZes6c8wtBtiBHTJfgtQMiw4-WrpDj5DnBMXOOiOF8Tlw9l58GhXSJ_WywVRmgP8zCYb_3OZkes5nqUuVOcwD06HDUICp6Mp-W_UVVWCDGTga6ppKN71VJLIdgBCfaTS86MEqlI0Knxvqg8-CnHk1myf5BesUBxqtz-ISsL3025dVE5RWclfPxQ"/>
+</div>
+<div class="relative z-10 max-w-container-max mx-auto px-margin-desktop text-center">
+<h1 class="font-display-lg text-display-lg text-primary mb-6 animate-fade-in">Find your next expert freelancer</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10">
+                    Connect with the world's top creative, technical, and professional talent to build your dream projects with confidence and speed.
+                </p>
+<div class="max-w-3xl mx-auto bg-surface-container-lowest p-2 rounded-2xl shadow-xl border border-outline-variant flex flex-col md:flex-row gap-2">
+<div class="flex-1 flex items-center px-4 gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3" placeholder="Try 'UX Designer' or 'Python Developer'" type="text"/>
+</div>
+<div class="md:w-px h-8 bg-outline-variant my-auto hidden md:block"></div>
+<div class="flex-1 flex items-center px-4 gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">location_on</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3" placeholder="Anywhere" type="text"/>
+</div>
+<button class="bg-[#F59E0B] text-white px-8 py-4 rounded-xl font-bold text-body-md hover:scale-[1.02] transition-transform shadow-lg">
+                        Search Talent
+                    </button>
+</div>
+<!-- Quick Tags -->
+<div class="mt-8 flex flex-wrap justify-center gap-3">
+<span class="text-body-sm text-on-surface-variant">Popular:</span>
+<a class="px-3 py-1 bg-surface-variant rounded-full text-body-sm font-medium hover:bg-secondary-container hover:text-on-secondary-container transition-colors" href="#">Mobile Dev</a>
+<a class="px-3 py-1 bg-surface-variant rounded-full text-body-sm font-medium hover:bg-secondary-container hover:text-on-secondary-container transition-colors" href="#">Video Editing</a>
+<a class="px-3 py-1 bg-surface-variant rounded-full text-body-sm font-medium hover:bg-secondary-container hover:text-on-secondary-container transition-colors" href="#">SEO Expert</a>
+</div>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="py-16 -mt-12 relative z-20">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="glass-card p-8 rounded-2xl border border-white shadow-lg flex flex-col items-center text-center">
+<span class="font-display-lg text-headline-lg text-primary mb-1">450k+</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Jobs Posted</span>
+</div>
+<div class="glass-card p-8 rounded-2xl border-2 border-secondary-fixed shadow-lg flex flex-col items-center text-center">
+<span class="font-display-lg text-headline-lg text-secondary mb-1">1.2M</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Active Freelancers</span>
+</div>
+<div class="glass-card p-8 rounded-2xl border border-white shadow-lg flex flex-col items-center text-center">
+<span class="font-display-lg text-headline-lg text-primary mb-1">$840M</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Paid to Talent</span>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works Section -->
+<section class="py-stack-lg bg-surface">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+<div class="max-w-xl">
+<h2 class="font-display-lg text-headline-lg text-primary mb-4">Simple steps to success</h2>
+<p class="font-body-md text-on-surface-variant">LancerPro streamlines the entire hiring process, from the initial search to the final payment, ensuring high trust and quality results.</p>
+</div>
+<button class="flex items-center gap-2 text-secondary font-bold hover:underline">
+                        View Detailed Guide <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div class="group">
+<div class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">post_add</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Post a Job</h3>
+<p class="font-body-sm text-on-surface-variant">Describe your project requirements and budget to attract the best matching experts.</p>
+</div>
+<div class="group">
+<div class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">search_check</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Review Proposals</h3>
+<p class="font-body-sm text-on-surface-variant">Analyze portfolios, reviews, and professional history of interested candidates.</p>
+</div>
+<div class="group">
+<div class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">handshake</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Hire Talent</h3>
+<p class="font-body-sm text-on-surface-variant">Select your favorite freelancer and start collaborating using our secure portal.</p>
+</div>
+<div class="group">
+<div class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">payments</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Pay Safely</h3>
+<p class="font-body-sm text-on-surface-variant">Only release funds once milestones are met and you're 100% satisfied with the work.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Jobs Section (Bento Grid Style) -->
+<section class="py-stack-lg bg-surface-container-low">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="text-center mb-16">
+<h2 class="font-display-lg text-headline-lg text-primary mb-4">High-value featured opportunities</h2>
+<p class="font-body-md text-on-surface-variant">The latest premium projects from verified enterprise clients.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Featured Large Card -->
+<div class="md:col-span-8 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border-2 border-secondary-fixed flex flex-col justify-between group hover:shadow-xl transition-all">
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full text-label-md font-bold">ENTERPRISE</span>
+<span class="text-on-surface-variant font-label-md">2 hours ago</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-4 group-hover:text-secondary transition-colors">Full-Stack SaaS Platform Architecture for FinTech Startup</h3>
+<p class="font-body-md text-on-surface-variant mb-6 line-clamp-2">Looking for a seasoned architect to design and implement a scalable, secure microservices backend using Node.js and AWS, integrated with a high-performance React dashboard.</p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 bg-surface-variant rounded-lg text-body-sm">AWS</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg text-body-sm">PostgreSQL</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg text-body-sm">React</span>
+<span class="px-3 py-1 bg-surface-variant rounded-lg text-body-sm">FinTech</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-6 border-t border-outline-variant">
+<div>
+<p class="text-on-surface-variant text-label-md uppercase">Budget</p>
+<p class="text-primary font-bold text-headline-md">$15,000 - $25,000</p>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity">Apply Now</button>
+</div>
+</div>
+<!-- Side Job 1 -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant hover:shadow-lg transition-all">
+<div class="flex justify-between items-start mb-6">
+<span class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded-full text-label-md font-bold">DESIGN</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">bookmark</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Brand Identity Design</h3>
+<p class="font-body-sm text-on-surface-variant mb-4">Complete rebranding including logo, typography, and visual guidelines.</p>
+<div class="mt-auto">
+<p class="text-on-surface-variant text-label-md uppercase">Est. Budget</p>
+<p class="text-primary font-bold text-headline-md">$4,500</p>
+</div>
+</div>
+<!-- Side Job 2 -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant hover:shadow-lg transition-all">
+<div class="flex justify-between items-start mb-6">
+<span class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded-full text-label-md font-bold">CONTENT</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">bookmark</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-3">Technical Writer</h3>
+<p class="font-body-sm text-on-surface-variant mb-4">API documentation and whitepaper for a Web3 infrastructure project.</p>
+<div class="mt-auto">
+<p class="text-on-surface-variant text-label-md uppercase">Hourly Rate</p>
+<p class="text-primary font-bold text-headline-md">$80 - $120 / hr</p>
+</div>
+</div>
+<!-- Wide Card -->
+<div class="md:col-span-8 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant flex items-center gap-8 hover:shadow-lg transition-all">
+<div class="hidden sm:block w-40 h-40 rounded-xl overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist laptop screen displaying complex data visualization charts and growth metrics. The aesthetic is professional and modern, using a palette of soft grays, whites, and corporate cyan blue accents, representing high-end marketing and data analytics services." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJKSUR__LJI0n3G82l_GH63hM2xu17c9WgBX3aiBqySxGK4a1tKbouk977jg7eaMUnVcRMZNtLYNM10CshV7N0p17RfHIiaIbm0I4yFnGJHC5e--_jjMpoW8JV5EHObB3nv2JkpYy5oQlW5O4g5RbLmylKvfFSXi7pWFECKrNOBr0Zcx0PpFUE4J3t-ds-9hX65kL1RgQOjUNrq0X8JeN6yvVSQdmOOAymYS5l0CpadHQDxKI5EJCPVgPL66HiEJW4e9ByTwDsIlc"/>
+</div>
+<div class="flex-1">
+<span class="text-secondary font-bold text-label-md mb-2 block uppercase tracking-wide">Growth Marketing</span>
+<h3 class="font-headline-md text-headline-md text-primary mb-2">SaaS Go-to-Market Strategy</h3>
+<p class="font-body-sm text-on-surface-variant mb-4">Strategic consulting for a B2B SaaS startup preparing for Series A funding. Focus on lead generation and CAC optimization.</p>
+<div class="flex justify-between items-center">
+<p class="text-primary font-bold">$7,500 retainer</p>
+<a class="text-secondary font-bold flex items-center gap-1" href="#">Details <span class="material-symbols-outlined">chevron_right</span></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonials -->
+<section class="py-stack-lg bg-surface">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div>
+<span class="text-secondary font-bold text-label-md uppercase tracking-widest mb-4 block">Trust Stories</span>
+<h2 class="font-display-lg text-headline-lg text-primary mb-8 leading-tight">Hear from the teams building the future</h2>
+<div class="space-y-8">
+<div class="relative pl-8 border-l-4 border-secondary-container">
+<p class="font-body-lg italic text-on-surface mb-4">"LancerPro has completely changed how we scale our engineering team. We found top-tier React talent in days, not weeks."</p>
+<div>
+<p class="font-bold text-primary">Sarah Jenkins</p>
+<p class="text-on-surface-variant text-body-sm">CTO, CloudScale Inc.</p>
+</div>
+</div>
+<div class="relative pl-8 border-l-4 border-outline-variant">
+<p class="font-body-lg italic text-on-surface mb-4">"The milestone-based payment system gives us total peace of mind when working with freelancers across the globe."</p>
+<div>
+<p class="font-bold text-primary">Marcus Thorne</p>
+<p class="text-on-surface-variant text-body-sm">Creative Director, Visionary Agency</p>
+</div>
+</div>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-square bg-primary-fixed rounded-3xl overflow-hidden shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="A confident, professional female leader in a modern office environment, looking directly at the camera with a friendly and trustworthy expression. The lighting is soft and professional, highlighting a high-trust, expert-driven marketplace atmosphere with subtle cyan and navy brand colors integrated into the background office decor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKpQYldO80DDmXZyj5NYrLVgo6PHmYU_fjtKljJZPBIxntyXy5Bf3CY_gHd5VbE3lh-yqStMoLXnuc959IKfGzO1Y5mPLjte3rNpnq5ijlaFuWhEpuF6yI0CmClcIp3atF1nNIFWlAtU7IsGTO2ARliPlPz3Ss98Vuyl28dIM6263ANsy1z0ExPInT2rSjJgmFB8c9rdMreug7WDO2BAdhtlZP5cfiZunfS2g1s7mc81iSYTviWVPlSRCDQ95eQFw5Izto9FhDMyg"/>
+</div>
+<!-- Floating Glass Badge -->
+<div class="absolute -bottom-6 -left-6 glass-card p-6 rounded-2xl shadow-xl border border-white max-w-xs">
+<div class="flex items-center gap-4 mb-3">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-300"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-400"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-slate-500"></div>
+</div>
+<span class="font-bold text-body-sm">4.9/5 Average Rating</span>
+</div>
+<p class="text-body-sm text-on-surface-variant">Trusted by over 12,000 enterprise businesses worldwide.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-stack-lg px-margin-desktop">
+<div class="max-w-container-max mx-auto bg-primary rounded-3xl p-12 md:p-20 text-center relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-secondary opacity-20 blur-[100px] rounded-full"></div>
+<div class="absolute bottom-0 left-0 w-64 h-64 bg-secondary-fixed opacity-10 blur-[100px] rounded-full"></div>
+<h2 class="font-display-lg text-display-lg text-on-primary mb-8 max-w-3xl mx-auto relative z-10">Ready to accelerate your next project?</h2>
+<div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+<button class="bg-[#F59E0B] text-white px-10 py-5 rounded-2xl font-bold text-headline-md hover:scale-105 transition-transform">Get Started Now</button>
+<button class="border-2 border-on-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-headline-md hover:bg-on-primary hover:text-primary transition-colors">Talk to Sales</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-stack-lg bg-surface-container-highest border-t border-outline-variant">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-container-max mx-auto">
+<div class="flex flex-col gap-4">
+<span class="font-display-lg text-headline-md font-bold text-primary">LancerPro</span>
+<p class="text-on-surface-variant text-body-sm">The world's premium destination for verified professional freelancers and enterprise-grade results.</p>
+<div class="flex gap-4 mt-2">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-primary mb-6">Marketplace</h4>
+<ul class="space-y-4 text-on-surface-variant text-body-sm">
+<li><a class="hover:text-secondary transition-colors" href="#">About Us</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Help Center</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-primary mb-6">Resources</h4>
+<ul class="space-y-4 text-on-surface-variant text-body-sm">
+<li><a class="hover:text-secondary transition-colors" href="#">Hiring Guide</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Success Stories</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Skill Assessments</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">LancerPro Blog</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-primary mb-6">Newsletter</h4>
+<p class="text-on-surface-variant text-body-sm mb-4">Get the latest trends in the freelance economy.</p>
+<div class="flex gap-2">
+<input class="bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-sm w-full focus:ring-2 focus:ring-secondary outline-none" placeholder="Email" type="email"/>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-sm">Join</button>
+</div>
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-margin-desktop mt-16 pt-8 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-on-surface-variant text-body-sm">© 2024 LancerPro Marketplace. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="text-on-surface-variant text-body-sm hover:text-primary" href="#">Cookies</a>
+<a class="text-on-surface-variant text-body-sm hover:text-primary" href="#">Accessibility</a>
+</div>
+</div>
+</footer>
+</body></html>
