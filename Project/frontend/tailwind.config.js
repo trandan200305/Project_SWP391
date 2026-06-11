@@ -10,9 +10,9 @@ export default {
         background: '#F8FAFC',
         surface: '#FFFFFF',
         primary: {
-          DEFAULT: '#0F172A', 
-          light: '#1E293B',
-          dark: '#020617',
+          DEFAULT: '#1E3A8A', 
+          light: '#3B82F6',
+          dark: '#172554',
         },
         secondary: {
           DEFAULT: '#06B6D4', 

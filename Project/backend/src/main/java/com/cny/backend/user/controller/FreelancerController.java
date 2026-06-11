@@ -92,6 +92,69 @@ public class FreelancerController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<FreelancerDto> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
+        return freelancerRepository.findById(id).map(f -> {
+            if(updated.getDisplayName() != null) f.setDisplayName(updated.getDisplayName());
+            if(updated.getFullName() != null) f.setFullName(updated.getFullName());
+            if(updated.getPhone() != null) f.setPhone(updated.getPhone());
+            if(updated.getProfessionalTitle() != null) f.setProfessionalTitle(updated.getProfessionalTitle());
+            if(updated.getBio() != null) f.setBio(updated.getBio());
+            if(updated.getHourlyRate() != null) f.setHourlyRate(updated.getHourlyRate());
+            if(updated.getAddress() != null) f.setAddress(updated.getAddress());
+            if(updated.getCity() != null) f.setCity(updated.getCity());
+            if(updated.getCountry() != null) f.setCountry(updated.getCountry());
+            if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
+            f.setUpdatedAt(java.time.LocalDateTime.now());
+            Freelancer saved = freelancerRepository.save(f);
+            return ResponseEntity.ok(mapToDto(saved));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        if (confirmationText == null || !confirmationText.equals("DELETE")) {
+            response.put("success", false);
+            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        return freelancerRepository.findById(id).map(f -> {
+            f.setIsDeleted(true);
+            f.setUpdatedAt(java.time.LocalDateTime.now());
+            freelancerRepository.save(f);
+            response.put("success", true);
+            response.put("message", "Tài khoản của bạn đã được xóa vĩnh viễn.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tài khoản để xóa.");
+            return ResponseEntity.notFound().build();
+        });
+    }
+
+    @PostMapping("/{id}/kyc/submit")
+    public ResponseEntity<java.util.Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody KycSubmitDto dto) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        return freelancerRepository.findById(id).map(f -> {
+            f.setIdCardFrontUrl(dto.getIdCardFrontUrl());
+            f.setIdCardBackUrl(dto.getIdCardBackUrl());
+            f.setPortraitUrl(dto.getPortraitUrl());
+            f.setKycStatus("PENDING");
+            f.setKycSubmittedAt(java.time.LocalDateTime.now());
+            f.setUpdatedAt(java.time.LocalDateTime.now());
+            
+            freelancerRepository.save(f);
+            response.put("success", true);
+            response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng.");
+            return ResponseEntity.notFound().build();
+        });
+    }
+
     private FreelancerDto mapToDto(Freelancer f) {
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -115,6 +178,15 @@ public class FreelancerController {
                 .isAvailable(f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
+                .kycStatus(f.getKycStatus())
+                .idCardFrontUrl(f.getIdCardFrontUrl())
+                .idCardBackUrl(f.getIdCardBackUrl())
+                .portraitUrl(f.getPortraitUrl())
+                .kycSubmittedAt(f.getKycSubmittedAt() != null ? f.getKycSubmittedAt().toString() : null)
+                .kycReviewedAt(f.getKycReviewedAt() != null ? f.getKycReviewedAt().toString() : null)
+                .kycReviewedByStaffId(f.getKycReviewedByStaffId())
+                .kycRejectedReason(f.getKycRejectedReason())
+                .isVerified(f.getIsVerified())
                 .build();
     }
 }

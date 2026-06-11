@@ -2,6 +2,7 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    VERIFY_REGISTRATION: '/auth/verify-registration',
     FORGOT_PASSWORD: '/auth/forgot-password',
     VERIFY_CODE: '/auth/verify-code',
     SET_PIN: '/auth/set-messenger-pin',

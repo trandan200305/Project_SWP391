@@ -49,4 +49,15 @@ public class FreelancerDto {
     private Boolean isAvailable;
     private String createdAt;
     private String updatedAt;
+
+    // --- KYC FIELDS ---
+    private String kycStatus;
+    private String idCardFrontUrl;
+    private String idCardBackUrl;
+    private String portraitUrl;
+    private String kycSubmittedAt;
+    private String kycReviewedAt;
+    private Integer kycReviewedByStaffId;
+    private String kycRejectedReason;
+    private Boolean isVerified;
 }

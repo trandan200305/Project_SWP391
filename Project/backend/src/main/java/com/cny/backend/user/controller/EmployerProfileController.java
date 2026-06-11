@@ -141,6 +141,50 @@ public class EmployerProfileController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+        Map<String, Object> response = new HashMap<>();
+        if (confirmationText == null || !confirmationText.equals("DELETE")) {
+            response.put("success", false);
+            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        return employerRepository.findById(id).map(e -> {
+            e.setIsDeleted(true);
+            e.setUpdatedAt(LocalDateTime.now());
+            employerRepository.save(e);
+            response.put("success", true);
+            response.put("message", "Tài khoản của bạn đã được xóa vĩnh viễn.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tài khoản để xóa.");
+            return ResponseEntity.notFound().build();
+        });
+    }
+
+    @PostMapping("/{id}/kyc/submit")
+    public ResponseEntity<Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.KycSubmitDto dto) {
+        Map<String, Object> response = new HashMap<>();
+        return employerRepository.findById(id).map(e -> {
+            e.setIdCardFrontUrl(dto.getIdCardFrontUrl());
+            e.setIdCardBackUrl(dto.getIdCardBackUrl());
+            e.setPortraitUrl(dto.getPortraitUrl());
+            e.setKycStatus("PENDING");
+            e.setKycSubmittedAt(LocalDateTime.now());
+            e.setUpdatedAt(LocalDateTime.now());
+            
+            employerRepository.save(e);
+            response.put("success", true);
+            response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng.");
+            return ResponseEntity.notFound().build();
+        });
+    }
+
     private Map<String, Object> buildProfileResponse(Employer employer) {
         Map<String, Object> response = new HashMap<>();
         response.put("employerId", employer.getEmployerId());
@@ -162,6 +206,15 @@ public class EmployerProfileController {
         response.put("projectsPosted", employer.getProjectsPosted());
         response.put("averageRating", employer.getAverageRating());
         response.put("billing", findDefaultBankAccount(employer.getEmployerId()));
+        response.put("kycStatus", employer.getKycStatus());
+        response.put("idCardFrontUrl", employer.getIdCardFrontUrl());
+        response.put("idCardBackUrl", employer.getIdCardBackUrl());
+        response.put("portraitUrl", employer.getPortraitUrl());
+        response.put("kycSubmittedAt", employer.getKycSubmittedAt() != null ? employer.getKycSubmittedAt().toString() : null);
+        response.put("kycReviewedAt", employer.getKycReviewedAt() != null ? employer.getKycReviewedAt().toString() : null);
+        response.put("kycReviewedByStaffId", employer.getKycReviewedByStaffId());
+        response.put("kycRejectedReason", employer.getKycRejectedReason());
+        response.put("isVerified", employer.getIsVerified());
         return response;
     }
 
