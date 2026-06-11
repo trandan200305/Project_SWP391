@@ -4043,6 +4043,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               <input 
                 type="email" 
                 required
+                autoComplete="one-time-code"
                 placeholder="nhap@lancerpro.com" 
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                 value={createForm.email}

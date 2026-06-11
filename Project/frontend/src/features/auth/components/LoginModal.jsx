@@ -533,6 +533,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@company.com"
                       required
+                      autoComplete="one-time-code"
                       className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
                     />
                   </div>
@@ -564,6 +565,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         required
+                        autoComplete="new-password"
                         className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
                       />
                       <button
