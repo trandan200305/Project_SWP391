@@ -13,7 +13,7 @@ export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
       <Stats />
       <HowItWorks />
       <FeaturedJobs searchQuery={searchQuery} />
-      <Testimonials />
+      <Testimonials onNavigate={onNavigate} />
       <CTA onNavigate={onNavigate} user={user} />
     </>
   );

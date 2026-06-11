@@ -10,7 +10,7 @@ import {
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-export default function Messenger({ user, onNavigateHome }) {
+export default function Messenger({ user, onNavigateHome, initialPartner }) {
   const [activeTab, setActiveTab] = useState('active'); 
   const [activeDirectTab, setActiveDirectTab] = useState('active'); // 'active' | 'blocked' | 'deleted' 
   const [tickets, setTickets] = useState([]);
@@ -378,7 +378,7 @@ export default function Messenger({ user, onNavigateHome }) {
     setIsLoading(false);
   };
 
-  const handleStartDirectChat = async (partnerId, partnerRole) => {
+  const handleStartDirectChat = async (partnerId, partnerRole, partnerName = null, partnerAvatar = null) => {
     if (!user || user.role === 'ADMIN') return;
     setIsLoading(true);
     try {
@@ -391,8 +391,8 @@ export default function Messenger({ user, onNavigateHome }) {
         chatId: data.chatId,
         partnerId: partnerId,
         partnerRole: partnerRole.toUpperCase(),
-        partnerName: selectedProfile?.name || 'User',
-        partnerAvatar: selectedProfile?.avatarUrl,
+        partnerName: partnerName || selectedProfile?.name || 'User',
+        partnerAvatar: partnerAvatar || selectedProfile?.avatarUrl,
         unreadCount: 0
       };
       
@@ -794,6 +794,21 @@ export default function Messenger({ user, onNavigateHome }) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (initialPartner && initialPartner.id) {
+      if (user?.role === 'EMPLOYER' && initialPartner.role === 'FREELANCER') {
+        handleStartDirectChat(initialPartner.id, initialPartner.role, initialPartner.name, initialPartner.avatarUrl);
+      } else {
+        handleViewProfile({
+          id: initialPartner.id,
+          role: initialPartner.role,
+          name: initialPartner.name,
+          avatarUrl: initialPartner.avatarUrl
+        });
+      }
+    }
+  }, [initialPartner, user]);
 
   const systemUsersList = systemUsers || [];
   const filteredSystemUsers = systemUsersList.filter(u => {

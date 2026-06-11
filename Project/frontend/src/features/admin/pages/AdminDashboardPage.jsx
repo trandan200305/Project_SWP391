@@ -2571,6 +2571,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                           <input 
                             type="text" 
+                            name="adminSearchQuery"
+                            autoComplete="off"
                             placeholder="Tìm kiếm Email hoặc Tên..." 
                             className="bg-transparent border-none text-body-sm outline-none w-full font-medium placeholder-slate-400"
                             value={searchQuery}
@@ -3959,7 +3961,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">MÃ PIN XÁC NHẬN CỦA ADMIN</label>
               <input 
-                type="password" 
+                type="text" 
+                style={{ WebkitTextSecurity: 'disc' }}
+                autoComplete="new-password"
                 placeholder="Nhập mã PIN gồm 6 số" 
                 maxLength={6}
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono tracking-[0.2em]"

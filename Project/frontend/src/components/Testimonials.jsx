@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, Award, Sparkles, ArrowUpRight } from 'lucide-react';
 
-export default function Testimonials() {
+export default function Testimonials({ onNavigate }) {
   const [freelancers, setFreelancers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,7 +68,7 @@ export default function Testimonials() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {freelancers.map((profile, index) => {
-                const name = profile.user?.displayName || profile.user?.fullName || 'Freelancer';
+                const name = profile.displayName || profile.fullName || profile.user?.displayName || profile.user?.fullName || 'Freelancer';
                 const initials = getInitials(name);
                 const colorConfig = avatarColors[index % avatarColors.length];
                 
@@ -103,7 +103,15 @@ export default function Testimonials() {
                     </div>
 
                     {}
-                    <button className="w-full bg-muted-light/20 hover:bg-secondary-light hover:text-secondary-dark border border-muted-light/50 hover:border-secondary/20 py-2.5 rounded-xl font-semibold text-primary text-body-sm transition-all duration-200 flex items-center justify-center gap-1">
+                    <button 
+                      onClick={() => onNavigate && onNavigate('messenger', {
+                        id: profile.profileId,
+                        role: 'FREELANCER',
+                        name: name,
+                        avatarUrl: profile.avatarUrl
+                      })}
+                      className="w-full bg-muted-light/20 hover:bg-secondary-light hover:text-secondary-dark border border-muted-light/50 hover:border-secondary/20 py-2.5 rounded-xl font-semibold text-primary text-body-sm transition-all duration-200 flex items-center justify-center gap-1"
+                    >
                       Xem hồ sơ <ArrowUpRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </button>
                   </div>

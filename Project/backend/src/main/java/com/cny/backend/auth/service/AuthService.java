@@ -249,6 +249,12 @@ public class AuthService {
                     response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
                     return response;
                 }
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
+                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
+                    return response;
+                }
                 if (!isOAuthLogin) {
                     if (dbManager.getPasswordHash() == null || !dbManager.getPasswordHash().equals(passwordHash)) {
                         response.put("success", false);
@@ -287,6 +293,12 @@ public class AuthService {
                 if (Boolean.TRUE.equals(dbStaff.getIsDeleted())) {
                     response.put("success", false);
                     response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    return response;
+                }
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
+                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
                     return response;
                 }
                 if (!isOAuthLogin) {

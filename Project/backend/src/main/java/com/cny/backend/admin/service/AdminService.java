@@ -317,6 +317,16 @@ public class AdminService {
                 dashboardRepository.logEmployerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
                 
                 sendNotification(id, "EMPLOYER", status, reason);
+
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status) || "DELETED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("type", "DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("role", "EMPLOYER");
+                    event.put("id", id);
+                    event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
+                    messagingTemplate.convertAndSend("/topic/account-status/EMPLOYER/" + id, event);
+                }
+
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Employer #" + id + " (" + emp.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
                 
                 response.put("success", true);
@@ -337,9 +347,9 @@ public class AdminService {
                 }
                 managerRepository.save(mgr);
 
-                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status) || "DELETED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
                     Map<String, Object> event = new HashMap<>();
-                    event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("type", "DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
                     event.put("role", "MANAGER");
                     event.put("id", id);
                     event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
@@ -380,9 +390,9 @@ public class AdminService {
                 }
                 staffRepository.save(stf);
 
-                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status) || "DELETED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
                     Map<String, Object> event = new HashMap<>();
-                    event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("type", "DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
                     event.put("role", "STAFF");
                     event.put("id", id);
                     event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
@@ -426,6 +436,16 @@ public class AdminService {
                 dashboardRepository.logFreelancerStatusHistory(id, oldStatus != null ? oldStatus : "ACTIVE", status, reason != null ? reason : "Lý do bảo mật");
                 
                 sendNotification(id, "FREELANCER", status, reason);
+
+                if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status) || "DELETED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("type", "DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
+                    event.put("role", "FREELANCER");
+                    event.put("id", id);
+                    event.put("reason", reason != null ? reason : "Tài khoản bị tạm ngưng bởi Admin");
+                    messagingTemplate.convertAndSend("/topic/account-status/FREELANCER/" + id, event);
+                }
+
                 writeAuditLog(adminId, "CHANGE_STATUS", "USER_MANAGEMENT", "Thay đổi trạng thái Freelancer #" + id + " (" + f.getEmail() + ") từ " + oldStatus + " → " + status + " | Lý do: " + reason);
                 
                 response.put("success", true);
