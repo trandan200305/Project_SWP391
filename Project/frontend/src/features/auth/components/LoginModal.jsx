@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from '../api/authApi.js';
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  // State đăng nhập thông thường
+  // State for regular login
   const [role, setRole] = useState('freelancer'); 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [accountLocked, setAccountLocked] = useState(null);
 
-  // State xử lý quên mật khẩu và OTP
+  // State for forgot password and OTP handling
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -26,14 +26,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Đếm ngược thời gian gửi lại mã OTP
+  // Countdown timer for resending OTP code
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Xử lý gọi API đăng nhập hệ thống
+  // Process backend login API call
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg('');
@@ -59,7 +59,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Đăng nhập bằng Email và Mật khẩu
+  // Log in using Email and Password
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -72,7 +72,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Đăng nhập bằng tài khoản Google
+  // Log in using Google account
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -84,7 +84,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Gửi mã OTP xác nhận về Email
+  // Send verification OTP code to email
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -108,7 +108,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Xác thực mã OTP
+  // Verify OTP code
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join('');
@@ -133,7 +133,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Đặt lại mật khẩu mới
+  // Reset with new password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -179,7 +179,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        {}
+        {/* Floating Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -188,7 +188,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {}
+        {/* LEFT PANEL: Branding & Testimonials */}
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -316,7 +316,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       />
                     </div>
 
-                    {/* OTP input boxes (hiện ra khi đã gửi mã) */}
+                    {/* OTP input boxes (shown once code is sent) */}
                     {codeSent && (
                       <div>
                         <label className="block text-[11px] font-bold text-primary mb-2">
@@ -352,7 +352,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                           ))}
                         </div>
 
-                        {/* Đếm ngược và gửi lại mã */}
+                        {/* Countdown timer and resend OTP link */}
                         <div className="mt-2 text-center text-[11px] font-semibold">
                           {timer > 0 ? (
                             <span className="text-muted">Gửi lại mã sau {timer}s</span>
@@ -430,12 +430,13 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             ) : (
               
               <>
+                {/* ===================== REGULAR LOGIN FLOW ===================== */}
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">Welcome back</h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
                   Log in to manage your professional ecosystem.
                 </p>
 
-                {}
+                {/* Display lock warning when account is blocked */}
                 {accountLocked && (
                   <div className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
                     accountLocked.status === 'BANNED'
@@ -469,14 +470,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </div>
                 )}
 
-                {}
+                {/* Display general login error */}
                 {errorMsg && !accountLocked && (
                   <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center animate-fade-in">
                     {errorMsg}
                   </div>
                 )}
 
-                {}
+                {/* Role selector tabs (Freelancer / Employer) */}
                 <div className="bg-[#F1F5F9] p-1 rounded-xl flex gap-1 mb-3.5">
                   <button
                     type="button"
@@ -498,7 +499,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </button>
                 </div>
 
-                {}
+                {/* Social Login with Google */}
                 <div className="mb-3.5 flex justify-center w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -512,7 +513,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   />
                 </div>
 
-                {}
+                {/* Form separator */}
                 <div className="relative flex items-center justify-center mb-3.5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-muted-light/60"></div>
@@ -522,7 +523,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </span>
                 </div>
 
-                {}
+                {/* Email/Password Login Form */}
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-bold text-primary mb-1">Email Address</label>
@@ -539,7 +540,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[11px] font-bold text-primary">Password</label>
-                      {}
+                      {/* Password toggle and Forgot Password link */}
                       <a
                         href="#forgot"
                         onClick={(e) => {
@@ -596,7 +597,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   </button>
                 </form>
 
-                {}
+                {/* Footer Link to register modal */}
                 <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
                   Don't have an account?{' '}
                   <a
@@ -614,7 +615,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             )}
           </div>
 
-          {}
+          {/* Footer Copy & policy links */}
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

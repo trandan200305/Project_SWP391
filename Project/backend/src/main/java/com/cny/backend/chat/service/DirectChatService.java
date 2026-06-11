@@ -91,6 +91,10 @@ public class DirectChatService {
                 .partnerAvatar(chat.getEmployer().getAvatarUrl())
                 .unreadCount(unreadCount)
                 .updatedAt(chat.getUpdatedAt() != null ? chat.getUpdatedAt() : chat.getCreatedAt())
+                .isDeleted(Boolean.TRUE.equals(chat.getIsDeletedByFreelancer()))
+                .isBlocked(Boolean.TRUE.equals(chat.getIsBlockedByFreelancer()) || Boolean.TRUE.equals(chat.getIsBlockedByEmployer()))
+                .isBlockedByMe(Boolean.TRUE.equals(chat.getIsBlockedByFreelancer()))
+                .isBlockedByPartner(Boolean.TRUE.equals(chat.getIsBlockedByEmployer()))
                 .build();
 
         if (lastMsgOpt.isPresent()) {
@@ -113,6 +117,10 @@ public class DirectChatService {
                 .partnerAvatar(chat.getFreelancer().getAvatarUrl())
                 .unreadCount(unreadCount)
                 .updatedAt(chat.getUpdatedAt() != null ? chat.getUpdatedAt() : chat.getCreatedAt())
+                .isDeleted(Boolean.TRUE.equals(chat.getIsDeletedByEmployer()))
+                .isBlocked(Boolean.TRUE.equals(chat.getIsBlockedByFreelancer()) || Boolean.TRUE.equals(chat.getIsBlockedByEmployer()))
+                .isBlockedByMe(Boolean.TRUE.equals(chat.getIsBlockedByEmployer()))
+                .isBlockedByPartner(Boolean.TRUE.equals(chat.getIsBlockedByFreelancer()))
                 .build();
 
         if (lastMsgOpt.isPresent()) {
@@ -133,6 +141,10 @@ public class DirectChatService {
     public DirectMessageDto saveMessage(DirectMessageDto msgDto) {
         DirectChat chat = chatRepository.findById(msgDto.getChatId())
                 .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+
+        if (Boolean.TRUE.equals(chat.getIsBlockedByFreelancer()) || Boolean.TRUE.equals(chat.getIsBlockedByEmployer())) {
+            throw new IllegalStateException("Chat is blocked. Cannot send message.");
+        }
 
         DirectMessage msg = DirectMessage.builder()
                 .chat(chat)
@@ -185,5 +197,53 @@ public class DirectChatService {
         } else {
             return chat.getFreelancer().getUser().getUserId();
         }
+    }
+
+    @Transactional
+    public void deleteChat(Integer chatId, Integer userId, String role) {
+        DirectChat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            chat.setIsDeletedByFreelancer(true);
+        } else if ("EMPLOYER".equalsIgnoreCase(role)) {
+            chat.setIsDeletedByEmployer(true);
+        }
+        chatRepository.save(chat);
+    }
+
+    @Transactional
+    public void restoreChat(Integer chatId, Integer userId, String role) {
+        DirectChat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            chat.setIsDeletedByFreelancer(false);
+        } else if ("EMPLOYER".equalsIgnoreCase(role)) {
+            chat.setIsDeletedByEmployer(false);
+        }
+        chatRepository.save(chat);
+    }
+
+    @Transactional
+    public void blockChat(Integer chatId, Integer userId, String role) {
+        DirectChat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            chat.setIsBlockedByFreelancer(true);
+        } else if ("EMPLOYER".equalsIgnoreCase(role)) {
+            chat.setIsBlockedByEmployer(true);
+        }
+        chatRepository.save(chat);
+    }
+
+    @Transactional
+    public void unblockChat(Integer chatId, Integer userId, String role) {
+        DirectChat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            chat.setIsBlockedByFreelancer(false);
+        } else if ("EMPLOYER".equalsIgnoreCase(role)) {
+            chat.setIsBlockedByEmployer(false);
+        }
+        chatRepository.save(chat);
     }
 }

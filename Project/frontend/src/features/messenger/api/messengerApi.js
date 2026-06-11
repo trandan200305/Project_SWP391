@@ -20,4 +20,8 @@ export const messengerApi = {
   getOrCreateDirectChat: (freelancerId, employerId) => api.get(`/v1/direct-chats/get-or-create?freelancerId=${freelancerId}&employerId=${employerId}`),
   getUserDirectChats: (userId, role) => api.get(`/v1/direct-chats/user/${userId}?role=${role}`),
   getDirectMessages: (chatId) => api.get(`/v1/direct-chats/${chatId}/messages`),
+  deleteDirectChat: (chatId, userId, role) => api.post(`/v1/direct-chats/${chatId}/delete?userId=${userId}&role=${role}`),
+  restoreDirectChat: (chatId, userId, role) => api.post(`/v1/direct-chats/${chatId}/restore?userId=${userId}&role=${role}`),
+  blockDirectChat: (chatId, userId, role) => api.post(`/v1/direct-chats/${chatId}/block?userId=${userId}&role=${role}`),
+  unblockDirectChat: (chatId, userId, role) => api.post(`/v1/direct-chats/${chatId}/unblock?userId=${userId}&role=${role}`),
 };
