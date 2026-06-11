@@ -2,9 +2,13 @@ import React from 'react';
 import { List, Lock, Trash2, ShieldCheck, UploadCloud, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function UserSettings({
-  prefTab, setPrefTab, role, targetId, handleSavePassword, currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, handleDeleteAccount,
+  user, role, targetId, prefTab, setPrefTab, onLogout,
   kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc
 }) {
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [deleteInput, setDeleteInput] = React.useState('');
   const handleUploadKycImage = async (e, setUrlFn) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -55,6 +59,56 @@ export default function UserSettings({
     } catch (err) {
       alert("Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
     }
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          role: role,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert(data.message || 'Đổi mật khẩu thất bại.');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối server.');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?')) return;
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=${deleteInput}` : `http://localhost:8080/api/employers/${targetId}?confirmationText=${deleteInput}`;
+    
+    fetch(endpoint, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message || 'Tài khoản của bạn đã được xóa.');
+          if (onLogout) onLogout();
+        } else {
+          alert(data.message || 'Xóa tài khoản thất bại!');
+        }
+      })
+      .catch(error => {
+        alert('Lỗi kết nối máy chủ!');
+      });
   };
 
   return (
