@@ -337,7 +337,6 @@ public class AdminService {
                 }
                 managerRepository.save(mgr);
 
-                // Broadcast real-time account status event to user's STOMP topic
                 if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
                     Map<String, Object> event = new HashMap<>();
                     event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
@@ -347,7 +346,6 @@ public class AdminService {
                     messagingTemplate.convertAndSend("/topic/account-status/MANAGER/" + id, event);
                 }
 
-                // Invalidate and revoke invitation if deleted or suspended
                 if ("DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "SUSPENDED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
                     Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(mgr.getEmail());
                     if (invOpt.isPresent()) {
@@ -382,7 +380,6 @@ public class AdminService {
                 }
                 staffRepository.save(stf);
 
-                // Broadcast real-time account status event to user's STOMP topic
                 if ("LOCKED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
                     Map<String, Object> event = new HashMap<>();
                     event.put("type", "LOCKED".equalsIgnoreCase(status) ? "ACCOUNT_SUSPENDED" : "ACCOUNT_REACTIVATED");
@@ -392,7 +389,6 @@ public class AdminService {
                     messagingTemplate.convertAndSend("/topic/account-status/STAFF/" + id, event);
                 }
 
-                // Invalidate and revoke invitation if deleted or suspended
                 if ("DELETED".equalsIgnoreCase(status) || "LOCKED".equalsIgnoreCase(status) || "SUSPENDED".equalsIgnoreCase(status) || "BANNED".equalsIgnoreCase(status)) {
                     Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(stf.getEmail());
                     if (invOpt.isPresent()) {
@@ -993,15 +989,12 @@ public class AdminService {
             } catch (Exception e) {}
         }
 
-        // Generate invitation token
         String token = java.util.UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
 
-        // Auto-generate a random password (10 chars: letters + digits)
         String rawPassword = generateRandomPassword(10);
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
-        // Create or update the invitation record to avoid UNIQUE KEY constraint issues
         Optional<com.cny.backend.admin.entity.StaffInvitation> existingInvOpt = staffInvitationRepository.findByEmail(email);
         com.cny.backend.admin.entity.StaffInvitation invitation;
         if (existingInvOpt.isPresent()) {
@@ -1021,7 +1014,6 @@ public class AdminService {
         }
         staffInvitationRepository.save(invitation);
 
-        // Create placeholder or reactivate soft-deleted user account with status "INVITED"
         String emailPrefix = email.split("@")[0];
         Optional<com.cny.backend.admin.entity.Manager> existingManager = managerRepository.findByEmail(email);
         Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
@@ -1053,7 +1045,6 @@ public class AdminService {
             }
             managerRepository.save(managerPlaceholder);
 
-            // If it existed in staff table as deleted, keep it deleted
             if (existingStaff.isPresent()) {
                 com.cny.backend.admin.entity.Staff s = existingStaff.get();
                 s.setIsDeleted(true);
@@ -1089,7 +1080,6 @@ public class AdminService {
             }
             staffRepository.save(stf);
 
-            // If it existed in manager table as deleted, keep it deleted
             if (existingManager.isPresent()) {
                 com.cny.backend.admin.entity.Manager m = existingManager.get();
                 m.setIsDeleted(true);
@@ -1098,7 +1088,6 @@ public class AdminService {
             }
         }
 
-        // Send Email Asynchronously - notify with setup link, NO password included
         String roleLabel = "MANAGER".equals(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
         String deptName = dept != null ? dept.getName() + " (" + dept.getCode() + ")" : "Chưa phân bổ";
         String setupLink = "http://localhost:3000/?token=" + token;
@@ -1122,7 +1111,6 @@ public class AdminService {
         writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã tạo tài khoản " + role + " cho " + email + " tại phòng ban " + deptName);
         response.put("success", true);
         response.put("message", "Đã tạo tài khoản thành công!");
-        // Return credentials to admin for management (NOT sent to invited user)
         response.put("generatedEmail", email);
         response.put("generatedPassword", rawPassword);
         response.put("role", role);
@@ -1130,9 +1118,6 @@ public class AdminService {
         return response;
     }
 
-    /**
-     * Generates a random password with uppercase, lowercase, and digits.
-     */
     private String generateRandomPassword(int length) {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
         StringBuilder sb = new StringBuilder();
