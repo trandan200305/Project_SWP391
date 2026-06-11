@@ -76,7 +76,7 @@ public class Freelancer {
 
     private String bio;
 
-    @Column(name = "hourly_rate")
+    @Column(name = "hourly_rate", precision = 15, scale = 2)
     private BigDecimal hourlyRate;
 
     private String address;
@@ -86,13 +86,13 @@ public class Freelancer {
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 
-    @Column(name = "total_earnings")
+    @Column(name = "total_earnings", precision = 15, scale = 2)
     private BigDecimal totalEarnings;
 
     @Column(name = "projects_completed")
     private Integer projectsCompleted;
 
-    @Column(name = "average_rating")
+    @Column(name = "average_rating", precision = 3, scale = 2)
     private BigDecimal averageRating;
 
     @Column(name = "is_available")

@@ -50,7 +50,7 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'messenger') {
-    return <MessengerPage user={user} onNavigateHome={() => handleNavigate('home')} />;
+    return <MessengerPage user={user} onNavigateHome={() => handleNavigate('home')} initialPartner={pageParams} />;
   }
 
   if (currentPage === 'employer_profile') {

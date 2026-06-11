@@ -142,9 +142,11 @@ export default function App() {
       stompClientRef.current = null;
     }
 
-    if (!user || !['MANAGER', 'STAFF'].includes(user.role?.toUpperCase())) return;
+    if (!user) return;
 
-    const topic = `/topic/account-status/${user.role.toUpperCase()}/${user.id}`;
+    const roleUpper = user.role?.toUpperCase();
+    const normalizedRole = roleUpper === 'CLIENT' ? 'EMPLOYER' : roleUpper;
+    const topic = `/topic/account-status/${normalizedRole}/${user.id}`;
 
     const client = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
@@ -182,6 +184,7 @@ export default function App() {
       projectsSection.scrollIntoView({ behavior: "smooth" });
     }
   };
+
   const handleNavigate = (page, params = null) => {
     const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile'];
     if (protectedPages.includes(page) && !user) {

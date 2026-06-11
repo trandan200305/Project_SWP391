@@ -362,7 +362,6 @@ export default function Navbar({
                   </div>
                 </div>
 
-                {}
                 {showProfileMenu && (
                   <div
                     className="fixed inset-0 z-40"
@@ -370,7 +369,6 @@ export default function Navbar({
                   />
                 )}
 
-                {}
                 {showProfileMenu && (
                   <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="px-3 py-2 border-b border-slate-50 mb-1">
@@ -386,26 +384,37 @@ export default function Navbar({
                     </div>
 
                     {user?.role === "EMPLOYER" && (
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("post_job");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
-                      >
-                        <Plus className="w-4 h-4" /> Đăng dự án mới
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("post_job");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
+                        >
+                          <Plus className="w-4 h-4" /> Đăng dự án mới
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("employer_profile");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        >
+                          <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
+                        </button>
+                      </>
                     )}
 
-                    {user?.role === "EMPLOYER" && (
+                    {user?.role === "FREELANCER" && (
                       <button
                         onClick={() => {
                           setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("employer_profile");
+                          if (onNavigate) onNavigate("your_jobs");
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
                       >
-                        <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
+                        <Bookmark className="w-4 h-4" /> Công việc của bạn
                       </button>
                     )}
 
@@ -439,17 +448,6 @@ export default function Navbar({
                       <Settings className="w-4 h-4" /> Cài đặt chung
                     </button>
 
-                    {user?.role !== "EMPLOYER" && (
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("your_jobs");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
-                      >
-                        <Bookmark className="w-4 h-4" /> Công việc của bạn
-                      </button>
-                    )}
 
                     <button
                       onClick={handleMessengerClick}

@@ -26,7 +26,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [activeOnlineChecked, setActiveOnlineChecked] = useState(true);
   const [activeOfflineChecked, setActiveOfflineChecked] = useState(true);
   
-  const [selectedRoleTab, setSelectedRoleTab] = useState('ALL'); // 'ALL', 'EMPLOYER', 'MANAGER', 'STAFF'
+  const [selectedRoleTab, setSelectedRoleTab] = useState('ALL'); // all, employer, manager, staff
   const [filterEmployer, setFilterEmployer] = useState(true);
   const [filterManager, setFilterManager] = useState(true);
   const [filterStaff, setFilterStaff] = useState(true);
@@ -60,6 +60,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   const [signoffForm, setSignoffForm] = useState({ status: 'APPROVED', note: '', departmentCode: 'FIN' });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [createdCredentials, setCreatedCredentials] = useState(null); // { email, password, role, department }
   
   
   const [stats, setStats] = useState({
@@ -152,16 +153,29 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
       showToast('Vui lòng nhập Email!', 'error');
       return;
     }
+    if (!createForm.departmentId) {
+      showToast('Vui lòng chọn Khoa/Phòng ban!', 'error');
+      return;
+    }
 
     setIsLoading(true);
     adminApi.inviteStaffOrManager(createForm.email, createRole, createForm.departmentId, createForm.managerId)
       .then(data => {
         setIsLoading(false);
         if (data.success === false) {
-          showToast(data.message || 'Lỗi khi gửi lời mời.', 'error');
+          showToast(data.message || 'Lỗi khi tạo tài khoản.', 'error');
         } else {
-          showToast(data.message || 'Gửi lời mời kích hoạt tài khoản thành công!', 'success');
+          showToast(data.message || 'Đã tạo tài khoản thành công!', 'success');
           setShowCreateModal(false);
+          // Show credentials to admin
+          if (data.generatedPassword) {
+            setCreatedCredentials({
+              email: data.generatedEmail || createForm.email,
+              password: data.generatedPassword,
+              role: data.role || createRole,
+              department: data.department || ''
+            });
+          }
           setCreateForm({
             email: '',
             password: '',
@@ -372,7 +386,19 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [userStatusFilter, activeOnlineChecked, activeOfflineChecked, userTimeFilterType, userTimeStart, userTimeEnd, searchQuery]);
+  }, [
+    userStatusFilter,
+    activeOnlineChecked,
+    activeOfflineChecked,
+    userTimeFilterType,
+    userTimeStart,
+    userTimeEnd,
+    searchQuery,
+    selectedRoleTab,
+    filterEmployer,
+    filterManager,
+    filterStaff
+  ]);
 
   
   const handleUserStatusChange = (userId, role, newStatus) => {
@@ -1525,6 +1551,343 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     animation: clipDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
                   }
 
+                  /* DEPARTMENT CUSTOM HOVER DROPDOWN STYLE */
+                  .dept-main {
+                    font-weight: 600;
+                    color: #334155;
+                    background-color: white;
+                    border: 1px solid #cbd5e1;
+                    padding: 8px 16px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    height: 44px;
+                    width: 100%;
+                    position: relative;
+                    cursor: pointer;
+                    justify-content: space-between;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    transition: all 0.3s ease;
+                  }
+
+                  .dept-main:hover {
+                    border-color: #3b82f6;
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+                  }
+
+                  .dept-main.selected-active {
+                    background-color: #eff6ff;
+                    border-color: #3b82f6;
+                    color: #1d4ed8;
+                  }
+
+                  .dept-bar {
+                    display: flex;
+                    height: 12px;
+                    width: 16px;
+                    flex-direction: column;
+                    gap: 3px;
+                    justify-content: center;
+                  }
+
+                  .dept-bar-list {
+                    display: block;
+                    width: 100%;
+                    height: 2px;
+                    border-radius: 50px;
+                    background-color: #64748b;
+                    transition: all 0.4s ease;
+                    position: relative;
+                  }
+
+                  .dept-main.selected-active .dept-bar-list {
+                    background-color: #3b82f6;
+                  }
+
+                  .dept-wrapper:hover .dept-top {
+                    transform-origin: top right;
+                    transform: translateY(-0.5px) rotate(-45deg) scaleX(0.9);
+                  }
+
+                  .dept-wrapper:hover .dept-middle {
+                    transform: translateX(-50%);
+                    opacity: 0;
+                  }
+
+                  .dept-wrapper:hover .dept-bottom {
+                    transform-origin: bottom right;
+                    transform: translateY(0.5px) rotate(45deg) scaleX(0.9);
+                  }
+
+                  /* Invisible bridge to prevent mouse leaving gap */
+                  .dept-wrapper::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 100%;
+                    left: 0;
+                    right: 0;
+                    height: 15px;
+                    z-index: 98;
+                  }
+
+                  .dept-menu-container {
+                    background-color: white;
+                    color: #1e293b;
+                    font-weight: 400;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    position: absolute;
+                    width: 100%;
+                    left: 0;
+                    bottom: calc(100% + 6px);
+                    overflow: hidden;
+                    box-shadow: 0 -20px 25px -5px rgba(0, 0, 0, 0.1), 0 -8px 10px -6px rgba(0, 0, 0, 0.1);
+                    z-index: 999 !important;
+                    padding: 12px;
+                    cursor: default;
+                    clip-path: inset(90% 50% 10% 50% round 16px);
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+
+                  .dept-wrapper:hover .dept-menu-container {
+                    clip-path: inset(0% 0% 0% 0% round 16px);
+                    opacity: 1;
+                    pointer-events: auto;
+                  }
+
+                  .dept-item-list {
+                    --delay: 0.15s;
+                    --trdelay: 0.08s;
+                    transform: translateY(30px);
+                    opacity: 0;
+                    transition: transform 0.4s ease, opacity 0.4s ease;
+                  }
+
+                  .dept-wrapper:hover .dept-item-list {
+                    transform: translateY(0);
+                    opacity: 1;
+                  }
+
+                  .dept-wrapper:hover .dept-item-list:nth-child(1) { transition-delay: var(--delay); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(2) { transition-delay: calc(var(--delay) + var(--trdelay)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(3) { transition-delay: calc(var(--delay) + (var(--trdelay) * 2)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(4) { transition-delay: calc(var(--delay) + (var(--trdelay) * 3)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(7) { transition-delay: calc(var(--delay) + (var(--trdelay) * 6)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(8) { transition-delay: calc(var(--delay) + (var(--trdelay) * 7)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(9) { transition-delay: calc(var(--delay) + (var(--trdelay) * 8)); }
+                  .dept-wrapper:hover .dept-item-list:nth-child(10) { transition-delay: calc(var(--delay) + (var(--trdelay) * 9)); }
+
+                  /* ORBITAL RADIO PICK FOR DEPARTMENT ITEMS */
+                  .dept-radio-label {
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    position: relative;
+                    user-select: none;
+                    width: 100%;
+                    padding: 10px 14px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    background: white;
+                    transition: all 0.3s ease;
+                  }
+
+                  .dept-radio-label:hover {
+                    background: #f8fafc;
+                    border-color: #cbd5e1;
+                  }
+
+                  .dept-radio-label.dept-selected {
+                    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+                  }
+
+                  .dept-radio-input {
+                    display: none;
+                  }
+
+                  .dept-radio-custom {
+                    width: 20px;
+                    height: 20px;
+                    background-color: transparent;
+                    border: 2px solid #94a3b8;
+                    border-radius: 50%;
+                    margin-right: 14px;
+                    position: relative;
+                    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                  }
+
+                  .dept-radio-custom::before {
+                    content: "";
+                    position: absolute;
+                    width: 8px;
+                    height: 8px;
+                    background: #94a3b8;
+                    border-radius: 50%;
+                    transform: scale(0);
+                    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+                  }
+
+                  .dept-radio-custom::after {
+                    content: "";
+                    position: absolute;
+                    width: 30px;
+                    height: 30px;
+                    border: 2px solid transparent;
+                    border-radius: 50%;
+                    border-top-color: #3b82f6;
+                    opacity: 0;
+                    transform: scale(0.8);
+                    transition: all 0.4s ease;
+                  }
+
+                  .dept-radio-label:hover .dept-radio-custom {
+                    transform: scale(1.1);
+                    border-color: #64748b;
+                  }
+
+                  .dept-radio-label.dept-selected .dept-radio-custom {
+                    border-color: #3b82f6;
+                    transform: scale(0.9);
+                  }
+
+                  .dept-radio-label.dept-selected .dept-radio-custom::before {
+                    transform: scale(1);
+                    background-color: #3b82f6;
+                  }
+
+                  .dept-radio-label.dept-selected .dept-radio-custom::after {
+                    opacity: 1;
+                    transform: scale(1.3);
+                    animation: dept-orbit 2.5s infinite linear;
+                    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 50px rgba(59, 130, 246, 0.1);
+                  }
+
+                  .dept-radio-text {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #475569;
+                    transition: all 0.3s ease;
+                    flex: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  }
+
+                  .dept-radio-label:hover .dept-radio-text {
+                    color: #1e293b;
+                  }
+
+                  .dept-radio-label.dept-selected .dept-radio-text {
+                    color: #1d4ed8;
+                    font-weight: 700;
+                  }
+
+                  .dept-radio-code {
+                    font-size: 10px;
+                    font-family: ui-monospace, monospace;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    background: #f1f5f9;
+                    color: #64748b;
+                    flex-shrink: 0;
+                    margin-left: 8px;
+                    transition: all 0.3s ease;
+                  }
+
+                  .dept-radio-label.dept-selected .dept-radio-code {
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                  }
+
+                  @keyframes dept-orbit {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                  }
+
+                  /* SCROLL INDICATORS FOR DEPT LIST */
+                  .dept-scroll-wrapper {
+                    position: relative;
+                  }
+
+                  .dept-scroll-fade-top,
+                  .dept-scroll-fade-bottom {
+                    position: absolute;
+                    left: 0;
+                    right: 6px;
+                    height: 44px;
+                    pointer-events: none;
+                    z-index: 2;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 2px;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                  }
+
+                  .dept-scroll-fade-top {
+                    top: -2px;
+                    background: linear-gradient(to bottom, rgba(255,255,255,1) 40%, rgba(255,255,255,0.6) 70%, transparent);
+                    border-radius: 12px 12px 0 0;
+                  }
+
+                  .dept-scroll-fade-bottom {
+                    bottom: -2px;
+                    background: linear-gradient(to top, rgba(255,255,255,1) 40%, rgba(255,255,255,0.6) 70%, transparent);
+                    border-radius: 0 0 12px 12px;
+                  }
+
+                  .dept-scroll-fade-top.visible,
+                  .dept-scroll-fade-bottom.visible {
+                    opacity: 1;
+                  }
+
+                  .dept-scroll-chevron {
+                    width: 22px;
+                    height: 22px;
+                    color: #3b82f6;
+                    filter: drop-shadow(0 1px 3px rgba(59,130,246,0.4));
+                  }
+
+                  .dept-scroll-hint {
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: #93c5fd;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                  }
+
+                  .dept-scroll-fade-top .dept-scroll-chevron {
+                    animation: dept-bounce-up 1s ease-in-out infinite;
+                  }
+
+                  .dept-scroll-fade-bottom .dept-scroll-chevron {
+                    animation: dept-bounce-down 1s ease-in-out infinite;
+                  }
+
+                  @keyframes dept-bounce-up {
+                    0%, 100% { transform: translateY(6px); opacity: 0.3; }
+                    50% { transform: translateY(-8px); opacity: 1; }
+                  }
+
+                  @keyframes dept-bounce-down {
+                    0%, 100% { transform: translateY(-6px); opacity: 0.3; }
+                    50% { transform: translateY(8px); opacity: 1; }
+                  }
+
                   /* Fancy Date Input */
                   .fancy-date-input {
                     position: relative;
@@ -2092,7 +2455,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   </div>
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Nhóm bên trái: Tìm kiếm và Xuất báo cáo */}
+                    {/* xuất báo cáo, button bên trái */}
                     <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
 
                       <div className="relative flex-grow md:flex-grow-0 md:w-80">
@@ -2100,6 +2463,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                           <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                           <input 
                             type="text" 
+                            name="adminSearchQuery"
+                            autoComplete="off"
                             placeholder="Tìm kiếm Email hoặc Tên..." 
                             className="bg-transparent border-none text-body-sm outline-none w-full font-medium placeholder-slate-400"
                             value={searchQuery}
@@ -2414,14 +2779,14 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     <table className="w-full text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
-                          <th className="px-3 py-3.5 pl-5 w-[80px]">ID</th>
-                          <th className="px-3 py-3.5 w-[140px]">Tên hiển thị</th>
-                          <th className="px-3 py-3.5 w-[180px]">Email</th>
-                          <th className="px-3 py-3.5 w-[80px]">Vai trò</th>
-                          <th className="px-3 py-3.5 w-[90px]">Trạng thái</th>
-                          <th className="px-3 py-3.5 w-[170px]">Đăng nhập cuối</th>
-                          <th className="px-3 py-3.5 w-[120px]">Ngày gia nhập</th>
-                          <th className="px-3 py-3.5 text-center w-[140px]">Hành động bảo mật</th>
+                          <th className="px-3 py-3.5 pl-5 w-[50px]">ID</th>
+                          <th className="px-3 py-3.5 w-[110px]">Tên hiển thị</th>
+                          <th className="px-3 py-3.5 w-[150px]">Email</th>
+                          <th className="px-3 py-3.5 w-[75px]">Vai trò</th>
+                          <th className="px-3 py-3.5 w-[85px]">Trạng thái</th>
+                          <th className="px-3 py-3.5 w-[135px]">Đăng nhập cuối</th>
+                          <th className="px-3 py-3.5 w-[100px]">Ngày gia nhập</th>
+                          <th className="px-3 py-3.5 text-center w-[175px]">Hành động bảo mật</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -2441,12 +2806,12 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
                           return paginatedUsers.map((user) => (
                             <tr key={`${user.role}-${user.id}`} className="hover:bg-slate-50/50 transition-colors text-[12.5px]">
-                              <td className="px-3 py-3 pl-5 text-slate-500 font-mono font-bold whitespace-nowrap w-[80px]">
+                              <td className="px-3 py-3 pl-5 text-slate-500 font-mono font-bold whitespace-nowrap w-[50px]">
                                 #{user.id}
                               </td>
-                              <td className="px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[140px]" title={user.name}>{user.name}</td>
-                              <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[180px]" title={user.email}>{user.email}</td>
-                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[80px]">
+                              <td className="px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[110px]" title={user.name}>{user.name}</td>
+                              <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[150px]" title={user.email}>{user.email}</td>
+                              <td className="px-3 py-3 font-medium whitespace-nowrap w-[75px]">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
                                   user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                                   user.role === 'EMPLOYER' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
@@ -2456,7 +2821,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   {user.role}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 whitespace-nowrap w-[90px]">
+                              <td className="px-3 py-3 whitespace-nowrap w-[85px]">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                   user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                                   user.status === 'LOCKED' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
@@ -2465,7 +2830,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   {user.status}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 text-slate-600 font-mono text-[11px] whitespace-nowrap w-[170px]">
+                              <td className="px-3 py-3 text-slate-600 font-mono text-[11px] whitespace-nowrap w-[135px]">
                                 <div className="flex items-center gap-1.5">
                                   {(() => {
                                     if (!user.lastLogin) {
@@ -2498,8 +2863,8 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                   })()}
                                 </div>
                               </td>
-                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[120px]">{user.joined}</td>
-                              <td className="px-3 py-3 text-center whitespace-nowrap w-[140px]">
+                              <td className="px-3 py-3 text-slate-500 whitespace-nowrap w-[100px]">{user.joined}</td>
+                              <td className="px-3 py-3 text-center whitespace-nowrap w-[175px]">
                                 <div className="flex justify-center gap-1">
                                   {user.isProtectedAdmin ? (
                                     <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-xl font-bold text-[11px] flex items-center gap-1">
@@ -3363,7 +3728,9 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">MÃ PIN XÁC NHẬN CỦA ADMIN</label>
               <input 
-                type="password" 
+                type="text" 
+                style={{ WebkitTextSecurity: 'disc' }}
+                autoComplete="new-password"
                 placeholder="Nhập mã PIN gồm 6 số" 
                 maxLength={6}
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono tracking-[0.2em]"
@@ -3397,10 +3764,10 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
       {/* MODAL MỜI NHÂN SỰ MANAGER / STAFF (INVITATION FLOW) */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showCreateModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border-t-[6px] border-blue-600 overflow-hidden transition-all duration-300 ease-out transform ${
+        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border-t-[6px] border-blue-600 overflow-visible transition-all duration-300 ease-out transform ${
           showCreateModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}>
-          <div className="p-6 border-b flex justify-between items-center bg-blue-50/30 border-blue-100">
+          <div className="p-6 border-b flex justify-between items-center bg-blue-50/30 border-blue-100 rounded-t-3xl">
             <h4 className="font-bold text-lg flex items-center gap-2 text-blue-800">
               + Mời Nhân Sự Quản Trị / Vận Hành
             </h4>
@@ -3415,29 +3782,25 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             {/* Vai trò */}
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Vai Trò Tài Khoản</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCreateRole('MANAGER')}
-                  className={`py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 border ${
-                    createRole === 'MANAGER'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/10'
-                      : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Manager (Quản Lý)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateRole('STAFF')}
-                  className={`py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 border ${
-                    createRole === 'STAFF'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/10'
-                      : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Staff (Nhân Viên)
-                </button>
+              <div className="radio-inputs" style={{ width: '100%' }}>
+                <label className="radio">
+                  <input 
+                    type="radio" 
+                    name="createRoleTab" 
+                    checked={createRole === 'MANAGER'}
+                    onChange={() => setCreateRole('MANAGER')}
+                  />
+                  <span className="name">Manager (Quản Lý)</span>
+                </label>
+                <label className="radio">
+                  <input 
+                    type="radio" 
+                    name="createRoleTab" 
+                    checked={createRole === 'STAFF'}
+                    onChange={() => setCreateRole('STAFF')}
+                  />
+                  <span className="name">Staff (Nhân Viên)</span>
+                </label>
               </div>
             </div>
 
@@ -3447,6 +3810,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               <input 
                 type="email" 
                 required
+                autoComplete="one-time-code"
                 placeholder="nhap@lancerpro.com" 
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                 value={createForm.email}
@@ -3459,18 +3823,85 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
 
             {/* Khoa/Phòng ban Selection */}
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Khoa / Phòng Ban <span className="text-rose-500">*</span></label>
-              <select
-                required
-                className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium bg-white"
-                value={createForm.departmentId}
-                onChange={e => setCreateForm({ ...createForm, departmentId: e.target.value })}
-              >
-                <option value="">-- Chọn Khoa/Phòng Ban --</option>
-                {departmentsList.map(d => (
-                  <option key={d.departmentId} value={d.departmentId}>{d.name} ({d.code})</option>
-                ))}
-              </select>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Khoa / Phòng Ban <span className="text-rose-500">*</span></label>
+              <div className="dept-wrapper relative w-full">
+                {(() => {
+                  const selectedDept = departmentsList.find(d => String(d.departmentId) === String(createForm.departmentId));
+                  return (
+                    <>
+                      <div className={`dept-main ${selectedDept ? 'selected-active' : ''}`}>
+                        <span className="text-body-sm font-semibold truncate">
+                          {selectedDept ? `${selectedDept.name} (${selectedDept.code})` : '-- Chọn Khoa/Phòng Ban --'}
+                        </span>
+                        <div className="dept-bar">
+                          <span className="top dept-bar-list dept-top" />
+                          <span className="middle dept-bar-list dept-middle" />
+                          <span className="bottom dept-bar-list dept-bottom" />
+                        </div>
+                      </div>
+
+                      <div className="dept-menu-container">
+                        <div className="dept-scroll-wrapper">
+                          {/* Top scroll indicator */}
+                          {departmentsList.length > 4 && (
+                            <div className="dept-scroll-fade-top" id="deptScrollTop">
+                              <svg className="dept-scroll-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                            </div>
+                          )}
+                          <div
+                            className="max-h-[240px] overflow-y-auto pr-1 space-y-2 no-scrollbar"
+                            id="deptScrollList"
+                            onScroll={(e) => {
+                              const el = e.target;
+                              const topIndicator = document.getElementById('deptScrollTop');
+                              const bottomIndicator = document.getElementById('deptScrollBottom');
+                              if (topIndicator) {
+                                topIndicator.classList.toggle('visible', el.scrollTop > 8);
+                              }
+                              if (bottomIndicator) {
+                                bottomIndicator.classList.toggle('visible', el.scrollTop + el.clientHeight < el.scrollHeight - 8);
+                              }
+                            }}
+                            ref={(el) => {
+                              if (el) {
+                                requestAnimationFrame(() => {
+                                  const bottomIndicator = document.getElementById('deptScrollBottom');
+                                  if (bottomIndicator && el.scrollHeight > el.clientHeight) {
+                                    bottomIndicator.classList.add('visible');
+                                  }
+                                });
+                              }
+                            }}
+                          >
+                            {departmentsList.map((d, index) => {
+                              const isSelected = String(createForm.departmentId) === String(d.departmentId);
+                              return (
+                                <div key={d.departmentId} className="dept-item-list">
+                                  <label
+                                    className={`dept-radio-label ${isSelected ? 'dept-selected' : ''}`}
+                                    onClick={() => setCreateForm({ ...createForm, departmentId: d.departmentId })}
+                                  >
+                                    <input type="radio" name="deptPick" className="dept-radio-input" checked={isSelected} readOnly />
+                                    <span className="dept-radio-custom" />
+                                    <span className="dept-radio-text">{d.name}</span>
+                                    <span className="dept-radio-code">{d.code}</span>
+                                  </label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* Bottom scroll indicator */}
+                          {departmentsList.length > 4 && (
+                            <div className="dept-scroll-fade-bottom" id="deptScrollBottom">
+                              <svg className="dept-scroll-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
 
 
@@ -3486,12 +3917,97 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               </button>
               <button 
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300"
+                disabled={isLoading}
+                className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isLoading 
+                    ? 'opacity-60 cursor-not-allowed' 
+                    : 'shadow-blue-600/10 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+                }`}
               >
-                Gửi lời mời
+                {isLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  'Gửi lời mời'
+                )}
               </button>
             </div>
           </form>
+        </div>
+      </div>
+
+      {/* MODAL HIỂN THỊ THÔNG TIN TÀI KHOẢN ĐÃ TẠO (CHỈ ADMIN XEM) */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1001] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${createdCredentials ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border-t-[6px] border-emerald-500 overflow-hidden transition-all duration-300 ease-out transform ${
+          createdCredentials ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}>
+          <div className="p-6 border-b flex justify-between items-center bg-emerald-50/30 border-emerald-100 rounded-t-3xl">
+            <h4 className="font-bold text-lg flex items-center gap-2 text-emerald-800">
+              <CheckCircle2 className="w-5 h-5" /> Tài Khoản Đã Được Tạo
+            </h4>
+            <button 
+              onClick={() => setCreatedCredentials(null)}
+              className="p-2 rounded-full transition-all duration-200 hover:rotate-90 active:scale-95 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {createdCredentials && (
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span className="text-[11px] font-extrabold text-amber-700 uppercase">Chỉ dành cho Admin</span>
+                </div>
+                <p className="text-[12px] text-amber-700 leading-relaxed">
+                  Mật khẩu này <strong>không được gửi</strong> cho người được mời. Admin sử dụng thông tin này để quản lý và kiểm soát hoạt động tài khoản.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-200">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Vai trò</span>
+                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.role === 'MANAGER' ? 'Manager (Quản Lý)' : 'Staff (Nhân Viên)'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Phòng ban</span>
+                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.department}</span>
+                </div>
+                <hr className="border-slate-200" />
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Tài khoản (Email)</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-blue-700 flex-grow">{createdCredentials.email}</code>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(createdCredentials.email); showToast('Đã sao chép email!', 'success'); }}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-all active:scale-95"
+                    >Copy</button>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật khẩu</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider">{createdCredentials.password}</code>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(createdCredentials.password); showToast('Đã sao chép mật khẩu!', 'success'); }}
+                      className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[11px] font-bold hover:bg-rose-100 transition-all active:scale-95"
+                    >Copy</button>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setCreatedCredentials(null)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-body-sm shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+              >
+                Đã ghi nhận, đóng
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

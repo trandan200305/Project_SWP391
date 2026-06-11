@@ -93,13 +93,13 @@ public class Employer {
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 
-    @Column(name = "total_spent")
+    @Column(name = "total_spent", precision = 15, scale = 2)
     private BigDecimal totalSpent;
 
     @Column(name = "projects_posted")
     private Integer projectsPosted;
 
-    @Column(name = "average_rating")
+    @Column(name = "average_rating", precision = 3, scale = 2)
     private BigDecimal averageRating;
 
     @Column(name = "is_deleted")

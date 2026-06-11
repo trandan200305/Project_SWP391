@@ -446,6 +446,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                           if (errorField === "email") setErrorField("");
                         }}
                         required
+                        autoComplete="one-time-code"
                         className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
                           errorField === "email"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
@@ -473,6 +474,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                           if (errorField === "phone") setErrorField("");
                         }}
                         required
+                        autoComplete="off"
                         className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
                           errorField === "phone"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
@@ -501,6 +503,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        autoComplete="new-password"
                         className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
                       />
                       <button

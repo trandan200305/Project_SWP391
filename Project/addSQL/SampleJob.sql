@@ -1,4 +1,4 @@
--- =========================================================================
+﻿-- =========================================================================
 -- LANCERPRO (CNY) - SAMPLE DATA SCRIPT
 -- Dữ liệu mẫu Nhà tuyển dụng, Lĩnh vực và Công việc để test Phân trang
 -- Chạy script này sau khi cấu trúc database CNY đã được tạo

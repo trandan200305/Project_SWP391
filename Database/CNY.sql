@@ -193,14 +193,16 @@ CREATE TABLE departments (
 );
 GO
 
--- SEED 6 PHÒNG BAN CỐ ĐỊNH (KHÔNG ĐƯỢC THÊM MỚI TỪ GIAO DIỆN)
+-- SEED 8 PHÒNG BAN CỐ ĐỊNH (KHÔNG ĐƯỢC THÊM MỚI TỪ GIAO DIỆN)
 INSERT INTO departments (name, code, description, max_managers) VALUES
     (N'Phòng Tài Chính', 'FIN', N'Quản lý rút tiền, hoàn tiền, escrow, giao dịch tài chính', 5),
     (N'Phòng Kiểm Duyệt', 'MOD', N'Duyệt dự án, kiểm duyệt nội dung, xác minh KYC', 5),
     (N'Phòng Tranh Chấp', 'DIS', N'Xử lý tranh chấp, phân xử hợp đồng giữa các bên', 5),
     (N'Phòng Hỗ Trợ', 'CS', N'Support tickets, hỗ trợ và chăm sóc người dùng', 5),
     (N'Phòng Kỹ Thuật', 'IT', N'Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật', 5),
-    (N'Phòng Kiểm Toán', 'AUD', N'Giám sát, audit logs, đánh giá tuân thủ quy trình', 5);
+    (N'Phòng Kiểm Toán', 'AUD', N'Giám sát, audit logs, đánh giá tuân thủ quy trình', 5),
+    (N'Marketing', 'MKT', N'Phòng Truyền thông và Marketing', 5),
+    (N'General', 'GEN', N'Phòng tổng hợp', 5);
 GO
 
 -- Manager (Trưởng phòng ban) Concrete Table
@@ -977,14 +979,16 @@ BEGIN
         updated_at          DATETIME2 NOT NULL DEFAULT GETDATE()
     );
 
-    -- Seed 6 phòng ban cố định (không được thêm mới từ giao diện)
+    -- Seed 8 phòng ban cố định (không được thêm mới từ giao diện)
     INSERT INTO departments (name, code, description, max_managers) VALUES
         (N'Phòng Tài Chính',  'FIN', N'Quản lý rút tiền, hoàn tiền, escrow, giao dịch tài chính', 5),
         (N'Phòng Kiểm Duyệt', 'MOD', N'Duyệt dự án, kiểm duyệt nội dung, xác minh KYC', 5),
         (N'Phòng Tranh Chấp', 'DIS', N'Xử lý tranh chấp, phân xử hợp đồng giữa các bên', 5),
         (N'Phòng Hỗ Trợ',     'CS',  N'Support tickets, hỗ trợ và chăm sóc người dùng', 5),
         (N'Phòng Kỹ Thuật',   'IT',  N'Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật', 5),
-        (N'Phòng Kiểm Toán',  'AUD', N'Giám sát, audit logs, đánh giá tuân thủ quy trình', 5);
+        (N'Phòng Kiểm Toán',  'AUD', N'Giám sát, audit logs, đánh giá tuân thủ quy trình', 5),
+        (N'Marketing',        'MKT', N'Phòng Truyền thông và Marketing', 5),
+        (N'General',          'GEN', N'Phòng tổng hợp', 5);
 END
 GO
 

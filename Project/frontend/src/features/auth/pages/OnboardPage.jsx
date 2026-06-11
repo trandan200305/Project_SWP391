@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Key, CheckCircle, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api/authApi.js';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 export default function Onboard({ onBackToHome, onOpenLogin }) {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(true);
   const [inviteInfo, setInviteInfo] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [revoked, setRevoked] = useState(false);
+  const [revokedMsg, setRevokedMsg] = useState('');
 
-  // Form fields
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -27,7 +30,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     }
     setToken(tokenVal);
 
-    // Call API to verify token
     authApi.verifyInvitation(tokenVal)
       .then(data => {
         setLoading(false);
@@ -43,7 +45,36 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
       });
   }, []);
 
-  // Verification code resend countdown timer
+  useEffect(() => {
+    if (!token) return;
+
+    const topic = `/topic/invitation-status/${token}`;
+    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        client.subscribe(topic, (message) => {
+          try {
+            const event = JSON.parse(message.body);
+            if (event.status === 'REVOKED') {
+              setRevoked(true);
+              setRevokedMsg(event.message || 'Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.');
+            }
+          } catch (_) {}
+        });
+      },
+      onStompError: (frame) => {
+        console.warn('[STOMP] error:', frame);
+      },
+    });
+
+    client.activate();
+
+    return () => {
+      try { client.deactivate(); } catch (_) {}
+    };
+  }, [token]);
+
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -103,6 +134,31 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         alert('Lỗi kết nối máy chủ.');
       });
   };
+
+  if (revoked) {
+    return (
+      <div className="min-h-screen bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 fixed inset-0 z-[99999] animate-in fade-in duration-300">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-rose-100 text-center transform scale-100 transition-all duration-300 ease-out">
+          <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-rose-500/10 animate-bounce">
+            <AlertTriangle className="w-10 h-10" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 mb-3">Thao tác bị hủy bỏ</h2>
+          <p className="text-slate-600 mb-6 font-medium leading-relaxed">
+            {revokedMsg || 'Yêu cầu thiết lập tài khoản này đã bị thu hồi hoặc tài khoản đã bị vô hiệu hóa bởi Quản trị viên.'}
+          </p>
+          <button
+            onClick={() => {
+              window.history.replaceState({}, document.title, "/");
+              onBackToHome();
+            }}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30"
+          >
+            Quay lại Trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -176,7 +232,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
-          {/* Email (Readonly) */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Email tài khoản</label>
             <div className="relative">
@@ -190,7 +245,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Full Name */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Họ và tên <span className="text-rose-500">*</span></label>
             <div className="relative">
@@ -206,7 +260,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Display Name */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Tên hiển thị (DisplayName)</label>
             <div className="relative">
@@ -221,7 +274,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Verification Code */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">
               Mã xác nhận email <span className="text-rose-500">*</span>
@@ -261,7 +313,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Submit */}
           <div className="pt-3">
             <button
               type="submit"
