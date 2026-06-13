@@ -252,9 +252,14 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Manager dbManager = existingManager.get();
-                if (Boolean.TRUE.equals(dbManager.getIsDeleted())) {
+                if (Boolean.TRUE.equals(dbManager.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbManager.getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    response.put("message", "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.");
+                    return response;
+                }
+                if ("SUSPENDED".equalsIgnoreCase(dbManager.getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.");
                     return response;
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
@@ -300,9 +305,14 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Staff dbStaff = existingStaff.get();
-                if (Boolean.TRUE.equals(dbStaff.getIsDeleted())) {
+                if (Boolean.TRUE.equals(dbStaff.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbStaff.getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    response.put("message", "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.");
+                    return response;
+                }
+                if ("SUSPENDED".equalsIgnoreCase(dbStaff.getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.");
                     return response;
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
@@ -465,11 +475,16 @@ public class AuthService {
 
         loginHistoryRepository.save(history);
 
-        // CHECK USER ACCOUNT STATUS (LOCKED/BANNED)
-        if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus)) {
-            String notifMessage = "LOCKED".equals(userStatus)
-                    ? "Tài khoản của bạn đã bị tạm khóa. Liên hệ support@vlance.vn để được hỗ trợ."
-                    : "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
+        // CHECK USER ACCOUNT STATUS (LOCKED/BANNED/SUSPENDED/DELETED)
+        if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus) || "SUSPENDED".equals(userStatus) || "DELETED".equals(userStatus)) {
+            String notifMessage = "Tài khoản của bạn đang bị khóa hoặc đình chỉ hoạt động.";
+            if ("BANNED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
+            } else if ("DELETED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.";
+            } else if ("SUSPENDED".equals(userStatus) || "LOCKED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.";
+            }
 
             response.put("success", false);
             response.put("accountStatus", userStatus);
