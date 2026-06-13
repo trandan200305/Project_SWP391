@@ -1003,15 +1003,15 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }
 
         .profile-menu-dropdown {
-          background-color: white;
-          border: 1px solid #e2e8f0;
+          background-color: #1e293b; /* Dark slate */
+          border: 1px solid #334155; /* Slate border */
           border-radius: 16px;
           position: absolute;
           width: 240px;
           right: 0;
           top: calc(100% + 6px);
           overflow: hidden;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
           z-index: 9999 !important;
           padding: 8px;
           cursor: default;
@@ -1047,12 +1047,53 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
 
+        /* Dark theme typography and border overrides */
+        .profile-menu-dropdown .border-b {
+          border-color: #334155 !important;
+        }
+
+        .profile-menu-dropdown .bg-slate-100 {
+          background-color: #334155 !important;
+        }
+
+        .profile-menu-dropdown p.text-slate-400 {
+          color: #94a3b8 !important;
+        }
+
+        .profile-menu-dropdown p.text-slate-800 {
+          color: #f1f5f9 !important;
+        }
+
+        .profile-menu-btn {
+          color: #cbd5e1 !important;
+          background-color: transparent !important;
+        }
+
+        .profile-menu-btn:hover {
+          color: #ffffff !important;
+          background-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .profile-menu-btn.profile-menu-active {
+          color: #34d399 !important; /* emerald-400 */
+          background-color: rgba(16, 185, 129, 0.15) !important;
+        }
+
+        .profile-menu-btn.text-rose-600 {
+          color: #f87171 !important; /* rose-400 */
+        }
+
+        .profile-menu-btn.text-rose-600:hover {
+          color: #ffffff !important;
+          background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
         /* ORBITAL SELECTOR INDICATOR FOR PROFILE MENU ITEMS */
         .profile-menu-circle {
           width: 12px;
           height: 12px;
           background-color: transparent;
-          border: 1.5px solid #cbd5e1;
+          border: 1.5px solid #475569; /* Slate border */
           border-radius: 50%;
           position: relative;
           display: flex;
@@ -1103,21 +1144,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
         /* Active states */
         .profile-menu-btn.profile-menu-active .profile-menu-circle {
-          border-color: #10b981;
+          border-color: #34d399;
           transform: scale(1.0);
         }
 
         .profile-menu-btn.profile-menu-active .profile-menu-circle::before {
           transform: scale(1);
-          background-color: #10b981;
+          background-color: #34d399;
         }
 
         .profile-menu-btn.profile-menu-active .profile-menu-circle::after {
           opacity: 1;
           transform: scale(1.3);
-          border-top-color: #10b981;
+          border-top-color: #34d399;
           animation: profile-orbit 2s infinite linear;
-          box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
         }
 
         @keyframes profile-orbit {
