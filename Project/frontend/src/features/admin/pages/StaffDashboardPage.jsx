@@ -17,6 +17,30 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
   const currentRole = user?.role || "STAFF";
+  const normalizeRole = (role) => String(role || '').toUpperCase();
+  const normalizeId = (id) => String(id ?? '');
+  const isCustomerMessage = (message) =>
+    ['EMPLOYER', 'FREELANCER', 'CLIENT'].includes(normalizeRole(message?.senderRole));
+  const isOwnSupportMessage = (message) => {
+    if (isCustomerMessage(message)) return false;
+
+    return (
+      normalizeRole(message?.senderRole) === normalizeRole(currentRole) &&
+      normalizeId(message?.senderId) === normalizeId(user?.id)
+    );
+  };
+  const publishSupportReadReceipt = (ticketId) => {
+    if (!ticketId || !stompClientRef.current?.connected) return;
+
+    stompClientRef.current.publish({
+      destination: '/app/chat.read',
+      body: JSON.stringify({
+        ticketId,
+        readerRole: normalizeRole(currentRole),
+        readerId: user?.id
+      })
+    });
+  };
   
   // Tab states
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -72,6 +96,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [socketConnected, setSocketConnected] = useState(false);
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
+  const selectedChatIdRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   // Create task form state
   const [createForm, setCreateForm] = useState({
@@ -84,6 +110,33 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
   const [chatSearch, setChatSearch] = useState('');
   const [replyText, setReplyText] = useState('');
+  const [showUserInfo, setShowUserInfo] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    type: 'danger',
+    onConfirm: null
+  });
+  const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
+  const [deletedChats, setDeletedChats] = useState([]);
+
+  const supportSubTabRef = useRef(supportSubTab);
+  useEffect(() => {
+    supportSubTabRef.current = supportSubTab;
+  }, [supportSubTab]);
+
+  // Keep selectedChatIdRef in sync so WebSocket callbacks (created at mount) always read the current value
+  useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   // 1. WebSocket connection
   useEffect(() => {
@@ -91,16 +144,50 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
-      onConnect: () => {
-        setSocketConnected(true);
-      },
-      onDisconnect: () => {
-        setSocketConnected(false);
-      },
-      onStompError: (frame) => {
-        console.error('[STOMP] Error', frame);
-      }
     });
+
+    client.onConnect = (frame) => {
+      console.log('[STOMP] Connected (Staff)', frame);
+      setSocketConnected(true);
+
+      // Subscribe to global admin topic — handles ALL ticket messages in real time
+      client.subscribe('/topic/admin', (message) => {
+        const received = JSON.parse(message.body);
+        console.log('[STOMP] /topic/admin (Staff)', received);
+
+        // Skip SYSTEM messages (claims, blocks) — they are handled by fetchSupportChats
+        if (received.senderRole !== 'SYSTEM' && received.messageText) {
+          // If this message belongs to the currently open conversation, add it immediately
+          if (received.ticketId === selectedChatIdRef.current) {
+            setChatMessages(prev => {
+              const isDuplicate = prev.some(
+                m => (m.id && m.id === received.id) || (m.messageId && m.messageId === received.messageId)
+              );
+              if (isDuplicate) return prev;
+              return [...prev, received];
+            });
+            if (isCustomerMessage(received)) {
+              publishSupportReadReceipt(received.ticketId);
+            }
+          }
+        }
+
+        // Always refresh sidebar list to update last message / unread badge
+        fetchSupportChats();
+        if (supportSubTabRef.current === 'deleted') {
+          fetchDeletedSupportChats();
+        }
+      });
+    };
+
+    client.onDisconnect = () => {
+      console.log('[STOMP] Disconnected (Staff)');
+      setSocketConnected(false);
+    };
+
+    client.onStompError = (frame) => {
+      console.error('[STOMP] Error (Staff)', frame);
+    };
 
     client.activate();
     stompClientRef.current = client;
@@ -237,20 +324,37 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           });
 
           const formatted = data.map(ticket => ({
+            ...ticket,
             id: ticket.ticket_id || ticket.ticketId,
             name: ticket.sender_name || `Ticket #${ticket.ticket_id || ticket.ticketId}`,
-            avatar: ticket.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ticket.sender_name || 'C')}&background=006b2c&color=fff`,
-            lastMessage: ticket.last_message || 'No messages yet',
-            time: ticket.last_message_time ? new Date(ticket.last_message_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+            avatar: ticket.sender_avatar || ticket.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ticket.sender_name || 'C')}&background=006b2c&color=fff`,
+            lastMessage: ticket.last_message || 'Chưa có tin nhắn',
+            time: (ticket.last_message_time || ticket.last_message_at) ? new Date(ticket.last_message_time || ticket.last_message_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
             unread: ticket.unread_count || 0
           }));
           setSupportChats(formatted);
-          if (formatted.length > 0 && !selectedChatId) {
-            setSelectedChatId(formatted[0].id);
-          }
         }
       })
       .catch(err => console.error('Error fetching support chats:', err));
+  };
+
+  const fetchDeletedSupportChats = () => {
+    messengerApi.getDeletedTickets()
+      .then(data => {
+        if (Array.isArray(data)) {
+          const formatted = data.map(ticket => ({
+            ...ticket,
+            id: ticket.ticket_id || ticket.ticketId,
+            name: ticket.sender_name || `Ticket #${ticket.ticket_id || ticket.ticketId}`,
+            avatar: ticket.sender_avatar || ticket.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ticket.sender_name || 'C')}&background=006b2c&color=fff`,
+            lastMessage: ticket.last_message || 'Chưa có tin nhắn',
+            time: (ticket.last_message_time || ticket.last_message_at) ? new Date(ticket.last_message_time || ticket.last_message_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+            unread: ticket.unread_count || 0
+          }));
+          setDeletedChats(formatted);
+        }
+      })
+      .catch(err => console.error('Error fetching deleted support chats:', err));
   };
 
   const fetchTrends = () => {
@@ -284,6 +388,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     messengerApi.getMessages(selectedChatId)
       .then(data => {
         setChatMessages(data || []);
+        publishSupportReadReceipt(selectedChatId);
         setIsLoading(false);
       })
       .catch(err => {
@@ -291,6 +396,11 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
         setIsLoading(false);
       });
   }, [selectedChatId]);
+
+  useEffect(() => {
+    if (!selectedChatId || !socketConnected) return;
+    publishSupportReadReceipt(selectedChatId);
+  }, [selectedChatId, socketConnected]);
 
   // Messages websocket subscription
   useEffect(() => {
@@ -303,11 +413,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
     subscriptionRef.current = stompClientRef.current.subscribe(`/topic/ticket.${selectedChatId}`, (message) => {
       const received = JSON.parse(message.body);
+      if (received.senderRole === "SYSTEM") {
+        fetchSupportChats();
+        if (supportSubTabRef.current === 'deleted') {
+          fetchDeletedSupportChats();
+        }
+        return;
+      }
       if (received.messageText) {
         setChatMessages(prev => {
           if (prev.some(m => m.id === received.id || m.messageId === received.messageId)) return prev;
           return [...prev, received];
         });
+        if (isCustomerMessage(received)) {
+          publishSupportReadReceipt(selectedChatId);
+        }
         fetchSupportChats();
       }
     });
@@ -379,6 +499,160 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     });
 
     setReplyText('');
+  };
+
+  const handleSelectSupportChat = (chat) => {
+    const isUnclaimed = !(chat.assigned_staff_id || chat.assignedStaffId);
+
+    if (supportSubTab === 'unclaimed' && isUnclaimed) {
+      setConfirmConfig({
+        title: 'Tiếp nhận khiếu nại',
+        message: `Anh có muốn tiếp nhận khiếu nại của ${chat.name || 'người dùng này'} không?`,
+        confirmText: 'Đồng ý',
+        cancelText: 'Không',
+        type: 'success',
+        onConfirm: () => {
+          messengerApi.claimTicket(chat.id, user?.id)
+            .then(() => {
+              setSupportChats(prev => prev.map(item =>
+                item.id === chat.id
+                  ? { ...item, assigned_staff_id: user?.id, assignedStaffId: user?.id }
+                  : item
+              ));
+              setSupportSubTab('claimed');
+              setSelectedChatId(chat.id);
+              setShowConfirmModal(false);
+              showToast('Đã tiếp nhận khiếu nại.', 'success');
+              fetchSupportChats();
+            })
+            .catch(err => {
+              console.error('Failed to claim support ticket', err);
+              showToast('Không thể tiếp nhận khiếu nại. Vui lòng thử lại.', 'error');
+              setShowConfirmModal(false);
+            });
+        }
+      });
+      setShowConfirmModal(true);
+      return;
+    }
+
+    setSelectedChatId(chat.id);
+  };
+
+  // Moderation: block user
+  const handleBlockUser = (days) => {
+    const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
+    if (!activeChat) return;
+
+    let confirmTitle = '';
+    let confirmMsg = '';
+    let confirmBtn = 'Xác nhận';
+    let confirmType = 'warning';
+
+    if (days === 0) {
+      confirmTitle = 'Xác nhận gỡ chặn';
+      confirmMsg = 'Anh có chắc muốn gỡ chặn người dùng này không?';
+      confirmBtn = 'Gỡ chặn';
+      confirmType = 'success';
+    } else if (days === -1) {
+      confirmTitle = 'Xác nhận chặn vĩnh viễn';
+      confirmMsg = 'Anh có chắc muốn chặn vĩnh viễn người dùng này khỏi chat hỗ trợ không?';
+      confirmBtn = 'Chặn vĩnh viễn';
+      confirmType = 'danger';
+    } else {
+      confirmTitle = `Xác nhận chặn ${days} ngày`;
+      confirmMsg = `Anh có chắc muốn chặn người dùng này trong ${days} ngày không?`;
+      confirmBtn = 'Chặn người dùng';
+      confirmType = 'warning';
+    }
+
+    setConfirmConfig({
+      title: confirmTitle,
+      message: confirmMsg,
+      confirmText: confirmBtn,
+      cancelText: 'Hủy',
+      type: confirmType,
+      onConfirm: () => {
+        messengerApi.blockUser(activeChat.id, days)
+          .then(() => {
+            showToast(days === 0 ? 'Đã gỡ chặn người dùng.' : 'Đã chặn người dùng.', days === 0 ? 'success' : 'error');
+            fetchSupportChats();
+            if (supportSubTab === 'deleted') {
+              fetchDeletedSupportChats();
+            }
+            setShowUserInfo(false);
+            setShowConfirmModal(false);
+          })
+          .catch(err => {
+            console.error('Failed to block user', err);
+            showToast('Failed to change block status.', 'error');
+            setShowConfirmModal(false);
+          });
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Moderation: delete conversation
+  const handleDeleteTicket = () => {
+    const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
+    if (!activeChat) return;
+
+    setConfirmConfig({
+      title: 'Xóa hội thoại',
+      message: 'Anh có chắc muốn xóa hội thoại hỗ trợ này không? Hội thoại sẽ được chuyển vào thùng rác.',
+      confirmText: 'Xóa',
+      cancelText: 'Hủy',
+      type: 'danger',
+      onConfirm: () => {
+        messengerApi.deleteTicket(activeChat.id)
+          .then(() => {
+            showToast('Đã xóa hội thoại.', 'success');
+            fetchSupportChats();
+            fetchDeletedSupportChats();
+            setSelectedChatId(null);
+            setShowUserInfo(false);
+            setShowConfirmModal(false);
+          })
+          .catch(err => {
+            console.error('Failed to delete ticket', err);
+            showToast('Failed to delete conversation.', 'error');
+            setShowConfirmModal(false);
+          });
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Moderation: restore conversation
+  const handleRestoreTicket = () => {
+    const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
+    if (!activeChat) return;
+
+    setConfirmConfig({
+      title: 'Khôi phục hội thoại',
+      message: 'Anh có chắc muốn khôi phục hội thoại hỗ trợ này không?',
+      confirmText: 'Khôi phục',
+      cancelText: 'Hủy',
+      type: 'success',
+      onConfirm: () => {
+        messengerApi.restoreTicket(activeChat.id)
+          .then(() => {
+            showToast('Đã khôi phục hội thoại.', 'success');
+            fetchSupportChats();
+            fetchDeletedSupportChats();
+            setSelectedChatId(null);
+            setShowUserInfo(false);
+            setShowConfirmModal(false);
+          })
+          .catch(err => {
+            console.error('Failed to restore ticket', err);
+            showToast('Failed to restore conversation.', 'error');
+            setShowConfirmModal(false);
+          });
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   // KYC Approval
@@ -473,8 +747,23 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     ? `${smoothCurvePath} L ${points[points.length - 1].x} ${chartHeight - paddingY} L ${points[0].x} ${chartHeight - paddingY} Z`
     : '';
 
+  // Computed chat lists for support sub-tabs
+  const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
+  const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
+  const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
+  const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date());
+  const displayedChats = (() => {
+    let base;
+    if (supportSubTab === 'deleted') base = deletedChats;
+    else if (supportSubTab === 'blocked') base = blockedChats;
+    else if (supportSubTab === 'claimed') base = claimedChats;
+    else base = unclaimedChats;
+    if (!chatSearch.trim()) return base;
+    return base.filter(c => c.name?.toLowerCase().includes(chatSearch.toLowerCase()) || c.lastMessage?.toLowerCase().includes(chatSearch.toLowerCase()));
+  })();
+
   // Active chat
-  const activeChat = supportChats.find(c => c.id === selectedChatId) || supportChats[0] || { messages: [] };
+  const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId) || null;
 
   // Doughnut calculations
   const totalCircumference = 314.16;
@@ -1245,40 +1534,99 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           )}
 
           {/* ---------------- TAB: SUPPORT (Messenger Chat) ---------------- */}
-          {activeTab === 'Support' && (
-            <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] flex flex-col">
-              <div className="mb-4">
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Support Center</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Live customer support and dispute consultation messenger.</p>
-              </div>
+          {/* ---------------- TAB: SUPPORT (Messenger Chat) ---------------- */}
+          {activeTab === 'Support' && (() => {
+            const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
+            const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
+            const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
+            const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
+            const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date());
+            const displayedChats = supportSubTab === 'claimed'
+              ? claimedChats.filter(matchesChatSearch)
+              : supportSubTab === 'unclaimed'
+                ? unclaimedChats.filter(matchesChatSearch)
+                : supportSubTab === 'blocked'
+                  ? blockedChats.filter(matchesChatSearch)
+                  : deletedChats.filter(matchesChatSearch);
 
-              {/* Chat Split-pane Container */}
-              <div className="flex-1 bg-white border border-[#e1e8fd] rounded-xl flex overflow-hidden shadow-sm">
-                
-                {/* Left sidebar: Contact list */}
-                <div className="w-[320px] border-r border-[#e1e8fd] flex flex-col bg-white">
-                  <div className="p-4 border-b border-[#e1e8fd]">
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
-                        <Search className="w-4 h-4" />
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="Search contact..."
-                        value={chatSearch}
-                        onChange={(e) => setChatSearch(e.target.value)}
-                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
-                      />
+            const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
+
+            return (
+              <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] flex flex-col">
+                <div className="mb-4">
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Trung tâm hỗ trợ</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Hỗ trợ khách hàng và tư vấn tranh chấp trực tiếp.</p>
+                </div>
+
+                {/* Chat Split-pane Container */}
+                <div className="flex-1 bg-white border border-[#e1e8fd] rounded-xl flex overflow-hidden shadow-sm">
+                  
+                  {/* Left sidebar: Contact list */}
+                  <div className="w-[320px] border-r border-[#e1e8fd] flex flex-col bg-white shrink-0">
+                    <div className="p-4 border-b border-[#e1e8fd] space-y-3">
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                          <Search className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Tìm liên hệ..."
+                          value={chatSearch}
+                          onChange={(e) => setChatSearch(e.target.value)}
+                          className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                        />
+                      </div>
+
+                      {/* Support Sub-tabs */}
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          onClick={() => { setSupportSubTab('unclaimed'); setSelectedChatId(null); }}
+                          className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border text-center ${
+                            supportSubTab === 'unclaimed'
+                              ? 'bg-[#006b2c] text-white border-[#006b2c] shadow-sm shadow-[#006b2c]/10'
+                              : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
+                          }`}
+                        >
+                          Chưa tiếp nhận ({unclaimedChats.length})
+                        </button>
+                        <button
+                          onClick={() => { setSupportSubTab('claimed'); setSelectedChatId(null); }}
+                          className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border text-center ${
+                            supportSubTab === 'claimed'
+                              ? 'bg-[#006b2c] text-white border-[#006b2c] shadow-sm shadow-[#006b2c]/10'
+                              : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
+                          }`}
+                        >
+                          Đã tiếp nhận ({claimedChats.length})
+                        </button>
+                        <button
+                          onClick={() => { setSupportSubTab('blocked'); setSelectedChatId(null); }}
+                          className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border text-center ${
+                            supportSubTab === 'blocked'
+                              ? 'bg-[#ba1a1a] text-white border-[#ba1a1a] shadow-sm'
+                              : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
+                          }`}
+                        >
+                          Đã chặn ({blockedChats.length})
+                        </button>
+                        <button
+                          onClick={() => { setSupportSubTab('deleted'); setSelectedChatId(null); fetchDeletedSupportChats(); }}
+                          className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border text-center ${
+                            supportSubTab === 'deleted'
+                              ? 'bg-slate-700 text-white border-slate-700 shadow-sm'
+                              : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
+                          }`}
+                        >
+                          Đã xóa
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex-1 overflow-y-auto divide-y divide-[#e9edff] scrollbar-hidden">
-                    {supportChats
-                      .filter(c => c.name.toLowerCase().includes(chatSearch.toLowerCase()))
-                      .map((chat) => (
+                    <div className="flex-1 overflow-y-auto divide-y divide-[#e9edff] scrollbar-hidden">
+                      {displayedChats.map((chat) => (
                         <button
                           key={chat.id}
-                          onClick={() => setSelectedChatId(chat.id)}
+                          onClick={() => handleSelectSupportChat(chat)}
                           className={`w-full text-left p-4 flex gap-3 transition-colors ${
                             selectedChatId === chat.id 
                               ? 'bg-[#f7fff2]/50 border-l-[3px] border-[#006b2c]' 
@@ -1300,81 +1648,221 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           )}
                         </button>
                       ))}
+                      {displayedChats.length === 0 && (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                          Không có hội thoại hỗ trợ nào.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Right side: Message thread */}
-                <div className="flex-1 flex flex-col bg-[#f9f9ff]">
-                  
-                  {/* Thread Header */}
-                  <div className="px-6 py-4 bg-white border-b border-[#e1e8fd] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={activeChat.avatar} alt={activeChat.name} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
-                      <div>
-                        <h4 className="text-body-sm font-bold text-[#141b2b]">{activeChat.name}</h4>
-                        <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                          <span>Online</span>
-                        </span>
+                  {/* Right side: Message thread or placeholder */}
+                  {!activeChat ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#f9f9ff]">
+                      <div className="w-16 h-16 bg-emerald-50 text-[#006b2c] rounded-2xl flex items-center justify-center mb-4 border border-[#bdcaba]">
+                        <MessageSquare className="w-7 h-7" />
                       </div>
+                      <h4 className="text-body-lg font-bold text-[#141b2b] mb-1">Chọn một hội thoại</h4>
+                      <p className="text-body-sm text-[#6e7b6c] max-w-xs leading-relaxed">
+                        Choose a chat from the contact list on the left to start live support messaging and user moderation.
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] rounded-lg transition-colors border border-[#e1e8fd] bg-white">
-                        <User className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-[#6e7b6c] hover:text-[#ba1a1a] rounded-lg transition-colors border border-[#e1e8fd] bg-white">
-                        <ShieldAlert className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Messages Bubble Container */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {Array.isArray(chatMessages) && chatMessages.map((m, idx) => {
-                      const isMe = m.senderRole === 'ADMIN' || m.senderRole === 'STAFF' || m.senderRole === 'MANAGER' || m.senderId === user?.id;
-                      const msgTime = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
-                      return (
-                        <div key={m.messageId || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                            <div className={`px-4 py-2.5 rounded-2xl text-body-sm leading-relaxed ${
-                              isMe 
-                                ? 'bg-[#006b2c] text-white rounded-tr-none' 
-                                : 'bg-white border border-[#e1e8fd] text-[#141b2b] rounded-tl-none shadow-sm'
-                            }`}>
-                              {m.messageText}
-                            </div>
-                            <span className="text-[10px] text-[#6e7b6c] font-bold mt-1 px-1">{msgTime}</span>
+                  ) : (
+                    <div className="flex-1 flex flex-col bg-[#f9f9ff] min-w-0">
+                      
+                      {/* Thread Header */}
+                      <div className="px-6 py-4 bg-white border-b border-[#e1e8fd] flex items-center justify-between shrink-0">
+                        <div 
+                          className="flex items-center gap-3 cursor-pointer hover:bg-[#f9f9ff] p-1.5 rounded-lg transition-all"
+                          onClick={() => setShowUserInfo(!showUserInfo)}
+                        >
+                          <img src={activeChat.avatar} alt={activeChat.name} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
+                          <div>
+                            <h4 className="text-body-sm font-bold text-[#141b2b]">{activeChat.name}</h4>
+                            <span className="text-[10px] font-bold text-[#6e7b6c] flex items-center gap-1">
+                              {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
+                                <span className="text-rose-600">Đã chặn</span>
+                              ) : (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                </>
+                              )}
+                            </span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setShowUserInfo(!showUserInfo)}
+                            className={`p-2 rounded-lg transition-colors border border-[#e1e8fd] hover:bg-[#f1f3ff] ${
+                              showUserInfo ? 'bg-[#f1f3ff] text-[#141b2b]' : 'bg-white text-[#6e7b6c]'
+                            }`}
+                          >
+                            <User className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setShowUserInfo(!showUserInfo)}
+                            className="p-2 text-[#6e7b6c] hover:text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors border border-[#e1e8fd] bg-white"
+                          >
+                            <ShieldAlert className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Message Input panel */}
-                  <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-[#e1e8fd] flex items-center gap-3">
-                    <button type="button" className="p-2 text-[#6e7b6c] hover:text-[#141b2b] rounded-lg hover:bg-[#f1f3ff] transition-all">
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <input
-                      type="text"
-                      placeholder="Type a message to reply..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      className="flex-1 bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] px-4 py-2.5 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
-                    />
-                    <button
-                      type="submit"
-                      className="p-2.5 bg-[#006b2c] text-white rounded-lg hover:bg-[#00873a] transition-all shadow-md"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </form>
+                      {/* Messages Bubble Container */}
+                      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        {Array.isArray(chatMessages) && chatMessages.map((m, idx) => {
+                          const isMe = isOwnSupportMessage(m);
+                          const msgTime = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+                          return (
+                            <div key={m.messageId || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                <div className={`px-4 py-2.5 rounded-2xl text-body-sm leading-relaxed ${
+                                  isMe 
+                                    ? 'bg-[#006b2c] text-white rounded-tr-none' 
+                                    : 'bg-white border border-[#e1e8fd] text-[#141b2b] rounded-tl-none shadow-sm'
+                                }`}>
+                                  {m.messageText}
+                                </div>
+                                <span className="text-[10px] text-[#6e7b6c] font-bold mt-1 px-1">{msgTime}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div ref={messagesEndRef} />
+                      </div>
+
+                      {/* Input panel / block banner */}
+                      {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
+                        <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
+                          <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
+                          <span className="text-xs font-bold text-slate-600">
+                            This user is currently suspended from chat.
+                          </span>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleSendChat} className="p-4 bg-white border-t border-[#e1e8fd] flex items-center gap-3 shrink-0">
+                          <button type="button" className="p-2 text-[#6e7b6c] hover:text-[#141b2b] rounded-lg hover:bg-[#f1f3ff] transition-all">
+                            <Paperclip className="w-5 h-5" />
+                          </button>
+                          <input
+                            type="text"
+                            placeholder="Nhập tin nhắn trả lời..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            className="flex-1 bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] px-4 py-2.5 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                          />
+                          <button
+                            type="submit"
+                            className="p-2.5 bg-[#006b2c] text-white rounded-lg hover:bg-[#00873a] transition-all shadow-md"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </form>
+                      )}
+
+                    </div>
+                  )}
+
+                  {/* User Info / Moderation Sidebar */}
+                  {showUserInfo && activeChat && (
+                    <div className="w-80 border-l border-[#e1e8fd] bg-white flex flex-col h-full shrink-0 overflow-y-auto animate-in slide-in-from-right duration-200">
+                      <div className="p-6 border-b border-[#e9edff] flex flex-col items-center">
+                        <div className="relative mb-4">
+                          <img
+                            src={activeChat.avatar}
+                            alt="User avatar"
+                            className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md"
+                          />
+                        </div>
+                        <h3 className="font-bold text-title-md text-[#141b2b] mb-1">{activeChat.name}</h3>
+                        <p className="text-xs text-[#6e7b6c] font-semibold mb-3">{activeChat.sender_email || activeChat.senderEmail || 'No email provided'}</p>
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                          activeChat.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                        }`}>
+                          {activeChat.sender_role || 'CLIENT'}
+                        </span>
+                      </div>
+
+                      <div className="p-6 flex flex-col gap-6">
+                        {/* Account Details */}
+                        <div>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Account Information</h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Status</span>
+                              {(() => {
+                                const status = activeChat.sender_status;
+                                if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Locked</span>;
+                                if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Banned</span>;
+                                return <span className="text-xs font-bold text-emerald-600">Active</span>;
+                              })()}
+                            </div>
+                            <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Member Since</span>
+                              <span className="text-xs font-bold text-[#141b2b]">
+                                {activeChat.sender_created_at ? new Date(activeChat.sender_created_at).toLocaleDateString('vi-VN') : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Moderation Actions */}
+                        <div>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Moderation Actions</h4>
+                          
+                          {/* Block Status / Options */}
+                          <div className="flex flex-col gap-2 mb-4">
+                            {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
+                              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                <p className="text-xs font-semibold text-amber-800 mb-2">
+                                  Suspended until: <br />
+                                  {new Date(activeChat.blocked_until).toLocaleString('vi-VN')}
+                                </p>
+                                <button
+                                  onClick={() => handleBlockUser(0)}
+                                  className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
+                                >
+                                  Unblock Now
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="bg-[#f9f9ff] border border-[#e1e8fd] rounded-xl p-3">
+                                <p className="text-xs font-semibold text-[#3e4a3d] mb-2">Suspend User Chat</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button onClick={() => handleBlockUser(1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 Day</button>
+                                  <button onClick={() => handleBlockUser(3)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-[#bdcaba] text-slate-700 rounded-lg text-xs font-bold transition-all">3 Days</button>
+                                  <button onClick={() => handleBlockUser(7)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 Days</button>
+                                  <button onClick={() => handleBlockUser(-1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Permanent</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Delete / Restore support ticket */}
+                          {supportSubTab === 'deleted' ? (
+                            <button
+                              onClick={handleRestoreTicket}
+                              className="w-full py-2.5 bg-emerald-50 hover:bg-[#f7fff2] text-[#006b2c] border border-[#bdcaba] rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                            >
+                              Khôi phục hội thoại
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleDeleteTicket}
+                              className="w-full py-2.5 bg-rose-50 hover:bg-[#ffdad6] text-[#ba1a1a] border border-[#ffdad6] rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                            >
+                              Xóa hội thoại
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
-
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ---------------- TAB: MODERATION ---------------- */}
           {activeTab === 'Moderation' && (
@@ -1773,6 +2261,37 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm rounded-lg transition-all"
               >
                 Close Drawer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- CONFIRMATION MODAL ---------------- */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl border border-[#e1e8fd] text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className={`mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${
+              confirmConfig.type === 'danger' ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-[#f7fff2] text-[#006b2c]'
+            }`}>
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-title-md font-extrabold text-[#141b2b] mb-2">{confirmConfig.title}</h3>
+            <p className="text-body-sm text-[#3e4a3d] mb-6">{confirmConfig.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
+              >
+                {confirmConfig.cancelText || 'Hủy'}
+              </button>
+              <button
+                onClick={confirmConfig.onConfirm}
+                className={`flex-1 py-2 rounded-lg font-bold text-body-sm shadow transition-all text-white ${
+                  confirmConfig.type === 'danger' ? 'bg-[#ba1a1a] hover:bg-[#93000a]' : 'bg-[#006b2c] hover:bg-[#00873a]'
+                }`}
+              >
+                {confirmConfig.confirmText || 'Xác nhận'}
               </button>
             </div>
           </div>

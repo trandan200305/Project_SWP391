@@ -52,21 +52,23 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     const client = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
       reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe(topic, (message) => {
-          try {
-            const event = JSON.parse(message.body);
-            if (event.status === 'REVOKED') {
-              setRevoked(true);
-              setRevokedMsg(event.message || 'Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.');
-            }
-          } catch (_) {}
-        });
-      },
-      onStompError: (frame) => {
-        console.warn('[STOMP] error:', frame);
-      },
     });
+
+    client.onConnect = () => {
+      client.subscribe(topic, (message) => {
+        try {
+          const event = JSON.parse(message.body);
+          if (event.status === 'REVOKED') {
+            setRevoked(true);
+            setRevokedMsg(event.message || 'Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.');
+          }
+        } catch (_) {}
+      });
+    };
+
+    client.onStompError = (frame) => {
+      console.warn('[STOMP] error:', frame);
+    };
 
     client.activate();
 

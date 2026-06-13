@@ -75,14 +75,16 @@ public class SupportChatService {
     }
 
     public List<ChatMessageDto> getChatHistory(Integer ticketId) {
-        String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.message_text, tm.is_read, tm.sent_at, " +
+        String sql = "SELECT tm.message_id, tm.ticket_id, tm.sender_freelancer_id, tm.sender_employer_id, tm.sender_admin_id, tm.sender_staff_id, tm.message_text, tm.is_read, tm.sent_at, " +
                      "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, " +
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, " +
-                     "a.display_name as admin_name, a.avatar_url as admin_avatar " +
+                     "a.display_name as admin_name, a.avatar_url as admin_avatar, " +
+                     "s.display_name as staff_name, s.avatar_url as staff_avatar " +
                      "FROM ticket_messages tm " +
                      "LEFT JOIN freelancers f ON tm.sender_freelancer_id = f.freelancer_id " +
                      "LEFT JOIN employers e ON tm.sender_employer_id = e.employer_id " +
                      "LEFT JOIN admins a ON tm.sender_admin_id = a.admin_id " +
+                     "LEFT JOIN staff s ON tm.sender_staff_id = s.staff_id " +
                      "WHERE tm.ticket_id = ? " +
                      "ORDER BY tm.sent_at ASC";
 
@@ -125,6 +127,11 @@ public class SupportChatService {
                 msg.setSenderRole("ADMIN");
                 msg.setSenderName((String) row.get("admin_name"));
                 msg.setSenderAvatar((String) row.get("admin_avatar"));
+            } else if (row.get("sender_staff_id") != null) {
+                msg.setSenderId((Integer) row.get("sender_staff_id"));
+                msg.setSenderRole("STAFF");
+                msg.setSenderName((String) row.get("staff_name"));
+                msg.setSenderAvatar((String) row.get("staff_avatar"));
             }
 
             
@@ -141,18 +148,20 @@ public class SupportChatService {
     }
 
     public List<Map<String, Object>> getAllOpenTickets() {
-        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, " +
+        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, t.assigned_staff_id, " +
                      "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, f.status as freelancer_user_status, f.last_login_at as freelancer_last_login, " +
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, e.status as employer_user_status, e.last_login_at as employer_last_login, " +
+                     "s.display_name as staff_name, s.avatar_url as staff_avatar, " +
                      "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
                      "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
-                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND is_read = 0) as unread_count, " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND sender_staff_id IS NULL AND is_read = 0) as unread_count, " +
                      "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id) as total_messages, " +
-                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL) as user_message_count, " +
-                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND sender_admin_id IS NULL AND sender_staff_id IS NULL) as user_message_count, " +
+                     "(CASE WHEN EXISTS (SELECT 1 FROM ticket_messages WHERE ticket_id = t.ticket_id AND (sender_admin_id IS NOT NULL OR sender_staff_id IS NOT NULL) AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%') THEN 1 ELSE 0 END) as has_admin_replied " +
                      "FROM support_tickets t " +
                      "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
                      "LEFT JOIN employers e ON t.employer_id = e.employer_id " +
+                     "LEFT JOIN staff s ON t.assigned_staff_id = s.staff_id " +
                      "WHERE t.status = 'OPEN' AND ISNULL(t.deleted_by_admin, 0) = 0 " +
                      "ORDER BY t.updated_at DESC";
 
@@ -191,6 +200,10 @@ public class SupportChatService {
                 ticket.put("sender_status", row.get("employer_user_status"));
                 ticket.put("sender_last_login", row.get("employer_last_login") != null ? row.get("employer_last_login").toString() : null);
             }
+
+            ticket.put("assigned_staff_id", row.get("assigned_staff_id"));
+            ticket.put("staff_name", row.get("staff_name"));
+            ticket.put("staff_avatar", row.get("staff_avatar"));
 
             Object hasReplied = row.get("has_admin_replied");
             ticket.put("has_admin_replied", hasReplied != null && ((Number) hasReplied).intValue() == 1);
@@ -280,19 +293,20 @@ public class SupportChatService {
         Integer ticketId = messageDto.getTicketId();
         if (ticketId == null || ticketId == 0) {
             
-            if ("ADMIN".equals(messageDto.getSenderRole())) {
-                throw new IllegalStateException("Admin cannot send messages without a valid ticket ID");
+            if ("ADMIN".equals(messageDto.getSenderRole()) || "STAFF".equals(messageDto.getSenderRole())) {
+                throw new IllegalStateException("Agent cannot send messages without a valid ticket ID");
             }
             ticketId = getOrCreateTicket(messageDto.getSenderId(), messageDto.getSenderRole());
             messageDto.setTicketId(ticketId);
         }
 
-        String sql = "INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, GETDATE())";
+        String sql = "INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, sender_staff_id, message_text, is_read, sent_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())";
 
         Integer freelancerId = null;
         Integer employerId = null;
         Integer adminId = null;
+        Integer staffId = null;
 
         String role = messageDto.getSenderRole().toUpperCase();
         if ("FREELANCER".equals(role)) {
@@ -301,15 +315,17 @@ public class SupportChatService {
             employerId = messageDto.getSenderId();
         } else if ("ADMIN".equals(role)) {
             adminId = messageDto.getSenderId();
+        } else if ("STAFF".equals(role)) {
+            staffId = messageDto.getSenderId();
         }
 
         int isReadValue = 0;
-        jdbcTemplate.update(sql, ticketId, freelancerId, employerId, adminId, messageDto.getMessageText(), isReadValue);
+        jdbcTemplate.update(sql, ticketId, freelancerId, employerId, adminId, staffId, messageDto.getMessageText(), isReadValue);
         Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
         messageDto.setMessageId(messageId);
         messageDto.setSentAt(LocalDateTime.now());
         messageDto.setIsRead(false);
-
+ 
         
         if (messageDto.getAttachments() != null) {
             for (Map<String, Object> att : messageDto.getAttachments()) {
@@ -336,6 +352,12 @@ public class SupportChatService {
                 }
             } else if ("ADMIN".equals(role)) {
                 List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM admins WHERE admin_id = ?", adminId);
+                if (!res.isEmpty()) {
+                    messageDto.setSenderName((String) res.get(0).get("display_name"));
+                    messageDto.setSenderAvatar((String) res.get(0).get("avatar_url"));
+                }
+            } else if ("STAFF".equals(role)) {
+                List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM staff WHERE staff_id = ?", staffId);
                 if (!res.isEmpty()) {
                     messageDto.setSenderName((String) res.get(0).get("display_name"));
                     messageDto.setSenderAvatar((String) res.get(0).get("avatar_url"));
@@ -386,7 +408,7 @@ public class SupportChatService {
     }
 
     public boolean hasAdminReplied(Integer ticketId) {
-        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%'";
+        String sql = "SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = ? AND (sender_admin_id IS NOT NULL OR sender_staff_id IS NOT NULL) AND message_text NOT LIKE N'👋 Xin chào! Cảm ơn bạn%'";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, ticketId);
         return count != null && count > 0;
     }
@@ -410,12 +432,37 @@ public class SupportChatService {
         autoReply.setIsRead(false);
         return autoReply;
     }
+
     @Transactional
     public void markMessagesAsRead(Integer ticketId, String readerRole) {
-        if ("ADMIN".equalsIgnoreCase(readerRole)) {
-            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL AND is_read = 0", ticketId);
+        if ("ADMIN".equalsIgnoreCase(readerRole) || "STAFF".equalsIgnoreCase(readerRole) || "MANAGER".equalsIgnoreCase(readerRole)) {
+            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NULL AND sender_staff_id IS NULL AND is_read = 0", ticketId);
         } else {
-            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND sender_admin_id IS NOT NULL AND is_read = 0", ticketId);
+            jdbcTemplate.update("UPDATE ticket_messages SET is_read = 1 WHERE ticket_id = ? AND (sender_admin_id IS NOT NULL OR sender_staff_id IS NOT NULL) AND is_read = 0", ticketId);
         }
+    }
+
+    @Transactional
+    public void claimTicket(Integer ticketId, Integer staffId) {
+        jdbcTemplate.update("UPDATE support_tickets SET assigned_staff_id = ? WHERE ticket_id = ?", staffId, ticketId);
+        
+        // Broadcast claim update to support agents and user
+        ChatMessageDto sysMsg = new ChatMessageDto();
+        sysMsg.setTicketId(ticketId);
+        sysMsg.setSenderRole("SYSTEM");
+        sysMsg.setMessageText("CLAIM_UPDATE:" + staffId);
+        sysMsg.setSentAt(LocalDateTime.now());
+        
+        List<Map<String, Object>> res = jdbcTemplate.queryForList("SELECT display_name, avatar_url FROM staff WHERE staff_id = ?", staffId);
+        if (!res.isEmpty()) {
+            sysMsg.setSenderName((String) res.get(0).get("display_name"));
+            sysMsg.setSenderAvatar((String) res.get(0).get("avatar_url"));
+        } else {
+            sysMsg.setSenderName("Staff Member");
+            sysMsg.setSenderAvatar("");
+        }
+        
+        messagingTemplate.convertAndSend("/topic/ticket." + ticketId, sysMsg);
+        messagingTemplate.convertAndSend("/topic/admin", sysMsg);
     }
 }

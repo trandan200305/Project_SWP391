@@ -103,4 +103,12 @@ public class ChatRestController {
         
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/tickets/{ticketId}/claim")
+    public ResponseEntity<Void> claimTicket(
+            @PathVariable("ticketId") Integer ticketId,
+            @RequestParam("staffId") Integer staffId) {
+        chatService.claimTicket(ticketId, staffId);
+        return ResponseEntity.ok().build();
+    }
 }
