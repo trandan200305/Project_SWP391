@@ -3690,20 +3690,52 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
           </div>
           <div className="p-6 space-y-5">
             <p className="text-body-sm text-slate-500">
-              Xác nhận thay đổi bảo mật cho tài khoản:<br/>
-              <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email}).
+              {activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF' ? (
+                <>
+                  Xác nhận cập nhật trạng thái hoạt động cho nhân sự:<br/>
+                  <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email} - <span className="text-indigo-600 font-bold">{activeUserForAction?.role}</span>).
+                </>
+              ) : (
+                <>
+                  Xác nhận thay đổi bảo mật cho tài khoản:<br/>
+                  <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email}).
+                </>
+              )}
             </p>
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">CHỌN LÝ DO BẢO MẬT (BẮT BUỘC)</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">
+                {activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF' ? 'CHỌN LÝ DO HÀNH CHÍNH (BẮT BUỘC)' : 'CHỌN LÝ DO BẢO MẬT (BẮT BUỘC)'}
+              </label>
               <div className="flex flex-wrap gap-2">
-                {[
-                  "Gian lận thanh toán",
-                  "Spam tin nhắn / dự án",
-                  "Đăng nội dung phản cảm",
-                  "Lừa đảo chiếm đoạt tài sản",
-                  "Vi phạm điều khoản dịch vụ",
-                  "Khác"
-                ].map(reason => (
+                {(() => {
+                  if (activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF') {
+                    if (actionType === 'lock') {
+                      return [
+                        "Tạm ngưng công tác / Nghỉ phép dài hạn",
+                        "Điều chuyển công tác / Thay đổi nhiệm vụ",
+                        "Yêu cầu bảo mật / Kiểm tra tài khoản",
+                        "Tạm khóa quyền truy cập",
+                        "Khác"
+                      ];
+                    } else {
+                      return [
+                        "Nghỉ việc / Chấm dứt hợp đồng lao động",
+                        "Thu hồi vĩnh viễn quyền truy cập",
+                        "Thay đổi nhân sự phòng ban",
+                        "Khác"
+                      ];
+                    }
+                  } else {
+                    return [
+                      "Gian lận thanh toán",
+                      "Spam tin nhắn / dự án",
+                      "Đăng nội dung phản cảm",
+                      "Lừa đảo chiếm đoạt tài sản",
+                      "Vi phạm điều khoản dịch vụ",
+                      "Khác"
+                    ];
+                  }
+                })().map(reason => (
                   <button
                     key={reason}
                     onClick={() => {
