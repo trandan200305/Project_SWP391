@@ -5,7 +5,7 @@ import {
   Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield
+  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
@@ -1387,21 +1387,36 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             <div className="flex items-center gap-3">
               <div className="profile-menu-wrapper">
                 <div 
-                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-full border border-[#bdcaba]/60 bg-slate-50/40 hover:bg-slate-50 hover:border-emerald-600/40 hover:shadow-sm transition-all duration-300 cursor-pointer group"
                 >
-                  <div className="flex flex-col text-right">
-                    <span className="text-body-sm font-extrabold text-[#141b2b] leading-tight">
-                      {user?.displayName || user?.email || "ManagerStaff"}
+                  <div className="flex flex-col text-right sm:block hidden">
+                    <span className="text-[13px] font-bold text-[#141b2b] leading-tight truncate max-w-[150px] block" title={user?.displayName || user?.email}>
+                      {user?.displayName || user?.email || "Manager"}
                     </span>
-                    <span className="text-[10px] font-bold text-[#6e7b6c]">
-                      Ops Dept • General
-                    </span>
+                    <div className="flex justify-end mt-0.5">
+                      <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100/60 leading-none">
+                        {user?.role || "MANAGER"}
+                      </span>
+                    </div>
                   </div>
-                  <img
-                    src={user?.avatarUrl || user?.avatar || "https://ui-avatars.com/api/?name=ManagerStaff&background=006b2c&color=fff"}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full border border-[#bdcaba] object-cover"
-                  />
+                  
+                  <div className="relative">
+                    {user?.avatarUrl || user?.avatar ? (
+                      <img
+                        src={user?.avatarUrl || user?.avatar}
+                        alt="Avatar"
+                        className="w-9 h-9 rounded-full border-2 border-emerald-500/85 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-sm border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'M'}
+                      </div>
+                    )}
+                    {/* Active online pulse dot */}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                  </div>
+                  
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-300 group-hover:rotate-180" />
                 </div>
 
                 <div className="profile-menu-dropdown">

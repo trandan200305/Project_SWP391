@@ -6,7 +6,7 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield
+  User, Edit3, MessageSquare, Shield, ChevronDown
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1033,19 +1033,36 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             {/* Admin Profile Widget */}
             <div className="profile-menu-wrapper pl-4 border-l border-slate-200">
               <div 
-                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full border border-slate-200/80 bg-slate-50/40 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all duration-300 cursor-pointer group"
               >
                 <div className="text-right hidden sm:block">
-                  <p className="text-[13px] font-bold text-slate-800 leading-tight">{user?.displayName || user?.email}</p>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mt-0.5">{user?.role}</p>
-                </div>
-                {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-slate-200" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-sm border border-blue-200">
-                    {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+                  <p className="text-[13px] font-bold text-slate-850 leading-tight truncate max-w-[150px]" title={user?.displayName || user?.email}>
+                    {user?.displayName || user?.email}
+                  </p>
+                  <div className="flex justify-end mt-0.5">
+                    <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100/60 leading-none">
+                      {user?.role || "ADMIN"}
+                    </span>
                   </div>
-                )}
+                </div>
+                
+                <div className="relative">
+                  {user?.avatarUrl ? (
+                    <img 
+                      src={user.avatarUrl} 
+                      alt="Avatar" 
+                      className="w-9 h-9 rounded-full object-cover border-2 border-blue-500/85 shadow-sm transition-transform duration-300 group-hover:scale-105" 
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-sm border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+                      {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+                    </div>
+                  )}
+                  {/* Active online pulse dot */}
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                </div>
+                
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-300 group-hover:rotate-180" />
               </div>
 
               <div className="profile-menu-dropdown">
