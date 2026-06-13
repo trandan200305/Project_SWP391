@@ -262,7 +262,7 @@ public class AuthService {
                     return response;
                 }
                 if (!isOAuthLogin) {
-                    if (dbManager.getPasswordHash() == null || !dbManager.getPasswordHash().equals(passwordHash)) {
+                    if (dbManager.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbManager.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
                         return response;
@@ -310,7 +310,7 @@ public class AuthService {
                     return response;
                 }
                 if (!isOAuthLogin) {
-                    if (dbStaff.getPasswordHash() == null || !dbStaff.getPasswordHash().equals(passwordHash)) {
+                    if (dbStaff.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbStaff.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
                         return response;
