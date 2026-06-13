@@ -1089,7 +1089,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           border: 1px solid #334155; /* Slate border */
           border-radius: 16px;
           position: absolute;
-          width: 240px;
+          width: 280px;
           right: 0;
           top: calc(100% + 6px);
           overflow: hidden;
@@ -1149,6 +1149,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         .profile-menu-btn {
           color: #cbd5e1 !important;
           background-color: transparent !important;
+          white-space: nowrap !important;
         }
 
         .profile-menu-btn:hover {
@@ -1469,7 +1470,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <div className="profile-menu-item">
                     <button
                       onClick={() => {
-                        if (onNavigate) onNavigate("Dashboard");
+                        setActiveTab("Dashboard");
+                        if (onNavigate) onNavigate("admin");
                       }}
                       className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold rounded-xl transition-all mt-1 ${
                         activeTab === 'Dashboard'
