@@ -444,7 +444,7 @@ export default function Navbar({
                       <MessageCircle className="w-4 h-4" /> Tin nhắn
                     </button>
 
-                    {user.role === "ADMIN" && (
+                    {(user.role === "ADMIN" || user.role === "STAFF" || user.role === "MANAGER") && (
                       <button
                         onClick={() => {
                           setShowProfileMenu(false);
@@ -452,7 +452,7 @@ export default function Navbar({
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
                       >
-                        <Shield className="w-4 h-4" /> Dashboard Admin
+                        <Shield className="w-4 h-4" /> {user.role === "ADMIN" ? "Dashboard Admin" : user.role === "MANAGER" ? "Dashboard Manager" : "Dashboard Staff"}
                       </button>
                     )}
 
@@ -574,7 +574,7 @@ export default function Navbar({
             </a>
 
             {}
-            {user && user.role === "ADMIN" && (
+            {user && (user.role === "ADMIN" || user.role === "STAFF" || user.role === "MANAGER") && (
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -582,7 +582,7 @@ export default function Navbar({
                 }}
                 className="w-full text-center bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <Shield className="w-4 h-4" /> Admin Control Panel
+                <Shield className="w-4 h-4" /> {user.role === "ADMIN" ? "Admin Control Panel" : user.role === "MANAGER" ? "Manager Control Panel" : "Staff Control Panel"}
               </button>
             )}
 

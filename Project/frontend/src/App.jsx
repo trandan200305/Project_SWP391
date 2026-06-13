@@ -191,7 +191,7 @@ export default function App() {
       setCurrentPage('login');
       return;
     }
-    if (page === 'admin' && user?.role !== 'ADMIN') {
+    if (page === 'admin' && !['ADMIN', 'STAFF', 'MANAGER'].includes(user?.role)) {
       setCurrentPage('coming_soon');
       return;
     }
