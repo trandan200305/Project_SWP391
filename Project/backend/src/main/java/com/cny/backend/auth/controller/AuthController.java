@@ -203,7 +203,7 @@ public class AuthController {
                 finalPayload.put("name", fullName != null ? fullName : email.split("@")[0]);
                 finalPayload.put("fullName", fullName != null ? fullName : email.split("@")[0]);
                 finalPayload.put("displayName",
-                        displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                displayName != null ? displayName : (fullName != null ? fullName : email.split("@")[0]));
                 finalPayload.put("phone", phone);
                 finalPayload.put("password", password);
                 finalPayload.put("requestedRole", role);
@@ -294,6 +294,7 @@ public class AuthController {
                 + "Đội ngũ LancerPro";
 
         message.setText(emailContent);
+        // Gửi email
         mailSender.send(message);
 
         response.put("success", true);
@@ -374,7 +375,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        boolean success = authService.setMessengerPin(userId, role, pin);
+        boolean success = authService.setMessengerPin(userId, role, pin); // db update
         if (success) {
             tempPinUsers.remove(role.toUpperCase() + ":" + userId);
         }

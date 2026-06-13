@@ -9,7 +9,7 @@ export const authApi = {
   verifyCode: (data) => api.post(ENDPOINTS.AUTH.VERIFY_CODE, data),
   setPin: (pinData) => api.post(ENDPOINTS.AUTH.SET_PIN, pinData),
   verifyPin: (pinData) => api.post(ENDPOINTS.AUTH.VERIFY_PIN, pinData),
-  forgotPin: (email) => api.post(ENDPOINTS.AUTH.FORGOT_PIN, { email }),
+  forgotPin: (pinData) => api.post(ENDPOINTS.AUTH.FORGOT_PIN, pinData),
   verifyInvitation: (token) => api.get(`${ENDPOINTS.AUTH.VERIFY_INVITATION}?token=${token}`),
   sendInvitationCode: (token) => api.post(`${ENDPOINTS.AUTH.SEND_INVITATION_CODE}?token=${token}`),
   acceptInvitation: (onboardData) => api.post(ENDPOINTS.AUTH.ACCEPT_INVITATION, onboardData),

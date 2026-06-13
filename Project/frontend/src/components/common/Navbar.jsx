@@ -14,6 +14,7 @@ import {
   Settings,
   CheckCircle,
 } from "lucide-react";
+import { authApi } from "../../features/auth/api/authApi.js";
 
 export default function Navbar({
   onNavigate,
@@ -50,22 +51,17 @@ export default function Navbar({
     setIsResettingTempPin(false);
   };
 
-  // 2. REQUEST TEMPORARY MESSENGER PIN VIA EMAIL
+  // 2. RESET PIN gmail
   const handleForgotPin = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     setPinError("");
     setResetPinSuccess("");
     try {
-      const response = await fetch(
-        "http://localhost:8080/api/auth/forgot-messenger-pin",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id, role: user.role }),
-        },
-      );
-      const data = await response.json();
+      const data = await authApi.forgotPin({
+        userId: user.id,
+        role: user.role,
+      });
       if (data.success) {
         setResetPinSuccess(
           data.message || "Mã PIN mới đã được gửi về email của bạn.",
@@ -75,7 +71,7 @@ export default function Navbar({
         setPinError(data.message || "Không thể gửi yêu cầu khôi phục.");
       }
     } catch (e) {
-      setPinError("Lỗi kết nối máy chủ.");
+      setPinError(e.message || "Lỗi kết nối máy chủ.");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,18 +91,13 @@ export default function Navbar({
       setPinError("");
       setResetPinSuccess("");
       try {
-        const response = await fetch(
-          "http://localhost:8080/api/auth/verify-messenger-pin",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.id, role: user.role, pin }),
-          },
-        );
-        // nhan kết quả từ server
-        const data = await response.json();
+        const data = await authApi.verifyPin({
+          userId: user.id,
+          role: user.role,
+          pin,
+        });
         if (data.success) {
-          // tam thoi
+          // tam thoi qua mail
           if (data.isTemporary) {
             setIsResettingTempPin(true);
             setPinValues(["", "", "", ""]);
@@ -114,10 +105,10 @@ export default function Navbar({
             setIsConfirmingPin(false);
             setPinError("");
           }
-          // đúng
+          //pin chính
           else {
             setShowPinModal(false);
-            if (onNavigate) onNavigate("messenger");
+            if (onNavigate) onNavigate("messenger"); //chuyển trang
           }
         } else {
           setPinError(data.message || "Mã PIN không đúng.");
@@ -126,7 +117,7 @@ export default function Navbar({
           document.getElementById("pin-0")?.focus();
         }
       } catch (e) {
-        setPinError("Lỗi kết nối máy chủ.");
+        setPinError(e.message || "Lỗi kết nối máy chủ.");
       } finally {
         setIsSubmitting(false);
       }
@@ -158,19 +149,11 @@ export default function Navbar({
       setIsSubmitting(true);
       setPinError("");
       try {
-        const response = await fetch(
-          "http://localhost:8080/api/auth/set-messenger-pin",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user.id,
-              role: user.role,
-              pin: confirmPin,
-            }),
-          },
-        );
-        const data = await response.json();
+        const data = await authApi.setPin({
+          userId: user.id,
+          role: user.role,
+          pin: confirmPin,
+        });
         if (data.success) {
           if (user) user.hasMessengerPin = true;
           setShowPinModal(false);
@@ -183,7 +166,7 @@ export default function Navbar({
           setPinError(data.message || "Có lỗi xảy ra.");
         }
       } catch (e) {
-        setPinError("Lỗi kết nối máy chủ.");
+        setPinError(e.message || "Lỗi kết nối máy chủ.");
       } finally {
         setIsSubmitting(false);
       }
@@ -354,7 +337,12 @@ export default function Navbar({
                   <div className="flex flex-col">
                     <span className="text-[13px] font-bold text-primary leading-tight flex items-center gap-1">
                       {user.name}
-                      {user.isVerified && <CheckCircle className="w-3.5 h-3.5 text-blue-500" title="Tài khoản đã xác minh KYC" />}
+                      {user.isVerified && (
+                        <CheckCircle
+                          className="w-3.5 h-3.5 text-blue-500"
+                          title="Tài khoản đã xác minh KYC"
+                        />
+                      )}
                     </span>
                     <span className="text-[10px] font-bold text-secondary">
                       {user.role}
@@ -401,7 +389,8 @@ export default function Navbar({
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                         >
-                          <Building2 className="w-4 h-4" /> Thông tin doanh nghiệp
+                          <Building2 className="w-4 h-4" /> Thông tin doanh
+                          nghiệp
                         </button>
                       </>
                     )}
@@ -447,7 +436,6 @@ export default function Navbar({
                     >
                       <Settings className="w-4 h-4" /> Cài đặt chung
                     </button>
-
 
                     <button
                       onClick={handleMessengerClick}
@@ -529,7 +517,9 @@ export default function Navbar({
                 <div className="flex flex-col">
                   <span className="text-base font-bold text-primary flex items-center gap-1">
                     {user.name}
-                    {user.isVerified && <CheckCircle className="w-4 h-4 text-blue-500" />}
+                    {user.isVerified && (
+                      <CheckCircle className="w-4 h-4 text-blue-500" />
+                    )}
                   </span>
                   <span className="text-xs font-bold text-secondary text-left">
                     {user.role}
@@ -621,20 +611,29 @@ export default function Navbar({
 
             {user && (
               <>
-                <button 
-                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('profile'); }}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("profile");
+                  }}
                   className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <User className="w-4 h-4" /> Hồ sơ cá nhân
                 </button>
-                <button 
-                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('edit_profile'); }}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("edit_profile");
+                  }}
                   className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
                 </button>
-                <button 
-                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('preferences'); }}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("preferences");
+                  }}
                   className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Settings className="w-4 h-4" /> Cài đặt chung

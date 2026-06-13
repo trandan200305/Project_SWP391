@@ -6,10 +6,10 @@
 
 - File chính xử lý mã PIN Messenger.
 - Mở modal nhập PIN khi user muốn vào Messenger.
-- Nếu user đã có PIN thì gọi API kiểm tra PIN.
-- Nếu user chưa có PIN thì cho tạo PIN mới.
-- Nếu quên PIN thì gọi API gửi PIN tạm thời về email.
-- API được gọi trực tiếp bằng `fetch`.
+- Nếu user đã có PIN thì gọi API kiểm tra PIN qua `authApi.verifyPin(...)`.
+- Nếu user chưa có PIN thì cho tạo PIN mới qua `authApi.setPin(...)`.
+- Nếu quên PIN thì gọi API gửi PIN tạm thời về email qua `authApi.forgotPin(...)`.
+- **Đã tối ưu hóa:** Toàn bộ luồng kết nối API đã được chuyển sang dùng `authApi` và `apiClient`, không còn dùng `fetch` trực tiếp với URL cứng.
 
 ### `frontend/src/features/messenger/pages/MessengerPage.jsx`
 
@@ -25,11 +25,11 @@
 
 ### `frontend/src/features/auth/api/authApi.js`
 
-- Có các hàm API liên quan PIN:
-  - `setPin(...)`
-  - `verifyPin(...)`
-  - `forgotPin(...)`
-- Lưu ý: hiện tại `Navbar.jsx` đang gọi `fetch` trực tiếp, chưa dùng nhiều các hàm này.
+- Chứa các hàm API liên quan PIN gọi qua `apiClient`:
+  - `setPin(pinData)`: Gửi yêu cầu thiết lập mã PIN mới.
+  - `verifyPin(pinData)`: Gửi yêu cầu xác thực mã PIN người dùng nhập.
+  - `forgotPin(pinData)`: Gửi yêu cầu khôi phục mã PIN (nhận mã tạm thời qua email).
+- **Đã cập nhật:** Sửa hàm `forgotPin` nhận đối tượng `pinData` (`{ userId, role }`) để tương thích hoàn toàn với Backend (thay vì truyền chỉ `{ email }` như phiên bản cũ).
 
 ## Backend
 
@@ -96,7 +96,8 @@ Các repository này được `AuthService` dùng để tìm user theo `userId`,
 ```txt
 Navbar.jsx
 -> nhập PIN
--> POST /api/auth/verify-messenger-pin
+-> authApi.verifyPin()
+-> POST /api/auth/verify-messenger-pin (apiClient.js)
 -> AuthController.verifyMessengerPin()
 -> AuthService.verifyMessengerPin()
 -> Repository tìm user
@@ -109,8 +110,9 @@ Navbar.jsx
 ```txt
 Navbar.jsx
 -> nhập PIN mới lần 1
--> nhập lại PIN lần 2 để xác nhận
--> POST /api/auth/set-messenger-pin
+-> nhập lại PIN lần 2 để xác nhận (phải khớp lần 1)
+-> authApi.setPin()
+-> POST /api/auth/set-messenger-pin (apiClient.js)
 -> AuthController.setMessengerPin()
 -> AuthService.setMessengerPin()
 -> lưu vào cột messenger_pin
@@ -122,7 +124,8 @@ Navbar.jsx
 ```txt
 Navbar.jsx
 -> bấm quên PIN
--> POST /api/auth/forgot-messenger-pin
+-> authApi.forgotPin()
+-> POST /api/auth/forgot-messenger-pin (apiClient.js)
 -> AuthController.forgotMessengerPin()
 -> AuthService.resetAndEmailMessengerPin()
 -> tạo PIN tạm thời
