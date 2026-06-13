@@ -221,6 +221,20 @@ public class AdminController {
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Admin> getAdminById(@PathVariable("id") int id) {
+        return adminService.getAdminById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<Map<String, Object>> updateAdminProfile(
+            @PathVariable("id") int id,
+            @RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(adminService.updateAdminProfile(id, payload));
+    }
 }
 
 

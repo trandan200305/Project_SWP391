@@ -1612,5 +1612,46 @@ public class AdminService {
             );
         }
     }
+
+    public Optional<Admin> getAdminById(int id) {
+        return adminRepository.findById(id);
+    }
+
+    @Transactional
+    public Map<String, Object> updateAdminProfile(int id, Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<Admin> adminOpt = adminRepository.findById(id);
+        if (adminOpt.isPresent()) {
+            Admin admin = adminOpt.get();
+            if (payload.containsKey("displayName")) {
+                admin.setDisplayName((String) payload.get("displayName"));
+            }
+            if (payload.containsKey("fullName")) {
+                admin.setFullName((String) payload.get("fullName"));
+            }
+            if (payload.containsKey("phone")) {
+                admin.setPhone((String) payload.get("phone"));
+            }
+            if (payload.containsKey("avatarUrl")) {
+                admin.setAvatarUrl((String) payload.get("avatarUrl"));
+            }
+            if (payload.containsKey("language")) {
+                admin.setLanguage((String) payload.get("language"));
+            }
+            if (payload.containsKey("timezone")) {
+                admin.setTimezone((String) payload.get("timezone"));
+            }
+            admin.setUpdatedAt(LocalDateTime.now());
+            adminRepository.save(admin);
+            
+            response.put("success", true);
+            response.put("message", "Đã cập nhật hồ sơ Admin thành công.");
+            return response;
+        }
+        response.put("success", false);
+        response.put("message", "Không tìm thấy tài khoản Admin.");
+        return response;
+    }
 }
+
 
