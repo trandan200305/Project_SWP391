@@ -2876,13 +2876,13 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                         onClick={() => { setActiveUserForAction(user); setActionType('lock'); }}
                                         className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Lock className="w-3.5 h-3.5" /> Tạm ngưng
+                                        <Lock className="w-3.5 h-3.5" /> Suspend
                                       </button>
                                       <button 
                                         onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
                                         className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                       >
-                                        <Ban className="w-3.5 h-3.5" /> Xóa quyền
+                                        <Ban className="w-3.5 h-3.5" /> Delete
                                       </button>
                                     </>
                                   ) : (<>
@@ -2897,7 +2897,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                                         onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
                                         className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm ml-1"
                                       >
-                                        <Ban className="w-3.5 h-3.5" /> Xóa quyền
+                                        <Ban className="w-3.5 h-3.5" /> Delete
                                       </button>
                                     )}
                                   </>)}
@@ -3677,7 +3677,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
               actionType === 'lock' ? 'text-amber-700' : 'text-rose-700'
             }`}>
               {actionType === 'lock' ? <Lock className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
-              {actionType === 'lock' ? 'Tạm Ngưng Tài Khoản Người Dùng' : actionType === 'delete_gmail' ? 'Xóa Quyền Gmail Khỏi Hệ Thống' : 'Cấm Tài Khoản Vĩnh Viễn'}
+              {actionType === 'lock' ? 'Suspend User Account' : actionType === 'delete_gmail' ? 'Delete User Account' : 'Ban Account Permanently'}
             </h4>
             <button 
               onClick={() => { setActiveUserForAction(null); setBanReasons([]); setAdminPin(''); }}
@@ -3744,7 +3744,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                 onClick={() => { setActiveUserForAction(null); setBanReasons([]); setAdminPin(''); }}
                 className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
               >
-                Hủy
+                Cancel
               </button>
               <button 
                 disabled={banReasons.length === 0 || !adminPin.trim()}
@@ -3755,7 +3755,7 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                     : (banReasons.length === 0 || !adminPin.trim() ? 'bg-rose-400 cursor-not-allowed opacity-70' : 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/10 hover:shadow-rose-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95')
                 }`}
               >
-                Xác nhận {actionType === 'lock' ? 'Tạm ngưng' : actionType === 'delete_gmail' ? 'Xóa quyền Gmail' : 'Cấm'}
+                Confirm {actionType === 'lock' ? 'Suspend' : actionType === 'delete_gmail' ? 'Delete' : 'Ban'}
               </button>
             </div>
           </div>
