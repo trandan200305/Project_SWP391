@@ -695,7 +695,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           z-index: 9999 !important;
           padding: 8px;
           cursor: default;
-          clip-path: inset(90% 50% 10% 50% round 16px);
+          clip-path: inset(0% 0% 100% 0% round 16px);
           opacity: 0;
           pointer-events: none;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -710,7 +710,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         .profile-menu-item {
           --delay: 0.1s;
           --trdelay: 0.05s;
-          transform: translateY(15px);
+          transform: translateY(-15px);
           opacity: 0;
           transition: transform 0.4s ease, opacity 0.4s ease;
         }
@@ -726,6 +726,84 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(4) { transition-delay: calc(var(--delay) + (var(--trdelay) * 3)); }
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
+
+        /* ORBITAL SELECTOR INDICATOR FOR PROFILE MENU ITEMS */
+        .profile-menu-circle {
+          width: 12px;
+          height: 12px;
+          background-color: transparent;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 50%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+        }
+
+        .profile-menu-circle::before {
+          content: "";
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: #3b82f6;
+          border-radius: 50%;
+          transform: scale(0);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .profile-menu-circle::after {
+          content: "";
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          border: 1.5px solid transparent;
+          border-radius: 50%;
+          border-top-color: #3b82f6;
+          opacity: 0;
+          transform: scale(0.8);
+          transition: all 0.3s ease;
+        }
+
+        .profile-menu-btn:hover .profile-menu-circle {
+          border-color: #3b82f6;
+          transform: scale(1.1);
+        }
+
+        .profile-menu-btn:hover .profile-menu-circle::before {
+          transform: scale(1);
+        }
+
+        .profile-menu-btn:hover .profile-menu-circle::after {
+          opacity: 1;
+          transform: scale(1.3);
+          animation: profile-orbit 2s infinite linear;
+        }
+
+        /* Active states */
+        .profile-menu-btn.profile-menu-active .profile-menu-circle {
+          border-color: #10b981;
+          transform: scale(1.0);
+        }
+
+        .profile-menu-btn.profile-menu-active .profile-menu-circle::before {
+          transform: scale(1);
+          background-color: #10b981;
+        }
+
+        .profile-menu-btn.profile-menu-active .profile-menu-circle::after {
+          opacity: 1;
+          transform: scale(1.3);
+          border-top-color: #10b981;
+          animation: profile-orbit 2s infinite linear;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes profile-orbit {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
       
       {}
@@ -946,8 +1024,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     onClick={() => {
                       if (onNavigate) onNavigate("edit_profile");
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 ${
+                      activeTab === 'edit_profile'
+                        ? 'profile-menu-active text-emerald-600 bg-emerald-50'
+                        : 'text-slate-650 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
                   >
+                    <span className="profile-menu-circle" />
                     <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
                   </button>
                 </div>
@@ -957,8 +1040,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     onClick={() => {
                       if (onNavigate) onNavigate("preferences");
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 ${
+                      activeTab === 'preferences'
+                        ? 'profile-menu-active text-emerald-600 bg-emerald-50'
+                        : 'text-slate-650 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
                   >
+                    <span className="profile-menu-circle" />
                     <Settings className="w-4 h-4" /> Cài đặt chung
                   </button>
                 </div>
@@ -969,8 +1057,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       onClick={() => {
                         if (onNavigate) onNavigate("messenger");
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
+                      className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 ${
+                        activeTab === 'messenger'
+                          ? 'profile-menu-active text-emerald-600 bg-emerald-50'
+                          : 'text-slate-650 hover:text-indigo-600 hover:bg-indigo-50'
+                      }`}
                     >
+                      <span className="profile-menu-circle" />
                       <MessageSquare className="w-4 h-4" /> Tin nhắn
                     </button>
                   </div>
@@ -978,8 +1071,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                 <div className="profile-menu-item">
                   <button
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                    onClick={() => {
+                      if (onNavigate) onNavigate("home");
+                    }}
+                    className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold rounded-xl transition-all mt-1 ${
+                      activeTab === 'home' || activeTab === 'dashboard'
+                        ? 'profile-menu-active text-emerald-600 bg-emerald-50'
+                        : 'text-slate-650 hover:text-emerald-700 hover:bg-emerald-50'
+                    }`}
                   >
+                    <span className="profile-menu-circle" />
                     <Shield className="w-4 h-4" /> {user?.role === "ADMIN" ? "Dashboard Admin" : user?.role === "MANAGER" ? "Dashboard Manager" : "Dashboard Staff"}
                   </button>
                 </div>
@@ -996,8 +1097,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         window.location.reload();
                       }
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                   >
+                    <span className="profile-menu-circle" />
                     <LogOut className="w-4 h-4" /> Đăng xuất
                   </button>
                 </div>
