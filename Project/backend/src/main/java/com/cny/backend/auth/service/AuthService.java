@@ -16,7 +16,6 @@ import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,6 +169,7 @@ public class AuthService {
 
             // REGISTER FOR EMPLOYER
             if (existingEmployer.isEmpty()) {
+                // login google + register
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
                     response.put("message", "Tài khoản không tồn tại!");
@@ -198,7 +198,7 @@ public class AuthService {
                 employer = employerRepository.save(employer);
                 userId = employer.getEmployerId();
             } else {
-                //LOGIN FOR EMPLOYER
+                // LOGIN FOR EMPLOYER
                 Employer dbEmployer = existingEmployer.get();
                 if (Boolean.TRUE.equals(dbEmployer.getIsDeleted())) {
                     response.put("success", false);
@@ -234,11 +234,11 @@ public class AuthService {
                     employerRepository.save(dbEmployer);
                 }
             }
-        } 
-        else if ("MANAGER".equals(assignedRole)) {
+        } else if ("MANAGER".equals(assignedRole)) {
             if (totalRoles > 0 && emailInManagers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
@@ -253,10 +253,12 @@ public class AuthService {
                     response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
                     return response;
                 }
-                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
-                if (invOpt.isEmpty() || !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
+                        .findByEmail(email);
+                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
+                    response.put("message",
+                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
                     return response;
                 }
                 if (!isOAuthLogin) {
@@ -269,22 +271,22 @@ public class AuthService {
 
                 userId = dbManager.getManagerId();
                 userStatus = dbManager.getStatus();
-                
+
                 boolean updated = false;
                 String dbPin = dbManager.getMessengerPin();
                 if (dbPin != null && !dbPin.trim().isEmpty()) {
                     hasMessengerPin = true;
                 }
-                
+
                 if (updated) {
                     managerRepository.save(dbManager);
                 }
             }
-        }
-        else if ("STAFF".equals(assignedRole)) {
+        } else if ("STAFF".equals(assignedRole)) {
             if (totalRoles > 0 && emailInStaff == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
@@ -299,10 +301,12 @@ public class AuthService {
                     response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
                     return response;
                 }
-                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
-                if (invOpt.isEmpty() || !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
+                        .findByEmail(email);
+                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
+                    response.put("message",
+                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
                     return response;
                 }
                 if (!isOAuthLogin) {
@@ -315,26 +319,26 @@ public class AuthService {
 
                 userId = dbStaff.getStaffId();
                 userStatus = dbStaff.getStatus();
-                
+
                 boolean updated = false;
                 String dbPin = dbStaff.getMessengerPin();
                 if (dbPin != null && !dbPin.trim().isEmpty()) {
                     hasMessengerPin = true;
                 }
-                
+
                 if (updated) {
                     staffRepository.save(dbStaff);
                 }
             }
-        }
-        else {
+        } else {
             if (totalRoles > 0 && emailInFreelancers == 0) {
                 response.put("success", false);
-                response.put("message", "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
+                response.put("message",
+                        "Email này đã được đăng ký dưới vai trò khác. Vui lòng đăng nhập đúng vai trò!");
                 return response;
             }
 
-            //REGISTER FOR FREELANCER
+            // REGISTER FOR FREELANCER
             if (existingFreelancer.isEmpty()) {
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
@@ -366,7 +370,7 @@ public class AuthService {
                 freelancer = freelancerRepository.save(freelancer);
                 userId = freelancer.getProfileId();
             } else {
-                //LOGIN FOR FREELANCER
+                // LOGIN FOR FREELANCER
                 Freelancer dbFreelancer = existingFreelancer.get();
                 if (Boolean.TRUE.equals(dbFreelancer.getIsDeleted())) {
                     response.put("success", false);
@@ -423,7 +427,8 @@ public class AuthService {
                 m.setLastLoginAt(LocalDateTime.now());
                 managerRepository.save(m);
                 if (m.getDepartmentEntity() != null) {
-                    departmentService.startSession(m.getDepartmentEntity().getDepartmentId(), userId, "MANAGER", payload.get("ipAddress"));
+                    departmentService.startSession(m.getDepartmentEntity().getDepartmentId(), userId, "MANAGER",
+                            payload.get("ipAddress"));
                 }
             }
             history.setManagerId(userId);
@@ -433,7 +438,8 @@ public class AuthService {
                 s.setLastLoginAt(LocalDateTime.now());
                 staffRepository.save(s);
                 if (s.getDepartmentEntity() != null) {
-                    departmentService.startSession(s.getDepartmentEntity().getDepartmentId(), userId, "STAFF", payload.get("ipAddress"));
+                    departmentService.startSession(s.getDepartmentEntity().getDepartmentId(), userId, "STAFF",
+                            payload.get("ipAddress"));
                 }
             }
             history.setStaffId(userId);
@@ -486,25 +492,40 @@ public class AuthService {
     // check login status by role
     public Integer countBy(String table, String column, String value) {
         if ("admins".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return (int) adminRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return (int) adminRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return (int) adminRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return (int) adminRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return (int) adminRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return (int) adminRepository.countByDisplayName(value);
         } else if ("managers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return (int) managerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return (int) managerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return (int) managerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return (int) managerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return (int) managerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return (int) managerRepository.countByDisplayName(value);
         } else if ("staff".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return (int) staffRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return (int) staffRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return (int) staffRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return (int) staffRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return (int) staffRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return (int) staffRepository.countByDisplayName(value);
         } else if ("employers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return (int) employerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return (int) employerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return (int) employerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return (int) employerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return (int) employerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return (int) employerRepository.countByDisplayName(value);
         } else if ("freelancers".equalsIgnoreCase(table)) {
-            if ("email".equalsIgnoreCase(column)) return (int) freelancerRepository.countByEmail(value);
-            if ("phone".equalsIgnoreCase(column)) return (int) freelancerRepository.countByPhone(value);
-            if ("display_name".equalsIgnoreCase(column)) return (int) freelancerRepository.countByDisplayName(value);
+            if ("email".equalsIgnoreCase(column))
+                return (int) freelancerRepository.countByEmail(value);
+            if ("phone".equalsIgnoreCase(column))
+                return (int) freelancerRepository.countByPhone(value);
+            if ("display_name".equalsIgnoreCase(column))
+                return (int) freelancerRepository.countByDisplayName(value);
         }
         return 0;
     }
@@ -816,7 +837,8 @@ public class AuthService {
                 mgr.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 mgr.setFullName(fullName);
                 mgr.setPhone(phone);
-                mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
+                        : (fullName != null ? fullName : email.split("@")[0]));
                 mgr.setStatus("ACTIVE");
                 mgr.setIsDeleted(false);
                 mgr.setUpdatedAt(LocalDateTime.now());
@@ -833,7 +855,8 @@ public class AuthService {
                 stf.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 stf.setFullName(fullName);
                 stf.setPhone(phone);
-                stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName : (fullName != null ? fullName : email.split("@")[0]));
+                stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
+                        : (fullName != null ? fullName : email.split("@")[0]));
                 stf.setStatus("ACTIVE");
                 stf.setIsDeleted(false);
                 stf.setUpdatedAt(LocalDateTime.now());
@@ -902,7 +925,7 @@ public class AuthService {
         }
 
         // Generate 6-digit verification code
-        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        String code = String.format("%06d", (int) (Math.random() * 1000000));
         invitation.setVerificationCode(code);
         staffInvitationRepository.save(invitation);
 

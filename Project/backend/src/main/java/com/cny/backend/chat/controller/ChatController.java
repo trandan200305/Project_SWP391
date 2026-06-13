@@ -37,7 +37,8 @@ public class ChatController {
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
         boolean shouldSendAutoReply = false;
-        if (!"ADMIN".equals(chatMessage.getSenderRole())) {
+        boolean isSupportAgent = "ADMIN".equals(chatMessage.getSenderRole()) || "STAFF".equals(chatMessage.getSenderRole());
+        if (!isSupportAgent) {
             Integer ticketId = chatMessage.getTicketId();
             if (ticketId == null || ticketId == 0) {
                 shouldSendAutoReply = true;
@@ -65,7 +66,7 @@ public class ChatController {
 
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
-        if ("ADMIN".equals(savedMessage.getSenderRole())) {
+        if ("ADMIN".equals(savedMessage.getSenderRole()) || "STAFF".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {
                 Integer userId = (Integer) recipient.get("userId");

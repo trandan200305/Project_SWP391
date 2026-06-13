@@ -151,22 +151,24 @@ export default function App() {
     const client = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/api/ws'),
       reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe(topic, (message) => {
-          try {
-            const event = JSON.parse(message.body);
-            if (event.type === 'ACCOUNT_SUSPENDED') {
-              setSuspended({ reason: event.reason });
-            } else if (event.type === 'ACCOUNT_REACTIVATED') {
-              setSuspended(null);
-            }
-          } catch (_) {}
-        });
-      },
-      onStompError: (frame) => {
-        console.warn('[STOMP] error:', frame);
-      },
     });
+
+    client.onConnect = () => {
+      client.subscribe(topic, (message) => {
+        try {
+          const event = JSON.parse(message.body);
+          if (event.type === 'ACCOUNT_SUSPENDED') {
+            setSuspended({ reason: event.reason });
+          } else if (event.type === 'ACCOUNT_REACTIVATED') {
+            setSuspended(null);
+          }
+        } catch (_) {}
+      });
+    };
+
+    client.onStompError = (frame) => {
+      console.warn('[STOMP] error:', frame);
+    };
 
     client.activate();
     stompClientRef.current = client;
@@ -191,7 +193,7 @@ export default function App() {
       setCurrentPage('login');
       return;
     }
-    if (page === 'admin' && user?.role !== 'ADMIN') {
+    if (page === 'admin' && !['ADMIN', 'STAFF', 'MANAGER'].includes(user?.role)) {
       setCurrentPage('coming_soon');
       return;
     }

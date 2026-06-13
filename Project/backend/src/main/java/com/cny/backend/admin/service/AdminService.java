@@ -90,6 +90,15 @@ public class AdminService {
     @Autowired
     private com.cny.backend.department.repository.DepartmentTaskSignoffRepository departmentTaskSignoffRepository;
 
+    @Autowired
+    private com.cny.backend.admin.repository.ViolationReportRepository violationReportRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.DisputeRepository disputeRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
+
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
@@ -596,72 +605,137 @@ public class AdminService {
 
     public List<KycRequestDto> getKycRequests() {
         List<KycRequestDto> list = new ArrayList<>();
-        list.add(KycRequestDto.builder()
-                .id(1)
-                .userName("Nguyễn Minh Anh")
-                .userEmail("minhanh@gmail.com")
-                .idCard("030094001234")
-                .status("PENDING")
-                .submittedAt("2026-05-18T10:30:00")
-                .build());
         
-        list.add(KycRequestDto.builder()
-                .id(2)
-                .userName("Trần Việt Hoàng")
-                .userEmail("hoangtv@gmail.com")
-                .idCard("038092005678")
-                .status("APPROVED")
-                .submittedAt("2026-05-17T15:20:00")
-                .build());
+        try {
+            List<Freelancer> freelancers = freelancerRepository.findAll();
+            for (Freelancer f : freelancers) {
+                if (f.getKycStatus() != null && !"UNVERIFIED".equalsIgnoreCase(f.getKycStatus())) {
+                    list.add(KycRequestDto.builder()
+                            .id(f.getProfileId())
+                            .userName(f.getDisplayName() != null ? f.getDisplayName() : (f.getFullName() != null ? f.getFullName() : f.getEmail()))
+                            .userEmail(f.getEmail())
+                            .idCard(f.getIdCardFrontUrl() != null ? f.getIdCardFrontUrl() : "")
+                            .status(f.getKycStatus())
+                            .submittedAt(f.getKycSubmittedAt() != null ? f.getKycSubmittedAt().toString() : "")
+                            .userRole("FREELANCER")
+                            .build());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching freelancer KYC requests: " + e.getMessage());
+        }
+
+        try {
+            List<Employer> employers = employerRepository.findAll();
+            for (Employer emp : employers) {
+                if (emp.getKycStatus() != null && !"UNVERIFIED".equalsIgnoreCase(emp.getKycStatus())) {
+                    list.add(KycRequestDto.builder()
+                            .id(emp.getEmployerId())
+                            .userName(emp.getDisplayName() != null ? emp.getDisplayName() : (emp.getFullName() != null ? emp.getFullName() : emp.getEmail()))
+                            .userEmail(emp.getEmail())
+                            .idCard(emp.getIdCardFrontUrl() != null ? emp.getIdCardFrontUrl() : "")
+                            .status(emp.getKycStatus())
+                            .submittedAt(emp.getKycSubmittedAt() != null ? emp.getKycSubmittedAt().toString() : "")
+                            .userRole("EMPLOYER")
+                            .build());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching employer KYC requests: " + e.getMessage());
+        }
+
         return list;
     }
 
-    public List<DisputeDto> getDisputes() {
-        List<DisputeDto> list = new ArrayList<>();
-        list.add(DisputeDto.builder()
-                .id(1)
-                .projectTitle("Xây dựng Website bán hàng Laravel")
-                .clientName("LancerPro Client")
-                .freelancerName("Nguyễn Minh Anh")
-                .amount(15000000)
-                .status("OPEN")
-                .reason("Freelancer chậm tiến độ bàn giao sản phẩm")
-                .createdAt("2026-05-16T09:00:00")
-                .build());
+    @Transactional
+    public Map<String, Object> moderateKycRequest(int id, boolean approve, String role, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String status = approve ? "APPROVED" : "REJECTED";
         
-        list.add(DisputeDto.builder()
-                .id(2)
-                .projectTitle("Thiết kế Banner Sự kiện")
-                .clientName("TechFlow Corporation")
-                .freelancerName("Lê Thủy Tiên")
-                .amount(2000000)
-                .status("RESOLVED")
-                .reason("Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi")
-                .createdAt("2026-05-14T14:30:00")
-                .build());
-        return list;
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            Optional<Freelancer> opt = freelancerRepository.findById(id);
+            if (opt.isPresent()) {
+                Freelancer f = opt.get();
+                f.setKycStatus(status);
+                f.setIsVerified(approve);
+                f.setKycReviewedAt(LocalDateTime.now());
+                f.setKycReviewedByStaffId(adminId);
+                freelancerRepository.save(f);
+                
+                try {
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MODERATE', 'USER_MANAGEMENT', ?, GETDATE())",
+                            adminId, "KYC " + status + " for Freelancer " + f.getEmail());
+                } catch (Exception ex) {}
+
+                response.put("success", true);
+                response.put("message", "Đã cập nhật KYC Freelancer thành công.");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy Freelancer.");
+            }
+        } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
+            Optional<Employer> opt = employerRepository.findById(id);
+            if (opt.isPresent()) {
+                Employer e = opt.get();
+                e.setKycStatus(status);
+                e.setIsVerified(approve);
+                e.setKycReviewedAt(LocalDateTime.now());
+                e.setKycReviewedByStaffId(adminId);
+                employerRepository.save(e);
+
+                try {
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MODERATE', 'USER_MANAGEMENT', ?, GETDATE())",
+                            adminId, "KYC " + status + " for Employer " + e.getEmail());
+                } catch (Exception ex) {}
+
+                response.put("success", true);
+                response.put("message", "Đã cập nhật KYC Employer thành công.");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy Employer.");
+            }
+        } else {
+            response.put("success", false);
+            response.put("message", "Role không hợp lệ.");
+        }
+        
+        return response;
+    }
+
+
+    public List<DisputeDto> getDisputes() {
+        return disputeRepository.findAll().stream().map(d -> DisputeDto.builder()
+                .id(d.getDisputeId())
+                .projectTitle(d.getProjectTitle())
+                .clientName(d.getClientName())
+                .freelancerName(d.getFreelancerName())
+                .amount(d.getAmount() != null ? d.getAmount().doubleValue() : 0.0)
+                .status(d.getStatus())
+                .reason(d.getReason())
+                .priority(d.getPriority())
+                .createdAt(d.getCreatedAt() != null ? d.getCreatedAt().toString() : "")
+                .build()).collect(Collectors.toList());
     }
 
     public List<ReportDto> getReports() {
-        List<ReportDto> list = new ArrayList<>();
-        list.add(ReportDto.builder()
-                .id(1)
-                .reporterName("Trần Việt Hoàng")
-                .reportedName("LancerPro Client")
-                .reason("Spam bài đăng tuyển dụng nhiều lần cùng nội dung")
-                .status("PENDING")
-                .createdAt("2026-05-18T08:15:00")
-                .build());
-        
-        list.add(ReportDto.builder()
-                .id(2)
-                .reporterName("Nguyễn Minh Anh")
-                .reportedName("Vũ Hoàng Nam")
-                .reason("Lời lẽ thô tục xúc phạm trong khung chat")
-                .status("RESOLVED")
-                .createdAt("2026-05-15T11:45:00")
-                .build());
-        return list;
+        return violationReportRepository.findAll().stream().map(r -> ReportDto.builder()
+                .id(r.getReportId())
+                .reporterName(r.getReporterName())
+                .reportedName(r.getAccusedName())
+                .targetType(r.getTargetType())
+                .evidence(r.getEvidence())
+                .severity(r.getSeverity())
+                .reason(r.getReason())
+                .status(r.getStatus())
+                .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : "")
+                .build()).collect(Collectors.toList());
+    }
+
+    public List<WarningTemplateDto> getWarningTemplates() {
+        return warningTemplateRepository.findByIsActiveTrue().stream().map(w -> WarningTemplateDto.builder()
+                .id(w.getTemplateId())
+                .content(w.getContent())
+                .build()).collect(Collectors.toList());
     }
 
     public List<ArticleDto> getArticles() {
@@ -1149,6 +1223,37 @@ public class AdminService {
     }
 
     // --- VERIFICATION TASKS ENDPOINTS ---
+
+    @Transactional
+    public Map<String, Object> createVerificationTask(Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String taskType = (String) payload.getOrDefault("taskType", "KYC_VERIFICATION");
+            Integer referenceId = payload.containsKey("referenceId") ? ((Number) payload.get("referenceId")).intValue() : 1;
+            String title = (String) payload.getOrDefault("title", "Yêu cầu kiểm duyệt");
+            String description = (String) payload.getOrDefault("description", "");
+            String requiredDepartments = (String) payload.getOrDefault("requiredDepartments", "CS");
+            
+            DepartmentVerificationTask task = DepartmentVerificationTask.builder()
+                    .taskType(taskType)
+                    .referenceId(referenceId)
+                    .title(title)
+                    .description(description)
+                    .status("PENDING")
+                    .requiredDepartments(requiredDepartments)
+                    .build();
+                    
+            departmentVerificationTaskRepository.save(task);
+            
+            response.put("success", true);
+            response.put("message", "Tác vụ đã được khởi tạo thành công trên database.");
+            response.put("taskId", task.getTaskId());
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+        }
+        return response;
+    }
 
     public List<Map<String, Object>> getVerificationTasks() {
         // Ensure default departments are present in DB

@@ -752,6 +752,7 @@ CREATE TABLE support_tickets (
     status          NVARCHAR(30) NOT NULL DEFAULT 'OPEN',
     priority        NVARCHAR(20) DEFAULT 'MEDIUM',
     assigned_to     INT REFERENCES admins(admin_id),
+    assigned_staff_id INT REFERENCES staff(staff_id),
     created_at      DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2 NOT NULL DEFAULT GETDATE()
 );
@@ -763,6 +764,7 @@ CREATE TABLE ticket_messages (
     sender_freelancer_id    INT REFERENCES freelancers(freelancer_id),
     sender_employer_id      INT REFERENCES employers(employer_id),
     sender_admin_id         INT REFERENCES admins(admin_id),
+    sender_staff_id         INT REFERENCES staff(staff_id),
     message_text            NVARCHAR(MAX) NOT NULL,
     is_read                 BIT DEFAULT 0,
     sent_at                 DATETIME2 NOT NULL DEFAULT GETDATE()

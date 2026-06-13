@@ -30,6 +30,9 @@ public class ReportDto {
     private int id;
     private String reporterName;
     private String reportedName;
+    private String targetType;
+    private String evidence;
+    private String severity;
     private String reason;
     private String status;
     private String createdAt;

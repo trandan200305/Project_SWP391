@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Chrome, Eye, EyeOff, Sparkles, CheckCircle, X } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-import { authApi } from '../api/authApi.js';
+import { authApi } from "../api/authApi.js";
 
 export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [role, setRole] = useState("freelancer"); // 'freelancer' or 'employer'
@@ -66,7 +66,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasteData = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     if (pasteData.length === 6) {
       const newValues = pasteData.split("");
       setOtpValues(newValues);
@@ -85,7 +88,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         name: decoded.name,
         googleId: decoded.sub,
         avatar: decoded.picture,
-        requestedRole: role.toUpperCase()
+        requestedRole: role.toUpperCase(),
       });
       if (data.success) {
         setSuccess(true);
@@ -128,7 +131,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         fullName,
         displayName,
         phone: phoneNumber,
-        requestedRole: role.toUpperCase()
+        requestedRole: role.toUpperCase(),
       });
 
       if (data.success) {
@@ -154,6 +157,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
+  // otp
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!otp) {
@@ -169,9 +173,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     setOtpError("");
 
     try {
+      //verify-registration
       const data = await authApi.verifyRegistration({
         email,
-        code: otp
+        code: otp,
       });
 
       if (data.success) {
@@ -189,6 +194,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
+  //register again (resend otp)
   const handleResendOtp = async () => {
     setLoading(true);
     setOtpError("");
@@ -202,7 +208,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         fullName,
         displayName,
         phone: phoneNumber,
-        requestedRole: role.toUpperCase()
+        requestedRole: role.toUpperCase(),
       });
 
       if (data.success) {
@@ -220,7 +226,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-primary/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
       {/* Centered Modal Card Container */}
       <div
@@ -446,6 +452,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                           if (errorField === "email") setErrorField("");
                         }}
                         required
+                        autoComplete="one-time-code"
                         className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
                           errorField === "email"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
@@ -473,6 +480,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                           if (errorField === "phone") setErrorField("");
                         }}
                         required
+                        autoComplete="off"
                         className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
                           errorField === "phone"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
@@ -501,6 +509,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        autoComplete="new-password"
                         className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg pl-3 pr-10 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
                       />
                       <button
@@ -532,11 +541,17 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                       className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal"
                     >
                       I agree to the{" "}
-                      <a href="#terms" className="text-secondary hover:underline">
+                      <a
+                        href="#terms"
+                        className="text-secondary hover:underline"
+                      >
                         Terms of Service
                       </a>{" "}
                       &{" "}
-                      <a href="#privacy" className="text-secondary hover:underline">
+                      <a
+                        href="#privacy"
+                        className="text-secondary hover:underline"
+                      >
                         Privacy Policy
                       </a>
                       .
@@ -585,7 +600,9 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   Xác thực Email
                 </h2>
                 <p className="font-sans text-muted text-[13px] mb-2.5 leading-relaxed">
-                  Mã xác nhận gồm 6 chữ số đã được gửi đến <span className="font-bold text-primary">{email}</span>. Vui lòng nhập mã để tiếp tục.
+                  Mã xác nhận gồm 6 chữ số đã được gửi đến{" "}
+                  <span className="font-bold text-primary">{email}</span>. Vui
+                  lòng nhập mã để tiếp tục.
                 </p>
 
                 {/* OTP Error Message */}
@@ -642,7 +659,9 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <div className="flex justify-between items-center text-[12px] pt-1.5 font-semibold">
                     <span className="text-muted">Không nhận được mã?</span>
                     {otpTimer > 0 ? (
-                      <span className="text-sky-500 font-bold">Gửi lại sau ({otpTimer}s)</span>
+                      <span className="text-sky-500 font-bold">
+                        Gửi lại sau ({otpTimer}s)
+                      </span>
                     ) : (
                       <button
                         type="button"

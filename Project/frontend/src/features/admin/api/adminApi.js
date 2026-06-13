@@ -23,6 +23,7 @@ export const adminApi = {
   getKycRequests: () => api.get('/admin/kyc-requests'),
   getDisputes: () => api.get('/admin/disputes'),
   getReports: () => api.get('/admin/reports'),
+  getWarningTemplates: () => api.get('/admin/warning-templates'),
   getArticles: () => api.get('/admin/articles'),
   getTickets: () => api.get('/admin/tickets'),
   getSeoConfigs: () => api.get('/admin/seo-configs'),
@@ -71,5 +72,8 @@ export const adminApi = {
       },
       body: JSON.stringify(payload)
     }).then(res => res.json());
-  }
+  },
+  moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
+  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload)
 };
+

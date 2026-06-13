@@ -4,6 +4,8 @@ import ComingSoon from '../pages/ComingSoon.jsx';
 import OnboardPage from '../features/auth/pages/OnboardPage.jsx';
 import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
+import ManagerDashboardPage from '../features/admin/pages/ManagerDashboardPage.jsx';
+import StaffDashboardPage from '../features/admin/pages/StaffDashboardPage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
@@ -26,7 +28,13 @@ export default function AppRoutes({
   onLogout
 }) {
   if (currentPage === 'admin') {
-    return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    if (user?.role === 'ADMIN') {
+      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    }
+    if (user?.role === 'MANAGER') {
+      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    }
+    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
   }
 
   if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {

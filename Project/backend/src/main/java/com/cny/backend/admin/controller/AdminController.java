@@ -130,6 +130,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getReports());
     }
 
+    @GetMapping("/warning-templates")
+    public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
+        return ResponseEntity.ok(adminService.getWarningTemplates());
+    }
+
     @GetMapping("/articles")
     public ResponseEntity<List<ArticleDto>> getArticles() {
         return ResponseEntity.ok(adminService.getArticles());
@@ -181,6 +186,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getVerificationTasks());
     }
 
+    @PostMapping("/verification-tasks")
+    public ResponseEntity<Map<String, Object>> createVerificationTask(@RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(adminService.createVerificationTask(payload));
+    }
+
     @PostMapping("/verification-tasks/{id}/signoff")
     public ResponseEntity<Map<String, Object>> submitTaskSignoff(
             @PathVariable("id") int id,
@@ -202,7 +212,17 @@ public class AdminController {
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
     }
+
+    @PutMapping("/kyc-requests/{id}/moderate")
+    public ResponseEntity<Map<String, Object>> moderateKycRequest(
+            @PathVariable("id") int id,
+            @RequestParam("approve") boolean approve,
+            @RequestParam("role") String role,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
+    }
 }
+
 
 
 

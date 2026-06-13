@@ -33,4 +33,6 @@ public class KycRequestDto {
     private String idCard;
     private String status;
     private String submittedAt;
+    private String userRole;
 }
+
