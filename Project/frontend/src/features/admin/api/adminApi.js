@@ -71,5 +71,8 @@ export const adminApi = {
       },
       body: JSON.stringify(payload)
     }).then(res => res.json());
-  }
+  },
+  moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
+  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload)
 };
+

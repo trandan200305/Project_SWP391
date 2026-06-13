@@ -437,12 +437,14 @@ export default function Navbar({
                       <Settings className="w-4 h-4" /> Cài đặt chung
                     </button>
 
-                    <button
-                      onClick={handleMessengerClick}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
-                    >
-                      <MessageCircle className="w-4 h-4" /> Tin nhắn
-                    </button>
+                    {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
+                      <button
+                        onClick={handleMessengerClick}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Tin nhắn
+                      </button>
+                    )}
 
                     {(user.role === "ADMIN" || user.role === "STAFF" || user.role === "MANAGER") && (
                       <button
@@ -638,12 +640,14 @@ export default function Navbar({
                 >
                   <Settings className="w-4 h-4" /> Cài đặt chung
                 </button>
-                <button
-                  onClick={handleMessengerClick}
-                  className="w-full text-center bg-indigo-50 text-indigo-600 border border-indigo-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                >
-                  <MessageCircle className="w-4 h-4" /> Tin nhắn
-                </button>
+                {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
+                  <button
+                    onClick={handleMessengerClick}
+                    className="w-full text-center bg-indigo-50 text-indigo-600 border border-indigo-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                  >
+                    <MessageCircle className="w-4 h-4" /> Tin nhắn
+                  </button>
+                )}
               </>
             )}
 
