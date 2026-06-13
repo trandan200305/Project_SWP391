@@ -23,6 +23,7 @@ export const adminApi = {
   getKycRequests: () => api.get('/admin/kyc-requests'),
   getDisputes: () => api.get('/admin/disputes'),
   getReports: () => api.get('/admin/reports'),
+  getWarningTemplates: () => api.get('/admin/warning-templates'),
   getArticles: () => api.get('/admin/articles'),
   getTickets: () => api.get('/admin/tickets'),
   getSeoConfigs: () => api.get('/admin/seo-configs'),

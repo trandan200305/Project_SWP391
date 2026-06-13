@@ -309,7 +309,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(15000000))
                 .deadline(LocalDate.now().plusDays(10))
-                .status("PENDING_REVIEW")
+                .status("PENDING")
                 .proposalCount(0)
                 .build());
 
@@ -321,7 +321,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(6000000))
                 .deadline(LocalDate.now().plusDays(20))
-                .status("PENDING_REVIEW")
+                .status("PENDING")
                 .proposalCount(0)
                 .build());
 
@@ -333,7 +333,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("MONTHLY")
                 .budgetFixed(BigDecimal.valueOf(4500000))
                 .deadline(LocalDate.now().plusDays(30))
-                .status("PENDING_REVIEW")
+                .status("PENDING")
                 .proposalCount(0)
                 .build());
 
@@ -384,7 +384,6 @@ public class DataSeeder implements CommandLineRunner {
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
                             adminId);
 
-                    // Seed support tickets if empty
                     Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
                     if (ticketCount != null && ticketCount == 0) {
                         // Ticket 1: Minh Anh
@@ -408,6 +407,31 @@ public class DataSeeder implements CommandLineRunner {
                             jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
                                     "VALUES (?, NULL, ?, NULL, N'Tôi vừa đăng dự án mới nhưng trạng thái là PENDING_REVIEW. Bao lâu thì bài đăng của tôi được hiển thị?', 0, DATEADD(hour, -3, GETDATE()))", tId2, clientId);
                         }
+                    }
+
+                    // Seed Moderation Data (Violation Reports, Disputes, Warning Templates)
+                    Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
+                    if (reportCount != null && reportCount == 0) {
+                        jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
+                                "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
+                        jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
+                                "VALUES ('USER', 'USR-405', N'Nguyễn Minh Anh', N'Vũ Hoàng Nam', 'MEDIUM', 'RESOLVED', N'Lời lẽ thô tục xúc phạm trong khung chat', N'https://example.com/evidence2.jpg', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
+                    }
+
+                    Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
+                    if (disputeCount != null && disputeCount == 0) {
+                        jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                                "VALUES (N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
+                        jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                                "VALUES (N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
+                    }
+
+                    Integer warningCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM warning_templates", Integer.class);
+                    if (warningCount != null && warningCount == 0) {
+                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Vi phạm quy định cộng đồng: Sử dụng ngôn từ không phù hợp', 1, GETDATE())");
+                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Spam hệ thống: Đăng bài nhiều lần với cùng nội dung', 1, GETDATE())");
+                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hành vi gian lận: Cố tình lách luật thanh toán ngoài nền tảng', 1, GETDATE())");
+                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hồ sơ giả mạo: Sử dụng hình ảnh/thông tin của người khác', 1, GETDATE())");
                     }
                 }
             }

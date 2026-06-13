@@ -90,6 +90,15 @@ public class AdminService {
     @Autowired
     private com.cny.backend.department.repository.DepartmentTaskSignoffRepository departmentTaskSignoffRepository;
 
+    @Autowired
+    private com.cny.backend.admin.repository.ViolationReportRepository violationReportRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.DisputeRepository disputeRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
+
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
@@ -695,51 +704,38 @@ public class AdminService {
 
 
     public List<DisputeDto> getDisputes() {
-        List<DisputeDto> list = new ArrayList<>();
-        list.add(DisputeDto.builder()
-                .id(1)
-                .projectTitle("Xây dựng Website bán hàng Laravel")
-                .clientName("LancerPro Client")
-                .freelancerName("Nguyễn Minh Anh")
-                .amount(15000000)
-                .status("OPEN")
-                .reason("Freelancer chậm tiến độ bàn giao sản phẩm")
-                .createdAt("2026-05-16T09:00:00")
-                .build());
-        
-        list.add(DisputeDto.builder()
-                .id(2)
-                .projectTitle("Thiết kế Banner Sự kiện")
-                .clientName("TechFlow Corporation")
-                .freelancerName("Lê Thủy Tiên")
-                .amount(2000000)
-                .status("RESOLVED")
-                .reason("Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi")
-                .createdAt("2026-05-14T14:30:00")
-                .build());
-        return list;
+        return disputeRepository.findAll().stream().map(d -> DisputeDto.builder()
+                .id(d.getDisputeId())
+                .projectTitle(d.getProjectTitle())
+                .clientName(d.getClientName())
+                .freelancerName(d.getFreelancerName())
+                .amount(d.getAmount() != null ? d.getAmount().doubleValue() : 0.0)
+                .status(d.getStatus())
+                .reason(d.getReason())
+                .priority(d.getPriority())
+                .createdAt(d.getCreatedAt() != null ? d.getCreatedAt().toString() : "")
+                .build()).collect(Collectors.toList());
     }
 
     public List<ReportDto> getReports() {
-        List<ReportDto> list = new ArrayList<>();
-        list.add(ReportDto.builder()
-                .id(1)
-                .reporterName("Trần Việt Hoàng")
-                .reportedName("LancerPro Client")
-                .reason("Spam bài đăng tuyển dụng nhiều lần cùng nội dung")
-                .status("PENDING")
-                .createdAt("2026-05-18T08:15:00")
-                .build());
-        
-        list.add(ReportDto.builder()
-                .id(2)
-                .reporterName("Nguyễn Minh Anh")
-                .reportedName("Vũ Hoàng Nam")
-                .reason("Lời lẽ thô tục xúc phạm trong khung chat")
-                .status("RESOLVED")
-                .createdAt("2026-05-15T11:45:00")
-                .build());
-        return list;
+        return violationReportRepository.findAll().stream().map(r -> ReportDto.builder()
+                .id(r.getReportId())
+                .reporterName(r.getReporterName())
+                .reportedName(r.getAccusedName())
+                .targetType(r.getTargetType())
+                .evidence(r.getEvidence())
+                .severity(r.getSeverity())
+                .reason(r.getReason())
+                .status(r.getStatus())
+                .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : "")
+                .build()).collect(Collectors.toList());
+    }
+
+    public List<WarningTemplateDto> getWarningTemplates() {
+        return warningTemplateRepository.findByIsActiveTrue().stream().map(w -> WarningTemplateDto.builder()
+                .id(w.getTemplateId())
+                .content(w.getContent())
+                .build()).collect(Collectors.toList());
     }
 
     public List<ArticleDto> getArticles() {

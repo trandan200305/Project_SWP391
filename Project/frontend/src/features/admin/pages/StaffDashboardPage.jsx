@@ -81,6 +81,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
+  const [violationReports, setViolationReports] = useState([]);
+  const [escalationCases, setEscalationCases] = useState([]);
+  const [warningTemplates, setWarningTemplates] = useState([]);
+  const [moderationHistory, setModerationHistory] = useState([]);
+  const [moderationView, setModerationView] = useState('queue');
+  const [queueTab, setQueueTab] = useState('ALL');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -264,23 +270,130 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   };
 
   const fetchModerationItems = () => {
-    adminApi.getPendingProjects()
-      .then(data => {
-        if (Array.isArray(data)) {
-          const mapped = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            type: 'Project Post',
-            author: p.clientName || 'Employer',
-            detail: p.description,
-            reason: p.budget > 100000000 ? 'Suspicious high budget' : 'Regular review',
-            subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
-            status: 'Pending'
-          }));
-          setModerationItems(mapped);
-        }
-      })
-      .catch(err => console.error('Error fetching pending projects:', err));
+    Promise.all([
+      adminApi.getPendingProjects().catch(() => []),
+      adminApi.getProfileRequests().catch(() => []),
+      adminApi.getWithdrawals().catch(() => [])
+    ]).then(([projectsData, profilesData, withdrawalsData]) => {
+      let mapped = [];
+
+      if (Array.isArray(projectsData)) {
+        mapped = [...mapped, ...projectsData.map(p => ({
+          id: p.id,
+          idRaw: p.id,
+          title: p.title,
+          type: 'PROJECT',
+          author: p.clientName || 'Employer',
+          detail: p.description,
+          reason: 'Dự án mới cần duyệt',
+          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
+          status: 'Pending'
+        }))];
+      }
+
+      if (Array.isArray(profilesData)) {
+        mapped = [...mapped, ...profilesData.map(pr => ({
+          id: `PROF-${pr.id}`,
+          idRaw: pr.id,
+          title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
+          type: 'PROFILE',
+          author: pr.displayName || 'Employer',
+          detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
+          reason: 'Cập nhật hồ sơ',
+          subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
+        }))];
+      }
+
+      if (Array.isArray(withdrawalsData)) {
+        mapped = [...mapped, ...withdrawalsData.filter(w => w.status === 'PENDING').map(w => ({
+          id: `WTH-${w.id}`,
+          idRaw: w.id,
+          title: `Yêu cầu rút tiền: ${w.amount?.toLocaleString('vi-VN')} VND`,
+          type: 'WITHDRAWAL',
+          author: `Freelancer #${w.freelancerId}`,
+          detail: `Rút tiền về ${w.bankName} - ${w.accountNumber}`,
+          reason: 'Rút tiền',
+          subDate: w.createdAt ? String(w.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending'
+        }))];
+      }
+
+      // Add Mock data for Gigs and Reviews to satisfy user requirement
+      mapped.push({
+        id: 'GIG-MOCK-1',
+        idRaw: 9991,
+        title: 'Thiết kế Logo Doanh nghiệp trọn gói',
+        type: 'GIG',
+        author: 'Freelancer Alex',
+        detail: 'Gói dịch vụ mới tạo, giá 2.000.000 VND',
+        reason: 'Dịch vụ mới',
+        subDate: new Date().toISOString().substring(0, 10),
+        status: 'Pending'
+      });
+
+      mapped.push({
+        id: 'REV-MOCK-1',
+        idRaw: 9992,
+        title: 'Đánh giá bị báo cáo: Dự án Web App',
+        type: 'REVIEW',
+        author: 'Client John',
+        detail: 'Đánh giá chứa từ ngữ không phù hợp.',
+        reason: 'Bị cắm cờ (Flagged)',
+        subDate: new Date().toISOString().substring(0, 10),
+        status: 'Pending'
+      });
+
+      setModerationItems(mapped);
+    }).catch(err => console.error('Error fetching moderation items:', err));
+  };
+
+  const fetchModerationData = () => {
+    adminApi.getReports().then(data => {
+      if (Array.isArray(data)) {
+        setViolationReports(data.map(r => ({
+          id: `RPT-${r.id}`,
+          target: r.targetType,
+          reporter: r.reporterName,
+          accused: r.reportedName,
+          severity: r.severity === 'HIGH' ? 'Cao' : r.severity === 'LOW' ? 'Thấp' : 'Trung bình',
+          type: r.targetType === 'PROJECT' ? 'Dự án' : 'Hồ sơ',
+          status: r.status === 'PENDING' ? 'Chờ xử lý' : 'Đã xử lý',
+          evidence: r.reason + (r.evidence ? ` - Link: ${r.evidence}` : '')
+        })));
+      }
+    }).catch(console.error);
+
+    adminApi.getDisputes().then(data => {
+      if (Array.isArray(data)) {
+        setEscalationCases(data.map(d => ({
+          id: `ESC-${d.id}`,
+          title: d.reason || 'Tranh chấp dự án',
+          owner: d.clientName,
+          priority: d.priority === 'HIGH' ? 'Khẩn cấp' : 'Cao'
+        })));
+      }
+    }).catch(console.error);
+
+    adminApi.getWarningTemplates().then(data => {
+      if (Array.isArray(data)) {
+        setWarningTemplates(data.map(w => w.content));
+      }
+    }).catch(console.error);
+
+    adminApi.getAuditLogs().then(data => {
+      if (Array.isArray(data)) {
+        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS');
+        setModerationHistory(modLogs.slice(0, 10).map(log => ({
+          id: `LOG-${log.id}`,
+          action: log.action,
+          actor: log.adminName || 'Staff',
+          target: log.description,
+          time: new Date(log.timestamp).toLocaleString('vi-VN'),
+          result: 'Đã lưu vết'
+        })));
+      }
+    }).catch(console.error);
   };
 
   const fetchSupportChats = () => {
@@ -377,6 +490,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     fetchTasks();
     fetchKycRequests();
     fetchModerationItems();
+    fetchModerationData();
     fetchSupportChats();
     fetchTrends();
   }, [chartPeriod]);
@@ -672,12 +786,28 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       });
   };
 
-  // Moderation (Project moderation endpoint: /projects/{id}/moderate)
-  const handleModAction = (id, approve) => {
-    adminApi.moderateProject(id, approve, approve ? 'Phê duyệt hợp lệ' : 'Vi phạm quy tắc đăng tin', user?.id || 1)
+  // Moderation action supporting multiple types
+  const handleModAction = (item, approve) => {
+    const adminId = user?.id || 1;
+    let apiCall;
+    const reason = approve ? 'Phê duyệt hợp lệ' : 'Không đáp ứng tiêu chuẩn kiểm duyệt';
+
+    if (item.type === 'PROJECT') {
+      apiCall = adminApi.moderateProject(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'PROFILE') {
+      apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'WITHDRAWAL') {
+      const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
+      apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
+    } else {
+      // Mock APIs for GIG and REVIEW
+      apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
+    }
+
+    apiCall
       .then(res => {
         if (res.success) {
-          showToast(approve ? 'Đã phê duyệt tin đăng!' : 'Đã từ chối tin đăng!', approve ? 'success' : 'error');
+          showToast(res.message || (approve ? 'Đã phê duyệt thành công!' : 'Đã từ chối thành công!'), approve ? 'success' : 'error');
           fetchModerationItems();
         } else {
           showToast(res.message || 'Thao tác thất bại.', 'error');
@@ -1865,81 +1995,290 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           })()}
 
           {/* ---------------- TAB: MODERATION ---------------- */}
-          {activeTab === 'Moderation' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
-              <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Moderation Panel</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Approve or flag postings, freelancer reviews, or portfolios violating policy guidelines.</p>
-              </div>
+          {activeTab === 'Moderation' && (() => {
+            const pendingItems = moderationItems.filter(item => item.status === 'Pending');
+            const processedItems = moderationItems.filter(item => item.status !== 'Pending');
 
-              {/* Moderation Items Table */}
-              <div className="card-level-1 p-6 bg-white">
-                <table className="min-w-full divide-y divide-[#e9edff] text-left">
-                  <thead>
-                    <tr className="bg-[#f9f9ff]">
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Item Details</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Author</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Flag Reason</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e9edff] bg-white">
-                    {moderationItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
-                        <td className="px-4 py-4">
-                          <div className="min-w-[220px]">
-                            <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
-                              {item.type}
-                            </span>
-                            <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5">{item.title}</h4>
-                            <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
-                        <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
-                        <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.status === 'Approved' 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : item.status === 'Rejected' 
-                                ? 'bg-[#ffdad6] text-[#ba1a1a]' 
-                                : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {item.status === 'Pending' ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                onClick={() => handleModAction(item.id, false)}
-                                className="p-1.5 border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded transition-all"
-                                title="Reject / Flag"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleModAction(item.id, true)}
-                                className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
-                                title="Approve"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-[#6e7b6c] font-bold">Processed</span>
-                          )}
-                        </td>
-                      </tr>
+            const moderationTabs = [
+              { id: 'queue', label: 'Hàng đợi', count: pendingItems.length },
+              { id: 'reports', label: 'Báo cáo vi phạm', count: violationReports.length },
+              { id: 'actions', label: 'Cảnh báo / Chặn', count: warningTemplates.length },
+              { id: 'history', label: 'Lịch sử', count: moderationHistory.length },
+              { id: 'escalation', label: 'Chuyển cấp', count: escalationCases.length }
+            ];
+            const statusLabel = (status) => status === 'Approved' ? 'Đã duyệt' : status === 'Rejected' ? 'Đã từ chối' : 'Chờ xử lý';
+            const severityClass = (severity) => severity === 'Cao' || severity === 'Khẩn cấp'
+              ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ffdad6]'
+              : 'bg-amber-50 text-amber-700 border-amber-200';
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Kiểm duyệt</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">
+                      Xử lý bài đăng, hồ sơ, báo cáo vi phạm và các trường hợp cần chuyển cấp.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 min-w-[360px]">
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Chờ xử lý</p>
+                      <p className="text-title-md font-extrabold text-[#141b2b]">{pendingItems.length}</p>
+                    </div>
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Báo cáo</p>
+                      <p className="text-title-md font-extrabold text-[#ba1a1a]">{violationReports.length}</p>
+                    </div>
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Đã xử lý</p>
+                      <p className="text-title-md font-extrabold text-[#006b2c]">{processedItems.length}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-3">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {moderationTabs.map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setModerationView(tab.id)}
+                        className={`px-3 py-2 rounded-lg text-xs font-extrabold transition-all border ${
+                          moderationView === tab.id
+                            ? 'bg-[#006b2c] text-white border-[#006b2c]'
+                            : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
+                        }`}
+                      >
+                        {tab.label} ({tab.count})
+                      </button>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
+
+                {moderationView === 'queue' && (() => {
+                  const filteredPendingItems = queueTab === 'ALL' 
+                    ? pendingItems 
+                    : pendingItems.filter(item => item.type === queueTab);
+                  
+                  return (
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 flex flex-col gap-4 border-b border-[#e9edff]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-title-md font-extrabold text-[#141b2b]">Hàng đợi kiểm duyệt</h2>
+                          <p className="text-xs text-[#6e7b6c] mt-0.5">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
+                        </div>
+                      </div>
+                      {/* Sub-tabs for queue items */}
+                      <div className="flex gap-2 border-b border-[#e9edff] pb-2 overflow-x-auto">
+                        {[
+                          { id: 'ALL', label: 'Tất cả' },
+                          { id: 'PROJECT', label: 'Dự án' },
+                          { id: 'PROFILE', label: 'Hồ sơ' },
+                          { id: 'GIG', label: 'Gói dịch vụ' },
+                          { id: 'REVIEW', label: 'Đánh giá' },
+                          { id: 'WITHDRAWAL', label: 'Rút tiền' }
+                        ].map(qTab => (
+                          <button
+                            key={qTab.id}
+                            onClick={() => setQueueTab(qTab.id)}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                              queueTab === qTab.id
+                                ? 'bg-[#141b2b] text-white border-[#141b2b]'
+                                : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                            }`}
+                          >
+                            {qTab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                        <thead>
+                          <tr className="bg-[#f9f9ff]">
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Nội dung</th>
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Người đăng</th>
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Lý do</th>
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Ngày gửi</th>
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#e9edff] bg-white">
+                          {filteredPendingItems.map((item) => (
+                            <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <td className="px-4 py-4">
+                                <div className="min-w-[240px]">
+                                  <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
+                                    {item.type}
+                                  </span>
+                                  <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5">{item.title}</h4>
+                                  <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
+                              <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
+                              <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
+                              <td className="px-4 py-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  item.status === 'Approved' 
+                                    ? 'bg-[#f7fff2] text-[#006b2c]' 
+                                    : item.status === 'Rejected' 
+                                      ? 'bg-[#ffdad6] text-[#ba1a1a]' 
+                                      : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {statusLabel(item.status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                {item.status === 'Pending' ? (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button 
+                                      onClick={() => handleModAction(item, true)}
+                                      className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
+                                      title="Duyệt"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleModAction(item, false)}
+                                      className="p-1.5 border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded transition-all"
+                                      title="Từ chối / Chặn"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs font-bold text-[#6e7b6c]">Đã xử lý</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {moderationItems.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="px-4 py-8 text-center text-[#6e7b6c] text-sm">
+                                Không có nội dung nào đang chờ kiểm duyệt.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );})()}
+
+                {moderationView === 'reports' && (
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Báo cáo vi phạm ({violationReports.length})</h2>
+                    <div className="space-y-4">
+                      {violationReports.map(report => (
+                        <div key={report.id} className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${severityClass(report.severity)}`}>
+                                  Mức độ: {report.severity}
+                                </span>
+                                <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold">
+                                  {report.type}
+                                </span>
+                              </div>
+                              <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
+                            </div>
+                            <span className="text-xs font-bold px-2 py-1 bg-amber-100 text-amber-800 rounded">{report.status}</span>
+                          </div>
+                          <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
+                            <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
+                            <div className="flex gap-4">
+                              <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
+                              <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
+                            </div>
+                            <button className="text-[#006b2c] font-bold hover:underline">Xử lý báo cáo →</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {moderationView === 'actions' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                      <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Mẫu Cảnh Báo</h2>
+                      <ul className="space-y-3">
+                        {warningTemplates.map((template, idx) => (
+                          <li key={idx} className="flex items-start gap-3 p-3 bg-[#f9f9ff] rounded-lg border border-[#e9edff]">
+                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <span className="text-sm text-[#3e4a3d]">{template}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <button className="mt-4 w-full py-2 border-2 border-dashed border-[#bdcaba] text-[#3e4a3d] rounded-xl font-bold hover:bg-[#f9f9ff]">
+                        + Thêm mẫu cảnh báo mới
+                      </button>
+                    </div>
+                    <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                      <h2 className="text-title-md font-extrabold text-[#ba1a1a] mb-4">Tài Khoản Bị Chặn Gần Đây</h2>
+                      <div className="text-center py-10 bg-[#f9f9ff] rounded-lg border border-[#e9edff]">
+                        <ShieldBan className="w-10 h-10 text-[#bdcaba] mx-auto mb-2" />
+                        <p className="text-sm text-[#6e7b6c]">Không có tài khoản nào bị chặn trong 7 ngày qua.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {moderationView === 'history' && (
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Lịch sử hoạt động</h2>
+                    <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
+                      {moderationHistory.map((log, idx) => (
+                        <div key={log.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-[#e1e8fd] text-[#006b2c] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
+                            <Check className="w-5 h-5" />
+                          </div>
+                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-[#e9edff] bg-white shadow-sm mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-bold text-[#141b2b] text-sm">{log.action}</h4>
+                              <time className="text-[10px] font-bold text-[#6e7b6c]">{log.time}</time>
+                            </div>
+                            <p className="text-xs text-[#3e4a3d] mt-1">{log.target}</p>
+                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#f1f3ff]">
+                              <span className="text-[10px] font-bold text-[#6e7b6c]">Bởi: {log.actor}</span>
+                              <span className="text-[10px] font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded">{log.result}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {moderationView === 'escalation' && (
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Trường hợp chờ cấp trên quyết định</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {escalationCases.map(esc => (
+                        <div key={esc.id} className="border border-rose-200 bg-rose-50 rounded-xl p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="px-2 py-0.5 bg-rose-200 text-rose-800 rounded text-[10px] font-bold uppercase">{esc.priority}</span>
+                            <span className="text-xs text-rose-600 font-semibold">{esc.id}</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{esc.title}</h3>
+                          <p className="text-sm text-[#3e4a3d] mb-4">Người yêu cầu chuyển: <strong>{esc.owner}</strong></p>
+                          <button className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors">
+                            Xem chi tiết & Xử lý
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ---------------- TAB: KYC ---------------- */}
           {activeTab === 'KYC' && (

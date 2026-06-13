@@ -83,6 +83,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
+  const [queueTab, setQueueTab] = useState('ALL');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -281,23 +282,82 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
   };
 
   const fetchModerationItems = () => {
-    adminApi.getPendingProjects()
-      .then(data => {
-        if (Array.isArray(data)) {
-          const mapped = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            type: 'Project Post',
-            author: p.clientName || 'Employer',
-            detail: p.description,
-            reason: p.budget > 100000000 ? 'Suspicious high budget' : 'Regular review',
-            subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
-            status: 'Pending'
-          }));
-          setModerationItems(mapped);
-        }
-      })
-      .catch(err => console.error('Error fetching pending projects:', err));
+    Promise.all([
+      adminApi.getPendingProjects().catch(() => []),
+      adminApi.getProfileRequests().catch(() => []),
+      adminApi.getWithdrawals().catch(() => [])
+    ]).then(([projectsData, profilesData, withdrawalsData]) => {
+      let mapped = [];
+
+      if (Array.isArray(projectsData)) {
+        mapped = [...mapped, ...projectsData.map(p => ({
+          id: p.id,
+          idRaw: p.id,
+          title: p.title,
+          type: 'PROJECT',
+          author: p.clientName || 'Employer',
+          detail: p.description,
+          reason: 'Dự án mới cần duyệt',
+          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
+          status: 'Pending'
+        }))];
+      }
+
+      if (Array.isArray(profilesData)) {
+        mapped = [...mapped, ...profilesData.map(pr => ({
+          id: `PROF-${pr.id}`,
+          idRaw: pr.id,
+          title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
+          type: 'PROFILE',
+          author: pr.displayName || 'Employer',
+          detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
+          reason: 'Cập nhật hồ sơ',
+          subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
+        }))];
+      }
+
+      if (Array.isArray(withdrawalsData)) {
+        mapped = [...mapped, ...withdrawalsData.filter(w => w.status === 'PENDING').map(w => ({
+          id: `WTH-${w.id}`,
+          idRaw: w.id,
+          title: `Yêu cầu rút tiền: ${w.amount?.toLocaleString('vi-VN')} VND`,
+          type: 'WITHDRAWAL',
+          author: `Freelancer #${w.freelancerId}`,
+          detail: `Rút tiền về ${w.bankName} - ${w.accountNumber}`,
+          reason: 'Rút tiền',
+          subDate: w.createdAt ? String(w.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending'
+        }))];
+      }
+
+      // Add Mock data for Gigs and Reviews
+      mapped.push({
+        id: 'GIG-MOCK-1',
+        idRaw: 9991,
+        title: 'Thiết kế Logo Doanh nghiệp trọn gói',
+        type: 'GIG',
+        author: 'Freelancer Alex',
+        detail: 'Gói dịch vụ mới tạo, giá 2.000.000 VND',
+        reason: 'Dịch vụ mới',
+        subDate: new Date().toISOString().substring(0, 10),
+        status: 'Pending'
+      });
+
+      mapped.push({
+        id: 'REV-MOCK-1',
+        idRaw: 9992,
+        title: 'Đánh giá bị báo cáo: Dự án Web App',
+        type: 'REVIEW',
+        author: 'Client John',
+        detail: 'Đánh giá chứa từ ngữ không phù hợp.',
+        reason: 'Bị cắm cờ (Flagged)',
+        subDate: new Date().toISOString().substring(0, 10),
+        status: 'Pending'
+      });
+
+      setModerationItems(mapped);
+    }).catch(err => console.error('Error fetching moderation items:', err));
   };
 
   const fetchSupportChats = () => {
@@ -784,12 +844,28 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
       });
   };
 
-  // Moderation (Project moderation endpoint: /projects/{id}/moderate)
-  const handleModAction = (id, approve) => {
-    adminApi.moderateProject(id, approve, approve ? 'Phê duyệt hợp lệ' : 'Vi phạm quy tắc đăng tin', user?.id || 1)
+  // Moderation action supporting multiple types
+  const handleModAction = (item, approve) => {
+    const adminId = user?.id || 1;
+    let apiCall;
+    const reason = approve ? 'Phê duyệt hợp lệ' : 'Không đáp ứng tiêu chuẩn kiểm duyệt';
+
+    if (item.type === 'PROJECT') {
+      apiCall = adminApi.moderateProject(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'PROFILE') {
+      apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'WITHDRAWAL') {
+      const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
+      apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
+    } else {
+      // Mock APIs for GIG and REVIEW
+      apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
+    }
+
+    apiCall
       .then(res => {
         if (res.success) {
-          showToast(approve ? 'Đã phê duyệt tin đăng!' : 'Đã từ chối tin đăng!', approve ? 'success' : 'error');
+          showToast(res.message || (approve ? 'Đã phê duyệt thành công!' : 'Đã từ chối thành công!'), approve ? 'success' : 'error');
           fetchModerationItems();
         } else {
           showToast(res.message || 'Thao tác thất bại.', 'error');
@@ -2001,15 +2077,43 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
           })()}
 
           {/* ---------------- TAB: MODERATION ---------------- */}
-          {activeTab === 'Moderation' && (
+          {activeTab === 'Moderation' && (() => {
+            const pendingItems = moderationItems.filter(item => item.status === 'Pending');
+            const filteredPendingItems = queueTab === 'ALL' 
+              ? pendingItems 
+              : pendingItems.filter(item => item.type === queueTab);
+
+            return (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Moderation Panel</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Approve or flag postings violating policy guidelines.</p>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Hàng đợi kiểm duyệt</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
               </div>
 
               {/* Moderation Items Table */}
-              <div className="card-level-1 p-6 bg-white">
+              <div className="card-level-1 bg-white overflow-hidden border border-[#e1e8fd] rounded-xl">
+                <div className="px-6 py-4 flex gap-2 border-b border-[#e9edff] overflow-x-auto">
+                  {[
+                    { id: 'ALL', label: 'Tất cả' },
+                    { id: 'PROJECT', label: 'Dự án' },
+                    { id: 'PROFILE', label: 'Hồ sơ' },
+                    { id: 'GIG', label: 'Gói dịch vụ' },
+                    { id: 'REVIEW', label: 'Đánh giá' },
+                    { id: 'WITHDRAWAL', label: 'Rút tiền' }
+                  ].map(qTab => (
+                    <button
+                      key={qTab.id}
+                      onClick={() => setQueueTab(qTab.id)}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                        queueTab === qTab.id
+                          ? 'bg-[#141b2b] text-white border-[#141b2b]'
+                          : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                      }`}
+                    >
+                      {qTab.label}
+                    </button>
+                  ))}
+                </div>
                 <table className="min-w-full divide-y divide-[#e9edff] text-left">
                   <thead>
                     <tr className="bg-[#f9f9ff]">
@@ -2022,7 +2126,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e9edff] bg-white">
-                    {moderationItems.map((item) => (
+                    {filteredPendingItems.map((item) => (
                       <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
                         <td className="px-4 py-4">
                           <div className="min-w-[220px]">
@@ -2047,13 +2151,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
                           {item.status === 'Pending' ? (
                             <div className="flex items-center justify-end gap-2">
                               <button 
-                                onClick={() => handleModAction(item.id, false)}
+                                onClick={() => handleModAction(item, false)}
                                 className="p-1.5 border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded transition-all"
                               >
                                 <X className="w-4 h-4" />
                               </button>
                               <button 
-                                onClick={() => handleModAction(item.id, true)}
+                                onClick={() => handleModAction(item, true)}
                                 className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
                               >
                                 <Check className="w-4 h-4" />
@@ -2065,11 +2169,18 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
                         </td>
                       </tr>
                     ))}
+                    {filteredPendingItems.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="px-4 py-8 text-center text-[#6e7b6c] text-sm">
+                          Không có nội dung nào đang chờ kiểm duyệt.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
+          );})()}
 
           {/* ---------------- TAB: KYC ---------------- */}
           {activeTab === 'KYC' && (

@@ -130,6 +130,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getReports());
     }
 
+    @GetMapping("/warning-templates")
+    public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
+        return ResponseEntity.ok(adminService.getWarningTemplates());
+    }
+
     @GetMapping("/articles")
     public ResponseEntity<List<ArticleDto>> getArticles() {
         return ResponseEntity.ok(adminService.getArticles());
