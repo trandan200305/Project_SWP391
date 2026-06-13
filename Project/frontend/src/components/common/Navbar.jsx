@@ -407,15 +407,17 @@ export default function Navbar({
                       </button>
                     )}
 
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        if (onNavigate) onNavigate("profile");
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                    >
-                      <User className="w-4 h-4" /> Hồ sơ cá nhân
-                    </button>
+                    {(user?.role === "FREELANCER" || user?.role === "EMPLOYER") && (
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("profile");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <User className="w-4 h-4" /> Hồ sơ cá nhân
+                      </button>
+                    )}
 
                     <button
                       onClick={() => {
@@ -613,20 +615,16 @@ export default function Navbar({
 
             {user && (
               <>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigate) onNavigate("profile");
-                  }}
-                  className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                >
-                  <User className="w-4 h-4" /> Hồ sơ cá nhân
-                </button>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigate) onNavigate("edit_profile");
-                  }}
+                {(user?.role === "FREELANCER" || user?.role === "EMPLOYER") && (
+                  <button 
+                    onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('profile'); }}
+                    className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                  >
+                    <User className="w-4 h-4" /> Hồ sơ cá nhân
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('edit_profile'); }}
                   className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân

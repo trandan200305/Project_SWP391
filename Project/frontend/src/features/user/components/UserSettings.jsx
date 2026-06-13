@@ -2,9 +2,14 @@ import React from 'react';
 import { List, Lock, Trash2, ShieldCheck, UploadCloud, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function UserSettings({
-  prefTab, setPrefTab, role, targetId, handleSavePassword, currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, handleDeleteAccount,
+  user, role, targetId, prefTab, setPrefTab, onLogout,
   kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc
 }) {
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [deleteInput, setDeleteInput] = React.useState('');
+  
   const handleUploadKycImage = async (e, setUrlFn) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -37,8 +42,6 @@ export default function UserSettings({
     }
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}/kyc/submit` : `http://localhost:8080/api/employers/${targetId}/kyc/submit`;
     try {
-      // Mocked until backend API is ready. We just call it and pretend success or handle error.
-      // For now, we will update state locally to simulate if the backend isn't ready.
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,13 +51,62 @@ export default function UserSettings({
         alert("Đã gửi yêu cầu xác minh KYC thành công!");
         setKycStatus("PENDING");
       } else {
-        // Fallback simulation if endpoint not found (404)
         alert("Đã gửi yêu cầu xác minh (Mô phỏng - Cần hoàn thiện Backend API).");
         setKycStatus("PENDING");
       }
     } catch (err) {
       alert("Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
     }
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          role: role,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert(data.message || 'Đổi mật khẩu thất bại.');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối server.');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?')) return;
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=${deleteInput}` : `http://localhost:8080/api/employers/${targetId}?confirmationText=${deleteInput}`;
+    
+    fetch(endpoint, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message || 'Tài khoản của bạn đã được xóa.');
+          if (onLogout) onLogout();
+        } else {
+          alert(data.message || 'Xóa tài khoản thất bại!');
+        }
+      })
+      .catch(error => {
+        alert('Lỗi kết nối máy chủ!');
+      });
   };
 
   return (
@@ -236,7 +288,7 @@ export default function UserSettings({
 
                      {prefTab === 'danger' && role !== 'admin' && (
                        <div className="bg-white p-8 rounded-xl border border-red-200 shadow-sm max-w-2xl">
-                         <h3 className="font-bold text-gray-900 text-xl mb-4 flex items-center gap-2"><Trash2 className="w-5 h-5 text-red-500" /> Xóa Tài Khoản</h3>
+                         <h3 className="font-bold text-gray-900 text-xl mb-4 flex items-center gap-2"><Trash2 className="w-5 h-5 text-red-500" /> Xóa Tá Kkhoản</h3>
                          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                            Khi bạn xóa tài khoản, tất cả dữ liệu bao gồm hồ sơ, dự án, lịch sử giao dịch và tin nhắn sẽ bị xóa vĩnh viễn và không thể khôi phục.
                          </p>
@@ -245,7 +297,7 @@ export default function UserSettings({
                            <input type="text" value={deleteInput} onChange={e=>setDeleteInput(e.target.value)} placeholder="Nhập DELETE..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all bg-gray-50 focus:bg-white" />
                          </div>
                          <button onClick={handleDeleteAccount} disabled={deleteInput !== 'DELETE'} className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors w-full sm:w-auto shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                           Xác nhận Xóa Tài Khoản
+                           Xác nhận Xóa Tá Kkhoản
                          </button>
                        </div>
                      )}

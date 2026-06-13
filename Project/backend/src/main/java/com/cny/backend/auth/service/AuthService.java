@@ -95,6 +95,10 @@ public class AuthService {
         Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
         if (isSpecialAdmin || existingAdmin.isPresent()) {
             requestedRole = "ADMIN";
+        } else if (existingManager.isPresent() && !Boolean.TRUE.equals(existingManager.get().getIsDeleted())) {
+            requestedRole = "MANAGER";
+        } else if (existingStaff.isPresent() && !Boolean.TRUE.equals(existingStaff.get().getIsDeleted())) {
+            requestedRole = "STAFF";
         } else if (existingManager.isPresent()) {
             requestedRole = "MANAGER";
         } else if (existingStaff.isPresent()) {

@@ -130,7 +130,7 @@ export default function EditProfileForm({
                            />
                            <ReadOnlyRow 
                               label="Xác thực Email" 
-                              value={emailVerified ? 'Đã xác thực' : 'Chưa xác thực'} 
+                              value={emailVerified ? 'Đã xác minh' : 'Chưa xác minh'} 
                               badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${emailVerified ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`} 
                            />
                            <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDate(createdAt)} icon={Clock} />
