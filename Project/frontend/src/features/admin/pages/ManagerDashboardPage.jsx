@@ -1061,13 +1061,73 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           border-color: #bdcaba;
           transform: translateY(-2px);
         }
-        .scrollbar-hidden::-webkit-scrollbar {
+         .scrollbar-hidden::-webkit-scrollbar {
           display: none;
         }
         .scrollbar-hidden {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+
+        /* PROFILE CUSTOM HOVER DROPDOWN STYLE */
+        .profile-menu-wrapper {
+          position: relative;
+        }
+
+        .profile-menu-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          height: 20px;
+          z-index: 98;
+        }
+
+        .profile-menu-dropdown {
+          background-color: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          position: absolute;
+          width: 240px;
+          right: 0;
+          top: calc(100% + 6px);
+          overflow: hidden;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          z-index: 9999 !important;
+          padding: 8px;
+          cursor: default;
+          clip-path: inset(90% 50% 10% 50% round 16px);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-dropdown {
+          clip-path: inset(0% 0% 0% 0% round 16px);
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .profile-menu-item {
+          --delay: 0.1s;
+          --trdelay: 0.05s;
+          transform: translateY(15px);
+          opacity: 0;
+          transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(1) { transition-delay: var(--delay); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(2) { transition-delay: calc(var(--delay) + var(--trdelay)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(3) { transition-delay: calc(var(--delay) + (var(--trdelay) * 2)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(4) { transition-delay: calc(var(--delay) + (var(--trdelay) * 3)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
       `}</style>
 
       {/* Global Toast Alert */}
@@ -1205,9 +1265,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             <div className="h-8 w-[1px] bg-[#e1e8fd]" />
 
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <div className="profile-menu-wrapper">
                 <div 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                 >
                   <div className="flex flex-col text-right">
@@ -1225,85 +1284,80 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   />
                 </div>
 
-                {showProfileMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowProfileMenu(false)} 
-                    />
-                    <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="px-3 py-2 border-b border-slate-50 mb-1">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
-                          Tài khoản
-                        </p>
-                        <p
-                          className="text-sm font-bold text-slate-800 truncate text-left"
-                          title={user?.email}
-                        >
-                          {user?.email || user?.displayName}
-                        </p>
-                      </div>
+                <div className="profile-menu-dropdown">
+                  <div className="profile-menu-item px-3 py-2 border-b border-slate-50 mb-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
+                      Tài khoản
+                    </p>
+                    <p
+                      className="text-sm font-bold text-slate-800 truncate text-left"
+                      title={user?.email}
+                    >
+                      {user?.email || user?.displayName}
+                    </p>
+                  </div>
 
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onNavigate) onNavigate("edit_profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    </button>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onNavigate) onNavigate("preferences");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+                  </div>
+
+                  {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
+                    <div className="profile-menu-item">
                       <button
                         onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("edit_profile");
+                          if (onNavigate) onNavigate("messenger");
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
                       >
-                        <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("preferences");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                      >
-                        <Settings className="w-4 h-4" /> Cài đặt chung
-                      </button>
-
-                      {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("messenger");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
-                        >
-                          <MessageSquare className="w-4 h-4" /> Tin nhắn
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
-                      >
-                        <Shield className="w-4 h-4" /> Dashboard Manager
-                      </button>
-
-                      <div className="h-[1px] bg-slate-100 my-1 mx-2" />
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onLogout) {
-                            onLogout();
-                          } else {
-                            localStorage.clear();
-                            window.location.reload();
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                      >
-                        <LogOut className="w-4 h-4" /> Đăng xuất
+                        <MessageSquare className="w-4 h-4" /> Tin nhắn
                       </button>
                     </div>
-                  </>
-                )}
+                  )}
+
+                  <div className="profile-menu-item">
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                    >
+                      <Shield className="w-4 h-4" /> Dashboard Manager
+                    </button>
+                  </div>
+
+                  <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onLogout) {
+                          onLogout();
+                        } else {
+                          localStorage.clear();
+                          window.location.reload();
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                      <LogOut className="w-4 h-4" /> Đăng xuất
+                    </button>
+                  </div>
+                </div>
               </div>
               <button 
                 onClick={onNavigateToHome}
