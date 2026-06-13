@@ -5,14 +5,15 @@ import {
   Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  Users, UserPlus, Move, Zap, Calendar, Download
+  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-export default function ManagerDashboardPage({ user, onNavigateToHome }) {
+export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   // Styles & Brand Settings
   const brandName = "FelanPro";
   const brandSub = "Manager Console";
@@ -1116,13 +1117,20 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
                 { name: 'Audit Logs', icon: Activity },
                 { name: 'Notifications', icon: Bell },
                 { name: 'Settings', icon: Settings },
+                { name: 'Profile', icon: User },
               ].map((item) => {
                 const IconComp = item.icon;
                 const isActive = activeTab === item.name;
                 return (
                   <button
                     key={item.name}
-                    onClick={() => setActiveTab(item.name)}
+                    onClick={() => {
+                      if (item.name === 'Profile') {
+                        onNavigate && onNavigate('profile');
+                      } else {
+                        setActiveTab(item.name);
+                      }
+                    }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
                       isActive 
                         ? 'bg-[#f7fff2] text-[#006b2c]' 
@@ -1197,19 +1205,106 @@ export default function ManagerDashboardPage({ user, onNavigateToHome }) {
             <div className="h-8 w-[1px] bg-[#e1e8fd]" />
 
             <div className="flex items-center gap-3">
-              <div className="flex flex-col text-right">
-                <span className="text-body-sm font-extrabold text-[#141b2b] leading-tight">
-                  ManagerStaff
-                </span>
-                <span className="text-[10px] font-bold text-[#6e7b6c]">
-                  Ops Dept • General
-                </span>
+              <div className="relative">
+                <div 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <div className="flex flex-col text-right">
+                    <span className="text-body-sm font-extrabold text-[#141b2b] leading-tight">
+                      {user?.displayName || user?.email || "ManagerStaff"}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#6e7b6c]">
+                      Ops Dept • General
+                    </span>
+                  </div>
+                  <img
+                    src={user?.avatarUrl || user?.avatar || "https://ui-avatars.com/api/?name=ManagerStaff&background=006b2c&color=fff"}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full border border-[#bdcaba] object-cover"
+                  />
+                </div>
+
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowProfileMenu(false)} 
+                    />
+                    <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-3 py-2 border-b border-slate-50 mb-1">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
+                          Tài khoản
+                        </p>
+                        <p
+                          className="text-sm font-bold text-slate-800 truncate text-left"
+                          title={user?.email}
+                        >
+                          {user?.email || user?.displayName}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("edit_profile");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("preferences");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <Settings className="w-4 h-4" /> Cài đặt chung
+                      </button>
+
+                      {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("messenger");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
+                        >
+                          <MessageSquare className="w-4 h-4" /> Tin nhắn
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                      >
+                        <Shield className="w-4 h-4" /> Dashboard Manager
+                      </button>
+
+                      <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onLogout) {
+                            onLogout();
+                          } else {
+                            localStorage.clear();
+                            window.location.reload();
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                      >
+                        <LogOut className="w-4 h-4" /> Đăng xuất
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              <img
-                src={user?.avatar || "https://ui-avatars.com/api/?name=ManagerStaff&background=006b2c&color=fff"}
-                alt="Avatar"
-                className="w-10 h-10 rounded-full border border-[#bdcaba] object-cover"
-              />
               <button 
                 onClick={onNavigateToHome}
                 title="Exit Console"

@@ -29,12 +29,12 @@ export default function AppRoutes({
 }) {
   if (currentPage === 'admin') {
     if (user?.role === 'ADMIN') {
-      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
     if (user?.role === 'MANAGER') {
-      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
-    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
   if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {

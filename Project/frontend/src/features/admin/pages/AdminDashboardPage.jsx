@@ -5,14 +5,16 @@ import {
   Search, Bell, UserCheck, AlertTriangle, CheckCircle2, Ban, 
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
-  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight
+  ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
+  User, Edit3, MessageSquare, Shield
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export default function AdminDashboard({ user, onNavigateToHome }) {
+export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onLogout }) {
   
   const [activeTab, setActiveTab] = useState('home');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('30days'); 
   
@@ -774,6 +776,20 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
                   <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'cms' ? 'text-violet-500 font-medium' : 'text-slate-500'}`}>Cấu hình & SEO</p>
                 </div>
               </div>
+
+              {/* Personal Profile */}
+              <div 
+                onClick={() => onNavigate && onNavigate('profile')}
+                className="relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5"
+              >
+                <div className="w-10 h-10 rounded-[14px] bg-sky-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <User className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-[14px] transition-colors text-slate-800 group-hover:text-sky-600">Profile</p>
+                  <p className="text-[12px] truncate mt-0.5 text-slate-500 group-hover:text-sky-500 font-medium">Thông tin cá nhân</p>
+                </div>
+              </div>
             </nav>
           </div>
         </div>
@@ -822,17 +838,117 @@ export default function AdminDashboard({ user, onNavigateToHome }) {
             </p>
           </div>
 
-          {activeTab === 'dashboard' && (
-            <div className="flex items-center gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-4 shrink-0">
+            {activeTab === 'dashboard' && (
               <button 
                 onClick={loadDashboardData}
-                className="p-2.5 text-slate-400 hover:text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 bg-white shadow-sm transition-all duration-200 active:scale-95 hover:shadow-md"
+                className="p-2.5 text-slate-400 hover:text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 bg-white shadow-sm transition-all duration-200 active:scale-95 hover:shadow-md mr-2"
                 title="Refresh Data"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
+            )}
+            
+            {/* Admin Profile Widget */}
+            <div className="relative">
+              <div 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-[13px] font-bold text-slate-800 leading-tight">{user?.displayName || user?.email}</p>
+                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mt-0.5">{user?.role}</p>
+                </div>
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-slate-200" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-sm border border-blue-200">
+                    {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                )}
+              </div>
+
+              {showProfileMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowProfileMenu(false)} 
+                  />
+                  <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-3 py-2 border-b border-slate-50 mb-1">
+                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
+                        Tài khoản
+                      </p>
+                      <p
+                        className="text-sm font-bold text-slate-800 truncate text-left"
+                        title={user?.email}
+                      >
+                        {user?.email || user?.displayName}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate("edit_profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onNavigate) onNavigate("preferences");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                    >
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+
+                    {user?.role !== "STAFF" && user?.role !== "MANAGER" && (
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("messenger");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all mt-1"
+                      >
+                        <MessageSquare className="w-4 h-4" /> Tin nhắn
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                    >
+                      <Shield className="w-4 h-4" /> {user?.role === "ADMIN" ? "Dashboard Admin" : user?.role === "MANAGER" ? "Dashboard Manager" : "Dashboard Staff"}
+                    </button>
+
+                    <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onLogout) {
+                          onLogout();
+                        } else {
+                          localStorage.clear();
+                          window.location.reload();
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                      <LogOut className="w-4 h-4" /> Đăng xuất
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </header>
 
         {}
