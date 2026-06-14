@@ -31,6 +31,7 @@ import {
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
+//
 export default function Messenger({ user, onNavigateHome, initialPartner }) {
   const isAgent = user?.role === "ADMIN" || user?.role === "STAFF";
   const normalizeRole = (role) => String(role || "").toUpperCase();
@@ -40,10 +41,14 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   const isSupportCustomerRole = (role) =>
     ["EMPLOYER", "FREELANCER", "CLIENT"].includes(normalizeRole(role));
   const isOwnSupportMessage = (msg) => {
+    //kiểm tra tin nhắn có phải của mình không
     const senderRole = normalizeRole(msg?.senderRole);
     const currentRole = normalizeRole(user?.role);
 
+    // kiểm tra vai trò của user hiện tại
+    //người dùng không phải admin/staff
     if (isSupportCustomerRole(currentRole)) {
+      //người gửi là admin/staff
       if (isSupportAgentRole(senderRole)) return false;
     }
 
@@ -57,19 +62,40 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
   const [activeTab, setActiveTab] = useState("active");
   const [activeDirectTab, setActiveDirectTab] = useState("active"); // 'active' | 'blocked' | 'deleted'
+  const [navSection, setNavSection] = useState("chat"); // 'chat' | 'freelancer' | 'employer'
+
   const [tickets, setTickets] = useState([]);
   const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
+  const ticketSubscriptionRef = useRef(null);
+  const activeTicketIdRef = useRef(null);
 
   const [directChats, setDirectChats] = useState([]);
   const [activeDirectChat, setActiveDirectChat] = useState(null);
   const directChatSubscriptionRef = useRef(null);
+  const activeDirectChatIdRef = useRef(null);
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  const [systemUsers, setSystemUsers] = useState([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
+
+  const stompClientRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({
     message: "",
@@ -79,23 +105,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     type: "danger",
     onConfirm: null,
   });
-
-  const stompClientRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const ticketSubscriptionRef = useRef(null);
-  const activeTicketIdRef = useRef(null);
-  const activeDirectChatIdRef = useRef(null);
-  const [attachedFiles, setAttachedFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-  const imageInputRef = useRef(null);
-  const [navSection, setNavSection] = useState("chat"); // 'chat' | 'freelancer' | 'employer'
-  const [systemUsers, setSystemUsers] = useState([]);
-  const [isUsersLoading, setIsUsersLoading] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [selectedProfile, setSelectedProfile] = useState(null);
-  const [profileDetails, setProfileDetails] = useState(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   // --- Resizable Sidebar Logic ---
   const [sidebarWidth, setSidebarWidth] = useState(360);
@@ -143,7 +152,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     document.body.style.userSelect = "none";
   };
 
-  // 2. KHAI BÁO CÁC EFFECTS (WEBSOCKET, KẾT NỐI, SCROLL)
+  // Subscribe to the selected support ticket's WebSocket topic to receive real-time messages
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -152,6 +161,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   }, [activeTicket, isConnected]);
 
+  // Subscribe to the selected direct chat's WebSocket topic to receive real-time messages
   useEffect(() => {
     const chatId = activeDirectChat?.chatId;
     activeDirectChatIdRef.current = chatId;
@@ -159,6 +169,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       subscribeToDirectChat(chatId);
     }
   }, [activeDirectChat, isConnected]);
+  // Chat (1-1) flows.
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/api/ws");
     const client = new Client({
@@ -920,6 +931,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
     }
 
+    // support chat
     const payload = {
       ticketId: ticketId,
       senderId: user.id,
@@ -929,7 +941,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       messageText: msgText,
       attachments: attachedFiles,
     };
-
+    //websocket
     stompClientRef.current.publish({
       destination: "/app/chat.send",
       body: JSON.stringify(payload),
@@ -937,6 +949,39 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
     setInputText("");
     setAttachedFiles([]);
+  };
+
+  const handleSendDirectMessage = (e) => {
+    if (e) e.preventDefault();
+    if (!inputText.trim() && attachedFiles.length === 0) return;
+
+    let msgText = inputText.trim();
+    if (!msgText && attachedFiles.length > 0) {
+      const allImages = attachedFiles.every((att) =>
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl),
+      );
+      msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
+    }
+
+    //chat 11
+    const payload = {
+      chatId: activeDirectChat.chatId,
+      senderId: user.id,
+      senderRole: user.role,
+      messageText: msgText,
+      attachments: attachedFiles,
+    };
+
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: "/app/direct.chat.send",
+        body: JSON.stringify(payload),
+      });
+      setInputText("");
+      setAttachedFiles([]);
+    } else {
+      alert("Mất kết nối server, vui lòng thử lại sau.");
+    }
   };
 
   const handleDeleteDirectChat = async (chatId) => {
@@ -3081,19 +3126,86 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                             <div
                               className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-full`}
                             >
-                              <div
-                                className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
-                                  isMine
-                                    ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
-                                    : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
-                                } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
-                              >
-                                <p className="whitespace-pre-wrap">
-                                  {activeDirectChat.isDeleted
-                                    ? "Tin nhắn đã bị ẩn"
-                                    : msg.messageText}
-                                </p>
-                              </div>
+                              {msg.messageText &&
+                                msg.messageText.trim() !== "" &&
+                                !(
+                                  msg.attachments &&
+                                  msg.attachments.length > 0 &&
+                                  (msg.messageText === "[Hình ảnh]" ||
+                                    msg.messageText === "[Tệp đính kèm]")
+                                ) && (
+                                  <div
+                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
+                                      isMine
+                                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
+                                        : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
+                                    } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
+                                  >
+                                    <p className="whitespace-pre-wrap">
+                                      {activeDirectChat.isDeleted
+                                        ? "Tin nhắn đã bị ẩn"
+                                        : msg.messageText}
+                                    </p>
+                                  </div>
+                                )}
+                              {msg.attachments &&
+                                msg.attachments.length > 0 && (
+                                  <div
+                                    className={`mt-2 flex flex-col gap-2 ${isMine ? "items-end" : "items-start"}`}
+                                  >
+                                    {msg.attachments.map((att, attIdx) => {
+                                      const isImg =
+                                        /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                                          att.fileUrl,
+                                        );
+                                      if (isImg) {
+                                        return (
+                                          <a
+                                            key={attIdx}
+                                            href={att.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block max-w-sm rounded-xl overflow-hidden border border-slate-200 hover:opacity-95 transition-all shadow-sm bg-slate-50"
+                                          >
+                                            <img
+                                              src={att.fileUrl}
+                                              alt={att.fileName || "Image"}
+                                              className="max-h-60 object-contain w-full"
+                                            />
+                                          </a>
+                                        );
+                                      } else {
+                                        return (
+                                          <a
+                                            key={attIdx}
+                                            href={att.fileUrl}
+                                            download={att.fileName}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm font-semibold transition-all shadow-sm ${
+                                              isMine
+                                                ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                          >
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                              <FileText className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="font-bold truncate max-w-[160px]">
+                                                {att.fileName}
+                                              </p>
+                                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                                Tải về tệp tin
+                                              </p>
+                                            </div>
+                                            <Download className="w-4 h-4 text-slate-400 ml-2" />
+                                          </a>
+                                        );
+                                      }
+                                    })}
+                                  </div>
+                                )}
                               <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold mt-1.5 px-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 {new Date(msg.sentAt).toLocaleTimeString([], {
@@ -3137,52 +3249,120 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       </span>
                     </div>
                   ) : (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (inputText.trim() === "") return;
-
-                        const messageDto = {
-                          chatId: activeDirectChat.chatId,
-                          senderId: user.id,
-                          senderRole: user.role,
-                          messageText: inputText,
-                        };
-
-                        if (
-                          stompClientRef.current &&
-                          stompClientRef.current.connected
-                        ) {
-                          stompClientRef.current.publish({
-                            destination: `/app/direct.chat.send`,
-                            body: JSON.stringify(messageDto),
-                          });
-                          setInputText("");
-                        } else {
-                          alert("Mất kết nối server, vui lòng thử lại sau.");
-                        }
-                      }}
-                      className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
-                    >
-                      <input
-                        type="text"
-                        placeholder="Nhập tin nhắn..."
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
-                      />
-                      <button
-                        type="submit"
-                        disabled={inputText.trim() === ""}
-                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                          inputText.trim() === ""
-                            ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
-                            : ""
-                        }`}
+                    <>
+                      {(attachedFiles.length > 0 || uploading) && (
+                        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2.5 items-center shrink-0">
+                          {attachedFiles.map((file, idx) => {
+                            const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              file.fileUrl,
+                            );
+                            return (
+                              <div
+                                key={idx}
+                                className="relative flex items-center gap-2 bg-white pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 shadow-sm max-w-xs group"
+                              >
+                                {isImg ? (
+                                  <img
+                                    src={file.fileUrl}
+                                    alt="Preview"
+                                    className="w-8 h-8 rounded-lg object-cover border border-slate-100"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                    <FileText className="w-4 h-4" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[11px] font-bold text-slate-700 truncate max-w-[120px]">
+                                    {file.fileName}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAttachment(idx)}
+                                  className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {uploading && (
+                            <div className="flex items-center gap-2 text-[11px] font-extrabold text-blue-600 bg-blue-50/50 pl-2 pr-3 py-1.5 rounded-xl border border-blue-100">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Đang tải tệp lên...</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <form
+                        onSubmit={handleSendDirectMessage}
+                        className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
                       >
-                        <Send className="w-5 h-5 shrink-0" />
-                      </button>
-                    </form>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={(e) => handleFileChange(e, false)}
+                          className="hidden"
+                          multiple
+                        />
+                        <input
+                          type="file"
+                          ref={imageInputRef}
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, true)}
+                          className="hidden"
+                          multiple
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={uploading}
+                          className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                          title="Đính kèm hình ảnh"
+                        >
+                          <Image className="w-5 h-5 shrink-0" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                          title="Đính kèm tệp tin"
+                        >
+                          <Paperclip className="w-5 h-5 shrink-0" />
+                        </button>
+
+                        <input
+                          type="text"
+                          placeholder="Nhập tin nhắn..."
+                          value={inputText}
+                          onChange={(e) => setInputText(e.target.value)}
+                          className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                        />
+
+                        {(() => {
+                          const canSend =
+                            (inputText.trim() !== "" ||
+                              attachedFiles.length > 0) &&
+                            !uploading;
+                          return (
+                            <button
+                              type="submit"
+                              disabled={!canSend}
+                              className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                                !canSend
+                                  ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
+                                  : ""
+                              }`}
+                            >
+                              <Send className="w-5 h-5 shrink-0" />
+                            </button>
+                          );
+                        })()}
+                      </form>
+                    </>
                   )}
                 </>
               ) : (

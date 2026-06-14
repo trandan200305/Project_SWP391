@@ -4,6 +4,7 @@ import com.cny.backend.chat.dto.DirectChatDto;
 import com.cny.backend.chat.dto.DirectMessageDto;
 import com.cny.backend.chat.entity.DirectChat;
 import com.cny.backend.chat.entity.DirectMessage;
+import com.cny.backend.chat.entity.DirectMessageAttachment;
 import com.cny.backend.chat.repository.DirectChatRepository;
 import com.cny.backend.chat.repository.DirectMessageRepository;
 import com.cny.backend.user.entity.Employer;
@@ -16,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -154,6 +157,26 @@ public class DirectChatService {
                 .isRead(false)
                 .build();
 
+        if (msgDto.getAttachments() != null) {
+            List<DirectMessageAttachment> attList = new ArrayList<>();
+            for (Map<String, Object> attMap : msgDto.getAttachments()) {
+                String fileUrl = (String) attMap.get("fileUrl");
+                String fileName = (String) attMap.get("fileName");
+                Object sizeObj = attMap.get("fileSize");
+                Long fileSize = null;
+                if (sizeObj instanceof Number) {
+                    fileSize = ((Number) sizeObj).longValue();
+                }
+                attList.add(DirectMessageAttachment.builder()
+                        .message(msg)
+                        .fileUrl(fileUrl)
+                        .fileName(fileName)
+                        .fileSize(fileSize)
+                        .build());
+            }
+            msg.setAttachments(attList);
+        }
+
         msg = messageRepository.save(msg);
         
         chat.setUpdatedAt(LocalDateTime.now());
@@ -177,6 +200,18 @@ public class DirectChatService {
                 .isRead(msg.getIsRead())
                 .sentAt(msg.getSentAt())
                 .build();
+
+        if (msg.getAttachments() != null) {
+            List<Map<String, Object>> attList = new ArrayList<>();
+            for (DirectMessageAttachment att : msg.getAttachments()) {
+                Map<String, Object> attMap = new HashMap<>();
+                attMap.put("fileUrl", att.getFileUrl());
+                attMap.put("fileName", att.getFileName());
+                attMap.put("fileSize", att.getFileSize());
+                attList.add(attMap);
+            }
+            dto.setAttachments(attList);
+        }
 
         if ("FREELANCER".equals(msg.getSenderRole())) {
             dto.setSenderName(msg.getChat().getFreelancer().getDisplayName() != null ? msg.getChat().getFreelancer().getDisplayName() : msg.getChat().getFreelancer().getUser().getFullName());
