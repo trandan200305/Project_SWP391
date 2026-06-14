@@ -742,20 +742,24 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                                                 Xem báo giá ({proj.proposalCount})
                                                             </button>
                                                         )}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setEditingProject(proj)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
-                                                        >
-                                                            Sửa
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDeleteProject(proj.projectId)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
-                                                        >
-                                                            Xóa
-                                                        </button>
+                                                        {proj.status !== 'IN_PROGRESS' && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditingProject(proj)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
+                                                                >
+                                                                    Sửa
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteProject(proj.projectId)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
+                                                                >
+                                                                    Xóa
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>);
                                         })}

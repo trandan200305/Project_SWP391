@@ -110,6 +110,10 @@ public class ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
 
+        if ("IN_PROGRESS".equals(project.getStatus())) {
+            throw new IllegalArgumentException("Không thể chỉnh sửa dự án đã giao cho Freelancer (đang thực hiện).");
+        }
+
         if (dto.getCategoryId() != null) {
             JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
@@ -165,6 +169,11 @@ public class ProjectService {
     public Project deleteProject(Integer projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+
+        if ("IN_PROGRESS".equals(project.getStatus())) {
+            throw new IllegalArgumentException("Không thể xóa dự án đã giao cho Freelancer (đang thực hiện).");
+        }
+
         project.setIsDeleted(true);
         return projectRepository.save(project);
     }
