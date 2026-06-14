@@ -152,7 +152,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     document.body.style.userSelect = "none";
   };
 
-  // Subscribe to the selected support ticket's WebSocket topic to receive real-time messages
+  // Subscribe to the selected support ticket's WebSocket topic to receive real-time messages.
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -161,7 +161,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   }, [activeTicket, isConnected]);
 
-  // Subscribe to the selected direct chat's WebSocket topic to receive real-time messages
+  // Subscribe to the selected direct chat's WebSocket topic to receive real-time messages.
   useEffect(() => {
     const chatId = activeDirectChat?.chatId;
     activeDirectChatIdRef.current = chatId;
@@ -169,7 +169,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       subscribeToDirectChat(chatId);
     }
   }, [activeDirectChat, isConnected]);
-  // Chat (1-1) flows.
+
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/api/ws");
     const client = new Client({
@@ -206,13 +206,13 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               setTickets((prevTickets) =>
                 prevTickets.map((t) =>
                   t.ticket_id === targetTicketId ||
-                  t.ticketId === targetTicketId
+                    t.ticketId === targetTicketId
                     ? {
-                        ...t,
-                        assigned_staff_id: staffId,
-                        staff_name: staffName,
-                        staff_avatar: staffAvatar,
-                      }
+                      ...t,
+                      assigned_staff_id: staffId,
+                      staff_name: staffName,
+                      staff_avatar: staffAvatar,
+                    }
                     : t,
                 ),
               );
@@ -406,6 +406,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       setIsLoading(false);
     }
   };
+  // show all messages in a support chat
   const fetchMessages = async (ticketId) => {
     try {
       const data = await messengerApi.getMessages(ticketId);
@@ -418,6 +419,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   // ------------------------------------------
   // 4. LẮNG NGHE REAL-TIME QUA WEBSOCKET (SUPPORT CHAT)
   // ------------------------------------------
+
+  //listen to new messages in a support chat in real time
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
     if (ticketSubscriptionRef.current) {
@@ -433,7 +436,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.senderRole?.toUpperCase() !==
-              receivedMessage.readerRole?.toUpperCase()
+                receivedMessage.readerRole?.toUpperCase()
                 ? { ...msg, isRead: true, read: true }
                 : msg,
             ),
@@ -490,11 +493,11 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               prev.map((t) =>
                 t.ticket_id === ticketId || t.ticketId === ticketId
                   ? {
-                      ...t,
-                      assigned_staff_id: staffId,
-                      staff_name: staffName,
-                      staff_avatar: staffAvatar,
-                    }
+                    ...t,
+                    assigned_staff_id: staffId,
+                    staff_name: staffName,
+                    staff_avatar: staffAvatar,
+                  }
                   : t,
               ),
             );
@@ -563,9 +566,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setIsLoading(false);
   };
 
-  // ------------------------------------------
   // 5. CÁC HÀM XỬ LÝ CHAT TRỰC TIẾP 1-1 (DIRECT CHAT)
-  // ------------------------------------------
+  // show old messages in a 1-1 chat
   const fetchDirectMessages = async (chatId) => {
     try {
       const data = await messengerApi.getDirectMessages(chatId);
@@ -575,6 +577,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
+  // listen to new messages in a 1-1 chat in real time
   const subscribeToDirectChat = (chatId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
     if (directChatSubscriptionRef.current) {
@@ -590,7 +593,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.senderRole?.toUpperCase() !==
-              receivedMessage.readerRole?.toUpperCase()
+                receivedMessage.readerRole?.toUpperCase()
                 ? { ...msg, isRead: true, read: true }
                 : msg,
             ),
@@ -602,7 +605,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
         const isMyMessage =
           receivedMessage.senderId === user?.id &&
           receivedMessage.senderRole?.toUpperCase() ===
-            user?.role?.toUpperCase();
+          user?.role?.toUpperCase();
         if (activeDirectChatIdRef.current === chatId && !isMyMessage) {
           if (stompClientRef.current && stompClientRef.current.connected) {
             stompClientRef.current.publish({
@@ -767,16 +770,16 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
             prev.map((t) =>
               t.ticket_id === activeTicket.ticket_id
                 ? {
-                    ...t,
-                    blocked_until:
-                      days === -1
-                        ? "9999-12-31T23:59:59"
-                        : days === 0
-                          ? null
-                          : new Date(
-                              Date.now() + days * 86400000,
-                            ).toISOString(),
-                  }
+                  ...t,
+                  blocked_until:
+                    days === -1
+                      ? "9999-12-31T23:59:59"
+                      : days === 0
+                        ? null
+                        : new Date(
+                          Date.now() + days * 86400000,
+                        ).toISOString(),
+                }
                 : t,
             ),
           );
@@ -865,11 +868,11 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
         prev.map((t) =>
           t.ticket_id === ticketId || t.ticketId === ticketId
             ? {
-                ...t,
-                assigned_staff_id: user.id,
-                staff_name: user.name,
-                staff_avatar: user.avatar,
-              }
+              ...t,
+              assigned_staff_id: user.id,
+              staff_name: user.name,
+              staff_avatar: user.avatar,
+            }
             : t,
         ),
       );
@@ -931,7 +934,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
     }
 
-    // support chat
+    // dong goi du lieu gui len server
     const payload = {
       ticketId: ticketId,
       senderId: user.id,
@@ -941,7 +944,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       messageText: msgText,
       attachments: attachedFiles,
     };
-    //websocket
+    // gui du lieu len server thong qua websocket
     stompClientRef.current.publish({
       destination: "/app/chat.send",
       body: JSON.stringify(payload),
@@ -963,7 +966,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
     }
 
-    //chat 11
     const payload = {
       chatId: activeDirectChat.chatId,
       senderId: user.id,
@@ -1361,11 +1363,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           <nav className="px-3 mt-6 flex flex-col gap-1.5">
             <button
               onClick={() => handleNavSectionChange("chat")}
-              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold transition-all border ${
-                navSection === "chat"
-                  ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
-                  : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
-              }`}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold transition-all border ${navSection === "chat"
+                ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+                : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                }`}
             >
               <span className="flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 shrink-0" />
@@ -1376,11 +1377,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
             {!isAgent && (
               <button
                 onClick={() => handleNavSectionChange("direct_chats")}
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold transition-all border ${
-                  navSection === "direct_chats"
-                    ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
-                    : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
-                }`}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold transition-all border ${navSection === "direct_chats"
+                  ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+                  : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                  }`}
               >
                 <MessageSquare className="w-5 h-5 shrink-0" />
                 <span>Tin nhắn riêng</span>
@@ -1390,22 +1390,20 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               <>
                 <button
                   onClick={() => handleNavSectionChange("freelancer")}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
-                    navSection === "freelancer"
-                      ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
-                      : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${navSection === "freelancer"
+                    ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
+                    : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                    }`}
                 >
                   <Users className="w-5 h-5 shrink-0" />
                   <span>Tìm Freelancer</span>
                 </button>
                 <button
                   onClick={() => handleNavSectionChange("employer")}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
-                    navSection === "employer"
-                      ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
-                      : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${navSection === "employer"
+                    ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
+                    : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                    }`}
                 >
                   <Users className="w-5 h-5 shrink-0" />
                   <span>Tìm Employer</span>
@@ -1418,11 +1416,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                     user?.role === "FREELANCER" ? "employer" : "freelancer",
                   )
                 }
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${
-                  navSection === "employer" || navSection === "freelancer"
-                    ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
-                    : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
-                }`}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-medium transition-all border ${navSection === "employer" || navSection === "freelancer"
+                  ? "bg-teal-500/10 text-teal-400 border-teal-500/20 font-semibold"
+                  : "border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                  }`}
               >
                 <Users className="w-5 h-5 shrink-0" />
                 <span>
@@ -1461,11 +1458,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               </h2>
             </div>
             <span
-              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                isConnected
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : "bg-rose-50 text-rose-700 border border-rose-200"
-              }`}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${isConnected
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : "bg-rose-50 text-rose-700 border border-rose-200"
+                }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}
@@ -1510,9 +1506,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           <div
             id="messenger-sidebar-container"
             style={{ "--sidebar-width": `${sidebarWidth}px` }}
-            className={`w-full md:w-[var(--sidebar-width)] border-r border-slate-200 flex flex-col bg-white shrink-0 ${
-              activeTicket && "hidden md:flex"
-            }`}
+            className={`w-full md:w-[var(--sidebar-width)] border-r border-slate-200 flex flex-col bg-white shrink-0 ${activeTicket && "hidden md:flex"
+              }`}
           >
             <div className="p-5 border-b border-slate-100">
               {navSection === "chat" ? (
@@ -1585,20 +1580,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveTab("active");
                           setActiveTicket(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeTab === "active"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeTab === "active"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đang xử lý
                         {activeTickets.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "active"
-                                ? "bg-white/25"
-                                : "bg-blue-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeTab === "active"
+                              ? "bg-white/25"
+                              : "bg-blue-500 text-white"
+                              }`}
                           >
                             {activeTickets.length}
                           </span>
@@ -1609,20 +1602,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveTab("pending");
                           setActiveTicket(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeTab === "pending"
-                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeTab === "pending"
+                          ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Chờ phản hồi
                         {pendingTickets.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "pending"
-                                ? "bg-white/25 text-white"
-                                : "bg-amber-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeTab === "pending"
+                              ? "bg-white/25 text-white"
+                              : "bg-amber-500 text-white"
+                              }`}
                           >
                             {pendingTickets.length}
                           </span>
@@ -1633,20 +1624,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveTab("blocked");
                           setActiveTicket(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeTab === "blocked"
-                            ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeTab === "blocked"
+                          ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đã chặn
                         {blockedTickets.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "blocked"
-                                ? "bg-white/25 text-white"
-                                : "bg-slate-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeTab === "blocked"
+                              ? "bg-white/25 text-white"
+                              : "bg-slate-500 text-white"
+                              }`}
                           >
                             {blockedTickets.length}
                           </span>
@@ -1658,20 +1647,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveTicket(null);
                           fetchDeletedTickets();
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeTab === "deleted"
-                            ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeTab === "deleted"
+                          ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đã xoá
                         {deletedTickets.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "deleted"
-                                ? "bg-white/25 text-white"
-                                : "bg-rose-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeTab === "deleted"
+                              ? "bg-white/25 text-white"
+                              : "bg-rose-500 text-white"
+                              }`}
                           >
                             {deletedTickets.length}
                           </span>
@@ -1687,20 +1674,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveDirectTab("active");
                           setActiveDirectChat(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeDirectTab === "active"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeDirectTab === "active"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đang chat
                         {activeDirectChats.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "active"
-                                ? "bg-white/25"
-                                : "bg-blue-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeDirectTab === "active"
+                              ? "bg-white/25"
+                              : "bg-blue-500 text-white"
+                              }`}
                           >
                             {activeDirectChats.length}
                           </span>
@@ -1711,20 +1696,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveDirectTab("blocked");
                           setActiveDirectChat(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeDirectTab === "blocked"
-                            ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeDirectTab === "blocked"
+                          ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đã chặn
                         {blockedDirectChats.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "blocked"
-                                ? "bg-white/25"
-                                : "bg-slate-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeDirectTab === "blocked"
+                              ? "bg-white/25"
+                              : "bg-slate-500 text-white"
+                              }`}
                           >
                             {blockedDirectChats.length}
                           </span>
@@ -1735,20 +1718,18 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           setActiveDirectTab("deleted");
                           setActiveDirectChat(null);
                         }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
-                          activeDirectTab === "deleted"
-                            ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${activeDirectTab === "deleted"
+                          ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
                       >
                         Đã xoá
                         {deletedDirectChats.length > 0 && (
                           <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "deleted"
-                                ? "bg-white/25"
-                                : "bg-rose-500 text-white"
-                            }`}
+                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${activeDirectTab === "deleted"
+                              ? "bg-white/25"
+                              : "bg-rose-500 text-white"
+                              }`}
                           >
                             {deletedDirectChats.length}
                           </span>
@@ -1780,11 +1761,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                               <div
                                 key={ticket.ticket_id}
                                 onClick={() => handleSelectTicket(ticket)}
-                                className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
-                                  isSelected
-                                    ? "bg-blue-50/50 border-l-blue-600"
-                                    : "border-l-transparent hover:bg-slate-50"
-                                }`}
+                                className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${isSelected
+                                  ? "bg-blue-50/50 border-l-blue-600"
+                                  : "border-l-transparent hover:bg-slate-50"
+                                  }`}
                               >
                                 <div className="relative shrink-0">
                                   <img
@@ -1812,7 +1792,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                     const isOnline =
                                       lastLoginTime > 0 &&
                                       Date.now() - lastLoginTime <
-                                        5 * 60 * 1000;
+                                      5 * 60 * 1000;
 
                                     if (isLocked) {
                                       return (
@@ -1844,11 +1824,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                   </div>
                                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                                     <span
-                                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                                        ticket.sender_role === "EMPLOYER"
-                                          ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                          : "bg-blue-50 text-blue-600 border-blue-100"
-                                      }`}
+                                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${ticket.sender_role === "EMPLOYER"
+                                        ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                        : "bg-blue-50 text-blue-600 border-blue-100"
+                                        }`}
                                     >
                                       {ticket.sender_role}
                                     </span>
@@ -1904,11 +1883,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                             <div
                               key={ticket.ticket_id}
                               onClick={() => handleSelectTicket(ticket)}
-                              className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
-                                isSelected
-                                  ? "bg-amber-50/80 border-l-amber-500"
-                                  : "border-l-transparent hover:bg-amber-50/40"
-                              }`}
+                              className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${isSelected
+                                ? "bg-amber-50/80 border-l-amber-500"
+                                : "border-l-transparent hover:bg-amber-50/40"
+                                }`}
                             >
                               <div className="relative shrink-0">
                                 <img
@@ -1964,11 +1942,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                 </div>
                                 <div className="flex items-center gap-1.5 mb-1">
                                   <span
-                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                                      ticket.sender_role === "EMPLOYER"
-                                        ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                        : "bg-blue-50 text-blue-600 border-blue-100"
-                                    }`}
+                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${ticket.sender_role === "EMPLOYER"
+                                      ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                      : "bg-blue-50 text-blue-600 border-blue-100"
+                                      }`}
                                   >
                                     {ticket.sender_role}
                                   </span>
@@ -2015,11 +1992,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           <div
                             key={ticket.ticket_id}
                             onClick={() => handleSelectTicket(ticket)}
-                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
-                              isSelected
-                                ? "bg-slate-100 border-l-slate-700"
-                                : "border-l-transparent hover:bg-slate-50/50"
-                            }`}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${isSelected
+                              ? "bg-slate-100 border-l-slate-700"
+                              : "border-l-transparent hover:bg-slate-50/50"
+                              }`}
                           >
                             <div className="relative shrink-0">
                               <img
@@ -2043,11 +2019,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                               </div>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <span
-                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                                    ticket.sender_role === "EMPLOYER"
-                                      ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                      : "bg-blue-50 text-blue-600 border-blue-100"
-                                  }`}
+                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${ticket.sender_role === "EMPLOYER"
+                                    ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                    : "bg-blue-50 text-blue-600 border-blue-100"
+                                    }`}
                                 >
                                   {ticket.sender_role}
                                 </span>
@@ -2089,11 +2064,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           <div
                             key={ticket.ticket_id}
                             onClick={() => handleSelectTicket(ticket)}
-                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
-                              isSelected
-                                ? "bg-rose-50/80 border-l-rose-500"
-                                : "border-l-transparent hover:bg-rose-50/40"
-                            }`}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${isSelected
+                              ? "bg-rose-50/80 border-l-rose-500"
+                              : "border-l-transparent hover:bg-rose-50/40"
+                              }`}
                           >
                             <div className="relative shrink-0">
                               <img
@@ -2116,11 +2090,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                               </div>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <span
-                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                                    ticket.sender_role === "EMPLOYER"
-                                      ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                      : "bg-blue-50 text-blue-600 border-blue-100"
-                                  }`}
+                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${ticket.sender_role === "EMPLOYER"
+                                    ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                    : "bg-blue-50 text-blue-600 border-blue-100"
+                                    }`}
                                 >
                                   {ticket.sender_role}
                                 </span>
@@ -2172,13 +2145,12 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           <div
                             key={chat.chatId}
                             onClick={() => handleSelectDirectChat(chat)}
-                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${
-                              isSelected
-                                ? chat.isDeleted
-                                  ? "bg-rose-50/50 border-l-rose-500"
-                                  : "bg-blue-50/50 border-l-blue-600"
-                                : "border-l-transparent hover:bg-slate-50"
-                            } ${chat.isDeleted ? "opacity-80" : ""}`}
+                            className={`flex gap-3.5 p-4 cursor-pointer transition-all border-l-4 border-b border-slate-100 ${isSelected
+                              ? chat.isDeleted
+                                ? "bg-rose-50/50 border-l-rose-500"
+                                : "bg-blue-50/50 border-l-blue-600"
+                              : "border-l-transparent hover:bg-slate-50"
+                              } ${chat.isDeleted ? "opacity-80" : ""}`}
                           >
                             <div className="relative shrink-0">
                               <img
@@ -2187,41 +2159,37 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                   `https://ui-avatars.com/api/?name=${chat.partnerName || "User"}&background=eff6ff&color=3b82f6`
                                 }
                                 alt={chat.partnerName}
-                                className={`w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm ${
-                                  chat.isDeleted ? "opacity-70 grayscale" : ""
-                                }`}
+                                className={`w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm ${chat.isDeleted ? "opacity-70 grayscale" : ""
+                                  }`}
                               />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-center mb-0.5">
                                 <h4
-                                  className={`font-extrabold truncate pr-2 text-sm ${
-                                    chat.isDeleted
-                                      ? "line-through text-slate-500"
-                                      : chat.unreadCount > 0
-                                        ? "text-blue-900"
-                                        : "text-slate-900"
-                                  }`}
+                                  className={`font-extrabold truncate pr-2 text-sm ${chat.isDeleted
+                                    ? "line-through text-slate-500"
+                                    : chat.unreadCount > 0
+                                      ? "text-blue-900"
+                                      : "text-slate-900"
+                                    }`}
                                 >
                                   {chat.partnerName}
                                 </h4>
                                 <span
-                                  className={`text-[10px] font-bold whitespace-nowrap ${
-                                    chat.unreadCount > 0
-                                      ? "text-blue-600"
-                                      : "text-slate-400"
-                                  }`}
+                                  className={`text-[10px] font-bold whitespace-nowrap ${chat.unreadCount > 0
+                                    ? "text-blue-600"
+                                    : "text-slate-400"
+                                    }`}
                                 >
                                   {formattedTime}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <span
-                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                                    chat.partnerRole === "EMPLOYER"
-                                      ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                      : "bg-blue-50 text-blue-600 border-blue-100"
-                                  }`}
+                                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${chat.partnerRole === "EMPLOYER"
+                                    ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                    : "bg-blue-50 text-blue-600 border-blue-100"
+                                    }`}
                                 >
                                   {chat.partnerRole}
                                 </span>
@@ -2243,7 +2211,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                   {chat.isDeleted
                                     ? "Tin nhắn đã bị ẩn"
                                     : chat.lastMessage ||
-                                      "Bắt đầu cuộc trò chuyện"}
+                                    "Bắt đầu cuộc trò chuyện"}
                                 </p>
                                 {chat.unreadCount > 0 && !chat.isDeleted && (
                                   <span className="w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center bg-blue-500 text-white shrink-0">
@@ -2427,11 +2395,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         </p>
 
                         <span
-                          className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md border uppercase tracking-widest mb-6 ${
-                            selectedProfile.role === "EMPLOYER"
-                              ? "bg-pink-50 text-pink-600 border-pink-100"
-                              : "bg-blue-50 text-blue-600 border-blue-100"
-                          }`}
+                          className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md border uppercase tracking-widest mb-6 ${selectedProfile.role === "EMPLOYER"
+                            ? "bg-pink-50 text-pink-600 border-pink-100"
+                            : "bg-blue-50 text-blue-600 border-blue-100"
+                            }`}
                         >
                           {selectedProfile.role}
                         </span>
@@ -2483,9 +2450,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           />
 
           <div
-            className={`flex-1 flex h-full overflow-hidden ${
-              !activeTicket && !activeDirectChat && "hidden md:flex"
-            }`}
+            className={`flex-1 flex h-full overflow-hidden ${!activeTicket && !activeDirectChat && "hidden md:flex"
+              }`}
           >
             <div className="flex-1 flex flex-col bg-slate-50/50 h-full overflow-hidden relative">
               {navSection === "chat" && activeTicket ? (
@@ -2513,9 +2479,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           src={
                             isAgent
                               ? activeTicket.sender_avatar ||
-                                `https://ui-avatars.com/api/?name=${activeTicket.sender_name || "Client"}&background=3b82f6&color=fff`
+                              `https://ui-avatars.com/api/?name=${activeTicket.sender_name || "Client"}&background=3b82f6&color=fff`
                               : activeTicket.staff_avatar ||
-                                `https://ui-avatars.com/api/?name=Technical+Support&background=eff6ff&color=3b82f6`
+                              `https://ui-avatars.com/api/?name=Technical+Support&background=eff6ff&color=3b82f6`
                           }
                           alt="Active chat"
                           className="w-10 h-10 rounded-xl object-cover border border-slate-200"
@@ -2564,7 +2530,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           {isAgent
                             ? activeTicket.sender_name
                             : activeTicket.staff_name ||
-                              "Kỹ thuật viên LancerPro"}
+                            "Kỹ thuật viên LancerPro"}
                         </h3>
                         {!isAgent ? (
                           <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
@@ -2637,9 +2603,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         return (
                           <div
                             key={msg.messageId || index}
-                            className={`flex items-start gap-2.5 max-w-[80%] ${
-                              isMe ? "ml-auto flex-row-reverse" : "mr-auto"
-                            }`}
+                            className={`flex items-start gap-2.5 max-w-[80%] ${isMe ? "ml-auto flex-row-reverse" : "mr-auto"
+                              }`}
                           >
                             {!isMe && (
                               <img
@@ -2660,14 +2625,13 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                     {msg.senderName}
                                   </span>
                                   <span
-                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
-                                      msg.senderRole?.toUpperCase() === "ADMIN"
-                                        ? "bg-rose-50 text-rose-600 border border-rose-100/50"
-                                        : msg.senderRole?.toUpperCase() ===
-                                            "EMPLOYER"
-                                          ? "bg-purple-50 text-purple-600 border border-purple-100/50"
-                                          : "bg-blue-50 text-blue-600 border border-blue-100/50"
-                                    }`}
+                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${msg.senderRole?.toUpperCase() === "ADMIN"
+                                      ? "bg-rose-50 text-rose-600 border border-rose-100/50"
+                                      : msg.senderRole?.toUpperCase() ===
+                                        "EMPLOYER"
+                                        ? "bg-purple-50 text-purple-600 border border-purple-100/50"
+                                        : "bg-blue-50 text-blue-600 border border-blue-100/50"
+                                      }`}
                                   >
                                     {msg.senderRole}
                                   </span>
@@ -2682,11 +2646,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                     msg.messageText === "[Tệp đính kèm]")
                                 ) && (
                                   <div
-                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
-                                      isMe
-                                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
-                                        : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
-                                    } ${activeTab === "deleted" ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
+                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${isMe
+                                      ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
+                                      : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
+                                      } ${activeTab === "deleted" ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
                                   >
                                     {activeTab === "deleted"
                                       ? "Tin nhắn đã bị xóa"
@@ -2738,18 +2701,16 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                             download={att.fileName}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm max-w-xs sm:max-w-sm transition-all shadow-sm ${
-                                              isMe
-                                                ? "bg-blue-700/35 border-blue-500/50 text-white hover:bg-blue-700/50"
-                                                : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
-                                            } ${activeTab === "deleted" ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
+                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm max-w-xs sm:max-w-sm transition-all shadow-sm ${isMe
+                                              ? "bg-blue-700/35 border-blue-500/50 text-white hover:bg-blue-700/50"
+                                              : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
+                                              } ${activeTab === "deleted" ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
                                           >
                                             <div
-                                              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                                isMe
-                                                  ? "bg-blue-500/25 text-white"
-                                                  : "bg-slate-100 text-slate-500"
-                                              }`}
+                                              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe
+                                                ? "bg-blue-500/25 text-white"
+                                                : "bg-slate-100 text-slate-500"
+                                                }`}
                                             >
                                               <FileText className="w-5 h-5" />
                                             </div>
@@ -2766,11 +2727,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                               </p>
                                             </div>
                                             <div
-                                              className={`p-1.5 rounded-lg shrink-0 ${
-                                                isMe
-                                                  ? "hover:bg-blue-600/30 text-white"
-                                                  : "hover:bg-slate-100 text-slate-500"
-                                              }`}
+                                              className={`p-1.5 rounded-lg shrink-0 ${isMe
+                                                ? "hover:bg-blue-600/30 text-white"
+                                                : "hover:bg-slate-100 text-slate-500"
+                                                }`}
                                             >
                                               <Download className="w-4 h-4" />
                                             </div>
@@ -2781,9 +2741,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                   </div>
                                 )}
                               <p
-                                className={`text-[9px] font-bold text-slate-400 mt-1.5 flex items-center gap-1 ${
-                                  isMe ? "justify-end mr-1" : "ml-1"
-                                }`}
+                                className={`text-[9px] font-bold text-slate-400 mt-1.5 flex items-center gap-1 ${isMe ? "justify-end mr-1" : "ml-1"
+                                  }`}
                               >
                                 <Clock className="w-2.5 h-2.5" />
                                 {formattedTime}
@@ -2871,7 +2830,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                     </div>
                   )}
                   {activeTicket?.blocked_until &&
-                  new Date(activeTicket.blocked_until) > new Date() ? (
+                    new Date(activeTicket.blocked_until) > new Date() ? (
                     <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-slate-200 h-[76px]">
                       <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
                       <span className="text-sm font-semibold text-slate-600">
@@ -3018,11 +2977,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                 <button
                                   type="submit"
                                   disabled={!canSend}
-                                  className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                                    !canSend
-                                      ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
-                                      : ""
-                                  }`}
+                                  className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${!canSend
+                                    ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
+                                    : ""
+                                    }`}
                                 >
                                   <Send className="w-5 h-5 shrink-0" />
                                 </button>
@@ -3109,9 +3067,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         return (
                           <div
                             key={index}
-                            className={`flex items-start gap-2.5 max-w-[80%] ${
-                              isMine ? "ml-auto flex-row-reverse" : "mr-auto"
-                            }`}
+                            className={`flex items-start gap-2.5 max-w-[80%] ${isMine ? "ml-auto flex-row-reverse" : "mr-auto"
+                              }`}
                           >
                             {!isMine && (
                               <img
@@ -3135,11 +3092,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                     msg.messageText === "[Tệp đính kèm]")
                                 ) && (
                                   <div
-                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
-                                      isMine
-                                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
-                                        : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
-                                    } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
+                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${isMine
+                                      ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
+                                      : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
+                                      } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
                                   >
                                     <p className="whitespace-pre-wrap">
                                       {activeDirectChat.isDeleted
@@ -3182,11 +3138,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                                             download={att.fileName}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm font-semibold transition-all shadow-sm ${
-                                              isMine
-                                                ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                                            }`}
+                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm font-semibold transition-all shadow-sm ${isMine
+                                              ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                              : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                              }`}
                                           >
                                             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
                                               <FileText className="w-5 h-5" />
@@ -3351,11 +3306,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                             <button
                               type="submit"
                               disabled={!canSend}
-                              className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                                !canSend
-                                  ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
-                                  : ""
-                              }`}
+                              className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${!canSend
+                                ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
+                                : ""
+                                }`}
                             >
                               <Send className="w-5 h-5 shrink-0" />
                             </button>
@@ -3402,11 +3356,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                     {activeTicket.sender_email}
                   </p>
                   <span
-                    className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${
-                      activeTicket.sender_role === "EMPLOYER"
-                        ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                        : "bg-blue-50 text-blue-600 border-blue-100"
-                    }`}
+                    className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${activeTicket.sender_role === "EMPLOYER"
+                      ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                      : "bg-blue-50 text-blue-600 border-blue-100"
+                      }`}
                   >
                     {activeTicket.sender_role}
                   </span>
@@ -3467,7 +3420,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       {/* Blocking features */}
                       <div className="flex flex-col gap-2 mb-4">
                         {activeTicket.blocked_until &&
-                        new Date(activeTicket.blocked_until) > new Date() ? (
+                          new Date(activeTicket.blocked_until) > new Date() ? (
                           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                             <p className="text-xs font-semibold text-amber-800 mb-2">
                               Đang bị chặn tin nhắn đến: <br />
@@ -3565,11 +3518,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         : "Freelancer"}
                     </p>
                     <span
-                      className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${
-                        activeDirectChat.partnerRole === "EMPLOYER"
-                          ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                          : "bg-blue-50 text-blue-600 border-blue-100"
-                      }`}
+                      className={`text-[10px] font-extrabold px-2 py-1 rounded border uppercase tracking-wider ${activeDirectChat.partnerRole === "EMPLOYER"
+                        ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                        : "bg-blue-50 text-blue-600 border-blue-100"
+                        }`}
                     >
                       {activeDirectChat.partnerRole}
                     </span>
@@ -3721,13 +3673,12 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in text-center">
               <div
-                className={`mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${
-                  confirmConfig.type === "danger"
-                    ? "bg-rose-100 text-rose-600"
-                    : confirmConfig.type === "success"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : "bg-amber-100 text-amber-600"
-                }`}
+                className={`mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${confirmConfig.type === "danger"
+                  ? "bg-rose-100 text-rose-600"
+                  : confirmConfig.type === "success"
+                    ? "bg-emerald-100 text-emerald-600"
+                    : "bg-amber-100 text-amber-600"
+                  }`}
               >
                 <AlertCircle className="w-6 h-6" />
               </div>
@@ -3746,13 +3697,12 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                 </button>
                 <button
                   onClick={confirmConfig.onConfirm}
-                  className={`flex-1 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${
-                    confirmConfig.type === "danger"
-                      ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
-                      : confirmConfig.type === "success"
-                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
-                        : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20"
-                  }`}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${confirmConfig.type === "danger"
+                    ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
+                    : confirmConfig.type === "success"
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                      : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20"
+                    }`}
                 >
                   {confirmConfig.confirmText || "Xác nhận"}
                 </button>
