@@ -135,8 +135,15 @@ public class SupportChatService {
             }
 
             
-            List<Map<String, Object>> attachments = jdbcTemplate.queryForList(
-                "SELECT file_url AS fileUrl, file_name AS fileName, file_size AS fileSize FROM ticket_attachments WHERE message_id = ?",
+            List<Map<String, Object>> attachments = jdbcTemplate.query(
+                "SELECT file_url, file_name, file_size FROM ticket_attachments WHERE message_id = ?",
+                (rs, rowNum) -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("fileUrl", rs.getString("file_url"));
+                    map.put("fileName", rs.getString("file_name"));
+                    map.put("fileSize", rs.getObject("file_size"));
+                    return map;
+                },
                 msg.getMessageId()
             );
             msg.setAttachments(attachments);
