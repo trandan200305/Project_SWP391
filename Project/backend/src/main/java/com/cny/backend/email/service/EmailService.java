@@ -30,4 +30,20 @@ public class EmailService {
             log.error("Failed to send async email to {} in thread {}: {}", to, Thread.currentThread().getName(), e.getMessage());
         }
     }
+
+    @Async("mailTaskExecutor")
+    public void sendHtmlEmailAsync(String to, String subject, String htmlContent) {
+        log.info("Starting async HTML email sending to {} in thread {}", to, Thread.currentThread().getName());
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, "utf-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+            log.info("Successfully sent async HTML email to {} in thread {}", to, Thread.currentThread().getName());
+        } catch (Exception e) {
+            log.error("Failed to send async HTML email to {} in thread {}: {}", to, Thread.currentThread().getName(), e.getMessage());
+        }
+    }
 }
