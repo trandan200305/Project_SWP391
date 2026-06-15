@@ -62,7 +62,7 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Vị trí / Địa chỉ</p>
-                <p className="text-[15px] font-bold text-gray-900">{[address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật'}</p>
+                <p className="text-[15px] font-bold text-gray-900">{[city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chưa cập nhật'}</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -83,17 +83,7 @@ export default function UserProfile({
                 <p className="text-[15px] font-bold text-gray-900 truncate">{email || 'Chưa cập nhật'}</p>
               </div>
             </div>
-            {role === 'freelancer' && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center shrink-0">
-                  <DollarSign className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div className="pt-0.5">
-                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Mức lương mong muốn</p>
-                  <p className="text-[15px] font-bold text-gray-900">{hourlyRate ? `${formatCurrency(hourlyRate)} / giờ` : 'Thỏa thuận'}</p>
-                </div>
-              </div>
-            )}
+
             {role === 'employer' && (
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
