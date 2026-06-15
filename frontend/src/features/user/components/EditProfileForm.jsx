@@ -26,7 +26,6 @@ const SelectRow = ({ label, value, onChange, options }) => (
       onChange={onChange} 
       className="text-sm font-semibold text-gray-900 border border-transparent hover:border-gray-200 focus:border-blue-500 bg-transparent focus:bg-white rounded px-2 py-1.5 transition-all outline-none w-[160px] sm:w-full text-right sm:text-left"
     >
-      <option value="">Chọn {label.toLowerCase()}</option>
       {options.map(opt => (
         <option key={opt} value={opt}>{opt}</option>
       ))}
