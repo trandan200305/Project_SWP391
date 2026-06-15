@@ -112,19 +112,15 @@ export default function UserSettings({
       });
   };
 
-  const handleSavePrivacy = () => {
+  const handleSavePrivacy = (payload) => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}/profile` : `http://localhost:8080/api/employers/${targetId}/profile`;
     fetch(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hideEmail, hidePhone, hideLocation })
-    })
-    .then(res => res.json())
-    .then(data => {
-      alert('Đã lưu cấu hình quyền riêng tư thành công!');
+      body: JSON.stringify(payload)
     })
     .catch(err => {
-      alert('Lỗi khi lưu cấu hình quyền riêng tư!');
+      console.error('Lỗi khi lưu cấu hình quyền riêng tư!', err);
     });
   };
 
@@ -208,7 +204,7 @@ export default function UserSettings({
                                <p className="text-sm text-gray-500 mt-1">Người khác sẽ không thấy email thật của bạn trên hồ sơ.</p>
                              </div>
                              <label className="relative inline-flex items-center cursor-pointer">
-                               <input type="checkbox" className="sr-only peer" checked={hideEmail} onChange={(e) => setHideEmail(e.target.checked)} />
+                               <input type="checkbox" className="sr-only peer" checked={hideEmail} onChange={(e) => { const val = e.target.checked; setHideEmail(val); handleSavePrivacy({ hideEmail: val, hidePhone, hideLocation }); }} />
                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                              </label>
                            </div>
@@ -218,7 +214,7 @@ export default function UserSettings({
                                <p className="text-sm text-gray-500 mt-1">Che dấu số điện thoại liên lạc của bạn.</p>
                              </div>
                              <label className="relative inline-flex items-center cursor-pointer">
-                               <input type="checkbox" className="sr-only peer" checked={hidePhone} onChange={(e) => setHidePhone(e.target.checked)} />
+                               <input type="checkbox" className="sr-only peer" checked={hidePhone} onChange={(e) => { const val = e.target.checked; setHidePhone(val); handleSavePrivacy({ hideEmail, hidePhone: val, hideLocation }); }} />
                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                              </label>
                            </div>
@@ -228,15 +224,9 @@ export default function UserSettings({
                                <p className="text-sm text-gray-500 mt-1">Không hiển thị Quốc gia và Tỉnh/Thành phố của bạn.</p>
                              </div>
                              <label className="relative inline-flex items-center cursor-pointer">
-                               <input type="checkbox" className="sr-only peer" checked={hideLocation} onChange={(e) => setHideLocation(e.target.checked)} />
+                               <input type="checkbox" className="sr-only peer" checked={hideLocation} onChange={(e) => { const val = e.target.checked; setHideLocation(val); handleSavePrivacy({ hideEmail, hidePhone, hideLocation: val }); }} />
                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                              </label>
-                           </div>
-                           
-                           <div className="pt-6 border-t border-gray-100 flex justify-end">
-                             <button onClick={handleSavePrivacy} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-                               Lưu tùy chọn
-                             </button>
                            </div>
                          </div>
                        </div>
