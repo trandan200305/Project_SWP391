@@ -20,7 +20,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [language, setLanguage] = useState('vi');
-  const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh');
   
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -43,8 +42,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [bio, setBio] = useState('');
-  const [hourlyRate, setHourlyRate] = useState('');
-  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   
@@ -109,8 +106,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
           if (data.bio) setBio(data.bio);
-          if (data.hourlyRate) setHourlyRate(data.hourlyRate);
-          if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
@@ -124,7 +119,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.website) setWebsite(data.website);
           if (data.companySize) setCompanySize(data.companySize);
           if (data.industry) setIndustry(data.industry);
-          if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
@@ -148,9 +142,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, bio, city, country, language, avatarUrl };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, city, country, language, avatarUrl };
     }
     
     fetch(endpoint, {
@@ -193,11 +187,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     const allProps = {
       user, onLogout,
       role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
-    avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage, timezone, setTimezone,
+    avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage,
     isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
@@ -286,7 +280,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
                         <span className="flex items-center gap-1">
                           {role === 'freelancer' && <MapPin className="w-3.5 h-3.5" />}
-                          {role === 'freelancer' ? ([address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật địa chỉ') : industry || 'Industry'}
+                          {role === 'freelancer' ? ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật') : industry || 'Industry'}
                         </span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>

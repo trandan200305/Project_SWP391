@@ -18,6 +18,26 @@ const InputRow = ({ label, value, onChange, placeholder, type = 'text', prefix, 
   </div>
 );
 
+const SelectRow = ({ label, value, onChange, options }) => (
+  <div className="flex justify-between items-center sm:block">
+    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-1 block">{label}</span>
+    <select 
+      value={value} 
+      onChange={onChange} 
+      className="text-sm font-semibold text-gray-900 border border-transparent hover:border-gray-200 focus:border-blue-500 bg-transparent focus:bg-white rounded px-2 py-1.5 transition-all outline-none w-[160px] sm:w-full text-right sm:text-left"
+    >
+      <option value="">Chọn {label.toLowerCase()}</option>
+      {options.map(opt => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const VIETNAM_PROVINCES = [
+  "Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", "Cao Bằng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Tĩnh", "Hải Dương", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+];
+
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
   <div className="flex justify-between items-center py-1">
     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
@@ -80,11 +100,7 @@ export default function EditProfileForm({
                          <InputRow label="Số điện thoại" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+84..." />
                          <InputRow label="Email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email..." />
 
-                         {role === 'freelancer' && (
-                           <>
-                             <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
-                           </>
-                         )}
+
 
                          {role === 'employer' && (
                            <>
@@ -102,12 +118,10 @@ export default function EditProfileForm({
                          {/* Vị trí địa lý - Chung cho Freelancer & Employer */}
                          {(role === 'freelancer' || role === 'employer') && (
                            <>
-                             <InputRow label="Quốc gia" value={country} onChange={e=>setCountry(e.target.value)} placeholder="Vietnam..." />
-                             <InputRow label="Thành phố" value={city} onChange={e=>setCity(e.target.value)} placeholder="Hanoi..." />
-                             <InputRow label="Địa chỉ cụ thể" value={address} onChange={e=>setAddress(e.target.value)} placeholder="Số nhà, đường..." />
+                             <SelectRow label="Quốc gia" value={country} onChange={e=>{setCountry(e.target.value); if(e.target.value !== 'Việt Nam') setCity('Chờ cập nhật');}} options={['Việt Nam', 'Chờ cập nhật']} />
+                             <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={country === 'Việt Nam' ? VIETNAM_PROVINCES : ['Chờ cập nhật']} />
                            </>
                          )}
-                         <InputRow label="Múi giờ (Timezone)" value={timezone} onChange={e=>setTimezone(e.target.value)} placeholder="Asia/Ho_Chi_Minh..." />
                        </div>
                      </div>
 
