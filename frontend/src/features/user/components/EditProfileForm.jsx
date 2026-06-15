@@ -43,16 +43,16 @@ const VIETNAM_PROVINCES = [
   "Thái Bình", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang"
 ];
 
-const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
-  <div className="flex justify-between items-center py-1">
-    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
+  <div className="flex justify-between items-center py-1 gap-3" title={title}>
+    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
       {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
       {label}
     </span>
     {badgeClass ? (
-       <span className={badgeClass}>{value}</span>
+       <span className={`${badgeClass} whitespace-nowrap`}>{value}</span>
     ) : (
-       <span className="text-sm font-bold text-gray-800 text-right">{value}</span>
+       <span className="text-sm font-bold text-gray-800 text-right whitespace-nowrap">{value}</span>
     )}
   </div>
 );
@@ -60,6 +60,14 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 export default function EditProfileForm({
   role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus
 }) {
+  let completenessScore = 0;
+  if (phone && phone.trim() !== '') completenessScore += 25;
+  if (email && email.trim() !== '') completenessScore += 25;
+  if (country && country !== 'Chờ cập nhật' && city && city !== 'Chờ cập nhật' && address && address.trim() !== '') completenessScore += 25;
+  if (kycStatus === 'APPROVED') completenessScore += 25;
+  
+  const completenessTooltip = "Công thức tính độ hoàn thiện (Tạm thời):\n- 25% có Số điện thoại\n- 25% có Email\n- 25% có đủ Vị trí (Quốc gia, Tỉnh/TP, Địa chỉ cụ thể)\n- 25% đã Xác thực danh tính (KYC)";
+
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                    {/* Left Column (Main Editable Info) */}
@@ -163,7 +171,7 @@ export default function EditProfileForm({
                               value={kycStatus === 'APPROVED' ? 'Đã duyệt' : kycStatus === 'PENDING' ? 'Đang chờ duyệt' : kycStatus === 'REJECTED' ? 'Bị từ chối' : 'Chưa xác thực'} 
                               badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${kycStatus === 'APPROVED' ? 'text-blue-600 bg-blue-50' : kycStatus === 'PENDING' ? 'text-yellow-600 bg-yellow-50' : kycStatus === 'REJECTED' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`} 
                            />
-                           <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDateTime(createdAt)} icon={Clock} />
+                           <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDate(createdAt)} icon={Clock} />
                            <ReadOnlyRow label="Lần đăng nhập cuối" value={formatDateTime(lastLoginAt)} icon={Activity} />
                         </div>
                      </div>
@@ -180,12 +188,12 @@ export default function EditProfileForm({
                         
                         {role === 'freelancer' ? (
                           <div className="space-y-4 relative z-10">
-                            <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
+                            <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${completenessScore}%`} badgeClass="text-sm font-extrabold text-blue-600 cursor-help" title={completenessTooltip} />
                             <ReadOnlyRow label="Đánh giá trung bình" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
                           </div>
                         ) : (
                           <div className="space-y-4 relative z-10">
-                            <ReadOnlyRow label="Độ hoàn thiện thông tin" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
+                            <ReadOnlyRow label="Độ hoàn thiện thông tin" value={`${completenessScore}%`} badgeClass="text-sm font-extrabold text-blue-600 cursor-help" title={completenessTooltip} />
                             <ReadOnlyRow label="Đánh giá từ Freelancer" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
                           </div>
                         )}
