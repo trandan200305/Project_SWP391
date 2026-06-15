@@ -94,8 +94,8 @@ export default function UserSettings({
   };
 
   const handleDeleteAccount = () => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn?')) return;
-    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=${deleteInput}` : `http://localhost:8080/api/employers/${targetId}?confirmationText=${deleteInput}`;
+    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn? Hành động này không thể hoàn tác!')) return;
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=DELETE` : `http://localhost:8080/api/employers/${targetId}?confirmationText=DELETE`;
     
     fetch(endpoint, { method: 'DELETE' })
       .then(response => response.json())
@@ -361,11 +361,7 @@ export default function UserSettings({
                          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                            Khi bạn xóa tài khoản, tất cả dữ liệu bao gồm hồ sơ, dự án, lịch sử giao dịch và tin nhắn sẽ bị xóa vĩnh viễn và không thể khôi phục.
                          </p>
-                         <div className="mb-6">
-                           <label className="block text-sm font-semibold text-gray-700 mb-2">Vui lòng nhập <span className="font-bold text-red-600">DELETE</span> để xác nhận:</label>
-                           <input type="text" value={deleteInput} onChange={e=>setDeleteInput(e.target.value)} placeholder="Nhập DELETE..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all bg-gray-50 focus:bg-white" />
-                         </div>
-                         <button onClick={handleDeleteAccount} disabled={deleteInput !== 'DELETE'} className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors w-full sm:w-auto shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                         <button onClick={handleDeleteAccount} className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors w-full sm:w-auto shadow-sm">
                            Xác nhận Xóa Tài Khoản
                          </button>
                        </div>
