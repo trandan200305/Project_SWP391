@@ -55,6 +55,9 @@ public class StaffInvitation {
     @Column(name = "verification_code")
     private String verificationCode;
 
+    @Column(name = "temp_password")
+    private String tempPassword;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
