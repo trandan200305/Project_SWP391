@@ -3,7 +3,7 @@ import { adminApi } from '../api/adminApi.js';
 import { 
   LayoutDashboard, Users, ShieldAlert, BadgeDollarSign, Settings, 
   Search, Bell, UserCheck, AlertTriangle, CheckCircle2, Ban, 
-  Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, 
+  Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
   User, Edit3, MessageSquare, Shield, ChevronDown
@@ -175,7 +175,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               email: data.generatedEmail || createForm.email,
               password: data.generatedPassword,
               role: data.role || createRole,
-              department: data.department || ''
+              department: data.department || '',
+              setupLink: data.setupLink,
+              status: data.status || 'PENDING',
+              userId: data.userId || null
             });
           }
           setCreateForm({
@@ -196,6 +199,61 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         setIsLoading(false);
         console.error(err);
         showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleViewCredentials = (role, userId) => {
+    if (role !== 'MANAGER' && role !== 'STAFF') return;
+    setIsLoading(true);
+    adminApi.getUserCredentials(role, userId)
+      .then(data => {
+        setIsLoading(false);
+        if (data.success) {
+          setCreatedCredentials({
+            email: data.email,
+            password: data.password,
+            role: data.role,
+            department: data.department,
+            setupLink: data.setupLink,
+            status: data.status,
+            userId: userId
+          });
+        } else {
+          showToast(data.message || 'Không thể tải thông tin tài khoản.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleRegeneratePassword = (role, userId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn cấp lại mật khẩu tạm thời mới cho tài khoản này? Mật khẩu cũ sẽ không sử dụng được nữa.')) {
+      return;
+    }
+    setIsLoading(true);
+    adminApi.regenerateUserPassword(role, userId)
+      .then(data => {
+        setIsLoading(false);
+        if (data.success) {
+          showToast(data.message || 'Đã cấp lại mật khẩu mới!', 'success');
+          setCreatedCredentials({
+            email: data.email,
+            password: data.password,
+            role: data.role,
+            department: data.department,
+            setupLink: data.setupLink,
+            status: data.status,
+            userId: userId
+          });
+        } else {
+          showToast(data.message || 'Không thể cấp lại mật khẩu.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
       });
   };
 
@@ -3142,8 +3200,41 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               <td className="px-3 py-3 pl-5 text-slate-500 font-mono font-bold whitespace-nowrap w-[50px]">
                                 #{user.id}
                               </td>
-                              <td className="px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[110px]" title={user.name}>{user.name}</td>
-                              <td className="px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[150px]" title={user.email}>{user.email}</td>
+                              <td 
+                                onClick={() => {
+                                  if (user.role === 'MANAGER' || user.role === 'STAFF') {
+                                    handleViewCredentials(user.role, user.id);
+                                  }
+                                }}
+                                className={`px-3 py-3 font-bold text-primary truncate whitespace-nowrap w-[110px] ${
+                                  (user.role === 'MANAGER' || user.role === 'STAFF') 
+                                    ? 'cursor-pointer hover:underline hover:text-indigo-600 transition-colors' 
+                                    : ''
+                                }`} 
+                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhập để xem thông tin đăng nhập và liên kết kích hoạt" : user.name}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {user.name}
+                                  {(user.role === 'MANAGER' || user.role === 'STAFF') && (
+                                    <Key className="w-3.5 h-3.5 text-amber-500 shrink-0 inline-block" />
+                                  )}
+                                </div>
+                              </td>
+                              <td 
+                                onClick={() => {
+                                  if (user.role === 'MANAGER' || user.role === 'STAFF') {
+                                    handleViewCredentials(user.role, user.id);
+                                  }
+                                }}
+                                className={`px-3 py-3 text-slate-600 truncate whitespace-nowrap w-[150px] ${
+                                  (user.role === 'MANAGER' || user.role === 'STAFF') 
+                                    ? 'cursor-pointer hover:underline hover:text-indigo-650 transition-colors' 
+                                    : ''
+                                }`} 
+                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhập để xem thông tin đăng nhập và liên kết kích hoạt" : user.email}
+                              >
+                                {user.email}
+                              </td>
                               <td className="px-3 py-3 font-medium whitespace-nowrap w-[75px]">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
                                   user.role === 'FREELANCER' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
@@ -3155,12 +3246,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 </span>
                               </td>
                               <td className="px-3 py-3 whitespace-nowrap w-[85px]">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                  user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                  user.status === 'LOCKED' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                                  'bg-rose-50 text-rose-700 border border-rose-100'
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                                  user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                  user.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                  user.status === 'EXPIRED' ? 'bg-rose-50 text-rose-700 border-rose-100 animate-pulse' :
+                                  user.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                  'bg-rose-50 text-rose-700 border-rose-100'
                                 }`}>
-                                  {user.status}
+                                  {user.status === 'ACTIVE' ? 'HOẠT ĐỘNG' :
+                                   user.status === 'PENDING' ? 'CHỜ KÍCH HOẠT' :
+                                   user.status === 'EXPIRED' ? 'HẾT HẠN' :
+                                   user.status === 'LOCKED' ? 'BỊ KHÓA' :
+                                   user.status}
                                 </span>
                               </td>
                               <td className="px-3 py-3 text-slate-600 font-mono text-[11px] whitespace-nowrap w-[135px]">
@@ -4310,7 +4407,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         }`}>
           <div className="p-6 border-b flex justify-between items-center bg-emerald-50/30 border-emerald-100 rounded-t-3xl">
             <h4 className="font-bold text-lg flex items-center gap-2 text-emerald-800">
-              <CheckCircle2 className="w-5 h-5" /> Tài Khoản Đã Được Tạo
+              <CheckCircle2 className="w-5 h-5" /> Thông Tin Tài Khoản Nhân Sự
             </h4>
             <button 
               onClick={() => setCreatedCredentials(null)}
@@ -4327,24 +4424,40 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <span className="text-[11px] font-extrabold text-amber-700 uppercase">Chỉ dành cho Admin</span>
                 </div>
                 <p className="text-[12px] text-amber-700 leading-relaxed">
-                  Mật khẩu này <strong>không được gửi</strong> cho người được mời. Admin sử dụng thông tin này để quản lý và kiểm soát hoạt động tài khoản.
+                  Mật khẩu này <strong>không được gửi tự động</strong> dưới dạng văn bản thuần cho người được mời. Admin sử dụng thông tin này để quản lý, hoặc cung cấp/sao chép liên kết kích hoạt bên dưới cho người dùng tự thiết lập.
                 </p>
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-200">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Vai trò</span>
-                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.role === 'MANAGER' ? 'Manager (Quản Lý)' : 'Staff (Nhân Viên)'}</span>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Vai trò</span>
+                    <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.role === 'MANAGER' ? 'Manager (Quản Lý)' : 'Staff (Nhân Viên)'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Trạng thái</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
+                      createdCredentials.status === 'ACCEPTED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      createdCredentials.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      createdCredentials.status === 'EXPIRED' ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse' :
+                      'bg-slate-50 text-slate-600 border-slate-200'
+                    }`}>
+                      {createdCredentials.status === 'PENDING' ? 'CHỜ KÍCH HOẠT' : 
+                       createdCredentials.status === 'ACCEPTED' ? 'ĐÃ THIẾT LẬP' : 
+                       createdCredentials.status === 'EXPIRED' ? 'HẾT HẠN (CẦN GIA HẠN)' : 
+                       createdCredentials.status}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">Phòng ban</span>
-                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.department}</span>
+                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.department || 'Chưa phân bổ'}</span>
                 </div>
                 <hr className="border-slate-200" />
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">Tài khoản (Email)</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-blue-700 flex-grow">{createdCredentials.email}</code>
+                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-blue-700 flex-grow overflow-x-auto">{createdCredentials.email}</code>
                     <button
                       type="button"
                       onClick={() => { navigator.clipboard.writeText(createdCredentials.email); showToast('Đã sao chép email!', 'success'); }}
@@ -4353,24 +4466,72 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật khẩu</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật khẩu tạm thời</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider">{createdCredentials.password}</code>
+                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider overflow-x-auto">{createdCredentials.password || '(Trống/Đã thay đổi)'}</code>
                     <button
                       type="button"
-                      onClick={() => { navigator.clipboard.writeText(createdCredentials.password); showToast('Đã sao chép mật khẩu!', 'success'); }}
+                      onClick={() => { 
+                        if (createdCredentials.password) {
+                          navigator.clipboard.writeText(createdCredentials.password); 
+                          showToast('Đã sao chép mật khẩu!', 'success'); 
+                        } else {
+                          showToast('Mật khẩu trống!', 'error');
+                        }
+                      }}
                       className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[11px] font-bold hover:bg-rose-100 transition-all active:scale-95"
                     >Copy</button>
                   </div>
                 </div>
+
+                {createdCredentials.status === 'EXPIRED' && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-800 text-[11.5px] font-semibold leading-relaxed">
+                   <strong>Liên kết mời đã hết hạn!</strong> Người dùng không thể kích hoạt tài khoản bằng liên kết này nữa. Thực hiện <strong>"Cấp lại mật khẩu mới"</strong> phía dưới để <strong>tạo liên kết mời mới hoàn toàn</strong> (vô hiệu hóa liên kết cũ) và gia hạn thêm 24 giờ.
+                  </div>
+                )}
+
+                {createdCredentials.setupLink && createdCredentials.status === 'PENDING' && (
+                  <>
+                    <hr className="border-slate-200" />
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Liên kết thiết lập tài khoản</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <input 
+                          type="text"
+                          readOnly 
+                          value={createdCredentials.setupLink}
+                          className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-[11px] font-mono text-indigo-700 flex-grow overflow-ellipsis whitespace-nowrap"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { 
+                            navigator.clipboard.writeText(createdCredentials.setupLink); 
+                            showToast('Đã sao chép liên kết kích hoạt!', 'success'); 
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[11px] font-bold hover:bg-indigo-100 transition-all active:scale-95 whitespace-nowrap"
+                        >Copy Link</button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <button
-                onClick={() => setCreatedCredentials(null)}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-body-sm shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
-              >
-                Đã ghi nhận, đóng
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleRegeneratePassword(createdCredentials.role, createdCredentials.userId)}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center justify-center gap-1"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Cấp lại mật khẩu mới
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreatedCredentials(null)}
+                  className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           )}
         </div>
