@@ -70,7 +70,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
-    setProfessionalTitle(''); setHourlyRate(''); setAddress(''); setCity(''); setCountry('');
+    setProfessionalTitle(''); setCity(''); setCountry('');
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
     setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
@@ -89,7 +89,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.email) setEmail(data.email);
         if (data.phone) setPhone(data.phone);
         if (data.language) setLanguage(data.language);
-        if (data.timezone) setTimezone(data.timezone);
         if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
         if (data.status) setStatus(data.status);
         if (data.emailVerified) setEmailVerified(data.emailVerified);
