@@ -315,70 +315,70 @@ export default function UserSettings({
                                   {role === 'freelancer' ? (
                                     <>
                                   {/* Front ID */}
-                                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
-                                     {idCardFrontUrl ? (
-                                        <img src={idCardFrontUrl} alt="CCCD Mặt trước" className="w-full h-full object-contain" />
-                                     ) : (
-                                        <>
-                                           <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                                           <span className="text-sm font-semibold text-gray-700">CCCD Mặt trước</span>
-                                        </>
-                                     )}
-                                     <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardFrontUrl)} />
+                                  <div className="flex flex-col">
+                                     <span className="text-sm font-semibold text-gray-700 mb-2">CCCD Mặt trước</span>
+                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                        {idCardFrontUrl ? (
+                                           <img src={idCardFrontUrl} alt="CCCD Mặt trước" className="w-full h-full object-contain" />
+                                        ) : (
+                                           <UploadCloud className="w-8 h-8 text-gray-400" />
+                                        )}
+                                        <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardFrontUrl)} />
+                                     </div>
                                   </div>
 
                                   {/* Back ID */}
-                                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
-                                     {idCardBackUrl ? (
-                                        <img src={idCardBackUrl} alt="CCCD Mặt sau" className="w-full h-full object-contain" />
-                                     ) : (
-                                        <>
-                                           <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                                           <span className="text-sm font-semibold text-gray-700">CCCD Mặt sau</span>
-                                        </>
-                                     )}
-                                     <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardBackUrl)} />
+                                  <div className="flex flex-col">
+                                     <span className="text-sm font-semibold text-gray-700 mb-2">CCCD Mặt sau</span>
+                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                        {idCardBackUrl ? (
+                                           <img src={idCardBackUrl} alt="CCCD Mặt sau" className="w-full h-full object-contain" />
+                                        ) : (
+                                           <UploadCloud className="w-8 h-8 text-gray-400" />
+                                        )}
+                                        <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardBackUrl)} />
+                                     </div>
                                   </div>
 
                                   {/* Portrait */}
-                                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40 sm:col-span-2">
-                                     {portraitUrl ? (
-                                        <img src={portraitUrl} alt="Ảnh Chân dung" className="w-full h-full object-contain" />
-                                     ) : (
-                                        <>
-                                           <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                                           <span className="text-sm font-semibold text-gray-700">Ảnh chân dung (Selfie)</span>
-                                        </>
-                                     )}
-                                     <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setPortraitUrl)} />
+                                  <div className="flex flex-col sm:col-span-2">
+                                     <span className="text-sm font-semibold text-gray-700 mb-2">Ảnh chân dung (Selfie)</span>
+                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                        {portraitUrl ? (
+                                           <img src={portraitUrl} alt="Ảnh Chân dung" className="w-full h-full object-contain" />
+                                        ) : (
+                                           <UploadCloud className="w-8 h-8 text-gray-400" />
+                                        )}
+                                        <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setPortraitUrl)} />
+                                     </div>
                                   </div>
                                     </>
                                   ) : (
                                     <>
                                       {/* Business License */}
-                                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
-                                         {businessLicenseUrl ? (
-                                            <img src={businessLicenseUrl} alt="Giấy phép kinh doanh" className="w-full h-full object-contain" />
-                                         ) : (
-                                            <>
-                                               <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                                               <span className="text-sm font-semibold text-gray-700">Giấy phép ĐKKD</span>
-                                            </>
-                                         )}
-                                         <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setBusinessLicenseUrl)} />
+                                      <div className="flex flex-col">
+                                         <span className="text-sm font-semibold text-gray-700 mb-2">Giấy phép ĐKKD</span>
+                                         <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                            {businessLicenseUrl ? (
+                                               <img src={businessLicenseUrl} alt="Giấy phép kinh doanh" className="w-full h-full object-contain" />
+                                            ) : (
+                                               <UploadCloud className="w-8 h-8 text-gray-400" />
+                                            )}
+                                            <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setBusinessLicenseUrl)} />
+                                         </div>
                                       </div>
 
                                       {/* Rep ID Card */}
-                                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
-                                         {representativeIdCardUrl ? (
-                                            <img src={representativeIdCardUrl} alt="CCCD Người đại diện" className="w-full h-full object-contain" />
-                                         ) : (
-                                            <>
-                                               <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                                               <span className="text-sm font-semibold text-gray-700">CCCD Người đại diện</span>
-                                            </>
-                                         )}
-                                         <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setRepresentativeIdCardUrl)} />
+                                      <div className="flex flex-col">
+                                         <span className="text-sm font-semibold text-gray-700 mb-2">CCCD Người đại diện</span>
+                                         <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                            {representativeIdCardUrl ? (
+                                               <img src={representativeIdCardUrl} alt="CCCD Người đại diện" className="w-full h-full object-contain" />
+                                            ) : (
+                                               <UploadCloud className="w-8 h-8 text-gray-400" />
+                                            )}
+                                            <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setRepresentativeIdCardUrl)} />
+                                         </div>
                                       </div>
                                     </>
                                   )}
