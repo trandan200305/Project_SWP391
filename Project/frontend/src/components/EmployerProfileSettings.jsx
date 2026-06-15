@@ -368,44 +368,46 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         }
         return true; // Dữ liệu hoàn toàn hợp lệ
     };
-
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        // 1. Kiểm tra validation phía client
         if (!validateForm()) {
             window.scrollTo({top: 0, behavior: 'smooth'});
             return;
         }
-    setSaving(true);
-    setNotice(null);
 
-    try {
-        const response = await fetch(`http://localhost:8080/api/employers/${user.id}/profile`, {
-            method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(form)
-        });
-        const data = await response.json();
-        if (!response.ok || data.success === false) {
-            throw new Error(data.message || 'Cập nhật thất bại.');
-        }
+        setSaving(true);
+        setNotice(null);
 
-        if (onUserUpdate) {
-            onUserUpdate({
-                ...user,
-                name: data.displayName || form.displayName || user.name,
-                avatar: data.companyLogoUrl || user.avatar
+        try {
+            const response = await fetch(`http://localhost:8080/api/employers/${user.id}/profile`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(form)
             });
+
+            const data = await response.json();
+
+            if (!response.ok || data.success === false) {
+                throw new Error(data.message || 'Cập nhật thất bại.');
+            }
+
+            // 2. Không cần gọi onUserUpdate ở đây vì thông tin mới chưa được Admin duyệt.
+            // Chỉ cần hiển thị thông báo thành công và cuộn lên đầu trang.
+            setNotice({type: 'success', message: data.message});
+            window.scrollTo({top: 0, behavior: 'smooth'});
+
+        } catch (error) {
+            setNotice({type: 'error', message: error.message || 'Không thể lưu thay đổi.'});
+        } finally {
+            setSaving(false);
         }
-        setNotice({type: 'success', message: data.message || 'Đã lưu thay đổi.'});
-        window.scrollTo({top: 0, behavior: 'smooth'});
-    } catch (error) {
-        setNotice({type: 'error', message: error.message || 'Không thể lưu thay đổi.'});
-    } finally {
-        setSaving(false);
-    }
-};
+    };
 
 
-if (user?.role !== 'EMPLOYER') {
-    return (<div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
+    if (user?.role !== 'EMPLOYER') {
+        return (<div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md text-center shadow-level-1">
                 <XCircle className="w-12 h-12 text-rose-500 mx-auto mb-4"/>
                 <h1 className="text-xl font-extrabold text-slate-900">Chỉ dành cho Employer</h1>
@@ -421,9 +423,9 @@ if (user?.role !== 'EMPLOYER') {
                 </button>
             </div>
         </div>);
-}
+    }
 
-return (<div className="min-h-screen bg-slate-100 text-slate-900">
+    return (<div className="min-h-screen bg-slate-100 text-slate-900">
         <div className="bg-white border-b border-slate-200">
             <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
                 <button
@@ -492,11 +494,11 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             </p>
                         </div>
                         {notice && (<div
-                                className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all ${notice.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                                {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4"/> :
-                                    <XCircle className="w-4 h-4"/>}
-                                {notice.message}
-                            </div>)}
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all ${notice.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                            {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4"/> :
+                                <XCircle className="w-4 h-4"/>}
+                            {notice.message}
+                        </div>)}
                     </div>
 
                     {/* Navigation Tabs */}
@@ -538,9 +540,9 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
 
                     {/* Tab content */}
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
-                            <Loader2 className="w-6 h-6 animate-spin mr-2"/>
-                            Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (/* Company info form */
+                        <Loader2 className="w-6 h-6 animate-spin mr-2"/>
+                        Đang tải dữ liệu...
+                    </div>) : activeTab === 'company' ? (/* Company info form */
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -631,22 +633,22 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                 </div>
 
                                 {loadingProjects ? (<div
-                                        className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                        <Loader2 className="w-8 h-8 animate-spin text-cyan-600"/>
-                                        <span className="text-sm font-semibold">Đang tải tin tuyển dụng...</span>
-                                    </div>) : projects.length === 0 ? (<div
-                                        className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50/50">
-                                        <div
-                                            className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
-                                            <Briefcase className="w-6 h-6"/>
-                                        </div>
-                                        <h4 className="font-bold text-slate-800 mb-1">Chưa có tin tuyển dụng
-                                            nào</h4>
-                                        <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                            Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của
-                                            bạn tại đây.
-                                        </p>
-                                    </div>) : (/* Project Cards Grid */
+                                    className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                    <Loader2 className="w-8 h-8 animate-spin text-cyan-600"/>
+                                    <span className="text-sm font-semibold">Đang tải tin tuyển dụng...</span>
+                                </div>) : projects.length === 0 ? (<div
+                                    className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50/50">
+                                    <div
+                                        className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+                                        <Briefcase className="w-6 h-6"/>
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 mb-1">Chưa có tin tuyển dụng
+                                        nào</h4>
+                                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                        Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của
+                                        bạn tại đây.
+                                    </p>
+                                </div>) : (/* Project Cards Grid */
                                     <div className="grid grid-cols-1 gap-4">
                                         {projects.map((proj) => {
                                             const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
@@ -667,101 +669,102 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
 
                                             return (<div key={proj.projectId}
                                                          className="border border-slate-100 bg-white rounded-2xl p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 group">
-                                                    <div
-                                                        className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                                                        <div>
-                                                            <div
-                                                                className="flex items-center gap-2 flex-wrap mb-1.5">
+                                                <div
+                                                    className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                                                    <div>
+                                                        <div
+                                                            className="flex items-center gap-2 flex-wrap mb-1.5">
                                   <span
                                       className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
                                     {proj.category?.categoryName || 'General'}
                                   </span>
-                                                                <span
-                                                                    className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                            <span
+                                                                className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                     {statusLabels[proj.status] || proj.status}
                                   </span>
-                                                            </div>
-                                                            <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
-                                                                {proj.title}
-                                                            </h4>
                                                         </div>
-                                                        <div
-                                                            className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
-                                                            <span className="text-xs text-slate-400 font-medium">Ngân sách</span>
-                                                            <span
-                                                                className="font-extrabold text-emerald-600 text-sm">
+                                                        <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
+                                                            {proj.title}
+                                                        </h4>
+                                                    </div>
+                                                    <div
+                                                        className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
+                                                        <span
+                                                            className="text-xs text-slate-400 font-medium">Ngân sách</span>
+                                                        <span
+                                                            className="font-extrabold text-emerald-600 text-sm">
                                   {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
                                       style: 'currency', currency: 'VND'
                                   }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
                                       style: 'currency', currency: 'VND'
                                   }).format(proj.budgetMax)}` : 'Thỏa thuận')}
                                 </span>
-                                                        </div>
                                                     </div>
+                                                </div>
 
-                                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                                                        {proj.description}
-                                                    </p>
+                                                <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                                                    {proj.description}
+                                                </p>
 
-                                                    <div
-                                                        className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
-                                                        <div className="flex items-center gap-4">
+                                                <div
+                                                    className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
+                                                    <div className="flex items-center gap-4">
                                 <span className="flex items-center gap-1.5">
                                   <Calendar className="w-3.5 h-3.5 text-slate-400"/>
                                   Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
                                 </span>
-                                                            <span className="flex items-center gap-1.5">
+                                                        <span className="flex items-center gap-1.5">
                                   <Clock className="w-3.5 h-3.5 text-slate-400"/>
                                   Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
                                 </span>
-                                                        </div>
+                                                    </div>
 
-                                                        <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2">
                                 <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
                                   {proj.proposalCount || 0} Báo giá
                                 </span>
-                                                        </div>
                                                     </div>
+                                                </div>
 
-                                                    {/* Management Actions */}
-                                                    <div
-                                                        className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
-                                                        {proj.status !== 'CLOSED' && (<button
-                                                                type="button"
-                                                                onClick={() => handleCloseProject(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Dừng tuyển
-                                                            </button>)}
-                                                        {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
+                                                {/* Management Actions */}
+                                                <div
+                                                    className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
+                                                    {proj.status !== 'CLOSED' && (<button
+                                                        type="button"
+                                                        onClick={() => handleCloseProject(proj.projectId)}
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
+                                                    >
+                                                        Dừng tuyển
+                                                    </button>)}
+                                                    {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleViewProposals(proj.projectId)}
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
+                                                        >
+                                                            Xem báo giá ({proj.proposalCount})
+                                                        </button>
+                                                    )}
+                                                    {proj.status !== 'IN_PROGRESS' && (
+                                                        <>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleViewProposals(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
+                                                                onClick={() => setEditingProject(proj)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
                                                             >
-                                                                Xem báo giá ({proj.proposalCount})
+                                                                Sửa
                                                             </button>
-                                                        )}
-                                                        {proj.status !== 'IN_PROGRESS' && (
-                                                            <>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setEditingProject(proj)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
-                                                                >
-                                                                    Sửa
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleDeleteProject(proj.projectId)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
-                                                                >
-                                                                    Xóa
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>);
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteProject(proj.projectId)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
+                                                            >
+                                                                Xóa
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>);
                                         })}
                                     </div>)}
                             </div>
@@ -772,158 +775,160 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
 
         {/* Edit Project Modal */}
         {editingProject && (<div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10">
-                <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-fade-in my-auto">
-                    <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-6">
-                        <h3 className="text-xl font-bold text-slate-800">Chỉnh sửa tin tuyển dụng</h3>
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-fade-in my-auto">
+                <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-6">
+                    <h3 className="text-xl font-bold text-slate-800">Chỉnh sửa tin tuyển dụng</h3>
+                    <button
+                        type="button"
+                        onClick={() => setEditingProject(null)}
+                        className="text-slate-400 hover:text-slate-650 font-bold text-lg"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <form onSubmit={handleUpdateProject} className="space-y-4">
+                    {/* Title */}
+                    <label className="block">
+                                <span
+                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
+                        <input
+                            type="text"
+                            required
+                            value={editForm.title}
+                            onChange={(e) => setEditForm(prev => ({...prev, title: e.target.value}))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                        />
+                    </label>
+
+                    {/* Category */}
+                    <label className="block">
+                                <span
+                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần thuê *</span>
+                        <select
+                            required
+                            value={editForm.categoryId}
+                            onChange={(e) => setEditForm(prev => ({...prev, categoryId: e.target.value}))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                        >
+                            <option value="">-- Chọn danh mục phù hợp --</option>
+                            {categories.map((cat) => (
+                                <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>))}
+                        </select>
+                    </label>
+
+                    {/* Project Type */}
+                    <div className="grid grid-cols-2 gap-4">
                         <button
                             type="button"
-                            onClick={() => setEditingProject(null)}
-                            className="text-slate-400 hover:text-slate-650 font-bold text-lg"
+                            onClick={() => setEditForm(prev => ({...prev, projectType: 'FIXED'}))}
+                            className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'FIXED' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
                         >
-                            ✕
+                            <span className="block text-xs font-bold text-slate-900">Chi phí cố định</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setEditForm(prev => ({...prev, projectType: 'RANGE'}))}
+                            className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'RANGE' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
+                        >
+                            <span className="block text-xs font-bold text-slate-900">Khoảng ngân sách</span>
                         </button>
                     </div>
 
-                    <form onSubmit={handleUpdateProject} className="space-y-4">
-                        {/* Title */}
-                        <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
-                            <input
-                                type="text"
-                                required
-                                value={editForm.title}
-                                onChange={(e) => setEditForm(prev => ({...prev, title: e.target.value}))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                            />
-                        </label>
-
-                        {/* Category */}
-                        <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần thuê *</span>
-                            <select
-                                required
-                                value={editForm.categoryId}
-                                onChange={(e) => setEditForm(prev => ({...prev, categoryId: e.target.value}))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                            >
-                                <option value="">-- Chọn danh mục phù hợp --</option>
-                                {categories.map((cat) => (
-                                    <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>))}
-                            </select>
-                        </label>
-
-                        {/* Project Type */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setEditForm(prev => ({...prev, projectType: 'FIXED'}))}
-                                className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'FIXED' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
-                            >
-                                <span className="block text-xs font-bold text-slate-900">Chi phí cố định</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setEditForm(prev => ({...prev, projectType: 'RANGE'}))}
-                                className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'RANGE' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
-                            >
-                                <span className="block text-xs font-bold text-slate-900">Khoảng ngân sách</span>
-                            </button>
-                        </div>
-
-                        {/* Budget fields */}
-                        {editForm.projectType === 'FIXED' ? (<label className="block">
+                    {/* Budget fields */}
+                    {editForm.projectType === 'FIXED' ? (<label className="block">
                                     <span
                                         className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
-                                <input
-                                    type="number"
-                                    value={editForm.budgetFixed}
-                                    onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
-                                    placeholder="Để trống nếu tự thỏa thuận"
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                                />
-                            </label>) : (<div className="grid grid-cols-2 gap-4">
-                                <label className="block">
+                        <input
+                            type="number"
+                            value={editForm.budgetFixed}
+                            onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
+                            placeholder="Để trống nếu tự thỏa thuận"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                        />
+                    </label>) : (<div className="grid grid-cols-2 gap-4">
+                        <label className="block">
                                         <span
                                             className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
-                                    <input
-                                        type="number"
-                                        value={editForm.budgetMin}
-                                        onChange={(e) => setEditForm(prev => ({
-                                            ...prev, budgetMin: e.target.value
-                                        }))}
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                                    />
-                                </label>
-                                <label className="block">
-                                        <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND)</span>
-                                    <input
-                                        type="number"
-                                        value={editForm.budgetMax}
-                                        onChange={(e) => setEditForm(prev => ({
-                                            ...prev, budgetMax: e.target.value
-                                        }))}
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                                    />
-                                </label>
-                            </div>)}
-
-                        {/* Deadline */}
-                        <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ *</span>
                             <input
-                                type="date"
-                                required
-                                min={new Date().toISOString().split('T')[0]}
-                                value={editForm.deadline}
-                                onChange={(e) => setEditForm(prev => ({...prev, deadline: e.target.value}))}
+                                type="number"
+                                value={editForm.budgetMin}
+                                onChange={(e) => setEditForm(prev => ({
+                                    ...prev, budgetMin: e.target.value
+                                }))}
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
-
-                        {/* Description */}
                         <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả chi tiết *</span>
-                            <textarea
-                                required
-                                rows="4"
-                                value={editForm.description}
-                                onChange={(e) => setEditForm(prev => ({...prev, description: e.target.value}))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
+                                        <span
+                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND)</span>
+                            <input
+                                type="number"
+                                value={editForm.budgetMax}
+                                onChange={(e) => setEditForm(prev => ({
+                                    ...prev, budgetMax: e.target.value
+                                }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
+                    </div>)}
 
-                        {/* Action Buttons */}
-                        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => setEditingProject(null)}
-                                className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-sm text-slate-650 hover:bg-slate-50 transition-all"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={updating}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-extrabold text-sm hover:bg-cyan-700 disabled:opacity-70 shadow-sm transition-all hover:scale-[1.02]"
-                            >
-                                {updating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>)}
+                    {/* Deadline */}
+                    <label className="block">
+                                <span
+                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ *</span>
+                        <input
+                            type="date"
+                            required
+                            min={new Date().toISOString().split('T')[0]}
+                            value={editForm.deadline}
+                            onChange={(e) => setEditForm(prev => ({...prev, deadline: e.target.value}))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                        />
+                    </label>
+
+                    {/* Description */}
+                    <label className="block">
+                                <span
+                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả chi tiết *</span>
+                        <textarea
+                            required
+                            rows="4"
+                            value={editForm.description}
+                            onChange={(e) => setEditForm(prev => ({...prev, description: e.target.value}))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
+                        />
+                    </label>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                        <button
+                            type="button"
+                            onClick={() => setEditingProject(null)}
+                            className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-sm text-slate-650 hover:bg-slate-50 transition-all"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={updating}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-extrabold text-sm hover:bg-cyan-700 disabled:opacity-70 shadow-sm transition-all hover:scale-[1.02]"
+                        >
+                            {updating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
+                            Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>)}
 
         {/* Proposals Modal */}
         {selectedProjectForProposals && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl w-full max-w-2xl border border-slate-150 shadow-2xl p-6 sm:p-8 animate-fade-in flex flex-col max-h-[85vh]">
+            <div
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div
+                    className="bg-white rounded-2xl w-full max-w-2xl border border-slate-150 shadow-2xl p-6 sm:p-8 animate-fade-in flex flex-col max-h-[85vh]">
                     <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-4">
                         <h3 className="font-extrabold text-lg text-slate-900">
                             Danh sách đề xuất báo giá thầu
@@ -949,17 +954,19 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                     ) : (
                         <div className="overflow-y-auto flex-1 space-y-4 pr-1">
                             {proposals.map((prop) => (
-                                <div key={prop.proposalId} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                                <div key={prop.proposalId}
+                                     className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                                     <div className="flex items-start justify-between gap-4 mb-3">
                                         <div className="flex items-center gap-3">
                                             {prop.freelancerAvatar ? (
-                                                <img 
-                                                    src={prop.freelancerAvatar} 
-                                                    alt={prop.freelancerName} 
-                                                    className="w-10 h-10 rounded-full object-cover border border-slate-200" 
+                                                <img
+                                                    src={prop.freelancerAvatar}
+                                                    alt={prop.freelancerName}
+                                                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
                                                 />
                                             ) : (
-                                                <div className="w-10 h-10 bg-blue-100 text-blue-600 font-bold rounded-full flex items-center justify-center text-sm">
+                                                <div
+                                                    className="w-10 h-10 bg-blue-100 text-blue-600 font-bold rounded-full flex items-center justify-center text-sm">
                                                     {prop.freelancerName.charAt(0)}
                                                 </div>
                                             )}
@@ -970,12 +977,17 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                         </div>
                                         <div className="text-right">
                                             <p className="text-sm font-extrabold text-emerald-600">
-                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(prop.bidAmount)}
+                                                {new Intl.NumberFormat('vi-VN', {
+                                                    style: 'currency',
+                                                    currency: 'VND'
+                                                }).format(prop.bidAmount)}
                                             </p>
-                                            <p className="text-[10px] text-slate-400 font-bold">Thực hiện: {prop.estimatedDays} ngày</p>
+                                            <p className="text-[10px] text-slate-400 font-bold">Thực
+                                                hiện: {prop.estimatedDays} ngày</p>
                                         </div>
                                     </div>
-                                    <div className="text-xs text-slate-650 bg-white border border-slate-100 rounded-lg p-3 leading-relaxed whitespace-pre-line">
+                                    <div
+                                        className="text-xs text-slate-650 bg-white border border-slate-100 rounded-lg p-3 leading-relaxed whitespace-pre-line">
                                         {prop.coverLetter}
                                     </div>
                                     {prop.status === 'SUBMITTED' ? (
@@ -1024,15 +1036,15 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
 
 function FormSection({icon, title, children}) {
     return (<section className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-900">
+        <div className="flex items-center gap-2 text-slate-900">
         <span
             className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
           {icon}
         </span>
-                <h3 className="font-extrabold">{title}</h3>
-            </div>
-            {children}
-        </section>);
+            <h3 className="font-extrabold">{title}</h3>
+        </div>
+        {children}
+    </section>);
 }
 
 function TextInput({label, value, onChange, placeholder, icon, required}) {
@@ -1040,29 +1052,29 @@ function TextInput({label, value, onChange, placeholder, icon, required}) {
       <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">
         {label}{required ? ' *' : ''}
       </span>
-            <div className="relative">
-                {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
-                <input
-                    type="text"
-                    required={required}
-                    value={value}
-                    onChange={(event) => onChange(event.target.value)}
-                    placeholder={placeholder}
-                    className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${icon ? 'pl-10' : ''}`}
-                />
-            </div>
-        </label>);
+        <div className="relative">
+            {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
+            <input
+                type="text"
+                required={required}
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                placeholder={placeholder}
+                className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${icon ? 'pl-10' : ''}`}
+            />
+        </div>
+    </label>);
 }
 
 function TextArea({label, value, onChange}) {
     return (<label className="block">
-            <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">{label}</span>
-            <textarea
-                rows="4"
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
-                placeholder="Mô tả ngắn về lĩnh vực hoạt động, đội ngũ, văn hóa và nhu cầu tuyển freelancer..."
-            />
-        </label>);
+        <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">{label}</span>
+        <textarea
+            rows="4"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
+            placeholder="Mô tả ngắn về lĩnh vực hoạt động, đội ngũ, văn hóa và nhu cầu tuyển freelancer..."
+        />
+    </label>);
 }
