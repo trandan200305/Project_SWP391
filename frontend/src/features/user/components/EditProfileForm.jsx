@@ -176,15 +176,11 @@ export default function EditProfileForm({
                         {role === 'freelancer' ? (
                           <div className="space-y-4 relative z-10">
                             <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
-                            <ReadOnlyRow label="Tổng thu nhập" value={`$${totalEarnings}`} icon={DollarSign} badgeClass="text-sm font-extrabold text-green-600" />
-                            <ReadOnlyRow label="Dự án hoàn thành" value={projectsCompleted} icon={Briefcase} />
                             <ReadOnlyRow label="Đánh giá trung bình" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
                           </div>
                         ) : (
                           <div className="space-y-4 relative z-10">
                             <ReadOnlyRow label="Độ hoàn thiện thông tin" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
-                            <ReadOnlyRow label="Tổng tiền đã chi" value={`$${totalSpent}`} icon={DollarSign} badgeClass="text-sm font-extrabold text-purple-600" />
-                            <ReadOnlyRow label="Dự án đã đăng" value={projectsPosted} icon={Briefcase} />
                             <ReadOnlyRow label="Đánh giá từ Freelancer" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
                           </div>
                         )}

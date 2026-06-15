@@ -127,6 +127,7 @@ public class EmployerController {
                 .averageRating(e.getAverageRating())
                 .createdAt(e.getCreatedAt() != null ? e.getCreatedAt().toString() : null)
                 .updatedAt(e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null)
+                .lastLoginAt(e.getLastLoginAt() != null ? e.getLastLoginAt().toString() : null)
                 .kycStatus(e.getKycStatus())
                 .idCardFrontUrl(e.getIdCardFrontUrl())
                 .idCardBackUrl(e.getIdCardBackUrl())
