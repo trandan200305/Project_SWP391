@@ -74,8 +74,13 @@ public class Freelancer {
     @Column(name = "professional_title")
     private String professionalTitle;
 
-    @Column(length = 500)
-    private String skills;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "freelancer_skills",
+        joinColumns = @JoinColumn(name = "freelancer_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private java.util.Set<Skill> skills = new java.util.HashSet<>();
 
     private String bio;
 
