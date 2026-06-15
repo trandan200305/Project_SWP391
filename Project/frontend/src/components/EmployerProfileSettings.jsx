@@ -349,8 +349,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         }
 
         // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
-        const {bankName, accountNumber, accountHolder} = form.billing;
-        if (bankName || accountNumber || accountHolder) {
+        const {bankName, accountNumber, accountHolder, branch} = form.billing;
+        if (bankName || accountNumber || accountHolder || branch) {
             if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
                 setNotice({
                     type: 'error',
@@ -359,10 +359,31 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 return false;
             }
 
-            // Số tài khoản chỉ được phép chứa số
+            // Số tài khoản chỉ được phép chứa số và tối đa 30 ký tự
             const numRegex = /^[0-9]+$/;
             if (!numRegex.test(accountNumber.trim())) {
                 setNotice({type: 'error', message: 'Số tài khoản ngân hàng chỉ được phép chứa các chữ số.'});
+                return false;
+            }
+            if (accountNumber.trim().length > 30) {
+                setNotice({type: 'error', message: 'Số tài khoản ngân hàng tối đa 30 ký tự.'});
+                return false;
+            }
+
+            // Chủ tài khoản bắt buộc là chữ và tối đa 150 ký tự
+            const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠƯưăâêôơư\s]+$/;
+            if (!nameRegex.test(accountHolder.trim())) {
+                setNotice({type: 'error', message: 'Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.'});
+                return false;
+            }
+            if (accountHolder.trim().length > 150) {
+                setNotice({type: 'error', message: 'Tên chủ tài khoản tối đa 150 ký tự.'});
+                return false;
+            }
+
+            // Chi nhánh tối đa 100 ký tự
+            if (branch && branch.trim().length > 100) {
+                setNotice({type: 'error', message: 'Chi nhánh ngân hàng tối đa 100 ký tự.'});
                 return false;
             }
         }
