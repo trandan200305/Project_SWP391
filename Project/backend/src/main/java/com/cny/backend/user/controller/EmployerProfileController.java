@@ -96,8 +96,9 @@ public class EmployerProfileController {
         String bankName = text(billing.get("bankName"));
         String accountNumber = text(billing.get("accountNumber"));
         String accountHolder = text(billing.get("accountHolder"));
+        String branch = text(billing.get("branch"));
 
-        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder)) {
+        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder) || !isBlank(branch)) {
             if (isBlank(bankName) || isBlank(accountNumber) || isBlank(accountHolder)) {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
@@ -108,6 +109,30 @@ public class EmployerProfileController {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
                 errResponse.put("message", "Số tài khoản ngân hàng chỉ được phép chứa các chữ số.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (accountNumber.length() > 30) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Số tài khoản ngân hàng tối đa 30 ký tự.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (!accountHolder.matches("^[\\p{L} ]+$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (accountHolder.length() > 150) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Tên chủ tài khoản tối đa 150 ký tự.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (branch != null && branch.length() > 100) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Chi nhánh ngân hàng tối đa 100 ký tự.");
                 return ResponseEntity.badRequest().body(errResponse);
             }
         }
