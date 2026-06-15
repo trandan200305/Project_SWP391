@@ -167,7 +167,7 @@ export default function EditProfileForm({
                               badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${emailVerified ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`} 
                            />
                            <ReadOnlyRow 
-                              label="Xác thực Danh tính (KYC)" 
+                              label={<>Xác thực Danh tính <br/>(KYC)</>} 
                               value={kycStatus === 'APPROVED' ? 'Đã duyệt' : kycStatus === 'PENDING' ? 'Đang chờ duyệt' : kycStatus === 'REJECTED' ? 'Bị từ chối' : 'Chưa xác thực'} 
                               badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${kycStatus === 'APPROVED' ? 'text-blue-600 bg-blue-50' : kycStatus === 'PENDING' ? 'text-yellow-600 bg-yellow-50' : kycStatus === 'REJECTED' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`} 
                            />
