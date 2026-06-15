@@ -63,3 +63,18 @@ ADD
     kyc_rejected_reason VARCHAR(500),
     is_verified BIT DEFAULT 0;
 */
+
+// 3. Lệnh SQL tương ứng để thêm các trường Quyền riêng tư (Privacy):
+/*
+ALTER TABLE freelancers 
+ADD 
+    hide_email BIT DEFAULT 0,
+    hide_phone BIT DEFAULT 0,
+    hide_location BIT DEFAULT 0;
+
+ALTER TABLE employers 
+ADD 
+    hide_email BIT DEFAULT 0,
+    hide_phone BIT DEFAULT 0,
+    hide_location BIT DEFAULT 0;
+*/
