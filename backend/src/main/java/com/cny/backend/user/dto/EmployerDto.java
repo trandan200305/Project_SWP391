@@ -54,6 +54,7 @@ public class EmployerDto {
     private BigDecimal averageRating;
     private String createdAt;
     private String updatedAt;
+    private String lastLoginAt;
 
     // --- KYC FIELDS ---
     private String kycStatus;

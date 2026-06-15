@@ -147,6 +147,7 @@ public class FreelancerController {
                 .isAvailable(f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
+                .lastLoginAt(f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null)
                 .kycStatus(f.getKycStatus())
                 .idCardFrontUrl(f.getIdCardFrontUrl())
                 .idCardBackUrl(f.getIdCardBackUrl())

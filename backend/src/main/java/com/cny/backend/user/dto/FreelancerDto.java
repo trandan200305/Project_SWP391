@@ -52,6 +52,7 @@ public class FreelancerDto {
     private Boolean isAvailable;
     private String createdAt;
     private String updatedAt;
+    private String lastLoginAt;
 
     // --- KYC FIELDS ---
     private String kycStatus;
