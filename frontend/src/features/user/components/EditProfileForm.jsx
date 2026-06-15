@@ -123,8 +123,9 @@ export default function EditProfileForm({
                          {/* Vị trí địa lý - Chung cho Freelancer & Employer */}
                          {(role === 'freelancer' || role === 'employer') && (
                            <>
-                             <SelectRow label="Quốc gia" value={country} onChange={e=>{setCountry(e.target.value); if(e.target.value !== 'Việt Nam') setCity('Chờ cập nhật');}} options={['Việt Nam', 'Chờ cập nhật']} />
+                             <SelectRow label="Quốc gia" value={country} onChange={e=>{setCountry(e.target.value); if(e.target.value === 'Việt Nam') setCity(VIETNAM_PROVINCES[0]); else setCity('Chờ cập nhật');}} options={['Việt Nam', 'Chờ cập nhật']} />
                              <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={country === 'Việt Nam' ? VIETNAM_PROVINCES : ['Chờ cập nhật']} />
+                             <InputRow label="Địa chỉ cụ thể" value={address} onChange={e=>setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã..." />
                            </>
                          )}
                        </div>
