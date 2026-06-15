@@ -45,27 +45,7 @@ export default function UserProfile({
           </div>
         )}
 
-        {role === 'freelancer' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <h3 className="font-extrabold text-gray-900 text-xl mb-6">Kỹ năng chuyên môn</h3>
-            <div className="flex flex-wrap gap-2">
-              {['React.js', 'UI/UX Design', 'Figma', 'Node.js', 'Tailwind CSS'].map(skill => (
-                <span key={skill} className="px-4 py-2 bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors">{skill}</span>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Work History Placeholder */}
-        {(role === 'freelancer' || role === 'employer') && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <h3 className="font-extrabold text-gray-900 text-xl mb-6">Lịch sử làm việc</h3>
-            <div className="text-center py-10">
-              <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-bold text-sm">Chưa có dự án nào được hoàn thành.</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Right Column for Profile */}
@@ -128,30 +108,7 @@ export default function UserProfile({
           </div>
         </div>
 
-        {/* Stats Blocks (2x2 Grid) */}
-        {(role === 'freelancer' || role === 'employer') && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-indigo-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? formatCompactCurrency(totalEarnings) : formatCompactCurrency(totalSpent)}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Tổng thu nhập' : 'Đã chi tiêu'}</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-emerald-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? projectsCompleted : projectsPosted}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Dự án' : 'Dự án đã đăng'}</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <div className="flex items-center justify-center gap-1 mb-1 break-words w-full px-1">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 shrink-0" />
-                <p className="text-lg xl:text-xl font-black text-gray-900">{averageRating}</p>
-              </div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đánh giá</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-blue-500 mb-1 break-words w-full px-1">{profileCompleteness}%</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hoàn thiện</p>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

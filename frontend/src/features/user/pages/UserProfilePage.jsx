@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, CheckCircle } from 'lucide-react';
+import { Camera, CheckCircle, Star } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
@@ -287,7 +287,19 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                        <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : industry || 'Industry'}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
+                       <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                       <div className="flex items-center gap-1 text-yellow-500" title="Đánh giá trung bình">
+                         <Star className="w-4 h-4 fill-yellow-500" />
+                         <span className="font-bold text-gray-900">{averageRating || '0.0'}</span>
+                       </div>
                     </div>
+                    {role === 'freelancer' && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {['React.js', 'UI/UX Design', 'Figma', 'Node.js', 'Tailwind CSS'].map(skill => (
+                          <span key={skill} className="px-3 py-1 bg-white border border-gray-200 text-gray-600 font-semibold text-[11px] rounded-lg shadow-sm">{skill}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                </div>
             </div>
