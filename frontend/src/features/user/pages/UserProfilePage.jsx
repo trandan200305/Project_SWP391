@@ -30,10 +30,15 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
   const [isVerified, setIsVerified] = useState(false);
   const [kycRejectedReason, setKycRejectedReason] = useState('');
+  const [isUploadingKyc, setIsUploadingKyc] = useState(false);
+  // Freelancer KYC
   const [idCardFrontUrl, setIdCardFrontUrl] = useState('');
   const [idCardBackUrl, setIdCardBackUrl] = useState('');
   const [portraitUrl, setPortraitUrl] = useState('');
-  const [isUploadingKyc, setIsUploadingKyc] = useState(false);
+  // Employer KYB
+  const [taxCode, setTaxCode] = useState('');
+  const [businessLicenseUrl, setBusinessLicenseUrl] = useState('');
+  const [representativeIdCardUrl, setRepresentativeIdCardUrl] = useState('');
 
   // Common Read-only Stats
   const [status, setStatus] = useState('');
@@ -108,6 +113,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.idCardFrontUrl) setIdCardFrontUrl(data.idCardFrontUrl);
         if (data.idCardBackUrl) setIdCardBackUrl(data.idCardBackUrl);
         if (data.portraitUrl) setPortraitUrl(data.portraitUrl);
+        if (data.taxCode) setTaxCode(data.taxCode);
+        if (data.businessLicenseUrl) setBusinessLicenseUrl(data.businessLicenseUrl);
+        if (data.representativeIdCardUrl) setRepresentativeIdCardUrl(data.representativeIdCardUrl);
         
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);

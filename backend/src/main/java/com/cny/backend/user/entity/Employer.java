@@ -128,14 +128,14 @@ public class Employer {
     @Column(name = "kyc_status", length = 20)
     private String kycStatus = "UNVERIFIED";
 
-    @Column(name = "id_card_front_url", length = 500)
-    private String idCardFrontUrl;
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
 
-    @Column(name = "id_card_back_url", length = 500)
-    private String idCardBackUrl;
+    @Column(name = "business_license_url", length = 500)
+    private String businessLicenseUrl;
 
-    @Column(name = "portrait_url", length = 500)
-    private String portraitUrl;
+    @Column(name = "representative_id_card_url", length = 500)
+    private String representativeIdCardUrl;
 
     @Column(name = "kyc_submitted_at")
     private LocalDateTime kycSubmittedAt;

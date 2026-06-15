@@ -4,6 +4,7 @@ import { List, Lock, Trash2, ShieldCheck, UploadCloud, AlertCircle, CheckCircle,
 export default function UserSettings({
   user, role, targetId, prefTab, setPrefTab, onLogout,
   kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+  taxCode, setTaxCode, businessLicenseUrl, setBusinessLicenseUrl, representativeIdCardUrl, setRepresentativeIdCardUrl,
   hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation
 }) {
   const [currentPassword, setCurrentPassword] = React.useState('');
@@ -36,18 +37,27 @@ export default function UserSettings({
   };
 
   const handleSubmitKyc = async () => {
-    if (!idCardFrontUrl || !idCardBackUrl || !portraitUrl) {
-      alert("Vui lòng tải lên đầy đủ 3 ảnh (Mặt trước, mặt sau và chân dung).");
-      return;
+    let payload = {};
+    if (role === 'freelancer') {
+      if (!idCardFrontUrl || !idCardBackUrl || !portraitUrl) {
+        alert("Vui lòng tải lên đầy đủ 3 ảnh (Mặt trước, mặt sau và chân dung).");
+        return;
+      }
+      payload = { idCardFrontUrl, idCardBackUrl, portraitUrl };
+    } else {
+      if (!taxCode || !businessLicenseUrl || !representativeIdCardUrl) {
+        alert("Vui lòng nhập đầy đủ Mã số thuế và 2 ảnh tài liệu.");
+        return;
+      }
+      payload = { taxCode, businessLicenseUrl, representativeIdCardUrl };
     }
+
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}/kyc/submit` : `http://localhost:8080/api/employers/${targetId}/kyc/submit`;
     try {
-      // Mocked until backend API is ready. We just call it and pretend success or handle error.
-      // For now, we will update state locally to simulate if the backend isn't ready.
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idCardFrontUrl, idCardBackUrl, portraitUrl })
+        body: JSON.stringify(payload)
       });
       if(res.ok) {
         alert("Đã gửi yêu cầu xác minh KYC thành công!");
@@ -289,10 +299,21 @@ export default function UserSettings({
                                )}
                                
                                <p className="text-sm text-gray-600 leading-relaxed">
-                                  Tải lên ảnh chụp rõ nét của thẻ Căn cước công dân (Mặt trước & Mặt sau) và một ảnh chân dung của bạn để chúng tôi xác thực danh tính.
+                                  {role === 'freelancer' 
+                                    ? 'Tải lên ảnh chụp rõ nét của thẻ Căn cước công dân (Mặt trước & Mặt sau) và một ảnh chân dung của bạn để chúng tôi xác thực danh tính.'
+                                    : 'Tải lên mã số thuế, Giấy phép ĐKKD và thẻ Căn cước công dân của Người đại diện pháp luật để xác minh doanh nghiệp.'}
                                </p>
 
+                               {role === 'employer' && (
+                                 <div className="mb-4">
+                                   <label className="block text-sm font-semibold text-gray-700 mb-2">Mã số thuế doanh nghiệp</label>
+                                   <input type="text" value={taxCode} onChange={e=>setTaxCode(e.target.value)} disabled={isUploadingKyc} placeholder="Nhập mã số thuế..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
+                                 </div>
+                               )}
+
                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  {role === 'freelancer' ? (
+                                    <>
                                   {/* Front ID */}
                                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
                                      {idCardFrontUrl ? (
@@ -331,11 +352,41 @@ export default function UserSettings({
                                      )}
                                      <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setPortraitUrl)} />
                                   </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {/* Business License */}
+                                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                         {businessLicenseUrl ? (
+                                            <img src={businessLicenseUrl} alt="Giấy phép kinh doanh" className="w-full h-full object-contain" />
+                                         ) : (
+                                            <>
+                                               <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                               <span className="text-sm font-semibold text-gray-700">Giấy phép ĐKKD</span>
+                                            </>
+                                         )}
+                                         <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setBusinessLicenseUrl)} />
+                                      </div>
+
+                                      {/* Rep ID Card */}
+                                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
+                                         {representativeIdCardUrl ? (
+                                            <img src={representativeIdCardUrl} alt="CCCD Người đại diện" className="w-full h-full object-contain" />
+                                         ) : (
+                                            <>
+                                               <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                               <span className="text-sm font-semibold text-gray-700">CCCD Người đại diện</span>
+                                            </>
+                                         )}
+                                         <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setRepresentativeIdCardUrl)} />
+                                      </div>
+                                    </>
+                                  )}
                                </div>
 
                                <button 
                                   onClick={handleSubmitKyc} 
-                                  disabled={isUploadingKyc || !idCardFrontUrl || !idCardBackUrl || !portraitUrl}
+                                  disabled={isUploadingKyc || (role === 'freelancer' ? (!idCardFrontUrl || !idCardBackUrl || !portraitUrl) : (!taxCode || !businessLicenseUrl || !representativeIdCardUrl))}
                                   className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                >
                                   {isUploadingKyc ? 'Đang tải ảnh lên...' : 'Gửi Yêu Cầu Xác Minh'}
