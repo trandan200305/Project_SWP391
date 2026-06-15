@@ -17,6 +17,9 @@ public class EmployerController {
     @Autowired
     private EmployerRepository employerRepository;
 
+    @Autowired
+    private com.cny.backend.project.repository.ProjectRepository projectRepository;
+
     @GetMapping
     public ResponseEntity<List<EmployerDto>> getAllEmployers() {
         List<Employer> employers = employerRepository.findAll();
@@ -63,6 +66,18 @@ public class EmployerController {
             response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
             return ResponseEntity.badRequest().body(response);
         }
+
+        // Ràng buộc nghiệp vụ: Không được xóa nếu có dự án đang chạy
+        List<com.cny.backend.project.entity.Project> activeProjects = projectRepository.findByClientEmployerIdAndIsDeletedFalse(id).stream()
+                .filter(p -> p.getStatus().equals("PUBLISHED") || p.getStatus().equals("PENDING_REVIEW") || p.getStatus().equals("IN_PROGRESS"))
+                .collect(Collectors.toList());
+
+        if (!activeProjects.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Không thể xóa tài khoản. Bạn đang có " + activeProjects.size() + " dự án đang hoạt động. Vui lòng đóng hoặc hoàn tất các dự án trước khi xóa.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         return employerRepository.findById(id).map(e -> {
             e.setIsDeleted(true);
             e.setUpdatedAt(java.time.LocalDateTime.now());
