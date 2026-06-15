@@ -74,6 +74,9 @@ public class Freelancer {
     @Column(name = "professional_title")
     private String professionalTitle;
 
+    @Column(length = 500)
+    private String skills;
+
     private String bio;
 
     @Column(name = "hourly_rate")

@@ -42,6 +42,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   // ================= FREELANCER STATE =================
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
+  const [skills, setSkills] = useState('');
   const [bio, setBio] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [address, setAddress] = useState('');
@@ -108,6 +109,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
+          if (data.skills) setSkills(data.skills);
           if (data.bio) setBio(data.bio);
           if (data.hourlyRate) setHourlyRate(data.hourlyRate);
           if (data.address) setAddress(data.address);
@@ -148,7 +150,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, skills, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
     } else if (role === 'employer') {
        payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
     }
@@ -197,7 +199,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, skills, setSkills, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
@@ -288,15 +290,17 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                       <div className="flex items-center gap-1 text-yellow-500" title="Đánh giá trung bình">
-                         <Star className="w-4 h-4 fill-yellow-500" />
-                         <span className="font-bold text-gray-900">{averageRating || '0.0'}</span>
+                       <div className="flex items-center text-yellow-500" title="Đánh giá trung bình">
+                         {[1, 2, 3, 4, 5].map(star => (
+                           <Star key={star} className={`w-4 h-4 ${star <= Math.round(averageRating || 0) ? 'fill-yellow-500 text-yellow-500' : 'fill-gray-200 text-gray-200'}`} />
+                         ))}
+                         <span className="font-bold text-gray-900 ml-1.5">{averageRating || '0.0'}</span>
                        </div>
                     </div>
-                    {role === 'freelancer' && (
+                    {role === 'freelancer' && skills && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {['React.js', 'UI/UX Design', 'Figma', 'Node.js', 'Tailwind CSS'].map(skill => (
-                          <span key={skill} className="px-3 py-1 bg-white border border-gray-200 text-gray-600 font-semibold text-[11px] rounded-lg shadow-sm">{skill}</span>
+                        {skills.split(',').map(skill => skill.trim()).filter(Boolean).map((skill, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-white border border-gray-200 text-gray-600 font-semibold text-[11px] rounded-lg shadow-sm">{skill}</span>
                         ))}
                       </div>
                     )}
