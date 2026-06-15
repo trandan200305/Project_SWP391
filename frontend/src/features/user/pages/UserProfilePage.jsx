@@ -42,6 +42,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [bio, setBio] = useState('');
+  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   
@@ -70,7 +71,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
-    setProfessionalTitle(''); setCity(''); setCountry('');
+    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
     setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
@@ -105,7 +106,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
           if (data.bio) setBio(data.bio);
+          if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
+          else if (data.country === 'Việt Nam') setCity('Hà Nội');
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
           if (data.totalEarnings) setTotalEarnings(data.totalEarnings);
@@ -118,7 +121,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.website) setWebsite(data.website);
           if (data.companySize) setCompanySize(data.companySize);
           if (data.industry) setIndustry(data.industry);
+          if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
+          else if (data.country === 'Việt Nam') setCity('Hà Nội');
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
           if (data.totalSpent) setTotalSpent(data.totalSpent);
@@ -141,9 +146,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, city, country, language, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, city, country, language, avatarUrl };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl };
     }
     
     fetch(endpoint, {
@@ -190,7 +195,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
