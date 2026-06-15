@@ -291,35 +291,39 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
                     <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email || user.name}</p>
                   </div>
                   
-                  <button 
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('profile');
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                  >
-                    <User className="w-4 h-4" /> Hồ sơ cá nhân
-                  </button>
+                  {user.role !== 'ADMIN' && (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                      >
+                        <User className="w-4 h-4" /> Hồ sơ cá nhân
+                      </button>
 
-                  <button 
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('edit_profile');
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                  >
-                    <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
-                  </button>
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('edit_profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                      </button>
 
-                  <button 
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      if (onNavigate) onNavigate('preferences');
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                  >
-                    <Settings className="w-4 h-4" /> Cài đặt chung
-                  </button>
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate('preferences');
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <Settings className="w-4 h-4" /> Cài đặt chung
+                      </button>
+                    </>
+                  )}
 
                   <button 
                     onClick={handleMessengerClick}
@@ -449,7 +453,7 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             </button>
           )}
 
-          {user && (
+          {user && user.role !== 'ADMIN' && (
             <>
               <button 
                 onClick={() => { setIsOpen(false); if (onNavigate) onNavigate('profile'); }}

@@ -65,12 +65,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [totalSpent, setTotalSpent] = useState(0);
   const [projectsPosted, setProjectsPosted] = useState(0);
 
-  // ================= ADMIN STATE =================
-  const [adminLevel, setAdminLevel] = useState('SUPER_ADMIN');
+
 
   // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
   useEffect(() => {
-    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : (role === 'employer' ? `http://localhost:8080/api/employers/${targetId}` : `http://localhost:8080/api/admin/${targetId}`);
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
     
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
@@ -132,9 +131,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.totalSpent) setTotalSpent(data.totalSpent);
           if (data.projectsPosted) setProjectsPosted(data.projectsPosted);
           if (data.averageRating) setAverageRating(data.averageRating);
-        } else {
-           if (data.fullName) setFullName(data.fullName);
-           if (data.adminLevel) setAdminLevel(data.adminLevel);
         }
       })
       .catch(error => {
@@ -142,26 +138,19 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       });
   }, [role, targetId]);
 
-  // Hàm: Khóa tab Profile đối với tài khoản Admin
-  useEffect(() => {
-    if (role === 'admin' && activeTab === 'profile') {
-      setActiveTab('edit_profile');
-    }
-  }, [role, activeTab]);
+
 
   // Hàm: Lưu thông tin chỉnh sửa hồ sơ
   const handleSaveProfile = (e) => {
     if(e) e.preventDefault();
     
-    const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
     
     let payload = {};
     if (role === 'freelancer') {
        payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
     } else if (role === 'employer') {
        payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
-    } else if (role === 'admin') {
-       payload = { displayName, fullName, phone, language, timezone, avatarUrl };
     }
     
     fetch(endpoint, {
@@ -212,7 +201,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
-    adminLevel, setAdminLevel,
     handleSaveProfile, formatDate, formatCurrency, formatCompactCurrency
   };
 
@@ -267,7 +255,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                           if (data.success) {
                             setAvatarUrl(data.fileUrl);
                             
-                            const updateEndpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
+                            const updateEndpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
                             await fetch(updateEndpoint, {
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' },
@@ -292,11 +280,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
-                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (role === 'employer' ? (displayName || companyName || 'Unnamed Company') : (displayName || fullName || 'Administrator'))}
+                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || companyName || 'Unnamed Company')}
                        {isVerified && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                       <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : (role === 'employer' ? industry || 'Industry' : 'System Administrator')}</span>
+                       <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : industry || 'Industry'}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
                     </div>
