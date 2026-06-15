@@ -58,9 +58,9 @@ public class EmployerDto {
 
     // --- KYC FIELDS ---
     private String kycStatus;
-    private String idCardFrontUrl;
-    private String idCardBackUrl;
-    private String portraitUrl;
+    private String taxCode;
+    private String businessLicenseUrl;
+    private String representativeIdCardUrl;
     private String kycSubmittedAt;
     private String kycReviewedAt;
     private Integer kycReviewedByStaffId;

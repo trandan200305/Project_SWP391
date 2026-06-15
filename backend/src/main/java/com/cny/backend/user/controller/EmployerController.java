@@ -17,9 +17,6 @@ public class EmployerController {
     @Autowired
     private EmployerRepository employerRepository;
 
-    @Autowired
-    private com.cny.backend.project.repository.ProjectRepository projectRepository;
-
     @GetMapping
     public ResponseEntity<List<EmployerDto>> getAllEmployers() {
         List<Employer> employers = employerRepository.findAll();
@@ -66,18 +63,6 @@ public class EmployerController {
             response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
             return ResponseEntity.badRequest().body(response);
         }
-
-        // Ràng buộc nghiệp vụ: Không được xóa nếu có dự án đang chạy
-        List<com.cny.backend.project.entity.Project> activeProjects = projectRepository.findByClientEmployerIdAndIsDeletedFalse(id).stream()
-                .filter(p -> p.getStatus().equals("PUBLISHED") || p.getStatus().equals("PENDING_REVIEW") || p.getStatus().equals("IN_PROGRESS"))
-                .collect(Collectors.toList());
-
-        if (!activeProjects.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Không thể xóa tài khoản. Bạn đang có " + activeProjects.size() + " dự án đang hoạt động. Vui lòng đóng hoặc hoàn tất các dự án trước khi xóa.");
-            return ResponseEntity.badRequest().body(response);
-        }
-
         return employerRepository.findById(id).map(e -> {
             e.setIsDeleted(true);
             e.setUpdatedAt(java.time.LocalDateTime.now());
@@ -93,12 +78,12 @@ public class EmployerController {
     }
 
     @PostMapping("/{id}/kyc/submit")
-    public ResponseEntity<java.util.Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.KycSubmitDto dto) {
+    public ResponseEntity<java.util.Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.EmployerKycSubmitDto dto) {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         return employerRepository.findById(id).map(e -> {
-            e.setIdCardFrontUrl(dto.getIdCardFrontUrl());
-            e.setIdCardBackUrl(dto.getIdCardBackUrl());
-            e.setPortraitUrl(dto.getPortraitUrl());
+            e.setTaxCode(dto.getTaxCode());
+            e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl());
+            e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl());
             e.setKycStatus("PENDING");
             e.setKycSubmittedAt(java.time.LocalDateTime.now());
             e.setUpdatedAt(java.time.LocalDateTime.now());
@@ -144,9 +129,9 @@ public class EmployerController {
                 .updatedAt(e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null)
                 .lastLoginAt(e.getLastLoginAt() != null ? e.getLastLoginAt().toString() : null)
                 .kycStatus(e.getKycStatus())
-                .idCardFrontUrl(e.getIdCardFrontUrl())
-                .idCardBackUrl(e.getIdCardBackUrl())
-                .portraitUrl(e.getPortraitUrl())
+                .taxCode(e.getTaxCode())
+                .businessLicenseUrl(e.getBusinessLicenseUrl())
+                .representativeIdCardUrl(e.getRepresentativeIdCardUrl())
                 .kycSubmittedAt(e.getKycSubmittedAt() != null ? e.getKycSubmittedAt().toString() : null)
                 .kycReviewedAt(e.getKycReviewedAt() != null ? e.getKycReviewedAt().toString() : null)
                 .kycReviewedByStaffId(e.getKycReviewedByStaffId())
