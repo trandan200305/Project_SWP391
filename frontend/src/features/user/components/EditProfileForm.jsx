@@ -130,6 +130,12 @@ export default function EditProfileForm({
                        </div>
                      </div>
 
+                     {/* Nút lưu cuối form */}
+                     <div className="mt-2 flex justify-start">
+                       <button onClick={handleSaveProfile} className="px-8 py-3.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-xl text-base font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5" /> Lưu thông tin
+                       </button>
+                     </div>
                    </div>
 
                    {/* Right Column (Read Only Stats from DB) */}
@@ -190,14 +196,6 @@ export default function EditProfileForm({
                      </div>
                      )}
 
-                   </div>
-                   
-                   {/* Nút lưu cuối form */}
-                   <div className="lg:col-span-3 mt-6 flex justify-start">
-                     <button onClick={handleSaveProfile} className="px-8 py-3.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-xl text-base font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5" /> Lưu thông tin
-                     </button>
-                   </div>
                  </div>
   );
 }
