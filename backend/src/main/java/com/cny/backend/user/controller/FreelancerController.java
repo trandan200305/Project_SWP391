@@ -62,6 +62,7 @@ public class FreelancerController {
             if(updated.getFullName() != null) f.setFullName(updated.getFullName());
             if(updated.getPhone() != null) f.setPhone(updated.getPhone());
             if(updated.getProfessionalTitle() != null) f.setProfessionalTitle(updated.getProfessionalTitle());
+            if(updated.getSkills() != null) f.setSkills(updated.getSkills());
             if(updated.getBio() != null) f.setBio(updated.getBio());
             if(updated.getHourlyRate() != null) f.setHourlyRate(updated.getHourlyRate());
             if(updated.getAddress() != null) f.setAddress(updated.getAddress());
@@ -129,6 +130,7 @@ public class FreelancerController {
                 .status(f.getStatus())
                 .emailVerified(f.getEmailVerified())
                 .professionalTitle(f.getProfessionalTitle())
+                .skills(f.getSkills())
                 .bio(f.getBio())
                 .hourlyRate(f.getHourlyRate())
                 .address(f.getAddress())
