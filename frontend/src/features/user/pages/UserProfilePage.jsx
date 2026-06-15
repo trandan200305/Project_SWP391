@@ -42,7 +42,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   // ================= FREELANCER STATE =================
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
-  const [skills, setSkills] = useState('');
   const [bio, setBio] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [address, setAddress] = useState('');
@@ -109,7 +108,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
-          if (data.skills) setSkills(data.skills);
           if (data.bio) setBio(data.bio);
           if (data.hourlyRate) setHourlyRate(data.hourlyRate);
           if (data.address) setAddress(data.address);
@@ -150,7 +148,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, skills, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
     } else if (role === 'employer') {
        payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
     }
@@ -199,7 +197,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     isUploadingAvatar, setIsUploadingAvatar,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, skills, setSkills, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
@@ -297,13 +295,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                          <span className="font-bold text-gray-900 ml-1.5">{averageRating || '0.0'}</span>
                        </div>
                     </div>
-                    {role === 'freelancer' && skills && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {skills.split(',').map(skill => skill.trim()).filter(Boolean).map((skill, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-white border border-gray-200 text-gray-600 font-semibold text-[11px] rounded-lg shadow-sm">{skill}</span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                </div>
             </div>

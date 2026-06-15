@@ -37,7 +37,6 @@ public class FreelancerDto {
     private String status;
     private Boolean emailVerified;
     private String professionalTitle;
-    private String skills;
     private String bio;
     private BigDecimal hourlyRate;
     private String address;

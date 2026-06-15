@@ -31,9 +31,6 @@ public class FreelancerController {
     @Autowired
     private FreelancerRepository freelancerRepository;
 
-    @Autowired
-    private SkillRepository skillRepository;
-
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
@@ -65,20 +62,6 @@ public class FreelancerController {
             if(updated.getFullName() != null) f.setFullName(updated.getFullName());
             if(updated.getPhone() != null) f.setPhone(updated.getPhone());
             if(updated.getProfessionalTitle() != null) f.setProfessionalTitle(updated.getProfessionalTitle());
-            if(updated.getSkills() != null) {
-                java.util.Set<Skill> newSkills = new java.util.HashSet<>();
-                String[] skillNames = updated.getSkills().split(",");
-                for (String sName : skillNames) {
-                    String trimmed = sName.trim();
-                    if (trimmed.isEmpty()) continue;
-                    Skill skill = skillRepository.findBySkillNameIgnoreCase(trimmed).orElseGet(() -> {
-                        Skill newSkill = Skill.builder().skillName(trimmed).isActive(true).build();
-                        return skillRepository.save(newSkill);
-                    });
-                    newSkills.add(skill);
-                }
-                f.setSkills(newSkills);
-            }
             if(updated.getBio() != null) f.setBio(updated.getBio());
             if(updated.getHourlyRate() != null) f.setHourlyRate(updated.getHourlyRate());
             if(updated.getAddress() != null) f.setAddress(updated.getAddress());
@@ -146,7 +129,6 @@ public class FreelancerController {
                 .status(f.getStatus())
                 .emailVerified(f.getEmailVerified())
                 .professionalTitle(f.getProfessionalTitle())
-                .skills(f.getSkills() != null && !f.getSkills().isEmpty() ? f.getSkills().stream().map(Skill::getSkillName).collect(Collectors.joining(", ")) : null)
                 .bio(f.getBio())
                 .hourlyRate(f.getHourlyRate())
                 .address(f.getAddress())

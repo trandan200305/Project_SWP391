@@ -58,6 +58,8 @@ D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\dto\KycSubmitDto.jav
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\Employer.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\Freelancer.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\FreelancerProfile.java
+D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\entity\Skill.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\repository\EmployerRepository.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\repository\FreelancerProfileRepository.java
 D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\repository\FreelancerRepository.java
+D:\PRJ301\newweb\backend\src\main\java\com\cny\backend\user\repository\SkillRepository.java
