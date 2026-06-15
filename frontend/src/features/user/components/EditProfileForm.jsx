@@ -58,7 +58,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 );
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus
 }) {
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -158,8 +158,13 @@ export default function EditProfileForm({
                               value={emailVerified ? 'Đã xác thực' : 'Chưa xác thực'} 
                               badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${emailVerified ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`} 
                            />
-                           <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDate(createdAt)} icon={Clock} />
-                           <ReadOnlyRow label="Lần đăng nhập cuối" value={formatDate(lastLoginAt)} icon={Activity} />
+                           <ReadOnlyRow 
+                              label="Xác thực Danh tính (KYC)" 
+                              value={kycStatus === 'APPROVED' ? 'Đã duyệt' : kycStatus === 'PENDING' ? 'Đang chờ duyệt' : kycStatus === 'REJECTED' ? 'Bị từ chối' : 'Chưa xác thực'} 
+                              badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${kycStatus === 'APPROVED' ? 'text-blue-600 bg-blue-50' : kycStatus === 'PENDING' ? 'text-yellow-600 bg-yellow-50' : kycStatus === 'REJECTED' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`} 
+                           />
+                           <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDateTime(createdAt)} icon={Clock} />
+                           <ReadOnlyRow label="Lần đăng nhập cuối" value={formatDateTime(lastLoginAt)} icon={Activity} />
                         </div>
                      </div>
 
