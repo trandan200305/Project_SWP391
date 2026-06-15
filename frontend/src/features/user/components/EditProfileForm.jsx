@@ -66,7 +66,7 @@ export default function EditProfileForm({
   if (country && country !== 'Chờ cập nhật' && city && city !== 'Chờ cập nhật' && address && address.trim() !== '') completenessScore += 25;
   if (kycStatus === 'APPROVED') completenessScore += 25;
   
-  const completenessTooltip = "Công thức tính độ hoàn thiện (Tạm thời):\n- 25% có Số điện thoại\n- 25% có Email\n- 25% có đủ Vị trí (Quốc gia, Tỉnh/TP, Địa chỉ cụ thể)\n- 25% đã Xác thực danh tính (KYC)";
+  const completenessTooltip = "Tiêu chí hoàn thiện hồ sơ:\n- Có Số điện thoại\n- Có Email\n- Có đầy đủ Vị trí (Quốc gia, Tỉnh/Thành Phố, Địa chỉ cụ thể)\n- Đã Xác thực Danh tính (KYC)";
 
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
