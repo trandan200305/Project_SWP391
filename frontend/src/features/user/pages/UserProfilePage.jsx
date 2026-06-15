@@ -174,9 +174,15 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
 
 
   const formatDate = (dateString) => {
-    if(!dateString) return 'N/A';
+    if(!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
-    return d.toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
+    return new Intl.DateTimeFormat('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
+  };
+
+  const formatDateTime = (dateString) => {
+    if(!dateString) return 'Chưa cập nhật';
+    const d = new Date(dateString);
+    return new Intl.DateTimeFormat('vi-VN', {hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
   };
 
   const formatCurrency = (amount) => {
@@ -207,7 +213,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
-    handleSaveProfile, formatDate, formatCurrency, formatCompactCurrency
+    handleSaveProfile, formatDate, formatDateTime, formatCurrency, formatCompactCurrency
   };
 
   return (
