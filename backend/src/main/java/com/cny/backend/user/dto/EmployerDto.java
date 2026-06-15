@@ -43,6 +43,9 @@ public class EmployerDto {
     private String address;
     private String city;
     private String country;
+    private Boolean hideEmail;
+    private Boolean hidePhone;
+    private Boolean hideLocation;
     private String companySize;
     private String industry;
     private Integer profileCompleteness;

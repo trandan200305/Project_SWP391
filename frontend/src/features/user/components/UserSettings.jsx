@@ -1,9 +1,10 @@
 import React from 'react';
-import { List, Lock, Trash2, ShieldCheck, UploadCloud, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { List, Lock, Trash2, ShieldCheck, UploadCloud, AlertCircle, CheckCircle, Clock, EyeOff } from 'lucide-react';
 
 export default function UserSettings({
   user, role, targetId, prefTab, setPrefTab, onLogout,
-  kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc
+  kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+  hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation
 }) {
   const [currentPassword, setCurrentPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
@@ -111,6 +112,22 @@ export default function UserSettings({
       });
   };
 
+  const handleSavePrivacy = () => {
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}/profile` : `http://localhost:8080/api/employers/${targetId}/profile`;
+    fetch(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hideEmail, hidePhone, hideLocation })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert('Đã lưu cấu hình quyền riêng tư thành công!');
+    })
+    .catch(err => {
+      alert('Lỗi khi lưu cấu hình quyền riêng tư!');
+    });
+  };
+
   return (
                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                    
@@ -121,6 +138,12 @@ export default function UserSettings({
                          className={`text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-3 ${prefTab === 'notifications' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                          <List className="w-4 h-4" /> Tùy chọn chung
+                      </button>
+                      <button 
+                         onClick={() => setPrefTab('privacy')}
+                         className={`text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-3 ${prefTab === 'privacy' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                         <EyeOff className="w-4 h-4" /> Quyền riêng tư
                       </button>
                       <button 
                          onClick={() => setPrefTab('security')}
@@ -170,6 +193,50 @@ export default function UserSettings({
                                <input type="checkbox" className="sr-only peer" defaultChecked />
                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                              </label>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+
+                     {prefTab === 'privacy' && (
+                       <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm max-w-2xl">
+                         <h3 className="font-bold text-gray-900 text-xl mb-6 flex items-center gap-2"><EyeOff className="w-5 h-5 text-gray-500" /> Quyền riêng tư</h3>
+                         <div className="space-y-6">
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <p className="font-semibold text-gray-800">Ẩn Địa chỉ Email</p>
+                               <p className="text-sm text-gray-500 mt-1">Người khác sẽ không thấy email thật của bạn trên hồ sơ.</p>
+                             </div>
+                             <label className="relative inline-flex items-center cursor-pointer">
+                               <input type="checkbox" className="sr-only peer" checked={hideEmail} onChange={(e) => setHideEmail(e.target.checked)} />
+                               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                             </label>
+                           </div>
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <p className="font-semibold text-gray-800">Ẩn Số điện thoại</p>
+                               <p className="text-sm text-gray-500 mt-1">Che dấu số điện thoại liên lạc của bạn.</p>
+                             </div>
+                             <label className="relative inline-flex items-center cursor-pointer">
+                               <input type="checkbox" className="sr-only peer" checked={hidePhone} onChange={(e) => setHidePhone(e.target.checked)} />
+                               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                             </label>
+                           </div>
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <p className="font-semibold text-gray-800">Ẩn Vị trí địa lý</p>
+                               <p className="text-sm text-gray-500 mt-1">Không hiển thị Quốc gia và Tỉnh/Thành phố của bạn.</p>
+                             </div>
+                             <label className="relative inline-flex items-center cursor-pointer">
+                               <input type="checkbox" className="sr-only peer" checked={hideLocation} onChange={(e) => setHideLocation(e.target.checked)} />
+                               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                             </label>
+                           </div>
+                           
+                           <div className="pt-6 border-t border-gray-100 flex justify-end">
+                             <button onClick={handleSavePrivacy} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                               Lưu tùy chọn
+                             </button>
                            </div>
                          </div>
                        </div>

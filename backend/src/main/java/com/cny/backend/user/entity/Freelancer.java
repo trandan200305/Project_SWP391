@@ -83,6 +83,15 @@ public class Freelancer {
     private String city;
     private String country;
 
+    @Column(name = "hide_email")
+    private Boolean hideEmail = false;
+
+    @Column(name = "hide_phone")
+    private Boolean hidePhone = false;
+
+    @Column(name = "hide_location")
+    private Boolean hideLocation = false;
+
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 
