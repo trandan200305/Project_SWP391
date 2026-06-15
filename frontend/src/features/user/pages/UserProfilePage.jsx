@@ -20,6 +20,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [language, setLanguage] = useState('vi');
+  const [hideEmail, setHideEmail] = useState(false);
+  const [hidePhone, setHidePhone] = useState(false);
+  const [hideLocation, setHideLocation] = useState(false);
   
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -72,6 +75,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
     setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
+    setHideEmail(false); setHidePhone(false); setHideLocation(false);
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
     setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
@@ -90,6 +94,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.email) setEmail(data.email);
         if (data.phone) setPhone(data.phone);
         if (data.language) setLanguage(data.language);
+        if (data.hideEmail !== undefined) setHideEmail(data.hideEmail);
+        if (data.hidePhone !== undefined) setHidePhone(data.hidePhone);
+        if (data.hideLocation !== undefined) setHideLocation(data.hideLocation);
         if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
         if (data.status) setStatus(data.status);
         if (data.emailVerified) setEmailVerified(data.emailVerified);
@@ -146,9 +153,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
     
     fetch(endpoint, {
@@ -193,6 +200,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage,
     isUploadingAvatar, setIsUploadingAvatar,
+    hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry,
@@ -284,10 +292,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
                         <span className="flex items-center gap-1">
                           {role === 'freelancer' && <MapPin className="w-3.5 h-3.5" />}
-                          {role === 'freelancer' ? ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật') : industry || 'Industry'}
+                          {role === 'freelancer' ? (hideLocation ? <span className="italic">Đã ẩn vị trí</span> : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật')) : industry || 'Industry'}
                         </span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                       <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
+                       <span className="text-gray-900 font-semibold">{hideEmail ? <span className="italic font-normal">Đã ẩn email</span> : (email || 'email@example.com')}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <div className="flex items-center text-yellow-500" title="Đánh giá trung bình">
                          {[1, 2, 3, 4, 5].map(star => (

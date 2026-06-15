@@ -67,6 +67,9 @@ public class FreelancerController {
             if(updated.getAddress() != null) f.setAddress(updated.getAddress());
             if(updated.getCity() != null) f.setCity(updated.getCity());
             if(updated.getCountry() != null) f.setCountry(updated.getCountry());
+            if(updated.getHideEmail() != null) f.setHideEmail(updated.getHideEmail());
+            if(updated.getHidePhone() != null) f.setHidePhone(updated.getHidePhone());
+            if(updated.getHideLocation() != null) f.setHideLocation(updated.getHideLocation());
             if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
@@ -134,6 +137,9 @@ public class FreelancerController {
                 .address(f.getAddress())
                 .city(f.getCity())
                 .country(f.getCountry())
+                .hideEmail(f.getHideEmail())
+                .hidePhone(f.getHidePhone())
+                .hideLocation(f.getHideLocation())
                 .profileCompleteness(f.getProfileCompleteness())
                 .totalEarnings(f.getTotalEarnings())
                 .projectsCompleted(f.getProjectsCompleted())

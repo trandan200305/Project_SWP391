@@ -85,6 +85,15 @@ public class Employer {
     private String city;
     private String country;
 
+    @Column(name = "hide_email")
+    private Boolean hideEmail = false;
+
+    @Column(name = "hide_phone")
+    private Boolean hidePhone = false;
+
+    @Column(name = "hide_location")
+    private Boolean hideLocation = false;
+
     @Column(name = "company_size")
     private String companySize;
 

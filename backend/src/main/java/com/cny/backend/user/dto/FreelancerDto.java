@@ -42,6 +42,9 @@ public class FreelancerDto {
     private String address;
     private String city;
     private String country;
+    private Boolean hideEmail;
+    private Boolean hidePhone;
+    private Boolean hideLocation;
     private Integer profileCompleteness;
     private BigDecimal totalEarnings;
     private Integer projectsCompleted;

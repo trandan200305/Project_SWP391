@@ -45,6 +45,9 @@ public class EmployerController {
             if(updated.getAddress() != null) e.setAddress(updated.getAddress());
             if(updated.getCity() != null) e.setCity(updated.getCity());
             if(updated.getCountry() != null) e.setCountry(updated.getCountry());
+            if(updated.getHideEmail() != null) e.setHideEmail(updated.getHideEmail());
+            if(updated.getHidePhone() != null) e.setHidePhone(updated.getHidePhone());
+            if(updated.getHideLocation() != null) e.setHideLocation(updated.getHideLocation());
             if(updated.getAvatarUrl() != null) e.setAvatarUrl(updated.getAvatarUrl());
             e.setUpdatedAt(java.time.LocalDateTime.now());
             Employer saved = employerRepository.save(e);
@@ -113,6 +116,9 @@ public class EmployerController {
                 .address(e.getAddress())
                 .city(e.getCity())
                 .country(e.getCountry())
+                .hideEmail(e.getHideEmail())
+                .hidePhone(e.getHidePhone())
+                .hideLocation(e.getHideLocation())
                 .companySize(e.getCompanySize())
                 .industry(e.getIndustry())
                 .profileCompleteness(e.getProfileCompleteness())
