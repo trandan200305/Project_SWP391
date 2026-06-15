@@ -181,6 +181,20 @@ public class AdminController {
         return ResponseEntity.ok(adminService.inviteStaffOrManager(payload, adminId));
     }
 
+    @GetMapping("/users/{role}/{id}/credentials")
+    public ResponseEntity<Map<String, Object>> getUserCredentials(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id) {
+        return ResponseEntity.ok(adminService.getUserCredentials(role, id));
+    }
+
+    @PostMapping("/users/{role}/{id}/regenerate-password")
+    public ResponseEntity<Map<String, Object>> regenerateUserPassword(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id) {
+        return ResponseEntity.ok(adminService.regenerateUserPassword(role, id));
+    }
+
     @GetMapping("/verification-tasks")
     public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
         return ResponseEntity.ok(adminService.getVerificationTasks());

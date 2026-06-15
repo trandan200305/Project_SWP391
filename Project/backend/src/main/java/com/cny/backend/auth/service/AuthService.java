@@ -784,6 +784,7 @@ public class AuthService {
         String displayName = payload.get("displayName");
         String verificationCode = payload.get("verificationCode");
         String phone = payload.get("phone");
+        String citizenId = payload.get("citizenId");
 
         if (token == null || token.trim().isEmpty()) {
             response.put("success", false);
@@ -793,6 +794,28 @@ public class AuthService {
         if (fullName == null || fullName.trim().isEmpty()) {
             response.put("success", false);
             response.put("message", "Họ tên không được để trống!");
+            return response;
+        }
+        if (phone == null || phone.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Số điện thoại không được để trống!");
+            return response;
+        }
+        phone = phone.trim();
+        if (!phone.matches("^(0[35789]\\d{8}|\\+84[35789]\\d{8})$")) {
+            response.put("success", false);
+            response.put("message", "Số điện thoại không đúng định dạng (Ví dụ: 0987654321)!");
+            return response;
+        }
+        if (citizenId == null || citizenId.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Số căn cước công dân không được để trống!");
+            return response;
+        }
+        citizenId = citizenId.trim();
+        if (!citizenId.matches("^\\d{12}$")) {
+            response.put("success", false);
+            response.put("message", "Số căn cước công dân phải bao gồm đúng 12 chữ số!");
             return response;
         }
         if (verificationCode == null || verificationCode.trim().isEmpty()) {
@@ -848,14 +871,36 @@ public class AuthService {
         String email = invitation.getEmail();
         String role = invitation.getRole();
 
+        // Unique validation for Phone across all roles (Manager, Staff, Freelancer, Employer)
+        boolean phoneTaken = managerRepository.existsByPhoneActiveAndEmailNot(phone, email)
+                || staffRepository.existsByPhoneActiveAndEmailNot(phone, email)
+                || employerRepository.existsByPhoneActiveAndEmailNot(phone, email)
+                || freelancerRepository.existsByPhoneActiveAndEmailNot(phone, email);
+
+        if (phoneTaken) {
+            response.put("success", false);
+            response.put("message", "Số điện thoại này đã được sử dụng bởi một tài khoản khác!");
+            return response;
+        }
+
+        // Unique validation for CitizenId across Manager and Staff roles
+        boolean citizenIdTaken = managerRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email)
+                || staffRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email);
+
+        if (citizenIdTaken) {
+            response.put("success", false);
+            response.put("message", "Số căn cước công dân này đã được đăng ký trên hệ thống!");
+            return response;
+        }
+
         // Complete Onboarding based on role
         if ("MANAGER".equals(role)) {
             Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
             if (mgrOpt.isPresent()) {
                 com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                mgr.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 mgr.setFullName(fullName);
                 mgr.setPhone(phone);
+                mgr.setCitizenId(citizenId);
                 mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
                         : (fullName != null ? fullName : email.split("@")[0]));
                 mgr.setStatus("ACTIVE");
@@ -871,9 +916,9 @@ public class AuthService {
             Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
             if (stfOpt.isPresent()) {
                 com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                stf.setPasswordHash("OAUTH_GOOGLE_LOGGED");
                 stf.setFullName(fullName);
                 stf.setPhone(phone);
+                stf.setCitizenId(citizenId);
                 stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
                         : (fullName != null ? fullName : email.split("@")[0]));
                 stf.setStatus("ACTIVE");
