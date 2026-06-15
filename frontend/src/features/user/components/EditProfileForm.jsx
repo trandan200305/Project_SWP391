@@ -33,7 +33,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 );
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, skills, setSkills, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating
 }) {
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -83,7 +83,6 @@ export default function EditProfileForm({
                          {role === 'freelancer' && (
                            <>
                              <InputRow label="Chức danh nghề nghiệp" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
-                             <InputRow label="Kỹ năng (cách bằng dấu phẩy)" value={skills} onChange={e=>setSkills(e.target.value)} placeholder="React, Node.js..." />
                              <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
                            </>
                          )}

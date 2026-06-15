@@ -7,6 +7,7 @@ com\cny\backend\admin\dto\WithdrawalDto$WithdrawalDtoBuilder.class
 com\cny\backend\admin\entity\Staff$StaffBuilder.class
 com\cny\backend\admin\repository\StaffRepository.class
 com\cny\backend\user\entity\Employer.class
+com\cny\backend\user\entity\Skill.class
 com\cny\backend\admin\repository\ManagerRepository.class
 com\cny\backend\admin\dto\ManagerDto.class
 com\cny\backend\admin\repository\StaffInvitationRepository.class
@@ -30,6 +31,7 @@ com\cny\backend\user\entity\Freelancer.class
 com\cny\backend\admin\dto\KycRequestDto$KycRequestDtoBuilder.class
 com\cny\backend\admin\dto\AdminDto$AdminDtoBuilder.class
 com\cny\backend\user\entity\Employer$TransientUser.class
+com\cny\backend\user\repository\SkillRepository.class
 com\cny\backend\admin\entity\Admin$AdminBuilder.class
 com\cny\backend\admin\entity\Manager.class
 com\cny\backend\admin\repository\DashboardRepository$WithdrawalProjection.class
@@ -93,6 +95,7 @@ com\cny\backend\user\entity\FreelancerProfile.class
 com\cny\backend\admin\dto\ReportDto$ReportDtoBuilder.class
 com\cny\backend\user\dto\EmployerDto$EmployerDtoBuilder.class
 com\cny\backend\admin\dto\StaffDto$StaffDtoBuilder.class
+com\cny\backend\user\entity\Skill$SkillBuilder.class
 com\cny\backend\admin\dto\AdminAuditLogDto$AdminAuditLogDtoBuilder.class
 com\cny\backend\admin\controller\ManagerController.class
 com\cny\backend\admin\repository\DashboardRepository$JobCategoryProjection.class
