@@ -44,7 +44,7 @@ const VIETNAM_PROVINCES = [
 ];
 
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
-  <div className="flex justify-between items-center py-1 gap-3" title={title}>
+  <div className="flex justify-between items-center py-1 gap-2" title={title}>
     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
       {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
       {label}
@@ -52,7 +52,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
     {badgeClass ? (
        <span className={`${badgeClass} whitespace-nowrap`}>{value}</span>
     ) : (
-       <span className="text-sm font-bold text-gray-800 text-right whitespace-nowrap">{value}</span>
+       <span className="text-sm font-bold text-gray-800 text-right">{value}</span>
     )}
   </div>
 );
