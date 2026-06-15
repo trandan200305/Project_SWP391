@@ -82,7 +82,6 @@ export default function EditProfileForm({
 
                          {role === 'freelancer' && (
                            <>
-                             <InputRow label="Chức danh nghề nghiệp" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
                              <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
                            </>
                          )}

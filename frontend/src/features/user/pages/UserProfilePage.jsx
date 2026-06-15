@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, CheckCircle, Star } from 'lucide-react';
+import { Camera, CheckCircle, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
@@ -284,7 +284,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                        {isVerified && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                       <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : industry || 'Industry'}</span>
+                        <span className="flex items-center gap-1">
+                          {role === 'freelancer' && <MapPin className="w-3.5 h-3.5" />}
+                          {role === 'freelancer' ? ([address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật địa chỉ') : industry || 'Industry'}
+                        </span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
