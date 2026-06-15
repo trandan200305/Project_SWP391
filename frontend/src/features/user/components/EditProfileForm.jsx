@@ -196,6 +196,7 @@ export default function EditProfileForm({
                      </div>
                      )}
 
+                   </div>
                  </div>
   );
 }
