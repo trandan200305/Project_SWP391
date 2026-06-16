@@ -305,8 +305,8 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
                         <span className="flex items-center gap-1">
-                          {role === 'freelancer' && <MapPin className="w-3.5 h-3.5" />}
-                          {role === 'freelancer' ? (hideLocation ? <span className="italic">Đã ẩn vị trí</span> : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật')) : industry || 'Industry'}
+                          <MapPin className="w-3.5 h-3.5" />
+                          {hideLocation ? <span className="italic">Đã ẩn vị trí</span> : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật')}
                         </span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{hideEmail ? <span className="italic font-normal">Đã ẩn email</span> : (email || 'email@example.com')}</span>
