@@ -109,17 +109,17 @@ export default function EditProfileForm({
 
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                          <InputRow label="Tên hiển thị" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Tên ngắn gọn..." />
-                         <InputRow label="Họ và Tên thật" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Tên đầy đủ..." />
+                         {role === 'employer' ? (
+                           <InputRow label="Tên công ty" value={companyName} onChange={e=>setCompanyName(e.target.value)} placeholder="Công ty ABC..." />
+                         ) : (
+                           <InputRow label="Họ và Tên thật" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Tên đầy đủ..." />
+                         )}
                          <InputRow label="Số điện thoại" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+84..." />
                          <InputRow label="Email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email..." />
 
-
-
                          {role === 'employer' && (
                            <>
-                             <InputRow label="Tên công ty" value={companyName} onChange={e=>setCompanyName(e.target.value)} placeholder="Công ty ABC..." />
                              <InputRow label="Website" value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." />
-                             <InputRow label="Quy mô công ty" value={companySize} onChange={e=>setCompanySize(e.target.value)} placeholder="10-50 nhân viên..." />
                              <InputRow label="Lĩnh vực kinh doanh" value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="IT, Giáo dục..." />
                            </>
                          )}
