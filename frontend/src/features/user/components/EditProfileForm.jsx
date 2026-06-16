@@ -118,10 +118,7 @@ export default function EditProfileForm({
                          <InputRow label="Email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email..." />
 
                          {role === 'employer' && (
-                           <>
-                             <InputRow label="Website" value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." />
-                             <InputRow label="Lĩnh vực kinh doanh" value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="IT, Giáo dục..." />
-                           </>
+                           <InputRow label="Website" value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." />
                          )}
 
                          {role === 'admin' && (
