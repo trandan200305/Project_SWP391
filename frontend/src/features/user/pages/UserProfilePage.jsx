@@ -311,11 +311,26 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                        <span className="text-gray-900 font-semibold">{hideEmail ? <span className="italic font-normal">Đã ẩn email</span> : (email || 'email@example.com')}</span>
                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                       <div className="flex items-center text-yellow-500" title="Đánh giá trung bình">
-                         {[1, 2, 3, 4, 5].map(star => (
-                           <Star key={star} className={`w-4 h-4 ${star <= Math.round(averageRating || 0) ? 'fill-yellow-500 text-yellow-500' : 'fill-gray-200 text-gray-200'}`} />
-                         ))}
-                         <span className="font-bold text-gray-900 ml-1.5">{averageRating || '0.0'}</span>
+                       <div className="flex items-center gap-0.5" title="Đánh giá trung bình">
+                         {[1, 2, 3, 4, 5].map(star => {
+                           const val = averageRating || 0;
+                           if (val >= star) {
+                             return <Star key={star} className="w-4 h-4 fill-yellow-500 text-yellow-500" />;
+                           } else if (val > star - 1) {
+                             const fillPercent = (val - (star - 1)) * 100;
+                             return (
+                               <div key={star} className="relative w-4 h-4">
+                                 <Star className="w-4 h-4 fill-gray-200 text-gray-200 absolute inset-0" />
+                                 <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
+                                   <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                                 </div>
+                               </div>
+                             );
+                           } else {
+                             return <Star key={star} className="w-4 h-4 fill-gray-200 text-gray-200" />;
+                           }
+                         })}
+                         <span className="font-bold text-gray-900 ml-1.5 text-sm">{averageRating || '0.0'}</span>
                        </div>
                     </div>
                   </div>
