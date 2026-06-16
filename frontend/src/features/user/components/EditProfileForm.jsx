@@ -110,7 +110,7 @@ export default function EditProfileForm({
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                          <InputRow label="Tên hiển thị" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Tên ngắn gọn..." />
                          {role === 'employer' ? (
-                           <InputRow label="Tên công ty" value={companyName} onChange={e=>setCompanyName(e.target.value)} placeholder="Công ty ABC..." />
+                           <InputRow label="Tên công ty" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Công ty ABC..." />
                          ) : (
                            <InputRow label="Họ và Tên thật" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Tên đầy đủ..." />
                          )}

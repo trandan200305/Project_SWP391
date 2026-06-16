@@ -300,7 +300,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
-                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || companyName || 'Unnamed Company')}
+                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
                        {(isVerified || kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
