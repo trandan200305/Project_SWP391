@@ -14,7 +14,7 @@ import SockJS from 'sockjs-client';
 
 export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  // Styles & Brand Settings
+  
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
   const currentRole = user?.role || "STAFF";
@@ -43,28 +43,28 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     });
   };
   
-  // Tab states
+  
   const [activeTab, setActiveTab] = useState('Dashboard');
   
-  // Dashboard & Task filters
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [taskFilter, setTaskFilter] = useState('ALL');
   const [chartPeriod, setChartPeriod] = useState('7days');
   const [hoveredPoint, setHoveredPoint] = useState(null);
   
-  // Modals & Drawers
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
   
-  // Notification Toast
+  
   const [toast, setToast] = useState({ message: '', type: 'success', show: false });
   const showToast = (message, type = 'success') => {
     setToast({ message, type, show: true });
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
 
-  // ---------------- REAL DATABASE DATA STATES ----------------
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeProjects: 0,
@@ -106,7 +106,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const selectedChatIdRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Create task form state
+  
   const [createForm, setCreateForm] = useState({
     type: 'Account Verification',
     user: '',
@@ -127,7 +127,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     type: 'danger',
     onConfirm: null
   });
-  const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
+  const [supportSubTab, setSupportSubTab] = useState('unclaimed'); 
   const [deletedChats, setDeletedChats] = useState([]);
 
   const supportSubTabRef = useRef(supportSubTab);
@@ -135,17 +135,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     supportSubTabRef.current = supportSubTab;
   }, [supportSubTab]);
 
-  // Keep selectedChatIdRef in sync so WebSocket callbacks (created at mount) always read the current value
+  
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
   }, [selectedChatId]);
 
-  // Auto-scroll to latest message
+  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // 1. WebSocket connection
+  
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/api/ws');
     const client = new Client({
@@ -157,14 +157,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       console.log('[STOMP] Connected (Staff)', frame);
       setSocketConnected(true);
 
-      // Subscribe to global admin topic — handles ALL ticket messages in real time
+      
       client.subscribe('/topic/admin', (message) => {
         const received = JSON.parse(message.body);
         console.log('[STOMP] /topic/admin (Staff)', received);
 
-        // Skip SYSTEM messages (claims, blocks) — they are handled by fetchSupportChats
+        
         if (received.senderRole !== 'SYSTEM' && received.messageText) {
-          // If this message belongs to the currently open conversation, add it immediately
+          
           if (received.ticketId === selectedChatIdRef.current) {
             setChatMessages(prev => {
               const isDuplicate = prev.some(
@@ -179,7 +179,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           }
         }
 
-        // Always refresh sidebar list to update last message / unread badge
+        
         fetchSupportChats();
         if (supportSubTabRef.current === 'deleted') {
           fetchDeletedSupportChats();
@@ -206,7 +206,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     };
   }, []);
 
-  // 2. Fetch all databases lists
+  
   const fetchStats = () => {
     adminApi.getStats(chartPeriod)
       .then(data => {
@@ -320,7 +320,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }))];
       }
 
-      // Add Mock data for Gigs and Reviews to satisfy user requirement
+      
       mapped.push({
         id: 'GIG-MOCK-1',
         idRaw: 9991,
@@ -401,7 +401,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     messengerApi.getTickets()
       .then(data => {
         if (Array.isArray(data)) {
-          // Calculate stats dynamically
+          
           const total = data.length;
           let inProgress = 0;
           let pending = 0;
@@ -485,7 +485,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .catch(err => console.error('Error revenue growth:', err));
   };
 
-  // Mount logic
+  
   useEffect(() => {
     fetchStats();
     fetchTasks();
@@ -496,7 +496,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     fetchTrends();
   }, [chartPeriod]);
 
-  // Messages fetch on selection
+  
   useEffect(() => {
     if (!selectedChatId) return;
     setIsLoading(true);
@@ -517,7 +517,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     publishSupportReadReceipt(selectedChatId);
   }, [selectedChatId, socketConnected]);
 
-  // Messages websocket subscription
+  
   useEffect(() => {
     if (!selectedChatId || !stompClientRef.current || !socketConnected) return;
 
@@ -555,14 +555,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     };
   }, [selectedChatId, socketConnected]);
 
-  // 3. Handlers with Real DB connection
+  
   const handleCreateTask = (e) => {
     e.preventDefault();
     showToast('Chức năng tạo tác vụ mới yêu cầu quyền quản lý phòng ban cấp cao!', 'error');
     setShowCreateModal(false);
   };
 
-  // Task approval signoff
+  
   const handleUpdateTaskStatus = (id, newStatus) => {
     if (!selectedTask) return;
     
@@ -593,7 +593,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       });
   };
 
-  // Support chat submit
+  
   const handleSendChat = (e) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedChatId || !stompClientRef.current?.connected) return;
@@ -654,7 +654,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     setSelectedChatId(chat.id);
   };
 
-  // Moderation: block user
+  
   const handleBlockUser = (days) => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -708,7 +708,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     setShowConfirmModal(true);
   };
 
-  // Moderation: delete conversation
+  
   const handleDeleteTicket = () => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -739,7 +739,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     setShowConfirmModal(true);
   };
 
-  // Moderation: restore conversation
+  
   const handleRestoreTicket = () => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -770,7 +770,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     setShowConfirmModal(true);
   };
 
-  // KYC Approval
+  
   const handleKycAction = (idRaw, approve, role) => {
     adminApi.moderateKycRequest(idRaw, approve, role)
       .then(res => {
@@ -787,7 +787,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       });
   };
 
-  // Moderation action supporting multiple types
+  
   const handleModAction = (item, approve) => {
     const adminId = user?.id || 1;
     let apiCall;
@@ -798,10 +798,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     } else if (item.type === 'PROFILE') {
       apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
     } else if (item.type === 'WITHDRAWAL') {
-      const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
+      const status = approve ? 'COMPLETED' : 'REJECTED'; 
       apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
     } else {
-      // Mock APIs for GIG and REVIEW
+      
       apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
     }
 
@@ -820,7 +820,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       });
   };
 
-  // Filter tasks based on search query and status filter
+  
   const filteredTasks = tasks.filter(t => {
     const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.type.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -830,13 +830,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     return matchesSearch && t.status.toLowerCase() === taskFilter.toLowerCase();
   });
 
-  // Calculate stats count
+  
   const countAssigned = tasks.length;
   const countPending = tasks.filter(t => t.status === 'Pending').length;
   const countCompleted = tasks.filter(t => t.status === 'Completed').length;
   const countOverdue = tasks.filter(t => t.status === 'In Progress' && t.deadline.includes('Today')).length;
 
-  // Chart coordinates calculator
+  
   const activeChartData = userGrowthTrend.length > 0 
     ? userGrowthTrend 
     : [
@@ -861,7 +861,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     return { x, y, day: d.label, completion: val };
   });
 
-  // Smooth curve path (using cubic bezier approximation or simple lines)
+  
   let smoothCurvePath = '';
   if (points.length > 0) {
     smoothCurvePath = `M ${points[0].x} ${points[0].y}`;
@@ -873,12 +873,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     }
   }
 
-  // Area under curve path
+  
   const areaPath = smoothCurvePath 
     ? `${smoothCurvePath} L ${points[points.length - 1].x} ${chartHeight - paddingY} L ${points[0].x} ${chartHeight - paddingY} Z`
     : '';
 
-  // Computed chat lists for support sub-tabs
+  
   const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
   const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
   const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
@@ -893,10 +893,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     return base.filter(c => c.name?.toLowerCase().includes(chatSearch.toLowerCase()) || c.lastMessage?.toLowerCase().includes(chatSearch.toLowerCase()));
   })();
 
-  // Active chat
+  
   const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId) || null;
 
-  // Doughnut calculations
+  
   const totalCircumference = 314.16;
   const pInProg = supportStats.total > 0 ? (supportStats.inProgress / supportStats.total) : 0.54;
   const pPend = supportStats.total > 0 ? (supportStats.pending / supportStats.total) : 0.28;
@@ -918,7 +918,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
       
-      {/* Brand Style Overrides (Scoped CSS Variables) */}
+      
       <style>{`
         :root {
           --primary: #006b2c;
@@ -1168,7 +1168,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }
       `}</style>
 
-      {/* Global Toast Alert */}
+      
       {toast.show && (
         <div className="fixed top-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl animate-bounce bg-white border border-[#e1e8fd] max-w-sm">
           {toast.type === 'success' ? (
@@ -1186,10 +1186,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         </div>
       )}
 
-      {/* ---------------- SIDEBAR (260px Fixed) ---------------- */}
+      
       <aside className="w-[260px] bg-white border-r border-[#e1e8fd] flex flex-col justify-between shrink-0 h-full">
         <div className="flex flex-col h-full overflow-hidden">
-          {/* Logo Section */}
+          
           <div className="p-6 flex items-center gap-3 border-b border-[#e9edff]">
             <div className="w-9 h-9 rounded-lg bg-[#006b2c] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#006b2c]/20">
               F
@@ -1202,7 +1202,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             </div>
           </div>
 
-          {/* Navigation Links */}
+          
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hidden">
             <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Workspace</p>
             <nav className="space-y-1">
@@ -1238,7 +1238,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                         : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
                     }`}
                   >
-                    {/* Left Active border bar */}
+                    
                     {isActive && (
                       <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
                     )}
@@ -1260,7 +1260,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           </div>
         </div>
 
-        {/* Sidebar Footer (Create Task Button) */}
+        
         <div className="p-4 border-t border-[#e1e8fd] bg-[#f9f9ff]">
           <button 
             onClick={() => setShowCreateModal(true)}
@@ -1272,13 +1272,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         </div>
       </aside>
 
-      {/* ---------------- MAIN CONTAINER ---------------- */}
+      
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* HEADER (64px Height) */}
+        
         <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-between shrink-0 z-10">
           
-          {/* Search bar */}
+          
           <div className="w-80 relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
               <Search className="w-4 h-4" />
@@ -1292,9 +1292,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             />
           </div>
 
-          {/* User profile & Actions */}
+          
           <div className="flex items-center gap-5">
-            {/* Top Toolbar Icons */}
+            
             <div className="flex items-center gap-3">
               <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors relative">
                 <Bell className="w-5 h-5" />
@@ -1308,10 +1308,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
               </button>
             </div>
 
-            {/* Vertical Divider */}
+            
             <div className="h-8 w-[1px] bg-[#e1e8fd]" />
 
-            {/* Profile widget */}
+            
             <div className="flex items-center gap-3">
               <div className="profile-menu-wrapper">
                 <div 
@@ -1340,7 +1340,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                         {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'S'}
                       </div>
                     )}
-                    {/* Active online pulse dot */}
+                    
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
                   </div>
                   
@@ -1458,14 +1458,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           </div>
         </header>
 
-        {/* CONTENT BODY */}
+        
         <div className="flex-1 overflow-y-auto p-6 bg-[#f9f9ff]">
           
-          {/* ---------------- TAB: DASHBOARD ---------------- */}
+          
           {activeTab === 'Dashboard' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               
-              {/* Sub-header */}
+              
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Dashboard Overview</h1>

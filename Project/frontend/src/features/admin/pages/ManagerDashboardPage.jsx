@@ -14,7 +14,7 @@ import SockJS from 'sockjs-client';
 
 export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  // Styles & Brand Settings
+  
   const brandName = "FelanPro";
   const brandSub = "Manager Console";
   const currentRole = "MANAGER";
@@ -43,30 +43,30 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     });
   };
   
-  // Tab states
+  
   const [activeTab, setActiveTab] = useState('Dashboard');
   
-  // Filters & query states
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [taskFilter, setTaskFilter] = useState('ALL');
   const [chartPeriod, setChartPeriod] = useState('7days');
   const [hoveredPoint, setHoveredPoint] = useState(null);
   
-  // Modals & Drawers
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   
-  // Notification Toast
+  
   const [toast, setToast] = useState({ message: '', type: 'success', show: false });
   const showToast = (message, type = 'success') => {
     setToast({ message, type, show: true });
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
 
-  // ---------------- REAL DATABASE DATA STATES ----------------
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeProjects: 0,
@@ -94,7 +94,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const selectedChatIdRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Manager Specific states
+  
   const [staffList, setStaffList] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [supportStats, setSupportStats] = useState({
@@ -107,7 +107,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     waitingUserPercent: 0
   });
 
-  // Forms states
+  
   const [createForm, setCreateForm] = useState({
     taskType: 'KYC_VERIFICATION',
     title: '',
@@ -139,7 +139,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     type: 'danger',
     onConfirm: null
   });
-  const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
+  const [supportSubTab, setSupportSubTab] = useState('unclaimed'); 
   const [deletedChats, setDeletedChats] = useState([]);
 
   const supportSubTabRef = useRef(supportSubTab);
@@ -147,17 +147,17 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     supportSubTabRef.current = supportSubTab;
   }, [supportSubTab]);
 
-  // Keep selectedChatIdRef in sync so WebSocket callbacks (created at mount) always read the current value
+  
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
   }, [selectedChatId]);
 
-  // Auto-scroll to latest message
+  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // 1. WebSocket connection
+  
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/api/ws');
     const client = new Client({
@@ -169,14 +169,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       console.log('[STOMP] Connected (Manager)', frame);
       setSocketConnected(true);
 
-      // Subscribe to global admin topic — handles ALL ticket messages in real time
+      
       client.subscribe('/topic/admin', (message) => {
         const received = JSON.parse(message.body);
         console.log('[STOMP] /topic/admin (Manager)', received);
 
-        // Skip SYSTEM messages (claims, blocks) — they are handled by fetchSupportChats
+        
         if (received.senderRole !== 'SYSTEM' && received.messageText) {
-          // If this message belongs to the currently open conversation, add it immediately
+          
           if (received.ticketId === selectedChatIdRef.current) {
             setChatMessages(prev => {
               const isDuplicate = prev.some(
@@ -191,7 +191,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           }
         }
 
-        // Always refresh sidebar list to update last message / unread badge
+        
         fetchSupportChats();
         if (supportSubTabRef.current === 'deleted') {
           fetchDeletedSupportChats();
@@ -218,7 +218,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     };
   }, []);
 
-  // 2. Fetch all databases lists
+  
   const fetchStats = () => {
     adminApi.getStats(chartPeriod)
       .then(data => {
@@ -332,7 +332,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         }))];
       }
 
-      // Add Mock data for Gigs and Reviews
+      
       mapped.push({
         id: 'GIG-MOCK-1',
         idRaw: 9991,
@@ -467,7 +467,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       .catch(err => console.error(err));
   };
 
-  // Mount logic
+  
   useEffect(() => {
     fetchStats();
     fetchTasks();
@@ -478,7 +478,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     fetchStaffAndDepartments();
   }, [chartPeriod]);
 
-  // Messages fetch on selection
+  
   useEffect(() => {
     if (!selectedChatId) return;
     setIsLoading(true);
@@ -499,7 +499,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     publishSupportReadReceipt(selectedChatId);
   }, [selectedChatId, socketConnected]);
 
-  // Messages websocket subscription
+  
   useEffect(() => {
     if (!selectedChatId || !stompClientRef.current || !socketConnected) return;
 
@@ -537,7 +537,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     };
   }, [selectedChatId, socketConnected]);
 
-  // Manager creates verification task
+  
   const handleCreateTaskSubmit = (e) => {
     e.preventDefault();
     if (!createForm.title.trim()) return;
@@ -573,7 +573,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Manager invites staff
+  
   const handleInviteStaff = (e) => {
     e.preventDefault();
     if (!inviteForm.email.trim()) return;
@@ -595,7 +595,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Manager transfers staff
+  
   const handleTransferStaff = (e) => {
     e.preventDefault();
     if (!transferForm.memberId) return;
@@ -620,7 +620,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Task approval signoff
+  
   const handleUpdateTaskStatus = (id, newStatus) => {
     if (!selectedTask) return;
     
@@ -651,7 +651,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Support chat submit
+  
   const handleSendChat = (e) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedChatId || !stompClientRef.current?.connected) return;
@@ -712,7 +712,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     setSelectedChatId(chat.id);
   };
 
-  // Moderation: block user
+  
   const handleBlockUser = (days) => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -766,7 +766,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     setShowConfirmModal(true);
   };
 
-  // Moderation: delete conversation
+  
   const handleDeleteTicket = () => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -797,7 +797,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     setShowConfirmModal(true);
   };
 
-  // Moderation: restore conversation
+  
   const handleRestoreTicket = () => {
     const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
     if (!activeChat) return;
@@ -828,7 +828,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     setShowConfirmModal(true);
   };
 
-  // KYC Approval
+  
   const handleKycAction = (idRaw, approve, role) => {
     adminApi.moderateKycRequest(idRaw, approve, role)
       .then(res => {
@@ -845,7 +845,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Moderation action supporting multiple types
+  
   const handleModAction = (item, approve) => {
     const adminId = user?.id || 1;
     let apiCall;
@@ -856,10 +856,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     } else if (item.type === 'PROFILE') {
       apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
     } else if (item.type === 'WITHDRAWAL') {
-      const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
+      const status = approve ? 'COMPLETED' : 'REJECTED'; 
       apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
     } else {
-      // Mock APIs for GIG and REVIEW
+      
       apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
     }
 
@@ -878,7 +878,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       });
   };
 
-  // Filter tasks based on search query and status filter
+  
   const filteredTasks = tasks.filter(t => {
     const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.type.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -888,13 +888,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     return matchesSearch && t.status.toLowerCase() === taskFilter.toLowerCase();
   });
 
-  // Calculate stats count
+  
   const countAssigned = tasks.length;
   const countPending = tasks.filter(t => t.status === 'Pending').length;
   const countCompleted = tasks.filter(t => t.status === 'Completed').length;
   const countOverdue = tasks.filter(t => t.status === 'In Progress').length;
 
-  // Chart coordinates calculator
+  
   const activeChartData = userGrowthTrend.length > 0 
     ? userGrowthTrend 
     : [
@@ -919,7 +919,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     return { x, y, day: d.label, completion: val };
   });
 
-  // Smooth curve path
+  
   let smoothCurvePath = '';
   if (points.length > 0) {
     smoothCurvePath = `M ${points[0].x} ${points[0].y}`;
@@ -931,12 +931,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     }
   }
 
-  // Area under curve path
+  
   const areaPath = smoothCurvePath 
     ? `${smoothCurvePath} L ${points[points.length - 1].x} ${chartHeight - paddingY} L ${points[0].x} ${chartHeight - paddingY} Z`
     : '';
 
-  // Computed chat lists for support sub-tabs
+  
   const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
   const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
   const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
@@ -951,10 +951,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     return base.filter(c => c.name?.toLowerCase().includes(chatSearch.toLowerCase()) || c.lastMessage?.toLowerCase().includes(chatSearch.toLowerCase()));
   })();
 
-  // Active chat
+  
   const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId) || null;
 
-  // Doughnut calculations
+  
   const totalCircumference = 314.16;
   const pInProg = supportStats.total > 0 ? (supportStats.inProgress / supportStats.total) : 0.54;
   const pPend = supportStats.total > 0 ? (supportStats.pending / supportStats.total) : 0.28;
@@ -1000,7 +1000,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
       
-      {/* Brand Style Overrides (Scoped CSS Variables) */}
+      
       <style>{`
         :root {
           --primary: #006b2c;
@@ -1250,7 +1250,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         }
       `}</style>
 
-      {/* Global Toast Alert */}
+      
       {toast.show && (
         <div className="fixed top-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl animate-bounce bg-white border border-[#e1e8fd] max-w-sm">
           {toast.type === 'success' ? (
@@ -1268,10 +1268,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       )}
 
-      {/* ---------------- SIDEBAR (260px Fixed) ---------------- */}
+      
       <aside className="w-[260px] bg-white border-r border-[#e1e8fd] flex flex-col justify-between shrink-0 h-full">
         <div className="flex flex-col h-full overflow-hidden">
-          {/* Logo Section */}
+          
           <div className="p-6 border-b border-[#e9edff]">
             <span className="font-sans text-xl font-extrabold tracking-tight text-[#006b2c] block">
               {brandName}
@@ -1281,7 +1281,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </p>
           </div>
 
-          {/* Navigation Links */}
+          
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hidden">
             <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Workspace</p>
             <nav className="space-y-1">
@@ -1338,7 +1338,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           </div>
         </div>
 
-        {/* Sidebar Footer (Create Task Button) */}
+        
         <div className="p-4 border-t border-[#e1e8fd] bg-[#f9f9ff]">
           <button 
             onClick={() => setShowCreateModal(true)}
@@ -1350,10 +1350,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       </aside>
 
-      {/* ---------------- MAIN CONTAINER ---------------- */}
+      
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* HEADER */}
+        
         <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-between shrink-0 z-10">
           <div className="w-80 relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
@@ -1412,7 +1412,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'M'}
                       </div>
                     )}
-                    {/* Active online pulse dot */}
+                    
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
                   </div>
                   
@@ -1530,10 +1530,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           </div>
         </header>
 
-        {/* CONTENT BODY */}
+        
         <div className="flex-1 overflow-y-auto p-6 bg-[#f9f9ff]">
           
-          {/* ---------------- TAB: DASHBOARD ---------------- */}
+          
           {activeTab === 'Dashboard' && (
             <div className="space-y-6 max-w-7xl mx-auto pb-10">
               
@@ -1555,10 +1555,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </div>
               </div>
 
-              {/* Stats Cards */}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 
-                {/* Metric 1: TOTAL STAFF */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-5 rounded-xl flex flex-col justify-between min-h-[140px] card-level-1">
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-lg bg-[#f7fff2] text-[#006b2c] flex items-center justify-center">
@@ -1582,7 +1582,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
 
-                {/* Metric 2: PENDING CASES */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-5 rounded-xl flex flex-col justify-between min-h-[140px] card-level-1">
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-lg bg-[#f1f3ff] text-[#0058be] flex items-center justify-center">
@@ -1609,7 +1609,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
 
-                {/* Metric 3: ESCALATED */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-5 rounded-xl flex flex-col justify-between min-h-[140px] card-level-1">
                   <div className="w-10 h-10 rounded-lg bg-[#ffdad6] text-[#ba1a1a] flex items-center justify-center">
                     <ShieldAlert className="w-5 h-5" />
@@ -1626,7 +1626,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
 
-                {/* Metric 4: AVG RESOLUTION */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-5 rounded-xl flex flex-col justify-between min-h-[140px] card-level-1">
                   <div className="w-10 h-10 rounded-lg bg-[#f7fff2] text-[#006b2c] flex items-center justify-center">
                     <Zap className="w-5 h-5" />
@@ -1643,10 +1643,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
               </div>
 
-              {/* 2 Charts Grid */}
+              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Staff Performance Bar Chart */}
+                
                 <div className="lg:col-span-2 bg-white border border-[#e1e8fd] p-6 rounded-xl min-h-[320px] flex flex-col justify-between card-level-1">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1660,32 +1660,32 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
                   <div className="flex-1 mt-6 flex items-center justify-center">
                     <svg width="100%" height="200" viewBox="0 0 400 200" className="overflow-visible select-none">
-                      {/* Grid lines */}
+                      
                       <line x1="40" y1="20" x2="380" y2="20" stroke="#f1f3ff" strokeWidth="1" />
                       <line x1="40" y1="60" x2="380" y2="60" stroke="#f1f3ff" strokeWidth="1" />
                       <line x1="40" y1="100" x2="380" y2="100" stroke="#f1f3ff" strokeWidth="1" />
                       <line x1="40" y1="140" x2="380" y2="140" stroke="#f1f3ff" strokeWidth="1" />
                       <line x1="40" y1="170" x2="380" y2="170" stroke="#e1e8fd" strokeWidth="1.5" />
 
-                      {/* Y axis labels */}
+                      
                       <text x="30" y="24" textAnchor="end" className="text-[9px] fill-[#6e7b6c] font-bold">100%</text>
                       <text x="30" y="64" textAnchor="end" className="text-[9px] fill-[#6e7b6c] font-bold">75%</text>
                       <text x="30" y="104" textAnchor="end" className="text-[9px] fill-[#6e7b6c] font-bold">50%</text>
                       <text x="30" y="144" textAnchor="end" className="text-[9px] fill-[#6e7b6c] font-bold">25%</text>
 
-                      {/* Bars (DEV: 20, OPS: 130, SALES: 60, HR: 40, SUP: 100) */}
-                      {/* DEV */}
+                      
+                      
                       <rect x="65" y="130" width="24" height="40" rx="4" fill="url(#bar-grad-1)" />
-                      {/* OPS */}
+                      
                       <rect x="130" y="40" width="24" height="130" rx="4" fill="url(#bar-grad-1)" />
-                      {/* SALES */}
+                      
                       <rect x="195" y="100" width="24" height="70" rx="4" fill="url(#bar-grad-1)" />
-                      {/* HR */}
+                      
                       <rect x="260" y="120" width="24" height="50" rx="4" fill="url(#bar-grad-1)" />
-                      {/* SUP */}
+                      
                       <rect x="325" y="60" width="24" height="110" rx="4" fill="url(#bar-grad-2)" />
 
-                      {/* X axis labels */}
+                      
                       <text x="77" y="188" textAnchor="middle" className="text-[10px] fill-[#6e7b6c] font-bold">DEV</text>
                       <text x="142" y="188" textAnchor="middle" className="text-[10px] fill-[#6e7b6c] font-bold">OPS</text>
                       <text x="207" y="188" textAnchor="middle" className="text-[10px] fill-[#6e7b6c] font-bold">SALES</text>
@@ -1706,7 +1706,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
 
-                {/* Department Workload */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl flex flex-col justify-between min-h-[320px] card-level-1">
                   <div className="flex items-center justify-between">
                     <h3 className="text-body-lg font-bold text-[#141b2b]">Department Workload</h3>
@@ -1721,7 +1721,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
 
                   <div className="space-y-4 mt-4 flex-1 flex flex-col justify-around">
-                    {/* Core Operations */}
+                    
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
                         <span>Core Operations</span>
@@ -1732,7 +1732,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       </div>
                     </div>
 
-                    {/* Quality Assurance */}
+                    
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
                         <span>Quality Assurance</span>
@@ -1743,7 +1743,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       </div>
                     </div>
 
-                    {/* Customer Support */}
+                    
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
                         <span>Customer Support</span>
@@ -1754,7 +1754,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       </div>
                     </div>
 
-                    {/* Logistics */}
+                    
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
                         <span>Logistics</span>
@@ -1769,10 +1769,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
               </div>
 
-              {/* Bottom Row - Staff Workload & Recent Escalations */}
+              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Staff Workload Table */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl lg:col-span-2 card-level-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between pb-4 border-b border-[#e1e8fd]">
@@ -1842,13 +1842,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
 
-                {/* Recent Escalations */}
+                
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl flex flex-col justify-between relative card-level-1">
                   <div>
                     <h3 className="text-body-lg font-bold text-[#141b2b] pb-4 border-b border-[#e1e8fd]">Recent Escalations</h3>
                     
                     <div className="space-y-4 mt-4">
-                      {/* Escalation 1 */}
+                      
                       <div className="bg-[#f9f9ff] border border-[#e1e8fd] p-4 rounded-xl relative">
                         <div className="flex items-center justify-between">
                           <span className="bg-[#ba1a1a] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
@@ -1877,7 +1877,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         </div>
                       </div>
 
-                      {/* Escalation 2 */}
+                      
                       <div className="bg-[#f9f9ff] border border-[#e1e8fd] p-4 rounded-xl relative">
                         <div className="flex items-center justify-between">
                           <span className="bg-[#293040] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
@@ -1907,7 +1907,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     </div>
                   </div>
 
-                  {/* Floating Plus Button */}
+                  
                   <button 
                     onClick={() => setShowCreateModal(true)}
                     className="absolute bottom-6 right-6 w-11 h-11 bg-[#006b2c] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#00873a] transition-all hover:scale-105 active:scale-95"
@@ -1917,7 +1917,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </div>
               </div>
 
-              {/* Blue Pending Approvals Banner */}
+              
               <div className="bg-[#0058be] text-white p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6 shadow-md shadow-[#0058be]/10">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
@@ -1946,7 +1946,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </div>
           )}
 
-          {/* ---------------- TAB: TASKS ---------------- */}
+          
           {activeTab === 'Tasks' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
@@ -1999,7 +1999,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </div>
           )}
 
-          {/* ---------------- TAB: STAFF MANAGEMENT ---------------- */}
+          
           {activeTab === 'Staff Management' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
@@ -2025,7 +2025,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </div>
               </div>
 
-              {/* Staff Table */}
+              
               <div className="card-level-1 p-6 bg-white">
                 <table className="min-w-full divide-y divide-[#e9edff] text-left">
                   <thead>
@@ -2055,7 +2055,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </div>
           )}
 
-          {/* ---------------- TAB: SUPPORT (Messenger Chat) ---------------- */}
+          
           {activeTab === 'Support' && (() => {
             const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
             const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
@@ -2079,10 +2079,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <p className="text-body-sm text-[#3e4a3d] mt-1">Hỗ trợ khách hàng và tư vấn tranh chấp trực tiếp.</p>
                 </div>
 
-                {/* Chat Split-pane Container */}
+                
                 <div className="flex-1 bg-white border border-[#e1e8fd] rounded-xl flex overflow-hidden shadow-sm">
                   
-                  {/* Left sidebar: Contact list */}
+                  
                   <div className="w-[320px] border-r border-[#e1e8fd] flex flex-col bg-white shrink-0">
                     <div className="p-4 border-b border-[#e1e8fd] space-y-3">
                       <div className="relative">
@@ -2098,7 +2098,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         />
                       </div>
 
-                      {/* Support Sub-tabs */}
+                      
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           onClick={() => { setSupportSubTab('unclaimed'); setSelectedChatId(null); }}
@@ -2177,7 +2177,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     </div>
                   </div>
 
-                  {/* Right side: Message thread or placeholder */}
+                  
                   {!activeChat ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#f9f9ff]">
                       <div className="w-16 h-16 bg-emerald-50 text-[#006b2c] rounded-2xl flex items-center justify-center mb-4 border border-[#bdcaba]">
@@ -2191,7 +2191,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   ) : (
                     <div className="flex-1 flex flex-col bg-[#f9f9ff] min-w-0">
                       
-                      {/* Thread Header */}
+                      
                       <div className="px-6 py-4 bg-white border-b border-[#e1e8fd] flex items-center justify-between shrink-0">
                         <div 
                           className="flex items-center gap-3 cursor-pointer hover:bg-[#f9f9ff] p-1.5 rounded-lg transition-all"
@@ -2229,7 +2229,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         </div>
                       </div>
 
-                      {/* Messages Bubble Container */}
+                      
                       <div className="flex-1 overflow-y-auto p-6 space-y-4">
                         {Array.isArray(chatMessages) && chatMessages.map((m, idx) => {
                           const isMe = isOwnSupportMessage(m);
@@ -2252,7 +2252,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         <div ref={messagesEndRef} />
                       </div>
 
-                      {/* Input panel / block banner */}
+                      
                       {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                         <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
                           <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
@@ -2284,7 +2284,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     </div>
                   )}
 
-                  {/* User Info / Moderation Sidebar */}
+                  
                   {showUserInfo && activeChat && (
                     <div className="w-80 border-l border-[#e1e8fd] bg-white flex flex-col h-full shrink-0 overflow-y-auto animate-in slide-in-from-right duration-200">
                       <div className="p-6 border-b border-[#e9edff] flex flex-col items-center">
@@ -2305,7 +2305,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       </div>
 
                       <div className="p-6 flex flex-col gap-6">
-                        {/* Account Details */}
+                        
                         <div>
                           <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Account Information</h4>
                           <div className="space-y-3">
@@ -2327,11 +2327,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                           </div>
                         </div>
 
-                        {/* Moderation Actions */}
+                        
                         <div>
                           <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Moderation Actions</h4>
                           
-                          {/* Block Status / Options */}
+                          
                           <div className="flex flex-col gap-2 mb-4">
                             {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -2359,7 +2359,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                             )}
                           </div>
 
-                          {/* Delete / Restore support ticket */}
+                          
                           {supportSubTab === 'deleted' ? (
                             <button
                               onClick={handleRestoreTicket}
@@ -2385,7 +2385,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             );
           })()}
 
-          {/* ---------------- TAB: MODERATION ---------------- */}
+          
           {activeTab === 'Moderation' && (() => {
             const pendingItems = moderationItems.filter(item => item.status === 'Pending');
             const filteredPendingItems = queueTab === 'ALL' 
@@ -2399,7 +2399,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 <p className="text-body-sm text-[#3e4a3d] mt-1">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
               </div>
 
-              {/* Moderation Items Table */}
+              
               <div className="card-level-1 bg-white overflow-hidden border border-[#e1e8fd] rounded-xl">
                 <div className="px-6 py-4 flex gap-2 border-b border-[#e9edff] overflow-x-auto">
                   {[
@@ -2491,7 +2491,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </div>
           );})()}
 
-          {/* ---------------- TAB: KYC ---------------- */}
+          
           {activeTab === 'KYC' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
@@ -2577,7 +2577,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       </main>
 
-      {/* ---------------- MODAL: CREATE NEW TASK ---------------- */}
+      
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd] animate-in fade-in zoom-in-95 duration-150">
@@ -2664,7 +2664,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       )}
 
-      {/* ---------------- MODAL: INVITE STAFF MEMBER ---------------- */}
+      
       {showInviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd]">
@@ -2727,7 +2727,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       )}
 
-      {/* ---------------- MODAL: TRANSFER STAFF ---------------- */}
+      
       {showTransferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd]">
@@ -2782,7 +2782,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       )}
 
-      {/* ---------------- DRAWERS: TASK DETAILS ---------------- */}
+      
       {showManageModal && selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl flex flex-col justify-between border-l border-[#e1e8fd] animate-in slide-in-from-right duration-200">
@@ -2849,7 +2849,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         </div>
       )}
 
-      {/* ---------------- CONFIRMATION MODAL ---------------- */}
+      
       {showConfirmModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
           <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl border border-[#e1e8fd] text-center animate-in fade-in zoom-in-95 duration-150">
