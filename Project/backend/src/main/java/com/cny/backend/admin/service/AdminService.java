@@ -1519,8 +1519,30 @@ public class AdminService {
         int validAdminId = getValidAdminId(adminId);
 
         if (approve) {
-            req.setStatus("APPROVED");
             Employer employer = req.getEmployer();
+            
+            // Validate duplicate phone
+            if (req.getPhone() != null && !req.getPhone().trim().isEmpty()) {
+                String phoneToCheck = req.getPhone().trim();
+                if (employerRepository.countByPhoneAndEmployerIdNot(phoneToCheck, employer.getEmployerId()) > 0 ||
+                        freelancerRepository.countByPhone(phoneToCheck) > 0) {
+                    response.put("success", false);
+                    response.put("message", "Không thể phê duyệt vì số điện thoại '" + phoneToCheck + "' đã được sử dụng bởi tài khoản khác!");
+                    return response;
+                }
+            }
+
+            // Validate duplicate tax code
+            if (req.getTaxCode() != null && !req.getTaxCode().trim().isEmpty()) {
+                String taxCodeToCheck = req.getTaxCode().trim();
+                if (employerRepository.countByTaxCodeAndEmployerIdNot(taxCodeToCheck, employer.getEmployerId()) > 0) {
+                    response.put("success", false);
+                    response.put("message", "Không thể phê duyệt vì mã số thuế '" + taxCodeToCheck + "' đã được đăng ký bởi doanh nghiệp khác!");
+                    return response;
+                }
+            }
+
+            req.setStatus("APPROVED");
             
             // Copy fields from request to employer
             if (req.getDisplayName() != null) employer.setDisplayName(req.getDisplayName());
