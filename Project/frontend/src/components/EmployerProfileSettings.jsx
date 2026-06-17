@@ -20,7 +20,8 @@ import {
     Sparkles,
     Coins,
     ArrowLeftRight,
-    ChevronRight
+    ChevronRight,
+    Upload
 } from 'lucide-react';
 
 const emptyForm = {
@@ -47,6 +48,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState(null);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     // Added states for projects
     const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
@@ -339,7 +341,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+        const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9]*\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\d+)?(\/.*)?$/;
         if (form.website && !urlRegex.test(form.website.trim())) {
             setNotice({type: 'error', message: 'Địa chỉ Website không hợp lệ (ví dụ: https://company.com).'});
             return false;
@@ -432,6 +434,35 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             setNotice({type: 'error', message: error.message || 'Không thể lưu thay đổi.'});
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploadingLogo(true);
+        setNotice(null);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                updateField('companyLogoUrl', data.fileUrl);
+                setNotice({type: 'success', message: 'Tải logo lên thành công!'});
+            } else {
+                setNotice({type: 'error', message: data.message || 'Tải logo thất bại!'});
+            }
+        } catch (err) {
+            setNotice({type: 'error', message: 'Lỗi tải ảnh lên! Vui lòng kiểm tra lại kết nối đến máy chủ.'});
+        } finally {
+            setIsUploadingLogo(false);
         }
     };
 
@@ -578,19 +609,55 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <TextInput label="Tên công ty" value={form.companyName}
                                                onChange={(value) => updateField('companyName', value)} required/>
+                                    <TextInput label="Mã số thuế" value={form.taxCode}
+                                               onChange={(value) => updateField('taxCode', value)}
+                                               placeholder="VD: 0102030405"/>
                                     <TextInput label="Ngành nghề" value={form.industry}
                                                onChange={(value) => updateField('industry', value)}
                                                placeholder="VD: Software, Marketing, Design"/>
                                     <TextInput label="Quy mô công ty" value={form.companySize}
                                                onChange={(value) => updateField('companySize', value)}
                                                placeholder="VD: 11-50"/>
-                                    <TextInput label="Logo URL" value={form.companyLogoUrl}
-                                               onChange={(value) => updateField('companyLogoUrl', value)}
-                                               placeholder="https://..."/>
                                     <TextInput label="Website" value={form.website}
                                                onChange={(value) => updateField('website', value)}
                                                icon={<Globe2 className="w-4 h-4"/>}
                                                placeholder="https://company.com"/>
+                                    
+                                    <div className="block">
+                                        <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">
+                                            Logo công ty
+                                        </span>
+                                        <div className="flex items-center justify-between gap-3 border border-slate-200 rounded-xl bg-slate-50 px-3 h-[46px] relative">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                {form.companyLogoUrl ? (
+                                                    <img 
+                                                        src={form.companyLogoUrl} 
+                                                        alt="Logo công ty" 
+                                                        className="w-7 h-7 rounded-lg object-cover border border-slate-200 bg-white shrink-0" 
+                                                    />
+                                                ) : (
+                                                    <div className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 shrink-0">
+                                                        <Building2 className="w-3.5 h-3.5" />
+                                                    </div>
+                                                )}
+                                                <span className="text-[12px] text-slate-500 truncate font-semibold">
+                                                    {form.companyLogoUrl ? 'Đã tải ảnh lên' : 'Chưa có logo'}
+                                                </span>
+                                            </div>
+                                            <label className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-extrabold hover:bg-slate-800 transition-all active:scale-[0.98] shrink-0">
+                                                {isUploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                                {isUploadingLogo ? 'Tải...' : 'Chọn file'}
+                                                <input 
+                                                    type="file" 
+                                                    className="hidden" 
+                                                    accept="image/*" 
+                                                    disabled={isUploadingLogo} 
+                                                    onChange={handleLogoUpload} 
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <TextInput label="Quốc gia" value={form.country}
                                                onChange={(value) => updateField('country', value)}
                                                icon={<MapPin className="w-4 h-4"/>}/>
@@ -598,9 +665,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                onChange={(value) => updateField('city', value)}/>
                                     <TextInput label="Địa chỉ" value={form.address}
                                                onChange={(value) => updateField('address', value)}/>
-                                    <TextInput label="Mã số thuế" value={form.taxCode}
-                                               onChange={(value) => updateField('taxCode', value)}
-                                               placeholder="VD: 0102030405"/>
                                 </div>
                                 <TextArea label="Mô tả công ty" value={form.companyDescription}
                                           onChange={(value) => updateField('companyDescription', value)}/>

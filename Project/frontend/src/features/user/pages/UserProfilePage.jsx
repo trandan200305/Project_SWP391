@@ -245,7 +245,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         alert("Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
         return;
       }
-      const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+      const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9]*\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\d+)?(\/.*)?$/;
       if (website && !urlRegex.test(website.trim())) {
         alert("Địa chỉ Website không hợp lệ.");
         return;
