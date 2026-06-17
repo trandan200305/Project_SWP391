@@ -10,6 +10,7 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
   const [isAddingPortfolio, setIsAddingPortfolio] = useState(false);
   const [attachmentType, setAttachmentType] = useState('url');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   
   // For popup coming soon
   const [isShowComingSoon, setIsShowComingSoon] = useState(false);
@@ -38,7 +39,7 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
 
   const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(true);
   const [successToast, setSuccessToast] = useState(null);
-  const [errorToast, setErrorToast] = useState(null);
+  const [errorToasts, setErrorToasts] = useState([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
 
   const freelancerId = user?.profileId || user?.freelancerId || 1; // Default to 1 for testing if user is missing
@@ -49,8 +50,11 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
   };
 
   const showError = (msg) => {
-    setErrorToast(msg);
-    setTimeout(() => setErrorToast(null), 3000);
+    const id = Date.now() + Math.random();
+    setErrorToasts((prev) => [...prev, { id, msg }]);
+    setTimeout(() => {
+      setErrorToasts((prev) => prev.filter(t => t.id !== id));
+    }, 4000);
   };
 
   useEffect(() => {
@@ -114,6 +118,88 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setSelectedFile(null);
+      setFilePreview(null);
+      return;
+    }
+
+    const errors = [];
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      errors.push('Dung lượng tệp vượt quá 5MB');
+    }
+
+    const allowedDocs = ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf'];
+    const allowedImages = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    const isDoc = allowedDocs.includes(file.type);
+    const isAllowedImage = allowedImages.includes(file.type);
+    const isImageLike = file.type.startsWith('image/');
+
+    if (!isDoc && !isAllowedImage) {
+      errors.push('Định dạng không hỗ trợ (chỉ nhận .doc, .docx, .pdf, .jpg, .png, .gif)');
+    }
+
+    if (isImageLike) {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const { width, height } = img;
+        if (width < 380 || height < 214) {
+          errors.push(`Kích thước ảnh quá nhỏ (${width}x${height}px)`);
+        } else if (width > 1920 || height > 1920 || (width > 1080 && height > 1080)) {
+          errors.push(`Kích thước ảnh quá lớn (${width}x${height}px)`);
+        }
+
+        if (errors.length > 0) {
+          showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+          e.target.value = null;
+          setSelectedFile(null);
+          setFilePreview(null);
+          URL.revokeObjectURL(img.src);
+          return;
+        }
+
+        setSelectedFile(file);
+        setFilePreview({
+          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+          format: file.name.split('.').pop().toUpperCase(),
+          dimensions: `${width} x ${height} px`
+        });
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+        if (isAllowedImage) {
+          errors.push('Không thể đọc file ảnh');
+        }
+        if (errors.length > 0) {
+          showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+          e.target.value = null;
+          setSelectedFile(null);
+          setFilePreview(null);
+        }
+        URL.revokeObjectURL(img.src);
+      };
+    } else {
+      if (errors.length > 0) {
+        showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+        e.target.value = null;
+        setSelectedFile(null);
+        setFilePreview(null);
+        return;
+      }
+
+      setSelectedFile(file);
+      setFilePreview({
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        format: file.name.split('.').pop().toUpperCase(),
+        dimensions: 'N/A'
+      });
+    }
+  };
+
   const handleSavePortfolio = async () => {
     if (!newPortfolio.title || !newPortfolio.description) {
       showError('Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc (*)');
@@ -171,6 +257,7 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
           title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
         });
         setSelectedFile(null);
+        setFilePreview(null);
         setAttachmentType('url');
       } else {
         showError('Thêm hồ sơ thất bại! Hãy thử lại.');
@@ -682,9 +769,19 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
                                 <>
                                   <input 
                                     type="file" 
-                                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                                    onChange={handleFileChange}
                                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white mb-2" 
                                   />
+                                  {filePreview && (
+                                    <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                                      <div className="font-semibold mb-1">Thông tin tệp:</div>
+                                      <div><span className="font-medium">Định dạng:</span> {filePreview.format}</div>
+                                      <div><span className="font-medium">Dung lượng:</span> {filePreview.size}</div>
+                                      {filePreview.dimensions !== 'N/A' && (
+                                        <div><span className="font-medium">Kích thước ảnh:</span> {filePreview.dimensions}</div>
+                                      )}
+                                    </div>
+                                  )}
                                   <div className="text-xs text-slate-400 space-y-1">
                                     <p>1. Kích thước không quá 5 MB</p>
                                     <p>2. Định dạng được hỗ trợ</p>
@@ -748,7 +845,7 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
                             onClick={handleSavePortfolio} 
                             className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
                           >
-                            Lưu hồ sơ
+                            Thêm hồ sơ
                           </button>
                           {portfolios.length > 0 && (
                             <button 
@@ -858,13 +955,15 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
         </div>
       )}
 
-      {/* Error Toast */}
-      {errorToast && (
-        <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
-          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span className="font-medium text-sm">{errorToast}</span>
-        </div>
-      )}
+      {/* Error Toasts */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {errorToasts.map(toast => (
+          <div key={toast.id} className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
+            <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span className="font-medium text-sm">{toast.msg}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
