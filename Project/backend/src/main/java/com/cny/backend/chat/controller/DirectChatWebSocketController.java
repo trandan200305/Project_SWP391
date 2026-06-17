@@ -22,10 +22,10 @@ public class DirectChatWebSocketController {
     public void sendDirectMessage(@Payload DirectMessageDto messageDto) {
         DirectMessageDto savedMessage = chatService.saveMessage(messageDto);
 
-        // Send to the chat room topic
+        
         messagingTemplate.convertAndSend("/topic/directChat." + savedMessage.getChatId(), savedMessage);
 
-        // Notify the partner directly
+        
         Integer partnerUserId = chatService.getPartnerUserId(savedMessage.getChatId(), savedMessage.getSenderRole());
         if (partnerUserId != null) {
             messagingTemplate.convertAndSend("/topic/user." + partnerUserId + ".direct", savedMessage);
@@ -35,7 +35,7 @@ public class DirectChatWebSocketController {
     @MessageMapping("/direct.chat.read")
     public void readDirectReceipt(@Payload ChatReadReceiptDto readReceipt) {
         if (readReceipt.getTicketId() != null && readReceipt.getReaderRole() != null) {
-            // Using ticketId field from existing Dto for chatId to reuse Dto
+            
             chatService.markMessagesAsRead(readReceipt.getTicketId(), readReceipt.getReaderRole());
             messagingTemplate.convertAndSend("/topic/directChat." + readReceipt.getTicketId(), readReceipt);
         }
