@@ -15,12 +15,12 @@ public class AsyncConfig {
     @Bean(name = "mailTaskExecutor")
     public Executor mailTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);        // 5 active threads initially
-        executor.setMaxPoolSize(10);        // 10 threads max
-        executor.setQueueCapacity(100);     // queue up to 100 email tasks
+        executor.setCorePoolSize(5);        
+        executor.setMaxPoolSize(10);        
+        executor.setQueueCapacity(100);     
         executor.setThreadNamePrefix("MailAsync-");
-        // CallerRunsPolicy runs the task on the caller's thread if the queue and pool are full,
-        // preventing tasks from being dropped or raising OutOfMemoryErrors.
+        
+        
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
