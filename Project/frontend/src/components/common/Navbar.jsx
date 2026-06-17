@@ -245,25 +245,6 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
               Tìm việc làm
             </a>
             <a 
-              href="#post-job" 
-              onClick={(e) => {
-                e.preventDefault();
-                if (onNavigate) {
-                  if (!user) {
-                    localStorage.setItem('redirect_after_login', 'post_job');
-                    onNavigate('login');
-                  } else if (user.role === 'EMPLOYER') {
-                    onNavigate('post_job');
-                  } else {
-                    alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
-                  }
-                }
-              }}
-              className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200"
-            >
-              Thuê Freelancer
-            </a>
-            <a 
               href="#solutions" 
               onClick={(e) => {
                 e.preventDefault();
@@ -275,6 +256,27 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             >
               Giải pháp
             </a>
+            {user?.role !== 'FREELANCER' && (
+              <a 
+                href="#post-job" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onNavigate) {
+                    if (!user) {
+                      localStorage.setItem('redirect_after_login', 'post_job');
+                      onNavigate('login');
+                    } else if (user.role === 'EMPLOYER') {
+                      onNavigate('post_job');
+                    } else {
+                      alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                    }
+                  }
+                }}
+                className="font-medium text-body-md text-muted hover:text-primary transition-colors duration-200"
+              >
+                Thuê Freelancer
+              </a>
+            )}
           </nav>
         </div>
 
@@ -464,26 +466,6 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
             Tìm việc làm
           </a>
           <a 
-            href="#post-job" 
-            onClick={(e) => {
-              e.preventDefault();
-              setIsOpen(false);
-              if (onNavigate) {
-                if (!user) {
-                  localStorage.setItem('redirect_after_login', 'post_job');
-                  onNavigate('login');
-                } else if (user.role === 'EMPLOYER') {
-                  onNavigate('post_job');
-                } else {
-                  alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
-                }
-              }
-            }}
-            className="font-medium text-lg text-muted py-2 border-b border-muted-light/30"
-          >
-            Thuê Freelancer
-          </a>
-          <a 
             href="#solutions" 
             onClick={(e) => {
               e.preventDefault();
@@ -494,6 +476,28 @@ export default function Navbar({ onNavigate, onNavigateToAdmin, currentPage, use
           >
             Giải pháp
           </a>
+          {user?.role !== 'FREELANCER' && (
+            <a 
+              href="#post-job" 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsOpen(false);
+                if (onNavigate) {
+                  if (!user) {
+                    localStorage.setItem('redirect_after_login', 'post_job');
+                    onNavigate('login');
+                  } else if (user.role === 'EMPLOYER') {
+                    onNavigate('post_job');
+                  } else {
+                    alert('Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!');
+                  }
+                }
+              }}
+              className="font-medium text-lg text-muted py-2 border-b border-muted-light/30"
+            >
+              Thuê Freelancer
+            </a>
+          )}
           
           {}
           {user && user.role === 'ADMIN' && (

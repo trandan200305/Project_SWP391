@@ -3,14 +3,14 @@ import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function FindJobsPage({ onNavigate, initialCategory = 'all', user }) {
+export default function FindJobsPage({ onNavigate, initialCategory = 'all', initialKeyword = '', user }) {
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(initialKeyword || '');
   const [minSalary, setMinSalary] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorToast, setErrorToast] = useState(null);
@@ -30,6 +30,13 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
       setPage(0);
     }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialKeyword !== undefined) {
+      setKeyword(initialKeyword);
+      setPage(0);
+    }
+  }, [initialKeyword]);
 
   const isValidSalary = (value) => {
     if (!value) return true; // empty string is valid
