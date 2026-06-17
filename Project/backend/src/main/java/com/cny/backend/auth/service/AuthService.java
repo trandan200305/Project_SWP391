@@ -139,7 +139,7 @@ public class AuthService {
                 return response;
             }
 
-            // LOGIN FOR ADMIN
+
             if (existingAdmin.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Tài khoản Admin không tồn tại!");
@@ -171,9 +171,9 @@ public class AuthService {
                 return response;
             }
 
-            // REGISTER FOR EMPLOYER
+
             if (existingEmployer.isEmpty()) {
-                // login google + register
+
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
                     response.put("message", "Tài khoản không tồn tại!");
@@ -202,7 +202,7 @@ public class AuthService {
                 employer = employerRepository.save(employer);
                 userId = employer.getEmployerId();
             } else {
-                // LOGIN FOR EMPLOYER
+
                 Employer dbEmployer = existingEmployer.get();
                 if (Boolean.TRUE.equals(dbEmployer.getIsDeleted())) {
                     response.put("success", false);
@@ -352,7 +352,7 @@ public class AuthService {
                 return response;
             }
 
-            // REGISTER FOR FREELANCER
+
             if (existingFreelancer.isEmpty()) {
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
@@ -384,7 +384,7 @@ public class AuthService {
                 freelancer = freelancerRepository.save(freelancer);
                 userId = freelancer.getProfileId();
             } else {
-                // LOGIN FOR FREELANCER
+
                 Freelancer dbFreelancer = existingFreelancer.get();
                 if (Boolean.TRUE.equals(dbFreelancer.getIsDeleted())) {
                     response.put("success", false);
@@ -422,7 +422,7 @@ public class AuthService {
             }
         }
 
-        // RECORD LOGIN HISTORY AND UPDATE LAST LOGIN TIME
+
         LoginHistory history = LoginHistory.builder()
                 .loginAt(LocalDateTime.now())
                 .success(true)
@@ -475,7 +475,7 @@ public class AuthService {
 
         loginHistoryRepository.save(history);
 
-        // CHECK USER ACCOUNT STATUS (LOCKED/BANNED/SUSPENDED/DELETED)
+
         if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus) || "SUSPENDED".equals(userStatus) || "DELETED".equals(userStatus)) {
             String notifMessage = "Tài khoản của bạn đang bị khóa hoặc đình chỉ hoạt động.";
             if ("BANNED".equals(userStatus)) {
@@ -492,7 +492,7 @@ public class AuthService {
             return response;
         }
 
-        // PREPARE SUCCESSFUL LOGIN RESPONSE FOR FRONTEND
+
         response.put("success", true);
 
         Map<String, Object> userObj = new HashMap<>();
@@ -508,7 +508,7 @@ public class AuthService {
         return response;
     }
 
-    // check login status by role
+
     public Integer countBy(String table, String column, String value) {
         if ("admins".equalsIgnoreCase(table)) {
             if ("email".equalsIgnoreCase(column))
@@ -549,7 +549,7 @@ public class AuthService {
         return 0;
     }
 
-    // set messenger pin
+
     public boolean setMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId).map(u -> {
@@ -585,7 +585,7 @@ public class AuthService {
         return false;
     }
 
-    // verify messenger pin
+
     public boolean verifyMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId)
@@ -616,7 +616,7 @@ public class AuthService {
         return false;
     }
 
-    // reset and email messenger pin
+
     @Transactional
     public String resetAndEmailMessengerPin(Integer userId, String role,
             org.springframework.mail.javamail.JavaMailSender mailSender) {
@@ -687,7 +687,7 @@ public class AuthService {
         return email;
     }
 
-    // reset password
+
     @Transactional
     public boolean resetPassword(String email, String newPassword) {
         boolean updated = false;
@@ -860,7 +860,7 @@ public class AuthService {
             return response;
         }
 
-        // Verify code
+
         String savedCode = invitation.getVerificationCode();
         if (savedCode == null || !savedCode.equals(verificationCode.trim())) {
             response.put("success", false);
@@ -871,7 +871,7 @@ public class AuthService {
         String email = invitation.getEmail();
         String role = invitation.getRole();
 
-        // Unique validation for Phone across all roles (Manager, Staff, Freelancer, Employer)
+
         boolean phoneTaken = managerRepository.existsByPhoneActiveAndEmailNot(phone, email)
                 || staffRepository.existsByPhoneActiveAndEmailNot(phone, email)
                 || employerRepository.existsByPhoneActiveAndEmailNot(phone, email)
@@ -883,7 +883,7 @@ public class AuthService {
             return response;
         }
 
-        // Unique validation for CitizenId across Manager and Staff roles
+
         boolean citizenIdTaken = managerRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email)
                 || staffRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email);
 
@@ -893,7 +893,7 @@ public class AuthService {
             return response;
         }
 
-        // Complete Onboarding based on role
+
         if ("MANAGER".equals(role)) {
             Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
             if (mgrOpt.isPresent()) {
@@ -932,7 +932,7 @@ public class AuthService {
             }
         }
 
-        // Update invitation status
+
         invitation.setStatus("ACCEPTED");
         invitation.setUpdatedAt(LocalDateTime.now());
         staffInvitationRepository.save(invitation);
@@ -988,12 +988,12 @@ public class AuthService {
             return response;
         }
 
-        // Generate 6-digit verification code
+
         String code = String.format("%06d", (int) (Math.random() * 1000000));
         invitation.setVerificationCode(code);
         staffInvitationRepository.save(invitation);
 
-        // Send Email with Verification Code
+
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
             message.setTo(invitation.getEmail());
