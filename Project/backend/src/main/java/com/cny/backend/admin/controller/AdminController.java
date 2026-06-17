@@ -213,6 +213,7 @@ public class AdminController {
             Admin saved = adminRepository.save(a);
             return ResponseEntity.ok(mapToDto(saved));
         }).orElse(ResponseEntity.notFound().build());
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
