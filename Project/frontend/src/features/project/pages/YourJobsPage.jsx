@@ -14,6 +14,7 @@ export default function YourJobsPage({ onNavigate, user }) {
       setShowComingSoon(true);
     } else {
       setActiveTab(tab);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
