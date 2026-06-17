@@ -36,6 +36,7 @@ export default function Navbar({
   const [pinAttempts, setPinAttempts] = useState(0);
   const [resetPinSuccess, setResetPinSuccess] = useState("");
   const [isResettingTempPin, setIsResettingTempPin] = useState(false);
+  const [tempPinSecondsLeft, setTempPinSecondsLeft] = useState(0);
 
   // 1. RESET AND OPEN MESSENGER PIN MODAL
   const handleMessengerClick = () => {
@@ -49,7 +50,16 @@ export default function Navbar({
     setPinAttempts(0);
     setResetPinSuccess("");
     setIsResettingTempPin(false);
+    setTempPinSecondsLeft(0);
   };
+
+  useEffect(() => {
+    if (!showPinModal || tempPinSecondsLeft <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      setTempPinSecondsLeft((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [showPinModal, tempPinSecondsLeft]);
 
   // 2. RESET PIN gmail
   const handleForgotPin = async () => {
@@ -62,12 +72,15 @@ export default function Navbar({
         userId: user.id,
         role: user.role,
       });
-      if (data.success) {
-        setResetPinSuccess(
-          data.message || "Mã PIN mới đã được gửi về email của bạn.",
-        );
-        setPinAttempts(0);
-      } else {
+        if (data.success) {
+          setResetPinSuccess(
+            data.message || "Mã PIN mới đã được gửi về email của bạn.",
+          );
+          setTempPinSecondsLeft(Number(data.expiresInSeconds) || 300);
+          setPinAttempts(0);
+          setPinValues(["", "", "", ""]);
+          document.getElementById("pin-0")?.focus();
+        } else {
         setPinError(data.message || "Không thể gửi yêu cầu khôi phục.");
       }
     } catch (e) {
@@ -100,6 +113,7 @@ export default function Navbar({
           // tam thoi qua mail
           if (data.isTemporary) {
             setIsResettingTempPin(true);
+            setTempPinSecondsLeft(Number(data.expiresInSeconds) || tempPinSecondsLeft);
             setPinValues(["", "", "", ""]);
             setConfirmPinValues(["", "", "", ""]);
             setIsConfirmingPin(false);
@@ -159,6 +173,7 @@ export default function Navbar({
           setShowPinModal(false);
           setIsConfirmingPin(false);
           setIsResettingTempPin(false);
+          setTempPinSecondsLeft(0);
           if (onNavigate) {
             onNavigate("messenger");
           }
@@ -183,11 +198,11 @@ export default function Navbar({
 
     if (numericValue.length > 1) {
       const pasted = numericValue.slice(0, 4).split("");
-      const newPins = [...currentValues];
+      const newPins = ["", "", "", ""];
       for (let i = 0; i < pasted.length; i++) newPins[i] = pasted[i];
       setValues(newPins);
       setPinError("");
-      const nextIndex = Math.min(pasted.length, 3);
+      const nextIndex = Math.min(pasted.length, 4) - 1;
       const nextInput = document.getElementById(`${prefix}${nextIndex}`);
       if (nextInput) nextInput.focus();
       return;
@@ -207,12 +222,48 @@ export default function Navbar({
   // 5. xử lý Backspace khi nhập PIN
   const handlePinKeyDown = (index, e) => {
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
+    const setValues = isConfirmingPin ? setConfirmPinValues : setPinValues;
     const prefix = isConfirmingPin ? "pin-confirm-" : "pin-";
+
+    if (e.key >= "0" && e.key <= "9" && currentValues[index]) {
+      e.preventDefault();
+      const newPins = [...currentValues];
+      newPins[index] = e.key;
+      setValues(newPins);
+      setPinError("");
+      const nextInput = document.getElementById(`${prefix}${Math.min(index + 1, 3)}`);
+      if (nextInput) nextInput.focus();
+      return;
+    }
 
     if (e.key === "Backspace" && !currentValues[index] && index > 0) {
       const prevInput = document.getElementById(`${prefix}${index - 1}`);
       if (prevInput) prevInput.focus();
     }
+  };
+
+  const handlePinPaste = (e) => {
+    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 4);
+    if (!pasted) return;
+    e.preventDefault();
+    const nextValues = ["", "", "", ""];
+    pasted.split("").forEach((digit, index) => {
+      nextValues[index] = digit;
+    });
+    if (isConfirmingPin) {
+      setConfirmPinValues(nextValues);
+    } else {
+      setPinValues(nextValues);
+    }
+    setPinError("");
+    const prefix = isConfirmingPin ? "pin-confirm-" : "pin-";
+    document.getElementById(`${prefix}${Math.min(pasted.length, 4) - 1}`)?.focus();
+  };
+
+  const formatTempPinTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const remainingSeconds = (seconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${remainingSeconds}`;
   };
 
   // 6. theo dõi cuộn trang để đổi style Navbar
@@ -712,10 +763,14 @@ export default function Navbar({
                       key={index}
                       id={`pin-${index}`}
                       type="password"
-                      maxLength={4}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
                       value={pinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
+                      onPaste={handlePinPaste}
+                      onFocus={(e) => e.target.select()}
                       className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />
@@ -734,21 +789,32 @@ export default function Navbar({
                   </p>
                 )}
 
-                {!isResettingTempPin && pinAttempts >= 1 && (
+                {!isResettingTempPin && user?.hasMessengerPin && (
                   <p className="text-xs text-slate-500 mb-3 text-center">
                     Bạn quên mã PIN?{" "}
                     <button
                       type="button"
                       onClick={handleForgotPin}
-                      className="text-indigo-600 hover:text-indigo-700 font-bold underline focus:outline-none"
+                      disabled={isSubmitting}
+                      className="text-indigo-600 hover:text-indigo-700 font-bold underline focus:outline-none disabled:opacity-60"
                     >
-                      nhấn vào đây để lấy lại
+                      lấy lại qua email
                     </button>
                   </p>
                 )}
                 {!isResettingTempPin && resetPinSuccess && (
                   <p className="text-emerald-600 text-xs mb-3 text-center font-bold">
                     {resetPinSuccess}
+                  </p>
+                )}
+                {!isResettingTempPin && resetPinSuccess && tempPinSecondsLeft > 0 && (
+                  <p className="text-xs text-amber-600 mb-3 text-center font-bold">
+                    Mã PIN tạm thời hết hiệu lực sau {formatTempPinTime(tempPinSecondsLeft)}.
+                  </p>
+                )}
+                {!isResettingTempPin && resetPinSuccess && tempPinSecondsLeft === 0 && (
+                  <p className="text-xs text-rose-500 mb-3 text-center font-bold">
+                    Mã PIN tạm thời đã hết hiệu lực. Vui lòng lấy lại mã mới.
                   </p>
                 )}
 
@@ -789,10 +855,14 @@ export default function Navbar({
                       key={`confirm-${index}`}
                       id={`pin-confirm-${index}`}
                       type="password"
-                      maxLength={4}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
                       value={confirmPinValues[index]}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
+                      onPaste={handlePinPaste}
+                      onFocus={(e) => e.target.select()}
                       className="w-14 h-14 text-center text-slate-900 text-2xl font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all shadow-sm"
                       autoFocus={index === 0}
                     />

@@ -11,5 +11,7 @@ export const authApi = {
   verifyPin: (pinData) => api.post(ENDPOINTS.AUTH.VERIFY_PIN, pinData),
   forgotPin: (pinData) => api.post(ENDPOINTS.AUTH.FORGOT_PIN, pinData),
   verifyInvitation: (token) => api.get(`${ENDPOINTS.AUTH.VERIFY_INVITATION}?token=${token}`),
+  sendInvitationCode: (token) => api.post(`${ENDPOINTS.AUTH.SEND_INVITATION_CODE}?token=${token}`),
   acceptInvitation: (onboardData) => api.post(ENDPOINTS.AUTH.ACCEPT_INVITATION, onboardData),
+  resetPassword: (resetData) => api.post(ENDPOINTS.AUTH.RESET_PASSWORD, resetData),
 };
