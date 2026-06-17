@@ -224,6 +224,34 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
 
   const handleSaveProfile = (e) => {
     if(e) e.preventDefault();
+
+    // Client-side validations
+    if (!displayName || displayName.trim().length < 3 || displayName.trim().length > 50) {
+      alert("Tên hiển thị phải từ 3 đến 50 ký tự.");
+      return;
+    }
+    if (fullName && (fullName.trim().length < 3 || fullName.trim().length > 50)) {
+      alert("Họ và tên phải từ 3 đến 50 ký tự.");
+      return;
+    }
+    const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
+    if (phone && !phoneRegex.test(phone.trim())) {
+      alert("Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
+      return;
+    }
+    if (role === 'employer') {
+      const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
+      if (taxCode && !taxCodeRegex.test(taxCode.trim())) {
+        alert("Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+        return;
+      }
+      const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+      if (website && !urlRegex.test(website.trim())) {
+        alert("Địa chỉ Website không hợp lệ.");
+        return;
+      }
+    }
+
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
     let payload = {};
     if (role === 'freelancer') {

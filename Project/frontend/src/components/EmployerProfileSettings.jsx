@@ -36,6 +36,7 @@ const emptyForm = {
     country: '',
     companySize: '',
     industry: '',
+    taxCode: '',
     billing: {
         bankName: '', accountNumber: '', accountHolder: '', branch: ''
     }
@@ -293,6 +294,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     country: data.country || '',
                     companySize: data.companySize || '',
                     industry: data.industry || '',
+                    taxCode: data.taxCode || '',
                     billing: {
                         bankName: data.billing?.bank_name || data.billing?.bankName || '',
                         accountNumber: data.billing?.account_number || data.billing?.accountNumber || '',
@@ -345,6 +347,13 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
 
         if (form.companyLogoUrl && !urlRegex.test(form.companyLogoUrl.trim())) {
             setNotice({type: 'error', message: 'Đường dẫn ảnh Logo không hợp lệ.'});
+            return false;
+        }
+
+        // Validate MST (Tax Code)
+        const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
+        if (form.taxCode && !taxCodeRegex.test(form.taxCode.trim())) {
+            setNotice({type: 'error', message: 'Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.'});
             return false;
         }
 
@@ -589,6 +598,9 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                onChange={(value) => updateField('city', value)}/>
                                     <TextInput label="Địa chỉ" value={form.address}
                                                onChange={(value) => updateField('address', value)}/>
+                                    <TextInput label="Mã số thuế" value={form.taxCode}
+                                               onChange={(value) => updateField('taxCode', value)}
+                                               placeholder="VD: 0102030405"/>
                                 </div>
                                 <TextArea label="Mô tả công ty" value={form.companyDescription}
                                           onChange={(value) => updateField('companyDescription', value)}/>
