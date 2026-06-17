@@ -249,6 +249,30 @@ public class AdminController {
             @RequestBody Map<String, Object> payload) {
         return ResponseEntity.ok(adminService.updateAdminProfile(id, payload));
     }
+
+    @GetMapping("/vnpay-config")
+    public ResponseEntity<VnpayConfig> getVnpayConfig() {
+        return ResponseEntity.ok(adminService.getVnpayConfig());
+    }
+
+    @PostMapping("/vnpay-config")
+    public ResponseEntity<VnpayConfig> saveVnpayConfig(
+            @RequestBody VnpayConfig config,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.saveVnpayConfig(config, adminId));
+    }
+
+    @GetMapping("/vnpay-transactions")
+    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions() {
+        return ResponseEntity.ok(adminService.getVnpayTransactions());
+    }
+
+    @PostMapping("/vnpay-transactions/{id}/reconcile")
+    public ResponseEntity<Map<String, Object>> reconcileVnpayTransaction(
+            @PathVariable("id") int id,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
+    }
 }
 
 
