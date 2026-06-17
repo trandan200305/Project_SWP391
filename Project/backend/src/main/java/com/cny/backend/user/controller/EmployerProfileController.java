@@ -4,6 +4,7 @@ import com.cny.backend.user.entity.Employer;
 import com.cny.backend.user.entity.EmployerProfileRequest;
 import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.user.repository.EmployerProfileRequestRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,6 +26,9 @@ public class EmployerProfileController {
 
     @Autowired
     private EmployerProfileRequestRepository employerProfileRequestRepository;
+
+    @Autowired
+    private FreelancerRepository freelancerRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -72,6 +76,29 @@ public class EmployerProfileController {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
                 errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (employerRepository.countByPhoneAndEmployerIdNot(phone, employerId) > 0 ||
+                    freelancerRepository.countByPhone(phone) > 0) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Số điện thoại này đã được sử dụng trên hệ thống. Vui lòng nhập số khác!");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+        }
+
+        String taxCode = text(payload.get("taxCode"));
+        if (!isBlank(taxCode)) {
+            if (!taxCode.matches("^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (employerRepository.countByTaxCodeAndEmployerIdNot(taxCode, employerId) > 0) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Mã số thuế này đã được đăng ký bởi doanh nghiệp khác.");
                 return ResponseEntity.badRequest().body(errResponse);
             }
         }
@@ -151,6 +178,7 @@ public class EmployerProfileController {
                 .country(text(payload.get("country")))
                 .companySize(text(payload.get("companySize")))
                 .industry(text(payload.get("industry")))
+                .taxCode(taxCode)
                 .bankName(text(billing.get("bankName")))
                 .accountNumber(text(billing.get("accountNumber")))
                 .accountHolder(text(billing.get("accountHolder")))
@@ -226,6 +254,7 @@ public class EmployerProfileController {
         response.put("country", employer.getCountry());
         response.put("companySize", employer.getCompanySize());
         response.put("industry", employer.getIndustry());
+        response.put("taxCode", employer.getTaxCode());
         response.put("profileCompleteness", employer.getProfileCompleteness());
         response.put("totalSpent", employer.getTotalSpent());
         response.put("projectsPosted", employer.getProjectsPosted());

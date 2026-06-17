@@ -64,6 +64,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [website, setWebsite] = useState('');
   const [companySize, setCompanySize] = useState('');
   const [industry, setIndustry] = useState('');
+  const [taxCode, setTaxCode] = useState('');
   
   // Employer Read-only Stats
   const [totalSpent, setTotalSpent] = useState(0);
@@ -203,6 +204,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.totalSpent) setTotalSpent(data.totalSpent);
           if (data.projectsPosted) setProjectsPosted(data.projectsPosted);
           if (data.averageRating) setAverageRating(data.averageRating);
+          if (data.taxCode) setTaxCode(data.taxCode);
         } else {
            if (data.fullName) setFullName(data.fullName);
            if (data.adminLevel) setAdminLevel(data.adminLevel);
@@ -227,7 +229,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     if (role === 'freelancer') {
        payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, taxCode };
     } else if (role === 'admin') {
        payload = { displayName, fullName, phone, language, timezone, avatarUrl };
     }
@@ -237,8 +239,13 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => {
-      alert('Đã lưu thông tin hồ sơ thành công!');
+    .then(async res => {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        alert(data.message || 'Đã lưu thông tin hồ sơ thành công!');
+      } else {
+        alert(data.message || 'Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.');
+      }
     })
     .catch(error => {
       alert('Lỗi kết nối máy chủ!');
@@ -401,7 +408,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
-    companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
+    companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
     handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatCurrency, formatCompactCurrency

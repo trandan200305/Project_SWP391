@@ -90,6 +90,10 @@ public class Employer {
 
     private String industry;
 
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 

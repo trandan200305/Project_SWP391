@@ -35,5 +35,6 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Integer>
     Optional<Freelancer> findByEmail(String email);
     int countByEmail(String email);
     int countByPhone(String phone);
+    int countByPhoneAndProfileIdNot(String phone, Integer profileId);
     int countByDisplayName(String displayName);
 }

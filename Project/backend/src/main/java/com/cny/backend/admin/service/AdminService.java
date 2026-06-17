@@ -1535,6 +1535,7 @@ public class AdminService {
             if (req.getCountry() != null) employer.setCountry(req.getCountry());
             if (req.getCompanySize() != null) employer.setCompanySize(req.getCompanySize());
             if (req.getIndustry() != null) employer.setIndustry(req.getIndustry());
+            if (req.getTaxCode() != null) employer.setTaxCode(req.getTaxCode());
             employer.setUpdatedAt(LocalDateTime.now());
             
             // Calculate completeness

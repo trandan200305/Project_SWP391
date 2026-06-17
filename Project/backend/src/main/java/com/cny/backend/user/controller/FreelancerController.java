@@ -35,6 +35,9 @@ public class FreelancerController {
     @Autowired
     private FreelancerService freelancerService;
 
+    @Autowired
+    private EmployerRepository employerRepository;
+
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
@@ -93,11 +96,31 @@ public class FreelancerController {
     }
 
     @PutMapping("/{id}/profile")
-    public ResponseEntity<FreelancerDto> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
+    public ResponseEntity<?> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
         return freelancerRepository.findById(id).map(f -> {
+            if (updated.getPhone() != null) {
+                String phone = updated.getPhone().trim();
+                if (!phone.isEmpty()) {
+                    if (!phone.matches("^(0[3|5|7|8|9])[0-9]{8}$")) {
+                        java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
+                        errResponse.put("success", false);
+                        errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
+                        return ResponseEntity.badRequest().body(errResponse);
+                    }
+                    if (freelancerRepository.countByPhoneAndProfileIdNot(phone, id) > 0 ||
+                            employerRepository.countByPhone(phone) > 0) {
+                        java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
+                        errResponse.put("success", false);
+                        errResponse.put("message", "Số điện thoại này đã được sử dụng trên hệ thống. Vui lòng nhập số khác!");
+                        return ResponseEntity.badRequest().body(errResponse);
+                    }
+                    f.setPhone(phone);
+                } else {
+                    f.setPhone(null);
+                }
+            }
             if(updated.getDisplayName() != null) f.setDisplayName(updated.getDisplayName());
             if(updated.getFullName() != null) f.setFullName(updated.getFullName());
-            if(updated.getPhone() != null) f.setPhone(updated.getPhone());
             if(updated.getProfessionalTitle() != null) f.setProfessionalTitle(updated.getProfessionalTitle());
             if(updated.getBio() != null) f.setBio(updated.getBio());
             if(updated.getHourlyRate() != null) f.setHourlyRate(updated.getHourlyRate());
