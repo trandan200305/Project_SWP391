@@ -37,10 +37,10 @@ export default function EditProfileForm({
 }) {
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                   {/* Left Column (Main Editable Info) */}
+                   
                    <div className="lg:col-span-2 flex flex-col gap-6">
                      
-                     {/* Giới thiệu bản thân / Công ty */}
+                     
                      {(role === 'freelancer' || role === 'employer') && (
                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                        <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
@@ -68,7 +68,7 @@ export default function EditProfileForm({
                      </div>
                      )}
 
-                     {/* Thông tin liên hệ */}
+                     
                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                        <div className="flex items-center justify-between mb-6">
                          <h3 className="font-bold text-gray-900 text-base">Thông tin liên hệ & Cơ bản</h3>
@@ -100,7 +100,7 @@ export default function EditProfileForm({
                            <ReadOnlyRow label="Cấp bậc Admin" value={adminLevel} badgeClass="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md" />
                          )}
 
-                         {/* Vị trí địa lý - Chung cho Freelancer & Employer */}
+                         
                          {(role === 'freelancer' || role === 'employer') && (
                            <>
                              <InputRow label="Quốc gia" value={country} onChange={e=>setCountry(e.target.value)} placeholder="Vietnam..." />
@@ -114,10 +114,10 @@ export default function EditProfileForm({
 
                    </div>
 
-                   {/* Right Column (Read Only Stats from DB) */}
+                   
                    <div className="flex flex-col gap-6">
                      
-                     {/* System Status */}
+                     
                      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <div className="flex items-center justify-between mb-5">
                            <h3 className="font-bold text-gray-900 text-base">Trạng thái Hệ thống</h3>
@@ -138,10 +138,10 @@ export default function EditProfileForm({
                         </div>
                      </div>
 
-                     {/* Role Specific Stats */}
+                     
                      {(role === 'freelancer' || role === 'employer') && (
                      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                        {/* Background Deco */}
+                        
                         <div className="absolute -right-4 -top-4 text-gray-50 opacity-50 pointer-events-none">
                           <BarChart2 className="w-24 h-24" />
                         </div>
@@ -174,7 +174,7 @@ export default function EditProfileForm({
 
                    </div>
                    
-                   {/* Nút lưu cuối form */}
+                   
                    <div className="lg:col-span-3 mt-6 flex justify-start">
                      <button onClick={handleSaveProfile} className="px-8 py-3.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-xl text-base font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-2">
                         <CheckCircle className="w-5 h-5" /> Lưu thông tin

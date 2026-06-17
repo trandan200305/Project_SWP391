@@ -112,7 +112,7 @@ export default function UserSettings({
   return (
                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                    
-                   {/* Left Sidebar Menu for Preferences */}
+                   
                    <div className="md:col-span-1 flex flex-col gap-2">
                       <button 
                          onClick={() => setPrefTab('notifications')}
@@ -142,7 +142,7 @@ export default function UserSettings({
                       )}
                    </div>
                    
-                   {/* Content Area for Preferences */}
+                   
                    <div className="md:col-span-3">
                      
                      {prefTab === 'notifications' && (
@@ -234,7 +234,7 @@ export default function UserSettings({
                                </p>
 
                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  {/* Front ID */}
+                                  
                                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
                                      {idCardFrontUrl ? (
                                         <img src={idCardFrontUrl} alt="CCCD Mặt trước" className="w-full h-full object-contain" />
@@ -247,7 +247,7 @@ export default function UserSettings({
                                      <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardFrontUrl)} />
                                   </div>
 
-                                  {/* Back ID */}
+                                  
                                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40">
                                      {idCardBackUrl ? (
                                         <img src={idCardBackUrl} alt="CCCD Mặt sau" className="w-full h-full object-contain" />
@@ -260,7 +260,7 @@ export default function UserSettings({
                                      <input type="file" disabled={isUploadingKyc} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleUploadKycImage(e, setIdCardBackUrl)} />
                                   </div>
 
-                                  {/* Portrait */}
+                                  
                                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center text-center relative hover:bg-gray-50 transition-colors h-40 sm:col-span-2">
                                      {portraitUrl ? (
                                         <img src={portraitUrl} alt="Ảnh Chân dung" className="w-full h-full object-contain" />

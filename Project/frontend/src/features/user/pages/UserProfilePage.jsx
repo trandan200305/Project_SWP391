@@ -7,14 +7,14 @@ import UserSettings from '../components/UserSettings.jsx';
 export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab = 'profile' }) {
   const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
   const [targetId, setTargetId] = useState(user?.id || 1);
-  const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
-  const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger'
+  const [activeTab, setActiveTab] = useState(defaultTab); 
+  const [prefTab, setPrefTab] = useState('notifications'); 
   
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
   
-  // ================= COMMON STATE =================
+  
   const [avatarUrl, setAvatarUrl] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,7 +24,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  // ================= KYC STATE =================
+  
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
   const [isVerified, setIsVerified] = useState(false);
   const [kycRejectedReason, setKycRejectedReason] = useState('');
@@ -33,13 +33,13 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [portraitUrl, setPortraitUrl] = useState('');
   const [isUploadingKyc, setIsUploadingKyc] = useState(false);
 
-  // Common Read-only Stats
+  
   const [status, setStatus] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [createdAt, setCreatedAt] = useState('');
   const [lastLoginAt, setLastLoginAt] = useState('');
 
-  // ================= FREELANCER STATE =================
+  
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [bio, setBio] = useState('');
@@ -48,27 +48,27 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   
-  // Freelancer Read-only Stats
+  
   const [profileCompleteness, setProfileCompleteness] = useState(0);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [projectsCompleted, setProjectsCompleted] = useState(0);
   const [averageRating, setAverageRating] = useState(0);
   
-  // ================= EMPLOYER STATE =================
+  
   const [companyName, setCompanyName] = useState('');
   const [companyDescription, setCompanyDescription] = useState('');
   const [website, setWebsite] = useState('');
   const [companySize, setCompanySize] = useState('');
   const [industry, setIndustry] = useState('');
   
-  // Employer Read-only Stats
+  
   const [totalSpent, setTotalSpent] = useState(0);
   const [projectsPosted, setProjectsPosted] = useState(0);
 
-  // ================= ADMIN STATE =================
+  
   const [adminLevel, setAdminLevel] = useState('SUPER_ADMIN');
 
-  // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
+  
   useEffect(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : (role === 'employer' ? `http://localhost:8080/api/employers/${targetId}` : `http://localhost:8080/api/admin/${targetId}`);
     
@@ -142,14 +142,14 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       });
   }, [role, targetId]);
 
-  // Hàm: Khóa tab Profile đối với tài khoản Admin
+  
   useEffect(() => {
     if (role === 'admin' && activeTab === 'profile') {
       setActiveTab('edit_profile');
     }
   }, [role, activeTab]);
 
-  // Hàm: Lưu thông tin chỉnh sửa hồ sơ
+  
   const handleSaveProfile = (e) => {
     if(e) e.preventDefault();
     
@@ -217,22 +217,22 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans antialiased text-gray-800">
 
-      {/* MAIN CONTENT AREA */}
+      
       <div className="flex-1 flex flex-col min-w-0 pt-24 pb-12">
         
         <main className="flex-1 px-4 sm:px-8">
           
           <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             
-            {/* Cover Banner */}
+            
             <div className="h-48 bg-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 relative">
                <div className="absolute inset-0 bg-white/30 backdrop-blur-[1px]"></div>
                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
             </div>
 
-            {/* Profile Header Block */}
+            
             <div className="px-6 sm:px-10 pb-6 relative">
-               {/* Avatar */}
+               
                <div className="absolute -top-16 left-6 sm:left-10 w-32 h-32 rounded-full border-[5px] border-white shadow-sm bg-white overflow-hidden group cursor-pointer z-10">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -284,7 +284,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                   </label>
                  </div>
 
-               {/* Name & Actions Header */}
+               
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
@@ -300,7 +300,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                </div>
             </div>
 
-            {/* Tab Contents Area */}
+            
             <div className="p-6 sm:px-10 py-8 border-t border-gray-100">
                {activeTab === 'profile' && <UserProfile {...allProps} />}
                {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
