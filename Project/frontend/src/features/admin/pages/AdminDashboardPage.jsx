@@ -3958,19 +3958,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <h3 className="font-bold text-primary text-[18px]">Cấu hình Tham số VNPay</h3>
                     <p className="text-body-sm text-slate-500 mt-1">Thiết lập thông tin kết nối và tài khoản nhận tiền thụ hưởng của hệ thống.</p>
                   </div>
-
-                  {vnpaySuccessMessage && (
-                    <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl text-body-sm border border-emerald-250 font-medium">
-                      {vnpaySuccessMessage}
-                    </div>
-                  )}
-
-                  {vnpayErrorMessage && (
-                    <div className="bg-rose-50 text-rose-700 p-4 rounded-xl text-body-sm border border-rose-250 font-medium">
-                      {vnpayErrorMessage}
-                    </div>
-                  )}
-
                   <form onSubmit={handleSaveVnpayConfig} className="space-y-5 max-w-[640px] mx-auto">
                     {/* VNPay Credentials Group */}
                     <div className="space-y-4">
