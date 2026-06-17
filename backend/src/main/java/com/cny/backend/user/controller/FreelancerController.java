@@ -78,13 +78,8 @@ public class FreelancerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id) {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        if (confirmationText == null || !confirmationText.equals("DELETE")) {
-            response.put("success", false);
-            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
-            return ResponseEntity.badRequest().body(response);
-        }
         return freelancerRepository.findById(id).map(f -> {
             f.setIsDeleted(true);
             f.setUpdatedAt(java.time.LocalDateTime.now());

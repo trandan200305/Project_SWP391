@@ -105,7 +105,7 @@ export default function UserSettings({
 
   const handleDeleteAccount = () => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn? Hành động này không thể hoàn tác!')) return;
-    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}?confirmationText=DELETE` : `http://localhost:8080/api/employers/${targetId}?confirmationText=DELETE`;
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
     
     fetch(endpoint, { method: 'DELETE' })
       .then(response => response.json())
