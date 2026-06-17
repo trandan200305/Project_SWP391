@@ -44,6 +44,9 @@ public class ProjectService {
     @Autowired
     private SavedJobRepository savedJobRepository;
 
+    @Autowired
+    private TransactionRepository transactionRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -96,14 +99,30 @@ public class ProjectService {
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
-                .postingExpires(LocalDate.now().plusDays(30)) // Hạn đăng tin mặc định 30 ngày
-                .status("PUBLISHED") // Published directly
+                .postingExpires(LocalDate.now().plusDays(30)) 
+                .status("PENDING_PAYMENT") 
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
 
         return projectRepository.save(project);
     }
+
+    @Transactional
+    public void publishProjectAfterPayment(Integer projectId, java.math.BigDecimal amount) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+        project.setStatus("PUBLISHED");
+        projectRepository.save(project);
+
+        Transaction transaction = Transaction.builder()
+                .type("PLATFORM_FEE")
+                .amount(amount)
+                .createdAt(LocalDateTime.now())
+                .build();
+        transactionRepository.save(transaction);
+    }
+
 
     @Transactional
     public Project updateProject(Integer projectId, ProjectUpdateDto dto) {
