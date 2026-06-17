@@ -18,7 +18,7 @@ public class DepartmentTransferHistory {
     private Integer transferId;
 
     @Column(name = "user_type", nullable = false, length = 20)
-    private String userType; // 'MANAGER' or 'STAFF'
+    private String userType; 
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
