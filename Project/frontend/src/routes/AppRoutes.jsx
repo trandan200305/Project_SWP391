@@ -29,7 +29,7 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'profile') {
-    return <UserProfilePage user={user} onNavigate={handleNavigate} />;
+    return <UserProfilePage user={user} onNavigate={handleNavigate} initialTab={pageParams?.tab === 'portfolio' ? 'Hồ sơ năng lực' : 'Thông tin cá nhân'} />;
   }
 
   if (currentPage === 'coming_soon') {
@@ -37,7 +37,7 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'find_jobs') {
-    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} user={user} />;
+    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
   }
 
   if (currentPage === 'job_details') {

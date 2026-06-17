@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Camera, Plus } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 
-export default function UserProfilePage({ user, onNavigate }) {
-  const [activeTab, setActiveTab] = useState('Thông tin cá nhân');
+export default function UserProfilePage({ user, onNavigate, initialTab }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'Thông tin cá nhân');
 
   // For Portfolio Tab
   const [portfolios, setPortfolios] = useState([]);
@@ -55,6 +55,12 @@ export default function UserProfilePage({ user, onNavigate }) {
     fetchCategories();
     fetchPortfolios();
   }, []);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const fetchCategories = async () => {
     try {

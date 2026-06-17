@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Code, Palette, Megaphone, Languages, PenTool, Video, Bookmark, Calendar, DollarSign, ExternalLink, Folder } from 'lucide-react';
 
-export default function FeaturedJobs({ searchQuery }) {
+export default function FeaturedJobs({ searchQuery, onNavigate }) {
   
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -145,7 +145,7 @@ export default function FeaturedJobs({ searchQuery }) {
               <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Khám phá theo nhóm ngành</span>
               <h2 className="font-display text-3xl font-extrabold text-primary">Danh mục phổ biến</h2>
             </div>
-            <a href="#all-categories" className="text-secondary font-bold text-body-sm hover:underline flex items-center gap-1">
+            <a href="#all-categories" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('find_jobs'); }} className="text-secondary font-bold text-body-sm hover:underline flex items-center gap-1 cursor-pointer">
               Tất cả danh mục →
             </a>
           </div>
@@ -169,6 +169,7 @@ export default function FeaturedJobs({ searchQuery }) {
                 return (
                   <div 
                     key={cat.categoryId} 
+                    onClick={() => { if(onNavigate) onNavigate('find_jobs', { category: cat.categoryId }); }}
                     className="bg-surface p-5 rounded-2xl border border-muted-light/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center"
                   >
                     <div className={`w-12 h-12 ${dynamicColor} rounded-xl flex items-center justify-center mb-4`}>
@@ -190,7 +191,7 @@ export default function FeaturedJobs({ searchQuery }) {
               <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Cơ hội việc làm mới</span>
               <h2 className="font-display text-3xl font-extrabold text-primary">Dự án mới nhất</h2>
             </div>
-            <a href="#all-projects" className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-sm transition-all shadow-sm">
+            <a href="#all-projects" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('find_jobs'); }} className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-sm transition-all shadow-sm cursor-pointer">
               Xem tất cả dự án
             </a>
           </div>
