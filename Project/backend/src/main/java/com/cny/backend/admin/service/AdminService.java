@@ -1200,7 +1200,18 @@ public class AdminService {
                 + "Trân trọng,\n"
                 + "Đội ngũ LancerPro";
 
-        emailService.sendEmailAsync(email, "[LancerPro] Thư mời tham gia đội ngũ quản trị hệ thống", emailContent);
+        try {
+            emailService.sendEmailAsync(email, "[LancerPro] Thư mời tham gia đội ngũ quản trị hệ thống", emailContent);
+        } catch (Exception e) {
+            writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Mời " + email + " làm " + role + " (Email gửi lỗi: " + e.getMessage() + ")");
+            response.put("success", true);
+            response.put("message", "Tạo lời mời thành công (Nhưng có lỗi gửi email: " + e.getMessage() + "). Link kích hoạt: http://localhost:3000/?token=" + token);
+            response.put("generatedEmail", email);
+            response.put("generatedPassword", rawPassword);
+            response.put("role", role);
+            response.put("department", deptName);
+            return response;
+        }
 
         writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã tạo tài khoản " + role + " cho " + email + " tại phòng ban " + deptName);
         response.put("success", true);

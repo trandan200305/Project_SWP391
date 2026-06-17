@@ -15,7 +15,6 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
-import com.cny.backend.project.service.*;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,26 +28,26 @@ import java.util.List;
 public class JobCategoryController {
 
     @Autowired
-    private JobCategoryService jobCategoryService;
+    private JobCategoryRepository jobCategoryRepository;
 
     
     @GetMapping
-    public ResponseEntity<List<JobCategoryDto>> getAllCategories() {
-        List<JobCategoryDto> categories = jobCategoryService.getAllCategoriesWithCount();
+    public ResponseEntity<List<JobCategory>> getAllCategories() {
+        List<JobCategory> categories = jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         return ResponseEntity.ok(categories);
     }
 
     
     @GetMapping("/top")
-    public ResponseEntity<List<JobCategoryDto>> getTopCategories() {
-        List<JobCategoryDto> categories = jobCategoryService.getTopCategories();
+    public ResponseEntity<List<JobCategory>> getTopCategories() {
+        List<JobCategory> categories = jobCategoryRepository.findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAsc();
         return ResponseEntity.ok(categories);
     }
 
     
     @PostMapping
-    public ResponseEntity<JobCategoryDto> createCategory(@RequestBody JobCategory category) {
-        JobCategoryDto saved = jobCategoryService.createCategory(category);
+    public ResponseEntity<JobCategory> createCategory(@RequestBody JobCategory category) {
+        JobCategory saved = jobCategoryRepository.save(category);
         return ResponseEntity.ok(saved);
     }
 }

@@ -15,7 +15,6 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
-import com.cny.backend.user.service.*;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +30,6 @@ public class FreelancerController {
 
     @Autowired
     private FreelancerRepository freelancerRepository;
-
-    @Autowired
-    private FreelancerService freelancerService;
 
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
@@ -53,43 +49,10 @@ public class FreelancerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FreelancerDto> getFreelancerById(@PathVariable Integer id) {
+    public ResponseEntity<FreelancerDto> getById(@PathVariable Integer id) {
         return freelancerRepository.findById(id)
-                .map(this::mapToDto)
-                .map(ResponseEntity::ok)
+                .map(f -> ResponseEntity.ok(mapToDto(f)))
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ==========================================
-    // WORK PROFILE API
-    // ==========================================
-    @PutMapping("/{id}/work-profile")
-    public ResponseEntity<WorkProfileDto> updateWorkProfile(@PathVariable("id") Integer id, @RequestBody WorkProfileDto dto) {
-        return ResponseEntity.ok(freelancerService.updateWorkProfile(id, dto));
-    }
-
-    // ==========================================
-    // PORTFOLIO API
-    // ==========================================
-    @GetMapping("/{id}/portfolios")
-    public ResponseEntity<List<PortfolioDto>> getPortfolios(@PathVariable("id") Integer id) {
-        return ResponseEntity.ok(freelancerService.getPortfolios(id));
-    }
-
-    @PostMapping("/{id}/portfolios")
-    public ResponseEntity<PortfolioDto> addPortfolio(@PathVariable("id") Integer id, @RequestBody PortfolioDto dto) {
-        return ResponseEntity.ok(freelancerService.addPortfolio(id, dto));
-    }
-
-    @PutMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<PortfolioDto> updatePortfolio(@PathVariable("portfolioId") Integer portfolioId, @RequestBody PortfolioDto dto) {
-        return ResponseEntity.ok(freelancerService.updatePortfolio(portfolioId, dto));
-    }
-
-    @DeleteMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<Void> deletePortfolio(@PathVariable("portfolioId") Integer portfolioId) {
-        freelancerService.deletePortfolio(portfolioId);
-        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/profile")
@@ -104,6 +67,9 @@ public class FreelancerController {
             if(updated.getAddress() != null) f.setAddress(updated.getAddress());
             if(updated.getCity() != null) f.setCity(updated.getCity());
             if(updated.getCountry() != null) f.setCountry(updated.getCountry());
+            if(updated.getHideEmail() != null) f.setHideEmail(updated.getHideEmail());
+            if(updated.getHidePhone() != null) f.setHidePhone(updated.getHidePhone());
+            if(updated.getHideLocation() != null) f.setHideLocation(updated.getHideLocation());
             if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
@@ -171,6 +137,9 @@ public class FreelancerController {
                 .address(f.getAddress())
                 .city(f.getCity())
                 .country(f.getCountry())
+                .hideEmail(f.getHideEmail())
+                .hidePhone(f.getHidePhone())
+                .hideLocation(f.getHideLocation())
                 .profileCompleteness(f.getProfileCompleteness())
                 .totalEarnings(f.getTotalEarnings())
                 .projectsCompleted(f.getProjectsCompleted())
@@ -178,6 +147,7 @@ public class FreelancerController {
                 .isAvailable(f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
+                .lastLoginAt(f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null)
                 .kycStatus(f.getKycStatus())
                 .idCardFrontUrl(f.getIdCardFrontUrl())
                 .idCardBackUrl(f.getIdCardBackUrl())
