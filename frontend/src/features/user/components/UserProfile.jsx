@@ -83,17 +83,7 @@ export default function UserProfile({
                 <p className="text-[15px] font-bold text-gray-900 truncate">{email || 'Chưa cập nhật'}</p>
               </div>
             </div>
-            {role === 'freelancer' && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center shrink-0">
-                  <DollarSign className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div className="pt-0.5">
-                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Mức lương mong muốn</p>
-                  <p className="text-[15px] font-bold text-gray-900">{hourlyRate ? `${formatCurrency(hourlyRate)} / giờ` : 'Thỏa thuận'}</p>
-                </div>
-              </div>
-            )}
+
             {role === 'employer' && (
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
@@ -108,30 +98,7 @@ export default function UserProfile({
           </div>
         </div>
 
-        {/* Stats Blocks (2x2 Grid) */}
-        {(role === 'freelancer' || role === 'employer') && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-indigo-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? formatCompactCurrency(totalEarnings) : formatCompactCurrency(totalSpent)}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Tổng thu nhập' : 'Đã chi tiêu'}</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-emerald-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? projectsCompleted : projectsPosted}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Dự án' : 'Dự án đã đăng'}</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <div className="flex items-center justify-center gap-1 mb-1 break-words w-full px-1">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 shrink-0" />
-                <p className="text-lg xl:text-xl font-black text-gray-900">{averageRating}</p>
-              </div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đánh giá</p>
-            </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
-              <p className="text-lg xl:text-xl font-black text-blue-500 mb-1 break-words w-full px-1">{profileCompleteness}%</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hoàn thiện</p>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
