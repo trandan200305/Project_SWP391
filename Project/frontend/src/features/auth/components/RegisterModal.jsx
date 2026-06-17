@@ -366,17 +366,26 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                 </div>
 
                 {/* Social Google Registration */}
-                <div className="mb-2 flex justify-center w-full">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setError("Đăng ký bằng Google thất bại")}
-                    useOneTap
-                    theme="outline"
-                    size="large"
-                    shape="rectangular"
-                    width="320"
-                    text="signup_with"
-                  />
+                <div className="mb-2 flex flex-col items-center justify-center w-full">
+                  {!import.meta.env.VITE_GOOGLE_CLIENT_ID || !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes("googleusercontent.com") ? (
+                    <div className="w-[320px] p-2.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] font-medium leading-relaxed mb-1 text-center shadow-sm">
+                      ⚠️ <strong>Google Sign-up chưa cấu hình:</strong> Đổi <strong className="font-semibold">VITE_GOOGLE_CLIENT_ID</strong> trong <strong className="font-bold">.env</strong>.
+                      <div className="mt-1 font-semibold text-[10px] text-amber-700">
+                        Hoặc đăng ký nhanh bằng form bên dưới
+                      </div>
+                    </div>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError("Đăng ký bằng Google thất bại")}
+                      useOneTap
+                      theme="outline"
+                      size="large"
+                      shape="rectangular"
+                      width="320"
+                      text="signup_with"
+                    />
+                  )}
                 </div>
 
                 {/* Divider */}
