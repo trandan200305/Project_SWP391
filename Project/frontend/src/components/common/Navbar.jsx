@@ -37,7 +37,7 @@ export default function Navbar({
   const [resetPinSuccess, setResetPinSuccess] = useState("");
   const [isResettingTempPin, setIsResettingTempPin] = useState(false);
 
-  // 1. RESET AND OPEN MESSENGER PIN MODAL
+  
   const handleMessengerClick = () => {
     setShowProfileMenu(false);
     setIsOpen(false);
@@ -51,7 +51,7 @@ export default function Navbar({
     setIsResettingTempPin(false);
   };
 
-  // 2. RESET PIN gmail
+  
   const handleForgotPin = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -77,10 +77,10 @@ export default function Navbar({
     }
   };
 
-  // 3. SUBMIT PIN (VERIFY CURRENT OR SET NEW)
+  
   const handlePinSubmit = async () => {
     if (isSubmitting) return;
-    //đã từng tạo
+    
     if (user?.hasMessengerPin && !isResettingTempPin) {
       const pin = pinValues.join("");
       if (pin.length !== 4) {
@@ -97,7 +97,7 @@ export default function Navbar({
           pin,
         });
         if (data.success) {
-          // tam thoi qua mail
+          
           if (data.isTemporary) {
             setIsResettingTempPin(true);
             setPinValues(["", "", "", ""]);
@@ -105,10 +105,10 @@ export default function Navbar({
             setIsConfirmingPin(false);
             setPinError("");
           }
-          //pin chính
+          
           else {
             setShowPinModal(false);
-            if (onNavigate) onNavigate("messenger"); //chuyển trang
+            if (onNavigate) onNavigate("messenger"); 
           }
         } else {
           setPinError(data.message || "Mã PIN không đúng.");
@@ -123,7 +123,7 @@ export default function Navbar({
       }
       return;
     }
-    //xác nhận lại mã PIN mới mà chính user vừa nhập lần 1
+    
     if (!isConfirmingPin) {
       const pin = pinValues.join("");
       if (pin.length !== 4) {
@@ -145,7 +145,7 @@ export default function Navbar({
         if (firstInput) firstInput.focus();
         return;
       }
-      // gửi mã PIN lên server để lưu
+      
       setIsSubmitting(true);
       setPinError("");
       try {
@@ -172,7 +172,7 @@ export default function Navbar({
       }
     }
   };
-  // check input
+  
   const handlePinChange = (index, value) => {
     const numericValue = value.replace(/[^0-9]/g, "");
     if (value && !numericValue) return;
@@ -204,7 +204,7 @@ export default function Navbar({
     }
   };
 
-  // 5. xử lý Backspace khi nhập PIN
+  
   const handlePinKeyDown = (index, e) => {
     const currentValues = isConfirmingPin ? confirmPinValues : pinValues;
     const prefix = isConfirmingPin ? "pin-confirm-" : "pin-";
@@ -215,7 +215,7 @@ export default function Navbar({
     }
   };
 
-  // 6. theo dõi cuộn trang để đổi style Navbar
+  
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 20) {

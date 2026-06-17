@@ -47,7 +47,7 @@ export default function Hero({ onSearch, onNavigate, user }) {
           Kết nối với những chuyên gia hàng đầu về Công nghệ, Thiết kế, Marketing và Viết lách tại Việt Nam để hiện thực hóa ý tưởng của bạn một cách nhanh chóng và an toàn.
         </p>
 
-        {/* CTA Buttons */}
+        
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           <button
             type="button"

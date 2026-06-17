@@ -47,12 +47,12 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState(null);
 
-    // Added states for projects
-    const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
+    
+    const [activeTab, setActiveTab] = useState('company'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
-    // States for managing projects (edit, close, delete)
+    
     const [editingProject, setEditingProject] = useState(null);
     const [categories, setCategories] = useState([]);
     const [updating, setUpdating] = useState(false);
@@ -74,7 +74,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     }, [form]);
 
 
-    // Fetch active job categories for editing
+    
     useEffect(() => {
         fetch('http://localhost:8080/api/categories')
             .then((res) => {
@@ -87,7 +87,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             .catch((err) => console.error('Error fetching categories:', err));
     }, []);
 
-    // Initialize edit form when editingProject changes
+    
     useEffect(() => {
         if (editingProject) {
             setEditForm({
@@ -110,7 +110,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return;
         }
 
-        // Validate budget range
+        
         if (editForm.projectType === 'RANGE') {
             const minStr = editForm.budgetMin ? String(editForm.budgetMin).trim() : '';
             const maxStr = editForm.budgetMax ? String(editForm.budgetMax).trim() : '';
@@ -160,7 +160,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             if (!response.ok) throw new Error('Cập nhật dự án thất bại.');
             const data = await response.json();
 
-            // Update list
+            
             setProjects(prev => prev.map(p => p.projectId === data.projectId ? data : p));
             setNotice({type: 'success', message: 'Cập nhật tin tuyển dụng thành công.'});
             setEditingProject(null);
@@ -179,7 +179,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             });
             if (!response.ok) throw new Error('Đóng dự án thất bại.');
 
-            // Update in state list
+            
             setProjects(prev => prev.map(p => p.projectId === projectId ? {...p, status: 'CLOSED'} : p));
             setNotice({type: 'success', message: 'Đã đóng tuyển dụng dự án thành công.'});
         } catch (err) {
@@ -195,15 +195,49 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             });
             if (!response.ok) throw new Error('Xóa dự án thất bại.');
 
-            // Remove from state list
+            
             setProjects(prev => prev.filter(p => p.projectId !== projectId));
             setNotice({type: 'success', message: 'Đã xóa tin tuyển dụng thành công.'});
         } catch (err) {
             setNotice({type: 'error', message: err.message || 'Lỗi khi xóa dự án.'});
         }
     };
+    
+    const handlePayProject = async (projectId) => {
+        try {
+            const project = projects.find(p => p.projectId === projectId);
+            const response = await fetch(`http://localhost:8080/payment/create-url?projectId=${projectId}`, {
+                method: 'POST'
+            });
+            if (!response.ok) {
+                const payErr = await response.text();
+                throw new Error(payErr || 'Không thể tạo cổng thanh toán.');
+            }
+            const payData = await response.json();
+            if (payData.paymentUrl) {
+                if (onNavigate) {
+                    onNavigate('checkout', { 
+                      projectId: projectId, 
+                      paymentUrl: payData.paymentUrl, 
+                      amount: payData.amount, 
+                      txnRef: payData.txnRef,
+                      bankName: payData.bankName,
+                      bankAccountNo: payData.bankAccountNo,
+                      bankAccountName: payData.bankAccountName,
+                      projectTitle: project?.title || 'Dự án LancerPro'
+                    });
+                } else {
+                    window.location.href = payData.paymentUrl;
+                }
+            } else {
+                throw new Error('Không nhận được URL thanh toán từ máy chủ.');
+            }
+        } catch (err) {
+            alert('Lỗi khởi tạo cổng thanh toán: ' + err.message);
+        }
+    };
 
-    // Fetch employer's projects
+    
     const fetchProjects = () => {
         if (!user?.id) return;
         setLoadingProjects(true);
@@ -307,7 +341,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
+        
         const {bankName, accountNumber, accountHolder} = form.billing;
         if (bankName || accountNumber || accountHolder) {
             if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
@@ -318,14 +352,14 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 return false;
             }
 
-            // Số tài khoản chỉ được phép chứa số
+            
             const numRegex = /^[0-9]+$/;
             if (!numRegex.test(accountNumber.trim())) {
                 setNotice({type: 'error', message: 'Số tài khoản ngân hàng chỉ được phép chứa các chữ số.'});
                 return false;
             }
         }
-        return true; // Dữ liệu hoàn toàn hợp lệ
+        return true; 
     };
 
     const handleSubmit = async (event) => {
@@ -439,7 +473,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                 </aside>
 
                 <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
-                    {/* Header */}
+                    
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
@@ -458,7 +492,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             </div>)}
                     </div>
 
-                    {/* Navigation Tabs */}
+                    
                     <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
                         <button
                             type="button"
@@ -495,11 +529,11 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                         </button>
                     </div>
 
-                    {/* Tab content */}
+                    
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
                             <Loader2 className="w-6 h-6 animate-spin mr-2"/>
                             Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (/* Company info form */
+                        </div>) : activeTab === 'company' ? (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -552,7 +586,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
                                 </button>
                             </div>
-                        </form>) : activeTab === 'billing' ? (/* Billing / Payment info form */
+                        </form>) : activeTab === 'billing' ? (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -578,9 +612,9 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
                                 </button>
                             </div>
-                        </form>) : (/* Projects / Job postings section */
+                        </form>) : (
                         <div className="p-6 animate-fade-in">
-                            {/* SUB-VIEW: LIST OF POSTED PROJECTS */}
+                            
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
@@ -605,7 +639,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                             Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của
                                             bạn tại đây.
                                         </p>
-                                    </div>) : (/* Project Cards Grid */
+                                    </div>) : (
                                     <div className="grid grid-cols-1 gap-4">
                                         {projects.map((proj) => {
                                             const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
@@ -613,6 +647,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                                 DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
                                                 PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
                                                 PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                PENDING_PAYMENT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
                                                 PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                                 REJECTED: 'bg-rose-50 text-rose-700 border-rose-200'
                                             };
@@ -620,6 +655,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                                 DRAFT: 'Bản nháp',
                                                 PENDING: 'Chờ duyệt',
                                                 PENDING_REVIEW: 'Chờ duyệt',
+                                                PENDING_PAYMENT: 'Chờ thanh toán',
                                                 PUBLISHED: 'Đang tuyển',
                                                 REJECTED: 'Từ chối'
                                             };
@@ -682,10 +718,19 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                                         </div>
                                                     </div>
 
-                                                    {/* Management Actions */}
+                                                    
                                                     <div
                                                         className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
-                                                        {proj.status !== 'CLOSED' && (<button
+                                                        {proj.status === 'PENDING_PAYMENT' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePayProject(proj.projectId)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-all text-[11px] font-extrabold shadow-sm animate-pulse"
+                                                            >
+                                                                Thanh toán phí
+                                                            </button>
+                                                        )}
+                                                        {proj.status !== 'CLOSED' && proj.status !== 'PENDING_PAYMENT' && (<button
                                                                 type="button"
                                                                 onClick={() => handleCloseProject(proj.projectId)}
                                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
@@ -716,7 +761,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
             </div>
         </main>
 
-        {/* Edit Project Modal */}
+        
         {editingProject && (<div
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10">
                 <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-fade-in my-auto">
@@ -732,7 +777,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                     </div>
 
                     <form onSubmit={handleUpdateProject} className="space-y-4">
-                        {/* Title */}
+                        
                         <label className="block">
                                 <span
                                     className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
@@ -745,7 +790,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             />
                         </label>
 
-                        {/* Category */}
+                        
                         <label className="block">
                                 <span
                                     className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần thuê *</span>
@@ -761,7 +806,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             </select>
                         </label>
 
-                        {/* Project Type */}
+                        
                         <div className="grid grid-cols-2 gap-4">
                             <button
                                 type="button"
@@ -779,7 +824,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             </button>
                         </div>
 
-                        {/* Budget fields */}
+                        
                         {editForm.projectType === 'FIXED' ? (<label className="block">
                                     <span
                                         className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
@@ -817,7 +862,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                                 </label>
                             </div>)}
 
-                        {/* Deadline */}
+                        
                         <label className="block">
                                 <span
                                     className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ *</span>
@@ -831,7 +876,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             />
                         </label>
 
-                        {/* Description */}
+                        
                         <label className="block">
                                 <span
                                     className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả chi tiết *</span>
@@ -844,7 +889,7 @@ return (<div className="min-h-screen bg-slate-100 text-slate-900">
                             />
                         </label>
 
-                        {/* Action Buttons */}
+                        
                         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
                             <button
                                 type="button"
