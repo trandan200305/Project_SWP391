@@ -38,10 +38,10 @@ public class Dispute {
     private String reason;
 
     @Column(name = "priority")
-    private String priority; // "LOW", "HIGH", "URGENT"
+    private String priority; 
 
     @Column(name = "status")
-    private String status; // "OPEN", "RESOLVED", "CLOSED"
+    private String status; 
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
