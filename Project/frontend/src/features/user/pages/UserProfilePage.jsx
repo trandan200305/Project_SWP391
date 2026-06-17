@@ -44,6 +44,12 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
 
   const freelancerId = user?.profileId || user?.freelancerId || 1; // Default to 1 for testing if user is missing
 
+  const formatExternalLink = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `https://${url}`;
+  };
+
   const showSuccess = (msg) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 3000);
@@ -909,24 +915,49 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
                 
                 {selectedPortfolio.attachmentUrl && (
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">File đính kèm</h4>
-                    <a href={selectedPortfolio.attachmentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      {selectedPortfolio.attachmentUrl}
-                    </a>
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">File đính kèm</h4>
+                    {(() => {
+                      const url = formatExternalLink(selectedPortfolio.attachmentUrl);
+                      const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+                      const isPdf = url.match(/\.(pdf)$/i);
+                      
+                      if (isImage) {
+                        return (
+                          <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                            <img src={url} alt="Attachment" className="w-full h-auto object-contain max-h-[500px]" />
+                          </div>
+                        );
+                      }
+                      
+                      if (isPdf) {
+                        return (
+                          <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                            <iframe src={url} title="PDF Attachment" className="w-full h-[500px]" />
+                          </div>
+                        );
+                      }
+                      
+                      // Fallback to link if not a direct image or pdf
+                      return (
+                        <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100 w-fit">
+                          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          <span className="truncate max-w-md">{selectedPortfolio.attachmentUrl}</span>
+                        </a>
+                      );
+                    })()}
                   </div>
                 )}
 
                 {selectedPortfolio.productLink && (
                   <div>
                     <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Link sản phẩm</h4>
-                    <a href={selectedPortfolio.productLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <a href={formatExternalLink(selectedPortfolio.productLink)} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
-                      {selectedPortfolio.productLink}
+                      <span className="truncate max-w-md">{selectedPortfolio.productLink}</span>
                     </a>
                   </div>
                 )}
