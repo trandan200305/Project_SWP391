@@ -1,37 +1,57 @@
 package com.cny.backend.admin.service;
 
-import com.cny.backend.auth.entity.*;
-import com.cny.backend.admin.entity.*;
-import com.cny.backend.project.entity.*;
-import com.cny.backend.user.entity.*;
-import com.cny.backend.auth.repository.*;
-import com.cny.backend.admin.repository.*;
-import com.cny.backend.project.repository.*;
-import com.cny.backend.user.repository.*;
-import com.cny.backend.admin.dto.*;
-import com.cny.backend.chat.dto.*;
-import com.cny.backend.project.dto.*;
-import com.cny.backend.user.dto.*;
-import com.cny.backend.auth.service.*;
-import com.cny.backend.admin.service.*;
-import com.cny.backend.chat.service.*;
-import com.cny.backend.department.entity.*;
-import com.cny.backend.department.repository.*;
-
-
-import com.cny.backend.email.service.EmailService;
-
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.cny.backend.admin.dto.AdminAuditLogDto;
+import com.cny.backend.admin.dto.AdminStatsDto;
+import com.cny.backend.admin.dto.AdminUserDto;
+import com.cny.backend.admin.dto.DisputeDto;
+import com.cny.backend.admin.dto.KycRequestDto;
+import com.cny.backend.admin.dto.ManagerCreateDto;
+import com.cny.backend.admin.dto.ManagerDto;
+import com.cny.backend.admin.dto.PendingProjectDto;
+import com.cny.backend.admin.dto.PlatformFeeDto;
+import com.cny.backend.admin.dto.ReportDto;
+import com.cny.backend.admin.dto.RevenueTrendDto;
+import com.cny.backend.admin.dto.SeoConfigDto;
+import com.cny.backend.admin.dto.StaffCreateDto;
+import com.cny.backend.admin.dto.StaffDto;
+import com.cny.backend.admin.dto.SupportTicketDto;
+import com.cny.backend.admin.dto.UserGrowthTrendDto;
+import com.cny.backend.admin.dto.WarningTemplateDto;
+import com.cny.backend.admin.dto.WithdrawalDto;
+import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.VnpayConfig;
+import com.cny.backend.admin.entity.PaymentTransaction;
+import com.cny.backend.admin.repository.DashboardRepository;
+import com.cny.backend.admin.repository.StaffInvitationRepository;
+import com.cny.backend.department.entity.DepartmentTaskSignoff;
+import com.cny.backend.department.entity.DepartmentVerificationTask;
+import com.cny.backend.email.service.EmailService;
+import com.cny.backend.project.dto.ArticleDto;
+import com.cny.backend.project.dto.JobCategoryDto;
+import com.cny.backend.project.repository.JobCategoryRepository;
+import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.EmployerProfileRequest;
+import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.user.repository.EmployerProfileRequestRepository;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 
 @Service
 public class AdminService {
@@ -98,6 +118,15 @@ public class AdminService {
 
     @Autowired
     private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
+
+    @Autowired
+    private com.cny.backend.project.service.ProjectService projectService;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
@@ -540,7 +569,7 @@ public class AdminService {
         if (!allAdmins.isEmpty()) {
             return allAdmins.get(0).getAdminId();
         }
-        return 1; // Fallback to 1 if no admins in DB
+        return 1;
     }
 
     private void writeAuditLog(int adminId, String action, String module, String description) {
@@ -1197,7 +1226,7 @@ public class AdminService {
         Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
         if (invOpt.isPresent()) {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
-            // Nếu liên kết đang hoạt động (PENDING) và chưa hết hạn 24 giờ
+
             if ("PENDING".equalsIgnoreCase(inv.getStatus()) && inv.getExpiresAt().isAfter(LocalDateTime.now())) {
                 response.put("success", false);
                 response.put("message", "Liên kết mời hiện tại vẫn còn hiệu lực (chưa hết 24 giờ). Không được phép cấp lại liên kết mới.");
@@ -1230,7 +1259,7 @@ public class AdminService {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
             inv.setTempPassword(tempPassword);
             if ("PENDING".equalsIgnoreCase(inv.getStatus()) || "EXPIRED".equalsIgnoreCase(inv.getStatus()) || inv.getExpiresAt().isBefore(LocalDateTime.now())) {
-                // Generate a brand new token/link to prevent activation using old/expired links (e.g., from 1 year ago)
+
                 token = java.util.UUID.randomUUID().toString();
                 inv.setToken(token);
                 inv.setStatus("PENDING");
@@ -1256,7 +1285,7 @@ public class AdminService {
 
         String setupLink = "http://localhost:3000/?token=" + token;
 
-        // Gửi email thông báo liên kết mời mới và thông tin đăng nhập
+
         if ("PENDING".equalsIgnoreCase(status)) {
             String roleLabel = "MANAGER".equalsIgnoreCase(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
             java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -1318,7 +1347,7 @@ public class AdminService {
             try {
                 emailService.sendHtmlEmailAsync(email, "[LancerPro] Cấp lại liên kết kích hoạt nhân sự mới", emailHtml);
             } catch (Exception e) {
-                // Log and ignore email error to not fail the transaction
+
             }
         }
 
@@ -1356,7 +1385,7 @@ public class AdminService {
         email = email.trim().toLowerCase();
         role = role.toUpperCase();
 
-        // Check if email already exists in any table (ignoring soft-deleted users in key roles)
+
         if (adminRepository.findByEmail(email).isPresent() ||
             freelancerRepository.findByEmail(email).filter(f -> !Boolean.TRUE.equals(f.getIsDeleted())).isPresent() ||
             employerRepository.findByEmail(email).filter(e -> !Boolean.TRUE.equals(e.getIsDeleted())).isPresent() ||
@@ -1575,7 +1604,7 @@ public class AdminService {
         return sb.toString();
     }
 
-    // --- VERIFICATION TASKS ENDPOINTS ---
+
 
     @Transactional
     public Map<String, Object> createVerificationTask(Map<String, Object> payload) {
@@ -1609,7 +1638,7 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getVerificationTasks() {
-        // Ensure default departments are present in DB
+
         initPresetDepartments();
 
         List<DepartmentVerificationTask> tasks = departmentVerificationTaskRepository.findAll();
@@ -1627,7 +1656,7 @@ public class AdminService {
             map.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : null);
             map.put("updatedAt", task.getUpdatedAt() != null ? task.getUpdatedAt().toString() : null);
             
-            // Get signoffs for this task
+
             List<DepartmentTaskSignoff> signoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
             List<Map<String, Object>> signoffList = new ArrayList<>();
             for (DepartmentTaskSignoff s : signoffs) {
@@ -1664,7 +1693,7 @@ public class AdminService {
         }
 
         String departmentCode = payload.get("departmentCode") != null ? payload.get("departmentCode").toString().toUpperCase() : "";
-        String status = payload.get("status") != null ? payload.get("status").toString().toUpperCase() : ""; // APPROVED, REJECTED
+        String status = payload.get("status") != null ? payload.get("status").toString().toUpperCase() : "";
         String note = payload.get("note") != null ? payload.get("note").toString() : "";
 
         if (departmentCode.isEmpty() || status.isEmpty()) {
@@ -1673,7 +1702,7 @@ public class AdminService {
             return response;
         }
 
-        // Verify if department is required for this task
+
         List<String> requiredDepts = Arrays.asList(task.getRequiredDepartments().split(","));
         if (!requiredDepts.contains(departmentCode)) {
             response.put("success", false);
@@ -1681,7 +1710,7 @@ public class AdminService {
             return response;
         }
 
-        // Check if already signed off by this department
+
         List<DepartmentTaskSignoff> existing = departmentTaskSignoffRepository.findByVerificationTaskAndDepartmentCode(task, departmentCode);
         if (!existing.isEmpty()) {
             response.put("success", false);
@@ -1689,7 +1718,7 @@ public class AdminService {
             return response;
         }
 
-        // Create new signoff
+
         DepartmentTaskSignoff signoff = DepartmentTaskSignoff.builder()
                 .verificationTask(task)
                 .departmentCode(departmentCode)
@@ -1702,12 +1731,12 @@ public class AdminService {
         writeAuditLog(0, "TASK_SIGNOFF", "DEPARTMENTS", 
                 "Tài khoản " + verifierEmail + " của khoa " + departmentCode + " đã ký duyệt " + status + " tác vụ #" + taskId);
 
-        // Check overall status
+
         if ("REJECTED".equals(status)) {
             task.setStatus("REJECTED");
             departmentVerificationTaskRepository.save(task);
             
-            // Execute rejection of original transaction
+
             rejectOriginalTransaction(task.getTaskType(), task.getReferenceId());
             
             response.put("success", true);
@@ -1715,7 +1744,7 @@ public class AdminService {
             return response;
         }
 
-        // Recheck if all required departments signed APPROVED
+
         List<DepartmentTaskSignoff> allSignoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
         Set<String> approvedDepts = allSignoffs.stream()
                 .filter(s -> "APPROVED".equals(s.getStatus()))
@@ -1734,7 +1763,7 @@ public class AdminService {
             task.setStatus("APPROVED");
             departmentVerificationTaskRepository.save(task);
             
-            // Execute approval of original transaction
+
             approveOriginalTransaction(task.getTaskType(), task.getReferenceId());
             
             response.put("success", true);
@@ -1752,7 +1781,7 @@ public class AdminService {
             if ("WITHDRAWAL".equals(type)) {
                 dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
-                // mock process dispute refund success
+
                 System.out.println("Dispute refund #" + referenceId + " approved!");
             } else if ("KYC_VERIFICATION".equals(type)) {
                 System.out.println("KYC Verification #" + referenceId + " approved!");
@@ -1809,7 +1838,7 @@ public class AdminService {
             }
         }
 
-        // Clean up outdated verification tasks/signoffs containing KYC or SUP department references
+
         boolean hasOutdated = departmentVerificationTaskRepository.findAll().stream()
                 .anyMatch(t -> t.getRequiredDepartments().contains("KYC") || t.getRequiredDepartments().contains("SUP"));
         if (hasOutdated) {
@@ -1817,7 +1846,7 @@ public class AdminService {
             departmentVerificationTaskRepository.deleteAll();
         }
 
-        // Generate mock tasks if there are none to populate the list on UI load!
+
         if (departmentVerificationTaskRepository.findAll().isEmpty()) {
             departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
                     .taskType("WITHDRAWAL")
@@ -1875,7 +1904,7 @@ public class AdminService {
             req.setStatus("APPROVED");
             Employer employer = req.getEmployer();
             
-            // Copy fields from request to employer
+
             if (req.getDisplayName() != null) employer.setDisplayName(req.getDisplayName());
             if (req.getFullName() != null) employer.setFullName(req.getFullName());
             if (req.getPhone() != null) employer.setPhone(req.getPhone());
@@ -1890,11 +1919,11 @@ public class AdminService {
             if (req.getIndustry() != null) employer.setIndustry(req.getIndustry());
             employer.setUpdatedAt(LocalDateTime.now());
             
-            // Calculate completeness
+
             employer.setProfileCompleteness(calculateCompleteness(employer));
             employerRepository.save(employer);
 
-            // Update bank details if provided
+
             if (req.getBankName() != null || req.getAccountNumber() != null || req.getAccountHolder() != null || req.getBranch() != null) {
                 upsertDefaultBankAccount(employer.getEmployerId(), req.getBankName(), req.getAccountNumber(), req.getAccountHolder(), req.getBranch());
             }
@@ -2004,6 +2033,77 @@ public class AdminService {
         response.put("success", false);
         response.put("message", "Không tìm thấy tài khoản Admin.");
         return response;
+    }
+
+    public VnpayConfig getVnpayConfig() {
+        VnpayConfig config = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc().orElse(
+            VnpayConfig.builder()
+                .tmnCode("DEMO2019")
+                .hashSecret("9A7F11E55E1C3806E0528B65355AA05C")
+                .vnpUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
+                .returnUrl("http://localhost:3000/payment-result")
+                .bankName("Techcombank")
+                .bankAccountNo("9009002045")
+                .bankAccountName("NGUYEN VAN THANH")
+                .isActive(true)
+                .build()
+        );
+        if (config.getBankName() == null) {
+            config.setBankName("Techcombank");
+        }
+        if (config.getBankAccountNo() == null) {
+            config.setBankAccountNo("9009002045");
+        }
+        if (config.getBankAccountName() == null) {
+            config.setBankAccountName("NGUYEN VAN THANH");
+        }
+        return config;
+    }
+
+    @Transactional
+    public VnpayConfig saveVnpayConfig(VnpayConfig config, int adminId) {
+        vnpayConfigRepository.findAll().forEach(c -> {
+            c.setIsActive(false);
+            vnpayConfigRepository.save(c);
+        });
+        
+        config.setIsActive(true);
+        VnpayConfig saved = vnpayConfigRepository.save(config);
+        
+        dashboardRepository.logAudit(adminId, "UPDATE_VNPAY_CONFIG", "FINANCE", 
+            "Đã cập nhật cấu hình cổng thanh toán VNPay: Terminal Code = " + config.getTmnCode());
+        
+        return saved;
+    }
+
+    public List<PaymentTransaction> getVnpayTransactions() {
+        return paymentTransactionRepository.findAll();
+    }
+
+    @Transactional
+    public Map<String, Object> reconcileVnpayTransaction(int transactionId, int adminId) {
+        Map<String, Object> result = new HashMap<>();
+        PaymentTransaction txn = paymentTransactionRepository.findById(transactionId)
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch ID: " + transactionId));
+        
+        if ("SUCCESS".equals(txn.getStatus())) {
+            result.put("success", false);
+            result.put("message", "Giao dịch này đã được thanh toán thành công trước đó.");
+            return result;
+        }
+
+        txn.setStatus("SUCCESS");
+        txn.setVnpTransactionNo("MANUAL_" + System.currentTimeMillis());
+        paymentTransactionRepository.save(txn);
+
+        projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+
+        dashboardRepository.logAudit(adminId, "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
+            "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());
+
+        result.put("success", true);
+        result.put("message", "Duyệt giao dịch và kích hoạt dự án thành công.");
+        return result;
     }
 }
 
