@@ -235,7 +235,7 @@ export default function FeaturedJobs({ searchQuery }) {
                     }`}
                   >
                     <div>
-                      {/* Job Header */}
+                      
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-3 py-1 rounded-full text-body-sm font-bold ${
