@@ -60,17 +60,17 @@ public class FreelancerController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ==========================================
-    // WORK PROFILE API
-    // ==========================================
+    
+    
+    
     @PutMapping("/{id}/work-profile")
     public ResponseEntity<WorkProfileDto> updateWorkProfile(@PathVariable("id") Integer id, @RequestBody WorkProfileDto dto) {
         return ResponseEntity.ok(freelancerService.updateWorkProfile(id, dto));
     }
 
-    // ==========================================
-    // PORTFOLIO API
-    // ==========================================
+    
+    
+    
     @GetMapping("/{id}/portfolios")
     public ResponseEntity<List<PortfolioDto>> getPortfolios(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(freelancerService.getPortfolios(id));

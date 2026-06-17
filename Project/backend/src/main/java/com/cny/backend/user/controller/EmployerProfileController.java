@@ -49,7 +49,7 @@ public class EmployerProfileController {
 
         Map<String, Object> billing = asMap(payload.get("billing"));
 
-        // Backend validations
+        
         String displayName = text(payload.get("displayName"));
         if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {
             Map<String, Object> errResponse = new HashMap<>();
