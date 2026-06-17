@@ -24,7 +24,7 @@ public class DepartmentSession {
     private Integer userId;
 
     @Column(name = "user_role", nullable = false)
-    private String userRole; // "MANAGER" or "STAFF"
+    private String userRole; 
 
     @Column(name = "login_at", nullable = false)
     private LocalDateTime loginAt;
@@ -36,7 +36,7 @@ public class DepartmentSession {
     private String ipAddress;
 
     @Column(nullable = false)
-    private String status; // "ACTIVE", "COMPLETED", "TIMEOUT"
+    private String status; 
 
     @PrePersist
     protected void onCreate() {
