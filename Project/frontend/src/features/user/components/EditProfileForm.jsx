@@ -33,7 +33,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 );
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating
 }) {
   return (
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -93,6 +93,7 @@ export default function EditProfileForm({
                              <InputRow label="Website" value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." />
                              <InputRow label="Quy mô công ty" value={companySize} onChange={e=>setCompanySize(e.target.value)} placeholder="10-50 nhân viên..." />
                              <InputRow label="Lĩnh vực kinh doanh" value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="IT, Giáo dục..." />
+                             <InputRow label="Mã số thuế" value={taxCode} onChange={e=>setTaxCode(e.target.value)} placeholder="VD: 0102030405..." />
                            </>
                          )}
 

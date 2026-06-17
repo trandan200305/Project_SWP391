@@ -26,5 +26,8 @@ public interface EmployerRepository extends JpaRepository<Employer, Integer> {
     Optional<Employer> findByEmail(String email);
     int countByEmail(String email);
     int countByPhone(String phone);
+    int countByPhoneAndEmployerIdNot(String phone, Integer employerId);
+    int countByTaxCode(String taxCode);
+    int countByTaxCodeAndEmployerIdNot(String taxCode, Integer employerId);
     int countByDisplayName(String displayName);
 }
