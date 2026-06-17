@@ -294,7 +294,7 @@ public class AuthController {
                 + "Đội ngũ LancerPro";
 
         message.setText(emailContent);
-        // Gửi email
+        
         mailSender.send(message);
 
         response.put("success", true);
@@ -375,7 +375,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        boolean success = authService.setMessengerPin(userId, role, pin); // db update
+        boolean success = authService.setMessengerPin(userId, role, pin); 
         if (success) {
             tempPinUsers.remove(role.toUpperCase() + ":" + userId);
         }
@@ -384,7 +384,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // API: POST /api/auth/verify-messenger-pin
+    
     @PostMapping("/verify-messenger-pin")
     public ResponseEntity<Map<String, Object>> verifyMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");
@@ -414,7 +414,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // API: POST /api/auth/forgot-messenger-pin
+    
     @PostMapping("/forgot-messenger-pin")
     public ResponseEntity<Map<String, Object>> forgotMessengerPin(@RequestBody Map<String, Object> payload) {
         Integer userId = (Integer) payload.get("userId");
