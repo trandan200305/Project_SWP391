@@ -14,6 +14,9 @@ import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
+import PaymentResultPage from '../pages/PaymentResultPage.jsx';
+import CheckoutPage from '../pages/CheckoutPage.jsx';
+
 
 export default function AppRoutes({
   currentPage,
@@ -81,6 +84,25 @@ export default function AppRoutes({
       />
     );
   }
+
+  if (currentPage === 'payment_result') {
+    return (
+      <PaymentResultPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
+  if (currentPage === 'checkout') {
+    return (
+      <CheckoutPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
 
   if (currentPage === 'onboard') {
     return (
