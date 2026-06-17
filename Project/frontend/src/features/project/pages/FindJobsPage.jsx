@@ -126,6 +126,11 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     setPage(0); // reset to first page when filtering
   };
 
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleExecuteSearch = () => {
     if (!isValidSalary(minSalary)) {
       setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
@@ -134,12 +139,14 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     }
     setErrorToast(null);
     setPage(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     fetchJobs(keyword, activeCategory, minSalary, 0, size);
   };
 
   const handleCategoryChange = (catId) => {
     setActiveCategory(catId);
     setPage(0); // reset to first page when changing category
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatCurrency = (amount) => {
@@ -337,7 +344,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
               {/* Trang Đầu (chỉ hiện nếu nút số 1 không được hiển thị) */}
               {startPage > 0 && (
                 <button 
-                  onClick={() => setPage(0)}
+                  onClick={() => handlePageChange(0)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Đầu
@@ -348,7 +355,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
               {pageButtons.map((btnIndex) => (
                 <button
                   key={btnIndex}
-                  onClick={() => setPage(btnIndex)}
+                  onClick={() => handlePageChange(btnIndex)}
                   className={`min-w-[40px] h-10 px-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
                     page === btnIndex 
                       ? 'bg-[#1e40af] text-white border-transparent hover:-translate-y-0.5 shadow-blue-500/30' 
@@ -362,7 +369,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
               {/* Trang Cuối (chỉ hiện nếu nút cuối cùng không được hiển thị) */}
               {endPage < totalPages - 1 && (
                 <button 
-                  onClick={() => setPage(totalPages - 1)}
+                  onClick={() => handlePageChange(totalPages - 1)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Cuối
