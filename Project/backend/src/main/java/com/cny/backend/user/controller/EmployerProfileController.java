@@ -103,7 +103,7 @@ public class EmployerProfileController {
             }
         }
 
-        String urlPattern = "^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*\\/?$";
+        String urlPattern = "^(https?://)?([a-zA-Z0-9][-a-zA-Z0-9]*\\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\\d+)?(/.*)?$";
         String website = text(payload.get("website"));
         if (!isBlank(website) && !website.matches(urlPattern)) {
             Map<String, Object> errResponse = new HashMap<>();
