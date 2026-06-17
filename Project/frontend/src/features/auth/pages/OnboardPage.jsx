@@ -94,7 +94,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         setSendingCode(false);
         if (data.success) {
           alert('Mã xác nhận đã được gửi về email của bạn!');
-          setCountdown(60); // 60 seconds cooldown
+          setCountdown(60);
         } else {
           alert(data.message || 'Lỗi khi gửi mã xác nhận.');
         }
@@ -116,7 +116,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
     newOtp[index] = lastDigit;
     setOtp(newOtp);
 
-    // Auto focus next input
+
     if (lastDigit !== '' && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -252,7 +252,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         setSubmitting(false);
         if (data.success) {
           setSuccess(true);
-          // Clear query params
+
           window.history.replaceState({}, document.title, "/");
         } else {
           alert(data.message || 'Đã xảy ra lỗi khi hoàn tất thiết lập tài khoản.');
@@ -352,31 +352,25 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
 
   return (
     <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-2 md:p-4 font-mono">
-      {/* Main Container Card (Retro Brutalist style) */}
       <main className="w-full max-w-4xl mx-auto my-auto z-10 py-2">
         <div className="bg-white border-4 border-slate-900 rounded-none shadow-[8px_8px_0px_0px_#1c1917] grid grid-cols-1 md:grid-cols-12 overflow-hidden">
           
-          {/* Left Column */}
           <div className="md:col-span-5 p-6 md:p-8 flex flex-col justify-between border-b-2 md:border-b-0 md:border-r-2 border-slate-900 bg-[#fefcf8]">
             <div>
-              {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 border-2 border-slate-900 bg-[#ffedd5] text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_#1c1917]">
                 <span className="w-2.5 h-2.5 rounded-none bg-orange-600 border border-slate-900"></span>
                 {inviteInfo?.role === 'MANAGER' ? 'Manager Portal' : 'Staff Portal'}
               </div>
 
-              {/* Title */}
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight mt-6 mb-4 font-serif">
                 Chào mừng<br />thành viên mới!
               </h1>
 
-              {/* Subtitle */}
               <p className="text-slate-650 text-[11px] leading-relaxed max-w-xs mb-6 font-sans font-semibold">
                 Hệ thống LancerPro yêu cầu danh tính số hóa để cấp quyền truy cập. Khởi tạo LancerPro ID của bạn.
               </p>
             </div>
 
-            {/* Lock Footer */}
             <div className="flex items-center gap-4 mt-auto border-t-2 border-dashed border-slate-200 pt-6">
               <div className="w-10 h-10 border-2 border-slate-900 flex items-center justify-center bg-amber-100 shadow-[2px_2px_0px_0px_#1c1917]">
                 <Lock className="w-4 h-4 text-slate-900" />
@@ -384,11 +378,9 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="md:col-span-7 p-6 md:py-5 md:px-8 flex flex-col justify-center bg-white">
             <div onKeyDown={handleKeyDown} className="space-y-3.5">
               
-              {/* Email (Readonly) */}
               <div>
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
                   Địa chỉ Email
@@ -404,7 +396,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* Full Name */}
               <div>
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
                   Họ và Tên
@@ -422,7 +413,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* Display Name */}
               <div>
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
                   Tên hiển thị (@alias)
@@ -439,7 +429,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* Phone Number */}
               <div>
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
                   Số điện thoại
@@ -462,7 +451,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* Citizen ID (CCCD) */}
               <div>
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
                   Số Căn cước công dân (CCCD)
@@ -485,7 +473,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* OTP Code */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
@@ -507,7 +494,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                   </button>
                 </div>
 
-                {/* 6 Digit Input Boxes */}
                 <div className="flex gap-2">
                   {otp.map((digit, index) => (
                     <input
@@ -524,7 +510,6 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="button"
