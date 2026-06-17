@@ -8,6 +8,8 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
   // For Portfolio Tab
   const [portfolios, setPortfolios] = useState([]);
   const [isAddingPortfolio, setIsAddingPortfolio] = useState(false);
+  const [attachmentType, setAttachmentType] = useState('url');
+  const [selectedFile, setSelectedFile] = useState(null);
   
   // For popup coming soon
   const [isShowComingSoon, setIsShowComingSoon] = useState(false);
@@ -113,16 +115,53 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
   };
 
   const handleSavePortfolio = async () => {
-    if (!newPortfolio.title || !newPortfolio.attachmentUrl || !newPortfolio.description) {
+    if (!newPortfolio.title || !newPortfolio.description) {
       showError('Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc (*)');
       return;
     }
 
+    if (attachmentType === 'url' && !newPortfolio.attachmentUrl) {
+      showError('Vui lòng nhập đường dẫn liên kết cho File đính kèm (*)');
+      return;
+    }
+
+    if (attachmentType === 'file' && !selectedFile) {
+      showError('Vui lòng tải lên tệp tin đính kèm (*)');
+      return;
+    }
+
     try {
+      let finalAttachmentUrl = newPortfolio.attachmentUrl;
+
+      if (attachmentType === 'file' && selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await fetch('http://localhost:8080/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!uploadRes.ok) {
+          showError('Tải tệp lên thất bại. Vui lòng thử lại.');
+          return;
+        }
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalAttachmentUrl = uploadData.fileUrl;
+        } else {
+          showError('Tải tệp lên thất bại: ' + uploadData.message);
+          return;
+        }
+      }
+
+      const payload = {
+        ...newPortfolio,
+        attachmentUrl: finalAttachmentUrl
+      };
+
       const res = await fetch(`http://localhost:8080/api/freelancers/${freelancerId}/portfolios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPortfolio)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         showSuccess('Thêm hồ sơ năng lực thành công!');
@@ -131,6 +170,8 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
         setNewPortfolio({
           title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
         });
+        setSelectedFile(null);
+        setAttachmentType('url');
       } else {
         showError('Thêm hồ sơ thất bại! Hãy thử lại.');
       }
@@ -609,25 +650,52 @@ export default function UserProfilePage({ user, onNavigate, initialTab }) {
                           </div>
 
                           <div className="flex flex-col md:flex-row gap-6">
+                            <div className="w-48 font-semibold text-slate-700 pt-2">Hình thức tải lên <span className="text-red-500">*</span></div>
+                            <div className="flex-1">
+                              <select 
+                                value={attachmentType} 
+                                onChange={(e) => setAttachmentType(e.target.value)}
+                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2"
+                              >
+                                <option value="url">Nhập URL</option>
+                                <option value="file">Tải tệp lên</option>
+                              </select>
+                              <p className="text-xs text-slate-400">Chọn phương thức bạn muốn sử dụng để cung cấp file hồ sơ năng lực.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-48 font-semibold text-slate-700 pt-2">File đính kèm <span className="text-red-500">*</span></div>
                             <div className="flex-1">
-                              <input 
-                                type="text" 
-                                placeholder="Nhập URL file đính kèm..."
-                                value={newPortfolio.attachmentUrl}
-                                onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
-                                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
-                              />
-                              <input type="file" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white" />
-                              <div className="text-xs text-slate-400 mt-2 space-y-1">
-                                <p>1. Kích thước không quá 5 MB</p>
-                                <p>2. Định dạng được hỗ trợ</p>
-                                <p>- Về tài liệu: .doc, .docx, .pdf</p>
-                                <p>- Về hình ảnh: .jpg, .jpeg, .png, .gif</p>
-                                <p>3. Nếu là ảnh:</p>
-                                <p>- Kích thước tối thiểu là 380 x 214</p>
-                                <p>- Kích thước tối đa là 1600 x 900</p>
-                              </div>
+                              {attachmentType === 'url' ? (
+                                <>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Nhập URL file đính kèm..."
+                                    value={newPortfolio.attachmentUrl}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
+                                  />
+                                  <p className="text-xs text-slate-400">Vui lòng cung cấp đường dẫn truy cập trực tiếp đến sản phẩm hoặc dự án của bạn (ví dụ: Google Drive, Github, Figma...).</p>
+                                </>
+                              ) : (
+                                <>
+                                  <input 
+                                    type="file" 
+                                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white mb-2" 
+                                  />
+                                  <div className="text-xs text-slate-400 space-y-1">
+                                    <p>1. Kích thước không quá 5 MB</p>
+                                    <p>2. Định dạng được hỗ trợ</p>
+                                    <p className="pl-2">- Tài liệu: .doc, .docx, .pdf</p>
+                                    <p className="pl-2">- Hình ảnh: .jpg, .jpeg, .png, .gif</p>
+                                    <p>3. Nếu là ảnh:</p>
+                                    <p className="pl-2">- Kích thước tối đa: 1920 x 1080 (16:9) hoặc 1080 x 1920 (9:16) (Chuẩn FHD)</p>
+                                    <p className="pl-2">- Kích thước tối thiểu: 380 x 214</p>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
 
