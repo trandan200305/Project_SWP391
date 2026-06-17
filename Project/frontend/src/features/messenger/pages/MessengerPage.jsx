@@ -53,10 +53,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     );
   };
 
-  // 1. KHAI BÁO CÁC STATE & REFS (QUẢN LÝ TRẠNG THÁI)
+  
 
   const [activeTab, setActiveTab] = useState("active");
-  const [activeDirectTab, setActiveDirectTab] = useState("active"); // 'active' | 'blocked' | 'deleted'
+  const [activeDirectTab, setActiveDirectTab] = useState("active"); 
   const [tickets, setTickets] = useState([]);
   const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -89,7 +89,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
-  const [navSection, setNavSection] = useState("chat"); // 'chat' | 'freelancer' | 'employer'
+  const [navSection, setNavSection] = useState("chat"); 
   const [systemUsers, setSystemUsers] = useState([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -97,7 +97,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   const [profileDetails, setProfileDetails] = useState(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
 
-  // --- Resizable Sidebar Logic ---
+  
   const [sidebarWidth, setSidebarWidth] = useState(360);
   const isResizingRef = useRef(false);
   const textOpacity = Math.max(0, Math.min(1, (sidebarWidth - 140) / 120));
@@ -143,7 +143,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     document.body.style.userSelect = "none";
   };
 
-  // 2. KHAI BÁO CÁC EFFECTS (WEBSOCKET, KẾT NỐI, SCROLL)
+  
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -282,7 +282,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           }
         });
 
-        // Subscribe to direct message channel
+        
         client.subscribe(`/topic/user.${user?.id}.direct`, (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log("Received on user direct channel", receivedMessage);
@@ -296,7 +296,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               return [...prev, receivedMessage];
             });
           }
-          fetchDirectChats(); // Always refresh list to update last message/unread count
+          fetchDirectChats(); 
         });
       }
     };
@@ -324,9 +324,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  // ------------------------------------------
-  // 3. CÁC HÀM REST API - HỖ TRỢ KỸ THUẬT (SUPPORT TICKETS)
-  // ------------------------------------------
+  
+  
+  
   const fetchTickets = async () => {
     try {
       const data = await messengerApi.getTickets();
@@ -379,7 +379,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       await fetchMessages(ticketId);
       subscribeToTicket(ticketId);
 
-      // Emit read receipt immediately on load
+      
       if (stompClientRef.current && stompClientRef.current.connected) {
         stompClientRef.current.publish({
           destination: `/app/chat.read`,
@@ -404,9 +404,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 4. LẮNG NGHE REAL-TIME QUA WEBSOCKET (SUPPORT CHAT)
-  // ------------------------------------------
+  
+  
+  
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
     if (ticketSubscriptionRef.current) {
@@ -502,10 +502,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               return prev;
             });
           }
-          return; // Do not add SYSTEM messages to the chat view
+          return; 
         }
 
-        // If active ticket, emit read receipt for new incoming message
+        
         const isMyMessage = isOwnSupportMessage(receivedMessage);
         if (activeTicketIdRef.current === ticketId && !isMyMessage) {
           if (stompClientRef.current && stompClientRef.current.connected) {
@@ -538,7 +538,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     await fetchMessages(ticketId);
     subscribeToTicket(ticketId);
 
-    // Mark as read immediately when opening
+    
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
         destination: `/app/chat.read`,
@@ -552,9 +552,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setIsLoading(false);
   };
 
-  // ------------------------------------------
-  // 5. CÁC HÀM XỬ LÝ CHAT TRỰC TIẾP 1-1 (DIRECT CHAT)
-  // ------------------------------------------
+  
+  
+  
   const fetchDirectMessages = async (chatId) => {
     try {
       const data = await messengerApi.getDirectMessages(chatId);
@@ -587,7 +587,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           return;
         }
 
-        // Emit read receipt if active chat
+        
         const isMyMessage =
           receivedMessage.senderId === user?.id &&
           receivedMessage.senderRole?.toUpperCase() ===
@@ -623,7 +623,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     activeTicketIdRef.current = null;
     await fetchDirectMessages(chat.chatId);
 
-    // Mark as read immediately when opening
+    
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
         destination: `/app/direct.chat.read`,
@@ -635,7 +635,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
 
     subscribeToDirectChat(chat.chatId);
-    // Refresh chats to reset unread count
+    
     fetchDirectChats();
     setIsLoading(false);
   };
@@ -664,7 +664,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       };
 
       await handleSelectDirectChat(chatObj);
-      await fetchDirectChats(); // Refresh list to include new chat
+      await fetchDirectChats(); 
     } catch (err) {
       console.error("Failed to get/create direct chat", err);
       alert("Không thể tạo phiên chat ngay lúc này.");
@@ -673,9 +673,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 6. XỬ LÝ ĐÍNH KÈM FILE & HÌNH ẢNH (FILE ATTACHMENT)
-  // ------------------------------------------
+  
+  
+  
   const handleFileChange = async (e, isImageOnly = false) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -715,9 +715,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setAttachedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // ------------------------------------------
-  // 7. CÁC TÍNH NĂNG ĐIỀU HÀNH (CHẶN, XÓA, KHÔI PHỤC)
-  // ------------------------------------------
+  
+  
+  
   const handleBlockUser = async (days) => {
     if (!activeTicket) return;
 
@@ -885,9 +885,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 8. HÀM GỬI TIN NHẮN (REAL-TIME SEND MESSAGE)
-  // ------------------------------------------
+  
+  
+  
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() && attachedFiles.length === 0) return;
@@ -1083,9 +1083,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setShowConfirmModal(true);
   };
 
-  // ------------------------------------------
-  // 9. TRA CỨU DANH BẠ HỆ THỐNG & XEM TRANG CÁ NHÂN
-  // ------------------------------------------
+  
+  
+  
   const fetchSystemUsers = async () => {
     setIsUsersLoading(true);
     try {
@@ -1128,14 +1128,14 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       let data;
       if (userProfile.role === "EMPLOYER") {
         data = await messengerApi.getEmployerProfile(userProfile.id);
-        setProfileDetails(data.data || data); // handle standard response
+        setProfileDetails(data.data || data); 
       } else if (userProfile.role === "FREELANCER") {
         data = await messengerApi.getFreelancerProfile(userProfile.id);
         setProfileDetails(data.data || data);
       }
     } catch (err) {
       console.error("Failed to fetch profile details", err);
-      // Fallback details if API fails or doesn't exist
+      
       setProfileDetails({
         ...userProfile,
         bio: "Chưa có thông tin giới thiệu.",
@@ -1213,9 +1213,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     );
   });
 
-  // ------------------------------------------
-  // 10. BỘ LỌC TÌM KIẾM & PHÂN LOẠI DANH SÁCH CHAT
-  // ------------------------------------------
+  
+  
+  
   const matchesSearch = (ticket) =>
     (ticket.sender_name || "")
       .toLowerCase()
@@ -1274,7 +1274,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
   return (
     <div className="flex h-screen bg-slate-50/50 text-slate-800 font-sans overflow-hidden">
-      {/* DYNAMIC SIDEBAR CSS */}
+      
       <style>{`
         #messenger-sidebar-container .flex-1.min-w-0,
         #messenger-sidebar-container .flex-1.min-w-0.opacity-80 {
@@ -1296,7 +1296,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
       <div className="w-[260px] border-r border-slate-200 bg-gradient-to-b from-[#253c6e] to-[#162548] text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
-          {/* Logo / Branding */}
+          
           <div
             className="p-6 flex items-center gap-3 cursor-pointer border-b border-white/10"
             onClick={onNavigateHome}
@@ -2430,7 +2430,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
             </div>
           </div>
 
-          {/* RESIZER BAR */}
+          
           <div
             onMouseDown={startResizing}
             className="hidden md:block w-1 hover:w-1.5 active:w-1.5 bg-slate-200 hover:bg-blue-500 active:bg-blue-600 cursor-col-resize transition-all shrink-0 z-20"
@@ -2843,7 +2843,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       const isUnassigned = !activeTicket?.assigned_staff_id;
                       let showBanner = false;
                       let bannerText = "";
-                      let bannerType = ""; // 'claim' | 'view_only' | 'info'
+                      let bannerType = ""; 
                       let lockInput = false;
 
                       if (isAgent) {
@@ -3233,7 +3233,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                 </div>
 
                 <div className="p-6 flex flex-col gap-6">
-                  {/* Status Section */}
+                  
                   <div>
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                       Thông tin tài khoản
@@ -3277,14 +3277,14 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                     </div>
                   </div>
 
-                  {/* Moderation Actions */}
+                  
                   {isAgent && (
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Quản lý phiên bản
                       </h4>
 
-                      {/* Blocking features */}
+                      
                       <div className="flex flex-col gap-2 mb-4">
                         {activeTicket.blocked_until &&
                         new Date(activeTicket.blocked_until) > new Date() ? (
@@ -3296,7 +3296,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                               ).toLocaleString("vi-VN")}
                             </p>
                             <button
-                              onClick={() => handleBlockUser(0)} // Pass 0 days to unblock
+                              onClick={() => handleBlockUser(0)} 
                               className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
                             >
                               Gỡ chặn ngay
@@ -3337,7 +3337,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         )}
                       </div>
 
-                      {/* Delete / Restore features */}
+                      
                       {activeTab === "deleted" ? (
                         <button
                           onClick={handleRestoreTicket}
@@ -3396,7 +3396,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                   </div>
 
                   <div className="p-6 flex flex-col gap-6">
-                    {/* Status Section */}
+                    
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Trạng thái
@@ -3423,13 +3423,13 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Hành động
                       </h4>
                       <div className="flex flex-col gap-3">
-                        {/* Block / Unblock */}
+                        
                         {activeDirectChat.isBlockedByMe ? (
                           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <p className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
@@ -3507,7 +3507,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           </div>
                         )}
 
-                        {/* Delete / Restore */}
+                        
                         {activeDirectChat.isDeleted ? (
                           <button
                             onClick={() =>
@@ -3536,7 +3536,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               )}
           </div>
         </div>
-        {/* CONFIRM MODAL */}
+        
         {showConfirmModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in text-center">
