@@ -1,6 +1,6 @@
 import { api } from '../../../api/apiClient';
 
-// Helper to determine the correct base path based on role
+
 const getRolePath = (role) => {
     switch (role?.toLowerCase()) {
         case 'freelancer': return '/freelancers';
