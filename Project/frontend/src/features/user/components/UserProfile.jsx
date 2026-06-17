@@ -17,7 +17,8 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 
 export default function UserProfile({
   setActiveTab, onNavigate, role, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
-  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness
+  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness,
+  hideEmail, hidePhone, hideLocation
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -82,7 +83,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Vị trí / Địa chỉ</p>
-                <p className="text-[15px] font-bold text-gray-900">{[address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold ${hideLocation ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hideLocation ? 'Đã ẩn bởi người dùng' : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -91,7 +94,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Số điện thoại</p>
-                <p className="text-[15px] font-bold text-gray-900">{phone || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold ${hidePhone ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hidePhone ? 'Đã ẩn bởi người dùng' : (phone || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -100,7 +105,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5 overflow-hidden">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Email</p>
-                <p className="text-[15px] font-bold text-gray-900 truncate">{email || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold truncate ${hideEmail ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hideEmail ? 'Đã ẩn bởi người dùng' : (email || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             {role === 'freelancer' && (

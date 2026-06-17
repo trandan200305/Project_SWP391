@@ -85,6 +85,15 @@ public class Employer {
     private String city;
     private String country;
 
+    @Column(name = "hide_email")
+    private Boolean hideEmail = false;
+
+    @Column(name = "hide_phone")
+    private Boolean hidePhone = false;
+
+    @Column(name = "hide_location")
+    private Boolean hideLocation = false;
+
     @Column(name = "company_size")
     private String companySize;
 
@@ -127,6 +136,15 @@ public class Employer {
 
     @Column(name = "portrait_url", length = 500)
     private String portraitUrl;
+
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+    @Column(name = "business_license_url", length = 500)
+    private String businessLicenseUrl;
+
+    @Column(name = "representative_id_card_url", length = 500)
+    private String representativeIdCardUrl;
 
     @Column(name = "kyc_submitted_at")
     private LocalDateTime kycSubmittedAt;

@@ -181,9 +181,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.inviteStaffOrManager(payload, adminId));
     }
 
-    @GetMapping("/verification-tasks")
-    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
-        return ResponseEntity.ok(adminService.getVerificationTasks());
+    @Autowired
+    private AdminRepository adminRepository;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AdminDto> getById(@PathVariable Integer id) {
+        return adminRepository.findById(id).map(a -> ResponseEntity.ok(mapToDto(a))).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/verification-tasks")
@@ -199,18 +202,54 @@ public class AdminController {
         return ResponseEntity.ok(adminService.submitTaskSignoff(id, payload, verifierEmail));
     }
 
-    @GetMapping("/profile-requests")
-    public ResponseEntity<List<EmployerProfileRequest>> getProfileRequests() {
-        return ResponseEntity.ok(adminService.getPendingProfileRequests());
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<AdminDto> updateProfile(@PathVariable Integer id, @RequestBody AdminDto updated) {
+        return adminRepository.findById(id).map(a -> {
+            if(updated.getDisplayName() != null) a.setDisplayName(updated.getDisplayName());
+            if(updated.getFullName() != null) a.setFullName(updated.getFullName());
+            if(updated.getPhone() != null) a.setPhone(updated.getPhone());
+            if(updated.getAvatarUrl() != null) a.setAvatarUrl(updated.getAvatarUrl());
+            a.setUpdatedAt(java.time.LocalDateTime.now());
+            Admin saved = adminRepository.save(a);
+            return ResponseEntity.ok(mapToDto(saved));
+        }).orElse(ResponseEntity.notFound().build());
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+        Map<String, Object> response = new java.util.HashMap<>();
+        if (confirmationText == null || !confirmationText.equals("DELETE")) {
+            response.put("success", false);
+            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        return adminRepository.findById(id).map(a -> {
+            a.setIsDeleted(true);
+            a.setUpdatedAt(java.time.LocalDateTime.now());
+            adminRepository.save(a);
+            response.put("success", true);
+            response.put("message", "Tài khoản của bạn đã được xóa vĩnh viễn.");
+            return ResponseEntity.ok(response);
+        }).orElseGet(() -> {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tài khoản để xóa.");
+            return ResponseEntity.notFound().build();
+        });
     }
 
-    @PutMapping("/profile-requests/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateProfileRequest(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
+    private AdminDto mapToDto(Admin a) {
+        return AdminDto.builder()
+                .adminId(a.getAdminId())
+                .email(a.getEmail())
+                .displayName(a.getDisplayName())
+                .fullName(a.getFullName())
+                .phone(a.getPhone())
+                .avatarUrl(a.getAvatarUrl())
+                .status(a.getStatus())
+                .emailVerified(a.getEmailVerified())
+                .adminLevel(a.getAdminLevel())
+                .createdAt(a.getCreatedAt() != null ? a.getCreatedAt().toString() : null)
+                .updatedAt(a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : null)
+                .build();
     }
 
     @PutMapping("/kyc-requests/{id}/moderate")
@@ -221,9 +260,5 @@ public class AdminController {
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
     }
+
 }
-
-
-
-
-

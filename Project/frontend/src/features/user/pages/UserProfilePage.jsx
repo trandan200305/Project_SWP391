@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, CheckCircle, Plus } from 'lucide-react';
+import { Camera, CheckCircle, Plus, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
@@ -21,6 +21,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [phone, setPhone] = useState('');
   const [language, setLanguage] = useState('vi');
   const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh');
+  const [hideEmail, setHideEmail] = useState(false);
+  const [hidePhone, setHidePhone] = useState(false);
+  const [hideLocation, setHideLocation] = useState(false);
   
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -28,13 +31,16 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [deleteInput, setDeleteInput] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  // ================= KYC STATE =================
+  // ================= KYC/KYB STATE =================
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
   const [isVerified, setIsVerified] = useState(false);
   const [kycRejectedReason, setKycRejectedReason] = useState('');
   const [idCardFrontUrl, setIdCardFrontUrl] = useState('');
   const [idCardBackUrl, setIdCardBackUrl] = useState('');
   const [portraitUrl, setPortraitUrl] = useState('');
+  const [taxCode, setTaxCode] = useState('');
+  const [businessLicenseUrl, setBusinessLicenseUrl] = useState('');
+  const [representativeIdCardUrl, setRepresentativeIdCardUrl] = useState('');
   const [isUploadingKyc, setIsUploadingKyc] = useState(false);
 
   // Common Read-only Stats
@@ -85,7 +91,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     isAvailable: true,
     availabilityType: 'Bán thời gian (dưới 40h/tuần)'
   });
-  const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(true);
+  const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(false);
 
   // ================= PORTFOLIO STATE =================
   const [portfolios, setPortfolios] = useState([]);
@@ -103,13 +109,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   useEffect(() => {
     fetchCategories();
   }, []);
-
-  // Fetch Portfolios when targetId changes
-  useEffect(() => {
-    if (role === 'freelancer' && targetId) {
-      fetchPortfolios();
-    }
-  }, [role, targetId]);
 
   const fetchCategories = async () => {
     try {
@@ -135,9 +134,25 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     }
   };
 
+  useEffect(() => {
+    if (role === 'freelancer' && targetId) {
+      fetchPortfolios();
+    }
+  }, [role, targetId]);
+
   // Load profile data from server
   useEffect(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : (role === 'employer' ? `http://localhost:8080/api/employers/${targetId}` : `http://localhost:8080/api/admin/${targetId}`);
+    
+    setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
+    setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
+    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
+    setHideEmail(false); setHidePhone(false); setHideLocation(false);
+    setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
+    setTotalSpent(0); setProjectsPosted(0);
+    setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
+    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
+    setTaxCode(''); setBusinessLicenseUrl(''); setRepresentativeIdCardUrl('');
     
     fetch(endpoint)
       .then(res => res.text())
@@ -153,6 +168,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.phone) setPhone(data.phone);
         if (data.language) setLanguage(data.language);
         if (data.timezone) setTimezone(data.timezone);
+        if (data.hideEmail !== undefined) setHideEmail(data.hideEmail);
+        if (data.hidePhone !== undefined) setHidePhone(data.hidePhone);
+        if (data.hideLocation !== undefined) setHideLocation(data.hideLocation);
         if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
         if (data.status) setStatus(data.status);
         if (data.emailVerified) setEmailVerified(data.emailVerified);
@@ -164,6 +182,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.idCardFrontUrl) setIdCardFrontUrl(data.idCardFrontUrl);
         if (data.idCardBackUrl) setIdCardBackUrl(data.idCardBackUrl);
         if (data.portraitUrl) setPortraitUrl(data.portraitUrl);
+        if (data.taxCode) setTaxCode(data.taxCode);
+        if (data.businessLicenseUrl) setBusinessLicenseUrl(data.businessLicenseUrl);
+        if (data.representativeIdCardUrl) setRepresentativeIdCardUrl(data.representativeIdCardUrl);
         
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
@@ -172,6 +193,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.hourlyRate) setHourlyRate(data.hourlyRate);
           if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
+          else if (data.country === 'Việt Nam') setCity('Hà Nội');
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
           if (data.totalEarnings) setTotalEarnings(data.totalEarnings);
@@ -198,6 +220,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.industry) setIndustry(data.industry);
           if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
+          else if (data.country === 'Việt Nam') setCity('Hà Nội');
           if (data.country) setCountry(data.country);
           if (data.profileCompleteness) setProfileCompleteness(data.profileCompleteness);
           if (data.totalSpent) setTotalSpent(data.totalSpent);
@@ -225,9 +248,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'admin') {
        payload = { displayName, fullName, phone, language, timezone, avatarUrl };
     }
@@ -372,9 +395,15 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   };
 
   const formatDate = (dateString) => {
-    if(!dateString) return 'N/A';
+    if(!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
-    return d.toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
+    return new Intl.DateTimeFormat('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
+  };
+
+  const formatDateTime = (dateString) => {
+    if(!dateString) return 'Chưa cập nhật';
+    const d = new Date(dateString);
+    return new Intl.DateTimeFormat('vi-VN', {hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
   };
 
   const formatCurrency = (amount) => {
@@ -394,20 +423,22 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   };
 
   const allProps = {
+    user, onLogout,
     role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage, timezone, setTimezone,
     currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, deleteInput, setDeleteInput, isUploadingAvatar, setIsUploadingAvatar,
+    hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+    taxCode, setTaxCode, businessLicenseUrl, setBusinessLicenseUrl, representativeIdCardUrl, setRepresentativeIdCardUrl,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
-    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatCurrency, formatCompactCurrency
+    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency
   };
 
-  // Define tab navigation elements
   const tabs = role === 'freelancer' 
     ? [
         { id: 'profile', label: 'Hồ sơ cá nhân' },
@@ -416,8 +447,13 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         { id: 'portfolio', label: 'Hồ sơ năng lực' },
         { id: 'preferences', label: 'Cài đặt chung' }
       ]
-    : [
+    : role === 'employer'
+    ? [
         { id: 'profile', label: 'Thông tin chung' },
+        { id: 'edit_profile', label: 'Sửa hồ sơ' },
+        { id: 'preferences', label: 'Cài đặt chung' }
+      ]
+    : [
         { id: 'edit_profile', label: 'Sửa hồ sơ' },
         { id: 'preferences', label: 'Cài đặt chung' }
       ];
@@ -428,6 +464,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 pt-24 pb-12">
         <main className="flex-1 px-4 sm:px-8">
+          
           <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             
             {/* Cover Banner */}
@@ -494,12 +531,47 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
                        {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (role === 'employer' ? (displayName || companyName || 'Unnamed Company') : (displayName || fullName || 'Administrator'))}
-                       {isVerified && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
+                       {(isVerified || kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                       <span>{role === 'freelancer' ? professionalTitle || 'Professional Title' : (role === 'employer' ? industry || 'Industry' : 'System Administrator')}</span>
-                       <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                       <span className="text-gray-900 font-semibold">{email || 'email@example.com'}</span>
+                       {role !== 'admin' && (
+                         <>
+                           <span className="flex items-center gap-1">
+                             <MapPin className="w-3.5 h-3.5" />
+                             {hideLocation ? <span className="italic">Đã ẩn vị trí</span> : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật')}
+                           </span>
+                           <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                         </>
+                       )}
+                       <span className="text-gray-900 font-semibold">
+                         {role !== 'admin' && hideEmail ? <span className="italic font-normal">Đã ẩn email</span> : (email || 'email@example.com')}
+                       </span>
+                       {role !== 'admin' && (
+                         <>
+                           <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                           <div className="flex items-center gap-0.5" title="Đánh giá trung bình">
+                             {[1, 2, 3, 4, 5].map(star => {
+                               const val = averageRating || 0;
+                               if (val >= star) {
+                                 return <Star key={star} className="w-4 h-4 fill-yellow-500 text-yellow-500" />;
+                               } else if (val > star - 1) {
+                                 const fillPercent = (val - (star - 1)) * 100;
+                                 return (
+                                   <div key={star} className="relative w-4 h-4">
+                                     <Star className="w-4 h-4 fill-gray-200 text-gray-200 absolute inset-0" />
+                                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
+                                       <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                                     </div>
+                                   </div>
+                                 );
+                               } else {
+                                 return <Star key={star} className="w-4 h-4 fill-gray-200 text-gray-200" />;
+                               }
+                             })}
+                             <span className="font-bold text-gray-900 ml-1.5 text-sm">{averageRating || '0.0'}</span>
+                           </div>
+                         </>
+                       )}
                     </div>
                   </div>
                </div>

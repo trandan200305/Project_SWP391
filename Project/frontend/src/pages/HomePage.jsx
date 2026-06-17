@@ -9,7 +9,7 @@ import CTA from '../components/CTA.jsx';
 export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
   return (
     <>
-      <Hero onSearch={onSearch} onNavigate={onNavigate} user={user} />
+      <Hero onSearch={onSearch} />
       <Stats />
       <HowItWorks />
       <FeaturedJobs searchQuery={searchQuery} />
