@@ -112,7 +112,10 @@ export default function EditProfileForm({
                          {role === 'employer' ? (
                            <InputRow label="Tên công ty" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Công ty ABC..." />
                          ) : (
-                           <InputRow label="Họ và Tên thật" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Tên đầy đủ..." />
+                           <>
+                             <InputRow label="Họ và Tên thật" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Tên đầy đủ..." />
+                             <InputRow label="Chức danh" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
+                           </>
                          )}
                          <InputRow label="Số điện thoại" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+84..." />
                          <InputRow label="Email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email..." />

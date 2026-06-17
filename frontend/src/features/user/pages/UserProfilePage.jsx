@@ -304,13 +304,18 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                        {(isVerified || kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {hideLocation ? <span className="italic">Đã ẩn vị trí</span> : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chờ cập nhật')}
-                        </span>
-                       <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                       <span className="text-gray-900 font-semibold">{hideEmail ? <span className="italic font-normal">Đã ẩn email</span> : (email || 'email@example.com')}</span>
-                       <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                        {role === 'freelancer' && professionalTitle && (
+                          <span className="flex items-center gap-1">
+                            {professionalTitle}
+                          </span>
+                        )}
+                        {role === 'freelancer' && professionalTitle && <span className="w-1 h-1 bg-gray-400 rounded-full"></span>}
+                        {role === 'employer' && (
+                          <span className="flex items-center gap-1 text-indigo-600 font-bold">
+                            Doanh nghiệp
+                          </span>
+                        )}
+                        {role === 'employer' && <span className="w-1 h-1 bg-gray-400 rounded-full"></span>}
                        <div className="flex items-center gap-0.5" title="Đánh giá trung bình">
                          {[1, 2, 3, 4, 5].map(star => {
                            const val = averageRating || 0;
