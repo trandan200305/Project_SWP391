@@ -30,7 +30,7 @@ public class DirectMessage {
     private Integer senderId;
 
     @Column(name = "sender_role", nullable = false, length = 20)
-    private String senderRole; // FREELANCER or EMPLOYER
+    private String senderRole; 
 
     @Column(name = "message_text", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String messageText;
