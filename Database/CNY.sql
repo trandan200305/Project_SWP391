@@ -1141,3 +1141,28 @@ BEGIN
 END
 GO
 
+---------------------------------------
+CREATE TABLE vnpay_configs (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tmn_code VARCHAR(255) NOT NULL,
+    hash_secret VARCHAR(255) NOT NULL,
+    vnp_url VARCHAR(255) NOT NULL,
+    return_url VARCHAR(255) NOT NULL,
+    bank_name VARCHAR(255) NULL,
+    bank_account_no VARCHAR(255) NULL,
+    bank_account_name VARCHAR(255) NULL,
+    is_active BIT NOT NULL DEFAULT 1,
+    updated_at DATETIME2 NULL
+);
+----------------
+CREATE TABLE payment_transactions (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    txn_ref VARCHAR(100) NOT NULL UNIQUE,
+    employer_id INT NOT NULL,
+    project_id INT NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    status VARCHAR(30) NOT NULL, -- PENDING, SUCCESS, FAILED
+    vnp_transaction_no VARCHAR(100) NULL,
+    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME2 NULL
+);

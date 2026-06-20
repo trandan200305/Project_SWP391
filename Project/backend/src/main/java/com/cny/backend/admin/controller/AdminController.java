@@ -189,6 +189,25 @@ public class AdminController {
         return adminRepository.findById(id).map(a -> ResponseEntity.ok(mapToDto(a))).orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/users/{role}/{id}/credentials")
+    public ResponseEntity<Map<String, Object>> getUserCredentials(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id) {
+        return ResponseEntity.ok(adminService.getUserCredentials(role, id));
+    }
+
+    @PostMapping("/users/{role}/{id}/regenerate-password")
+    public ResponseEntity<Map<String, Object>> regenerateUserPassword(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id) {
+        return ResponseEntity.ok(adminService.regenerateUserPassword(role, id));
+    }
+
+    @GetMapping("/verification-tasks")
+    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
+        return ResponseEntity.ok(adminService.getVerificationTasks());
+    }
+
     @PostMapping("/verification-tasks")
     public ResponseEntity<Map<String, Object>> createVerificationTask(@RequestBody Map<String, Object> payload) {
         return ResponseEntity.ok(adminService.createVerificationTask(payload));
@@ -262,4 +281,27 @@ public class AdminController {
         return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
     }
 
+    @GetMapping("/vnpay-config")
+    public ResponseEntity<VnpayConfig> getVnpayConfig() {
+        return ResponseEntity.ok(adminService.getVnpayConfig());
+    }
+
+    @PostMapping("/vnpay-config")
+    public ResponseEntity<VnpayConfig> saveVnpayConfig(
+            @RequestBody VnpayConfig config,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.saveVnpayConfig(config, adminId));
+    }
+
+    @GetMapping("/vnpay-transactions")
+    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions() {
+        return ResponseEntity.ok(adminService.getVnpayTransactions());
+    }
+
+    @PostMapping("/vnpay-transactions/{id}/reconcile")
+    public ResponseEntity<Map<String, Object>> reconcileVnpayTransaction(
+            @PathVariable("id") int id,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
+    }
 }

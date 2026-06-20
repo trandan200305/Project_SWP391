@@ -28,7 +28,7 @@ public class DepartmentTaskSignoff {
     private String verifierEmail;
 
     @Column(nullable = false)
-    private String status; // APPROVED, REJECTED
+    private String status; 
 
     private String note;
 

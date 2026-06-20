@@ -277,16 +277,16 @@ public class SupportChatService {
     @Transactional
     public void blockUser(Integer ticketId, Integer days) {
         if (days == -1) {
-            // Permanent block: year 9999
+            
             jdbcTemplate.update("UPDATE support_tickets SET blocked_until = '9999-12-31 23:59:59' WHERE ticket_id = ?", ticketId);
         } else if (days == 0) {
-            // Unblock
+            
             jdbcTemplate.update("UPDATE support_tickets SET blocked_until = NULL WHERE ticket_id = ?", ticketId);
         } else {
             jdbcTemplate.update("UPDATE support_tickets SET blocked_until = DATEADD(day, ?, GETDATE()) WHERE ticket_id = ?", days, ticketId);
         }
         
-        // Broadcast block update to the ticket topic
+        
         ChatMessageDto sysMsg = new ChatMessageDto();
         sysMsg.setTicketId(ticketId);
         sysMsg.setSenderRole("SYSTEM");
@@ -453,7 +453,7 @@ public class SupportChatService {
     public void claimTicket(Integer ticketId, Integer staffId) {
         jdbcTemplate.update("UPDATE support_tickets SET assigned_staff_id = ? WHERE ticket_id = ?", staffId, ticketId);
         
-        // Broadcast claim update to support agents and user
+        
         ChatMessageDto sysMsg = new ChatMessageDto();
         sysMsg.setTicketId(ticketId);
         sysMsg.setSenderRole("SYSTEM");

@@ -31,7 +31,7 @@ export default function UserProfile({
           </button>
         </div>
 
-        {/* Bio */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
@@ -57,7 +57,7 @@ export default function UserProfile({
           </div>
         )}
 
-        {/* Work History Placeholder */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
             <h3 className="font-extrabold text-gray-900 text-xl mb-6">Lịch sử làm việc</h3>
@@ -69,9 +69,9 @@ export default function UserProfile({
         )}
       </div>
 
-      {/* Right Column for Profile */}
+      
       <div className="flex flex-col gap-6">
-        {/* Contact & Basic Info */}
+        
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="font-extrabold text-gray-900 text-lg mb-6 flex items-center gap-2">
             Thông tin cơ bản
@@ -135,7 +135,7 @@ export default function UserProfile({
           </div>
         </div>
 
-        {/* Stats Blocks (2x2 Grid) */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">

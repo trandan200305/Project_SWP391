@@ -13,7 +13,7 @@ export function useSavedJobs(user) {
           if (res.ok) {
             const data = await res.json();
             setSavedJobs(data);
-            // Also sync local storage
+            
             localStorage.setItem('saved_jobs', JSON.stringify(data));
             return;
           }

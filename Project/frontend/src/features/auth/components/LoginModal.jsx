@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from "../api/authApi.js";
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  // State for regular login
+  
   const [role, setRole] = useState("freelancer");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -15,7 +15,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [accountLocked, setAccountLocked] = useState(null);
 
-  // State for forgot password and OTP handling
+  
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -26,14 +26,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Countdown timer for resending OTP code
+  
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer((t) => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Process backend login API call
+  
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg("");
@@ -64,7 +64,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Log in using Email and Password
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -77,7 +77,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Log in using Google account
+  
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -89,7 +89,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Send verification OTP code to email
+  
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -113,7 +113,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Verify OTP code
+  
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join("");
@@ -140,7 +140,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Reset with new password
+  
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -189,7 +189,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        {/* Floating Close Button */}
+        
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -198,7 +198,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL: Branding & Testimonials */}
+        
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -683,7 +683,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             )}
           </div>
 
-          {/* Footer Copy & policy links */}
+          
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

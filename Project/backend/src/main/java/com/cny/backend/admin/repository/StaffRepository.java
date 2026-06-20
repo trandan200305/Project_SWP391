@@ -29,4 +29,10 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
     long countByPhone(String phone);
     long countByDisplayName(String displayName);
     List<Staff> findByManager_ManagerId(Integer managerId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(s) > 0 FROM Staff s WHERE s.phone = :phone AND (s.isDeleted IS NULL OR s.isDeleted = false) AND s.email <> :email")
+    boolean existsByPhoneActiveAndEmailNot(@org.springframework.data.repository.query.Param("phone") String phone, @org.springframework.data.repository.query.Param("email") String email);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(s) > 0 FROM Staff s WHERE s.citizenId = :citizenId AND (s.isDeleted IS NULL OR s.isDeleted = false) AND s.email <> :email")
+    boolean existsByCitizenIdActiveAndEmailNot(@org.springframework.data.repository.query.Param("citizenId") String citizenId, @org.springframework.data.repository.query.Param("email") String email);
 }
