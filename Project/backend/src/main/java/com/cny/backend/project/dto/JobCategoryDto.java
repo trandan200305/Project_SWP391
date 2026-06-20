@@ -33,7 +33,7 @@ public class JobCategoryDto {
     private Boolean isActive;
     private Integer count;
     
-    // Compatibility fields for frontend
+    
     private Integer categoryId;
     private String categoryName;
     private String iconUrl;

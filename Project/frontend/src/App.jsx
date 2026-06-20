@@ -7,7 +7,7 @@ import AppRoutes from './routes/AppRoutes.jsx';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-// ─── Suspended Overlay ───────────────────────────────────────────────────────
+
 function SuspendedOverlay({ reason, onGoHome }) {
   return (
     <div
@@ -31,7 +31,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
         border: '1px solid #fee2e2',
         animation: 'suspendFadeIn 0.3s ease',
       }}>
-        {/* Icon */}
+        
         <div style={{
           width: '72px', height: '72px',
           background: '#fef2f2',
@@ -46,7 +46,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
           </svg>
         </div>
 
-        {/* Title */}
+        
         <h2 style={{
           fontSize: '1.375rem', fontWeight: 800,
           color: '#0f172a', marginBottom: '0.5rem',
@@ -54,7 +54,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
           Tài khoản bị tạm ngưng
         </h2>
 
-        {/* Subtitle */}
+        
         <p style={{
           fontSize: '0.875rem', color: '#64748b',
           lineHeight: 1.7, marginBottom: '0.75rem',
@@ -62,7 +62,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
           Phiên đăng nhập của bạn đã bị dừng bởi Quản trị viên hệ thống.
         </p>
 
-        {/* Reason box */}
+        
         {reason && (
           <div style={{
             background: '#fef2f2',
@@ -78,7 +78,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
           </div>
         )}
 
-        {/* Go home button */}
+        
         <button
           onClick={onGoHome}
           style={{
@@ -105,7 +105,7 @@ function SuspendedOverlay({ reason, onGoHome }) {
         </p>
       </div>
 
-      {/* Keyframes */}
+      
       <style>{`
         @keyframes suspendFadeIn {
           from { opacity: 0; transform: scale(0.92); }
@@ -116,14 +116,14 @@ function SuspendedOverlay({ reason, onGoHome }) {
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [pageParams, setPageParams] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [user, setUser] = useState(null);
-  const [suspended, setSuspended] = useState(null); // { reason }
+  const [suspended, setSuspended] = useState(null); 
   const stompClientRef = useRef(null);
 
   React.useEffect(() => {
@@ -131,12 +131,18 @@ export default function App() {
     const token = params.get('token');
     if (token) {
       setCurrentPage('onboard');
+    } else if (window.location.pathname === '/payment-result') {
+      const status = params.get('status') || 'failed';
+      const projectId = params.get('projectId');
+      setCurrentPage('payment_result');
+      setPageParams({ status, projectId });
     }
   }, []);
 
-  // ── STOMP WebSocket: subscribe when user is MANAGER or STAFF ──────────────
+
+  
   useEffect(() => {
-    // Disconnect any previous client
+    
     if (stompClientRef.current) {
       try { stompClientRef.current.deactivate(); } catch (_) {}
       stompClientRef.current = null;
@@ -188,7 +194,7 @@ export default function App() {
   };
 
   const handleNavigate = (page, params = null) => {
-    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile'];
+    const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile', 'checkout'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');
       return;
@@ -228,7 +234,7 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  // When suspended overlay "Go home" is clicked
+  
   const handleSuspendedGoHome = () => {
     setSuspended(null);
     setUser(null);
@@ -272,7 +278,7 @@ export default function App() {
         routesContent
       )}
 
-      {/* Global blocking suspension overlay — cannot be dismissed */}
+      
       {suspended && (
         <SuspendedOverlay
           reason={suspended.reason}

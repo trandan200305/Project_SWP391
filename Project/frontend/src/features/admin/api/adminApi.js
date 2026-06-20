@@ -13,6 +13,8 @@ export const adminApi = {
   getDepartmentTransfers: (deptId) => api.get(`/admin/departments/${deptId}/transfers`),
   getDepartmentMemberCounts: (deptId) => api.get(`/admin/departments/${deptId}/member-counts`),
   getUsers: () => api.get('/admin/users'),
+  getUserCredentials: (role, userId) => api.get(`/admin/users/${role}/${userId}/credentials`),
+  regenerateUserPassword: (role, userId) => api.post(`/admin/users/${role}/${userId}/regenerate-password`),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
   getManagers: () => api.get('/admin/managers'),
@@ -74,6 +76,10 @@ export const adminApi = {
     }).then(res => res.json());
   },
   moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
-  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload)
+  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
+  getVnpayConfig: () => api.get('/admin/vnpay-config'),
+  saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
+  getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
+  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`)
 };
 

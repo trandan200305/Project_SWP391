@@ -56,7 +56,7 @@ public class EmployerDto {
     private String updatedAt;
     private String lastLoginAt;
 
-    // --- KYC FIELDS ---
+    
     private String kycStatus;
     private String idCardFrontUrl;
     private String idCardBackUrl;

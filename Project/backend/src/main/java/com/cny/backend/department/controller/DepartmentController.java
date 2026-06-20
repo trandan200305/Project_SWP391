@@ -20,39 +20,39 @@ public class DepartmentController {
     @Autowired
     private DepartmentService departmentService;
 
-    // GET all departments (fixed, read-only)
+    
     @GetMapping
     public ResponseEntity<List<Department>> getAllDepartments() {
         return ResponseEntity.ok(departmentService.getAllDepartments());
     }
 
-    // NOTE: POST create department is REMOVED — departments are fixed in the system
+    
 
-    // GET member counts for a department
+    
     @GetMapping("/{id}/member-counts")
     public ResponseEntity<Map<String, Object>> getMemberCounts(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(departmentService.getDepartmentMemberCounts(id));
     }
 
-    // GET sessions for a department
+    
     @GetMapping("/{id}/sessions")
     public ResponseEntity<List<DepartmentSession>> getSessions(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(departmentService.getSessionsByDepartment(id));
     }
 
-    // GET activity logs for a department
+    
     @GetMapping("/{id}/logs")
     public ResponseEntity<List<DepartmentActivityLog>> getLogs(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(departmentService.getLogsByDepartment(id));
     }
 
-    // GET transfer history for a department
+    
     @GetMapping("/{id}/transfers")
     public ResponseEntity<List<DepartmentTransferHistory>> getTransfers(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(departmentService.getTransfersByDepartment(id));
     }
 
-    // POST transfer a manager or staff to another department
+    
     @PostMapping("/transfer")
     public ResponseEntity<?> transferUser(@RequestBody Map<String, Object> body) {
         try {

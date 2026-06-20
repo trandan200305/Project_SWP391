@@ -27,4 +27,7 @@ public interface EmployerRepository extends JpaRepository<Employer, Integer> {
     int countByEmail(String email);
     int countByPhone(String phone);
     int countByDisplayName(String displayName);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) > 0 FROM Employer e WHERE e.phone = :phone AND (e.isDeleted IS NULL OR e.isDeleted = false) AND e.email <> :email")
+    boolean existsByPhoneActiveAndEmailNot(@org.springframework.data.repository.query.Param("phone") String phone, @org.springframework.data.repository.query.Param("email") String email);
 }

@@ -1,37 +1,57 @@
 package com.cny.backend.admin.service;
 
-import com.cny.backend.auth.entity.*;
-import com.cny.backend.admin.entity.*;
-import com.cny.backend.project.entity.*;
-import com.cny.backend.user.entity.*;
-import com.cny.backend.auth.repository.*;
-import com.cny.backend.admin.repository.*;
-import com.cny.backend.project.repository.*;
-import com.cny.backend.user.repository.*;
-import com.cny.backend.admin.dto.*;
-import com.cny.backend.chat.dto.*;
-import com.cny.backend.project.dto.*;
-import com.cny.backend.user.dto.*;
-import com.cny.backend.auth.service.*;
-import com.cny.backend.admin.service.*;
-import com.cny.backend.chat.service.*;
-import com.cny.backend.department.entity.*;
-import com.cny.backend.department.repository.*;
-
-
-import com.cny.backend.email.service.EmailService;
-
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.cny.backend.admin.dto.AdminAuditLogDto;
+import com.cny.backend.admin.dto.AdminStatsDto;
+import com.cny.backend.admin.dto.AdminUserDto;
+import com.cny.backend.admin.dto.DisputeDto;
+import com.cny.backend.admin.dto.KycRequestDto;
+import com.cny.backend.admin.dto.ManagerCreateDto;
+import com.cny.backend.admin.dto.ManagerDto;
+import com.cny.backend.admin.dto.PendingProjectDto;
+import com.cny.backend.admin.dto.PlatformFeeDto;
+import com.cny.backend.admin.dto.ReportDto;
+import com.cny.backend.admin.dto.RevenueTrendDto;
+import com.cny.backend.admin.dto.SeoConfigDto;
+import com.cny.backend.admin.dto.StaffCreateDto;
+import com.cny.backend.admin.dto.StaffDto;
+import com.cny.backend.admin.dto.SupportTicketDto;
+import com.cny.backend.admin.dto.UserGrowthTrendDto;
+import com.cny.backend.admin.dto.WarningTemplateDto;
+import com.cny.backend.admin.dto.WithdrawalDto;
+import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.VnpayConfig;
+import com.cny.backend.admin.entity.PaymentTransaction;
+import com.cny.backend.admin.repository.DashboardRepository;
+import com.cny.backend.admin.repository.StaffInvitationRepository;
+import com.cny.backend.department.entity.DepartmentTaskSignoff;
+import com.cny.backend.department.entity.DepartmentVerificationTask;
+import com.cny.backend.email.service.EmailService;
+import com.cny.backend.project.dto.ArticleDto;
+import com.cny.backend.project.dto.JobCategoryDto;
+import com.cny.backend.project.repository.JobCategoryRepository;
+import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.EmployerProfileRequest;
+import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.user.repository.EmployerProfileRequestRepository;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 
 @Service
 public class AdminService {
@@ -98,6 +118,15 @@ public class AdminService {
 
     @Autowired
     private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
+
+    @Autowired
+    private com.cny.backend.project.service.ProjectService projectService;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
@@ -270,11 +299,28 @@ public class AdminService {
         for (com.cny.backend.admin.entity.Manager m : managers) {
             if (m.getIsDeleted() != null && m.getIsDeleted()) continue;
             
+            String userStatus = m.getStatus();
+            Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(m.getEmail());
+            if (invOpt.isPresent()) {
+                com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+                if ("PENDING".equalsIgnoreCase(inv.getStatus())) {
+                    if (inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+                        inv.setStatus("EXPIRED");
+                        staffInvitationRepository.save(inv);
+                        userStatus = "EXPIRED";
+                    } else {
+                        userStatus = "PENDING";
+                    }
+                } else if ("EXPIRED".equalsIgnoreCase(inv.getStatus())) {
+                    userStatus = "EXPIRED";
+                }
+            }
+
             users.add(AdminUserDto.builder()
                     .id(m.getManagerId())
                     .name(m.getDisplayName())
                     .email(m.getEmail())
-                    .status(m.getStatus())
+                    .status(userStatus)
                     .role("MANAGER")
                     .joined(m.getCreatedAt() != null ? m.getCreatedAt().toString().substring(0, 10) : "")
                     .lastLogin(m.getLastLoginAt() != null ? m.getLastLoginAt().toString() : null)
@@ -288,11 +334,28 @@ public class AdminService {
         for (com.cny.backend.admin.entity.Staff s : staff) {
             if (s.getIsDeleted() != null && s.getIsDeleted()) continue;
             
+            String userStatus = s.getStatus();
+            Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(s.getEmail());
+            if (invOpt.isPresent()) {
+                com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+                if ("PENDING".equalsIgnoreCase(inv.getStatus())) {
+                    if (inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+                        inv.setStatus("EXPIRED");
+                        staffInvitationRepository.save(inv);
+                        userStatus = "EXPIRED";
+                    } else {
+                        userStatus = "PENDING";
+                    }
+                } else if ("EXPIRED".equalsIgnoreCase(inv.getStatus())) {
+                    userStatus = "EXPIRED";
+                }
+            }
+
             users.add(AdminUserDto.builder()
                     .id(s.getStaffId())
                     .name(s.getDisplayName())
                     .email(s.getEmail())
-                    .status(s.getStatus())
+                    .status(userStatus)
                     .role("STAFF")
                     .joined(s.getCreatedAt() != null ? s.getCreatedAt().toString().substring(0, 10) : "")
                     .lastLogin(s.getLastLoginAt() != null ? s.getLastLoginAt().toString() : null)
@@ -506,7 +569,7 @@ public class AdminService {
         if (!allAdmins.isEmpty()) {
             return allAdmins.get(0).getAdminId();
         }
-        return 1; // Fallback to 1 if no admins in DB
+        return 1;
     }
 
     private void writeAuditLog(int adminId, String action, String module, String description) {
@@ -1032,6 +1095,275 @@ public class AdminService {
     }
 
     @Transactional
+    public Map<String, Object> getUserCredentials(String role, int id) {
+        Map<String, Object> response = new HashMap<>();
+        String email = null;
+        String deptName = "General";
+
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                email = mgr.getEmail();
+                deptName = mgr.getDepartment();
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                email = stf.getEmail();
+                if (stf.getDepartmentEntity() != null) {
+                    deptName = stf.getDepartmentEntity().getName();
+                }
+            }
+        }
+
+        if (email == null) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng!");
+            return response;
+        }
+
+        Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
+        String token = "";
+        String tempPassword = "";
+        String status = "ACTIVE";
+
+        if (invOpt.isPresent()) {
+            com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+            token = inv.getToken();
+            tempPassword = inv.getTempPassword();
+            status = inv.getStatus();
+            if ("PENDING".equalsIgnoreCase(status) && inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+                inv.setStatus("EXPIRED");
+                staffInvitationRepository.save(inv);
+                status = "EXPIRED";
+            }
+        }
+
+        if (tempPassword == null || tempPassword.trim().isEmpty()) {
+            tempPassword = generateRandomPassword(10);
+            String hashedPassword = passwordEncoder.encode(tempPassword);
+
+            if ("MANAGER".equalsIgnoreCase(role)) {
+                Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+                if (mgrOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                    mgr.setPasswordHash(hashedPassword);
+                    managerRepository.save(mgr);
+                }
+            } else if ("STAFF".equalsIgnoreCase(role)) {
+                Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+                if (stfOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                    stf.setPasswordHash(hashedPassword);
+                    staffRepository.save(stf);
+                }
+            }
+
+            if (invOpt.isPresent()) {
+                com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+                inv.setTempPassword(tempPassword);
+                staffInvitationRepository.save(inv);
+            } else {
+                token = java.util.UUID.randomUUID().toString();
+                com.cny.backend.admin.entity.StaffInvitation inv = com.cny.backend.admin.entity.StaffInvitation.builder()
+                        .email(email)
+                        .role(role.toUpperCase())
+                        .token(token)
+                        .expiresAt(LocalDateTime.now().plusHours(24))
+                        .status("PENDING")
+                        .tempPassword(tempPassword)
+                        .build();
+                staffInvitationRepository.save(inv);
+                status = "PENDING";
+            }
+        }
+
+        String setupLink = "http://localhost:3000/?token=" + token;
+
+        response.put("success", true);
+        response.put("email", email);
+        response.put("role", role.toUpperCase());
+        response.put("department", deptName);
+        response.put("password", tempPassword);
+        response.put("status", status);
+        response.put("setupLink", setupLink);
+
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> regenerateUserPassword(String role, int id) {
+        Map<String, Object> response = new HashMap<>();
+        String email = null;
+        String deptName = "General";
+
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                email = mgr.getEmail();
+                deptName = mgr.getDepartment();
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                email = stf.getEmail();
+                if (stf.getDepartmentEntity() != null) {
+                    deptName = stf.getDepartmentEntity().getName();
+                }
+            }
+        }
+
+        if (email == null) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng!");
+            return response;
+        }
+
+        Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
+        if (invOpt.isPresent()) {
+            com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+
+            if ("PENDING".equalsIgnoreCase(inv.getStatus()) && inv.getExpiresAt().isAfter(LocalDateTime.now())) {
+                response.put("success", false);
+                response.put("message", "Liên kết mời hiện tại vẫn còn hiệu lực (chưa hết 24 giờ). Không được phép cấp lại liên kết mới.");
+                return response;
+            }
+        }
+
+        String tempPassword = generateRandomPassword(10);
+        String hashedPassword = passwordEncoder.encode(tempPassword);
+
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                mgr.setPasswordHash(hashedPassword);
+                managerRepository.save(mgr);
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                stf.setPasswordHash(hashedPassword);
+                staffRepository.save(stf);
+            }
+        }
+
+        String token = "";
+        String status = "ACTIVE";
+        if (invOpt.isPresent()) {
+            com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
+            inv.setTempPassword(tempPassword);
+            if ("PENDING".equalsIgnoreCase(inv.getStatus()) || "EXPIRED".equalsIgnoreCase(inv.getStatus()) || inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+
+                token = java.util.UUID.randomUUID().toString();
+                inv.setToken(token);
+                inv.setStatus("PENDING");
+                inv.setExpiresAt(LocalDateTime.now().plusHours(24));
+            } else {
+                token = inv.getToken();
+            }
+            staffInvitationRepository.save(inv);
+            status = inv.getStatus();
+        } else {
+            token = java.util.UUID.randomUUID().toString();
+            com.cny.backend.admin.entity.StaffInvitation inv = com.cny.backend.admin.entity.StaffInvitation.builder()
+                    .email(email)
+                    .role(role.toUpperCase())
+                    .token(token)
+                    .expiresAt(LocalDateTime.now().plusHours(24))
+                    .status("PENDING")
+                    .tempPassword(tempPassword)
+                    .build();
+            staffInvitationRepository.save(inv);
+            status = "PENDING";
+        }
+
+        String setupLink = "http://localhost:3000/?token=" + token;
+
+
+        if ("PENDING".equalsIgnoreCase(status)) {
+            String roleLabel = "MANAGER".equalsIgnoreCase(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            String currentDateTimeStr = java.time.LocalDateTime.now().format(dtf);
+
+            String emailHtml = "<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); color: #333333;\">"
+                    + "  <div style=\"background-color: #0f172a; padding: 24px; text-align: center; border-bottom: 3px solid #ef4444;\">"
+                    + "    <h2 style=\"margin: 0; color: #ffffff; font-size: 20px; letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase;\">LANCERPRO FREELANCE MARKETPLACE</h2>"
+                    + "  </div>"
+                    + "  <div style=\"padding: 30px; background-color: #ffffff;\">"
+                    + "    <h3 style=\"color: #1e3a8a; text-align: center; margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #eaeaea; padding-bottom: 10px; text-transform: uppercase;\">CẤP LẠI LIÊN KẾT KÍCH HOẠT TÀI KHOẢN</h3>"
+                    + "    <div style=\"text-align: right; font-size: 13px; color: #666666; margin-bottom: 20px; font-style: italic;\">"
+                    + "      Hà Nội, ngày " + currentDateTimeStr + ""
+                    + "    </div>"
+                    + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 20px;\">"
+                    + "      Kính gửi <strong>Anh/Chị</strong>,"
+                    + "    </p>"
+                    + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
+                    + "      Yêu cầu cấp lại thông tin kích hoạt tài khoản của Anh/Chị đã được xử lý thành công. Dưới đây là thông tin đăng ký nhân sự của Anh/Chị:"
+                    + "    </p>"
+                    + "    <div style=\"background-color: #f8fafc; border-left: 4px solid #ef4444; padding: 15px 20px; margin-bottom: 25px; border-radius: 0 4px 4px 0;\">"
+                    + "      <table style=\"width: 100%; border-collapse: collapse; font-size: 15px;\">"
+                    + "        <tr>"
+                    + "          <td style=\"width: 120px; padding: 6px 0; color: #64748b; font-weight: 600;\">Email nhận:</td>"
+                    + "          <td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">" + email + "</td>"
+                    + "        </tr>"
+                    + "        <tr>"
+                    + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Vai trò:</td>"
+                    + "          <td style=\"padding: 6px 0; font-weight: 600; color: #3b82f6;\">" + roleLabel + "</td>"
+                    + "        </tr>"
+                    + "        <tr>"
+                    + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Phòng ban:</td>"
+                    + "          <td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">" + deptName + "</td>"
+                    + "        </tr>"
+                    + "      </table>"
+                    + "    </div>"
+                    + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
+                    + "      Anh/Chị hãy nhấn vào nút dưới đây để thiết lập thông tin cá nhân và hoàn tất thủ tục đăng ký tài khoản mới:"
+                    + "    </p>"
+                    + "    <div style=\"text-align: center; margin: 30px 0;\">"
+                    + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #ef4444; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);\">KÍCH HOẠT TÀI KHOẢN MỚI</a>"
+                    + "    </div>"
+                    + "    <p style=\"font-size: 14px; color: #ef4444; line-height: 1.5; font-style: italic; margin-top: 20px;\">"
+                    + "      * Lưu ý: Liên kết kích hoạt mới này chỉ có hiệu lực trong vòng 24 giờ kể từ lúc nhận thư này. Các liên kết được cấp trước đó đã bị vô hiệu hóa."
+                    + "    </p>"
+                    + "    <p style=\"font-size: 15px; line-height: 1.6; margin-top: 25px; margin-bottom: 0;\">"
+                    + "      Chúc Anh/Chị thành công!<br/>"
+                    + "      <strong>Ban quản trị LancerPro</strong>"
+                    + "    </p>"
+                    + "  </div>"
+                    + "  <div style=\"background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;\">"
+                    + "    <p style=\"margin: 0 0 8px 0; font-weight: 600; color: #475569;\">LANCERPRO FREELANCE SYSTEM</p>"
+                    + "    <p style=\"margin: 0 0 4px 0;\">Địa chỉ: Khu Công nghệ cao Hòa Lạc, Thạch Thất, Hà Nội, Việt Nam.</p>"
+                    + "    <p style=\"margin: 0 0 4px 0;\">Điện thoại: (+84) 24 7300 5588 | Fax: (+84) 24 7300 5589</p>"
+                    + "    <p style=\"margin: 0;\">Website: <a href=\"http://localhost:3000\" style=\"color: #2563eb; text-decoration: none;\">www.lancerpro.com</a></p>"
+                    + "  </div>"
+                    + "</div>";
+
+            try {
+                emailService.sendHtmlEmailAsync(email, "[LancerPro] Cấp lại liên kết kích hoạt nhân sự mới", emailHtml);
+            } catch (Exception e) {
+
+            }
+        }
+
+        response.put("success", true);
+        response.put("email", email);
+        response.put("role", role.toUpperCase());
+        response.put("department", deptName);
+        response.put("password", tempPassword);
+        response.put("status", status);
+        response.put("setupLink", setupLink);
+        response.put("message", "Đã cấp lại mật khẩu mới và gửi email kích hoạt thành công!");
+
+        return response;
+    }
+
+    @Transactional
     public Map<String, Object> inviteStaffOrManager(Map<String, Object> payload, int adminId) {
         Map<String, Object> response = new HashMap<>();
         String email = payload.get("email") != null ? payload.get("email").toString() : null;
@@ -1053,7 +1385,7 @@ public class AdminService {
         email = email.trim().toLowerCase();
         role = role.toUpperCase();
 
-        // Check if email already exists in any table (ignoring soft-deleted users in key roles)
+
         if (adminRepository.findByEmail(email).isPresent() ||
             freelancerRepository.findByEmail(email).filter(f -> !Boolean.TRUE.equals(f.getIsDeleted())).isPresent() ||
             employerRepository.findByEmail(email).filter(e -> !Boolean.TRUE.equals(e.getIsDeleted())).isPresent() ||
@@ -1097,6 +1429,7 @@ public class AdminService {
             invitation.setToken(token);
             invitation.setExpiresAt(expiresAt);
             invitation.setStatus("PENDING");
+            invitation.setTempPassword(rawPassword);
         } else {
             invitation = com.cny.backend.admin.entity.StaffInvitation.builder()
                     .email(email)
@@ -1104,6 +1437,7 @@ public class AdminService {
                     .token(token)
                     .expiresAt(expiresAt)
                     .status("PENDING")
+                    .tempPassword(rawPassword)
                     .build();
         }
         staffInvitationRepository.save(invitation);
@@ -1111,6 +1445,7 @@ public class AdminService {
         String emailPrefix = email.split("@")[0];
         Optional<com.cny.backend.admin.entity.Manager> existingManager = managerRepository.findByEmail(email);
         Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
+        int savedUserId = -1;
 
         if ("MANAGER".equals(role)) {
             com.cny.backend.admin.entity.Manager managerPlaceholder;
@@ -1138,6 +1473,7 @@ public class AdminService {
                         .build();
             }
             managerRepository.save(managerPlaceholder);
+            savedUserId = managerPlaceholder.getManagerId();
 
             if (existingStaff.isPresent()) {
                 com.cny.backend.admin.entity.Staff s = existingStaff.get();
@@ -1173,6 +1509,7 @@ public class AdminService {
                         .build();
             }
             staffRepository.save(stf);
+            savedUserId = stf.getStaffId();
 
             if (existingManager.isPresent()) {
                 com.cny.backend.admin.entity.Manager m = existingManager.get();
@@ -1185,33 +1522,64 @@ public class AdminService {
         String roleLabel = "MANAGER".equals(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
         String deptName = dept != null ? dept.getName() + " (" + dept.getCode() + ")" : "Chưa phân bổ";
         String setupLink = "http://localhost:3000/?token=" + token;
-        String emailContent = "Chào bạn,\n\n"
-                + "Quản trị viên hệ thống LancerPro đã thêm bạn vào đội ngũ quản trị / vận hành.\n\n"
-                + "══════════════════════════════════\n"
-                + "  THÔNG TIN VAI TRÒ\n"
-                + "══════════════════════════════════\n"
-                + "  Vai trò  : " + roleLabel + "\n"
-                + "  Phòng ban: " + deptName + "\n"
-                + "══════════════════════════════════\n\n"
-                + "Vui lòng bấm vào liên kết dưới đây để tiến hành thiết lập thông tin cá nhân và hoàn tất kích hoạt tài khoản của bạn:\n"
-                + setupLink + "\n\n"
-                + "Lưu ý: Liên kết có hiệu lực trong vòng 24 giờ.\n"
-                + "Nếu bạn có thắc mắc, vui lòng liên hệ quản trị viên để được hỗ trợ.\n\n"
-                + "Trân trọng,\n"
-                + "Đội ngũ LancerPro";
 
-        try {
-            emailService.sendEmailAsync(email, "[LancerPro] Thư mời tham gia đội ngũ quản trị hệ thống", emailContent);
-        } catch (Exception e) {
-            writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Mời " + email + " làm " + role + " (Email gửi lỗi: " + e.getMessage() + ")");
-            response.put("success", true);
-            response.put("message", "Tạo lời mời thành công (Nhưng có lỗi gửi email: " + e.getMessage() + "). Link kích hoạt: http://localhost:3000/?token=" + token);
-            response.put("generatedEmail", email);
-            response.put("generatedPassword", rawPassword);
-            response.put("role", role);
-            response.put("department", deptName);
-            return response;
-        }
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String currentDateStr = java.time.LocalDate.now().format(dtf);
+
+        String emailHtml = "<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); color: #333333;\">"
+                + "  <div style=\"background-color: #0f172a; padding: 24px; text-align: center; border-bottom: 3px solid #3b82f6;\">"
+                + "    <h2 style=\"margin: 0; color: #ffffff; font-size: 20px; letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase;\">LANCERPRO FREELANCE MARKETPLACE</h2>"
+                + "  </div>"
+                + "  <div style=\"padding: 30px; background-color: #ffffff;\">"
+                + "    <h3 style=\"color: #1e3a8a; text-align: center; margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #eaeaea; padding-bottom: 10px; text-transform: uppercase;\">Thông Tin Đăng Ký Tài Khoản</h3>"
+                + "    <div style=\"text-align: right; font-size: 13px; color: #666666; margin-bottom: 20px; font-style: italic;\">"
+                + "      Hà Nội, ngày " + currentDateStr + ""
+                + "    </div>"
+                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 20px;\">"
+                + "      Kính gửi <strong>Anh/Chị</strong>,"
+                + "    </p>"
+                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
+                + "      Quản trị viên hệ thống <strong>LancerPro</strong> trân trọng kính mời Anh/Chị tham gia vào đội ngũ nhân sự quản trị và vận hành hệ thống. Dưới đây là thông tin vai trò của Anh/Chị:"
+                + "    </p>"
+                + "    <div style=\"background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px 20px; margin-bottom: 25px; border-radius: 0 4px 4px 0;\">"
+                + "      <table style=\"width: 100%; border-collapse: collapse; font-size: 15px;\">"
+                + "        <tr>"
+                + "          <td style=\"width: 120px; padding: 6px 0; color: #64748b; font-weight: 600;\">Email nhận:</td>"
+                + "          <td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">" + email + "</td>"
+                + "        </tr>"
+                + "        <tr>"
+                + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Vai trò:</td>"
+                + "          <td style=\"padding: 6px 0; font-weight: 600; color: #3b82f6;\">" + roleLabel + "</td>"
+                + "        </tr>"
+                + "        <tr>"
+                + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Phòng ban:</td>"
+                + "          <td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">" + deptName + "</td>"
+                + "        </tr>"
+                + "      </table>"
+                + "    </div>"
+                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
+                + "      Anh/Chị hãy nhấn vào nút dưới đây để xác thực OTP và hoàn tất thiết lập tài khoản của mình:"
+                + "    </p>"
+                + "    <div style=\"text-align: center; margin: 30px 0;\">"
+                + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);\">KÍCH HOẠT TÀI KHOẢN</a>"
+                + "    </div>"
+                + "    <p style=\"font-size: 14px; color: #ef4444; line-height: 1.5; font-style: italic; margin-top: 20px;\">"
+                + "      * Lưu ý: Liên kết kích hoạt trên chỉ có hiệu lực trong vòng 24 giờ kể từ lúc nhận thư này."
+                + "    </p>"
+                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-top: 25px; margin-bottom: 0;\">"
+                + "      Chúc Anh/Chị thành công!<br/>"
+                + "      <strong>Ban quản trị LancerPro</strong>"
+                + "    </p>"
+                + "  </div>"
+                + "  <div style=\"background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;\">"
+                + "    <p style=\"margin: 0 0 8px 0; font-weight: 600; color: #475569;\">LANCERPRO FREELANCE SYSTEM</p>"
+                + "    <p style=\"margin: 0 0 4px 0;\">Địa chỉ: Khu Công nghệ cao Hòa Lạc, Thạch Thất, Hà Nội, Việt Nam.</p>"
+                + "    <p style=\"margin: 0 0 4px 0;\">Điện thoại: (+84) 24 7300 5588 | Fax: (+84) 24 7300 5589</p>"
+                + "    <p style=\"margin: 0;\">Website: <a href=\"http://localhost:3000\" style=\"color: #2563eb; text-decoration: none;\">www.lancerpro.com</a></p>"
+                + "  </div>"
+                + "</div>";
+
+        emailService.sendHtmlEmailAsync(email, "[LancerPro] Kích hoạt tài khoản nhân sự mới", emailHtml);
 
         writeAuditLog(adminId, "INVITE_USER", "USER_MANAGEMENT", "Đã tạo tài khoản " + role + " cho " + email + " tại phòng ban " + deptName);
         response.put("success", true);
@@ -1220,6 +1588,9 @@ public class AdminService {
         response.put("generatedPassword", rawPassword);
         response.put("role", role);
         response.put("department", deptName);
+        response.put("setupLink", setupLink);
+        response.put("status", "PENDING");
+        response.put("userId", savedUserId);
         return response;
     }
 
@@ -1233,7 +1604,7 @@ public class AdminService {
         return sb.toString();
     }
 
-    // --- VERIFICATION TASKS ENDPOINTS ---
+
 
     @Transactional
     public Map<String, Object> createVerificationTask(Map<String, Object> payload) {
@@ -1267,7 +1638,7 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getVerificationTasks() {
-        // Ensure default departments are present in DB
+
         initPresetDepartments();
 
         List<DepartmentVerificationTask> tasks = departmentVerificationTaskRepository.findAll();
@@ -1285,7 +1656,7 @@ public class AdminService {
             map.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : null);
             map.put("updatedAt", task.getUpdatedAt() != null ? task.getUpdatedAt().toString() : null);
             
-            // Get signoffs for this task
+
             List<DepartmentTaskSignoff> signoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
             List<Map<String, Object>> signoffList = new ArrayList<>();
             for (DepartmentTaskSignoff s : signoffs) {
@@ -1322,7 +1693,7 @@ public class AdminService {
         }
 
         String departmentCode = payload.get("departmentCode") != null ? payload.get("departmentCode").toString().toUpperCase() : "";
-        String status = payload.get("status") != null ? payload.get("status").toString().toUpperCase() : ""; // APPROVED, REJECTED
+        String status = payload.get("status") != null ? payload.get("status").toString().toUpperCase() : "";
         String note = payload.get("note") != null ? payload.get("note").toString() : "";
 
         if (departmentCode.isEmpty() || status.isEmpty()) {
@@ -1331,7 +1702,7 @@ public class AdminService {
             return response;
         }
 
-        // Verify if department is required for this task
+
         List<String> requiredDepts = Arrays.asList(task.getRequiredDepartments().split(","));
         if (!requiredDepts.contains(departmentCode)) {
             response.put("success", false);
@@ -1339,7 +1710,7 @@ public class AdminService {
             return response;
         }
 
-        // Check if already signed off by this department
+
         List<DepartmentTaskSignoff> existing = departmentTaskSignoffRepository.findByVerificationTaskAndDepartmentCode(task, departmentCode);
         if (!existing.isEmpty()) {
             response.put("success", false);
@@ -1347,7 +1718,7 @@ public class AdminService {
             return response;
         }
 
-        // Create new signoff
+
         DepartmentTaskSignoff signoff = DepartmentTaskSignoff.builder()
                 .verificationTask(task)
                 .departmentCode(departmentCode)
@@ -1360,12 +1731,12 @@ public class AdminService {
         writeAuditLog(0, "TASK_SIGNOFF", "DEPARTMENTS", 
                 "Tài khoản " + verifierEmail + " của khoa " + departmentCode + " đã ký duyệt " + status + " tác vụ #" + taskId);
 
-        // Check overall status
+
         if ("REJECTED".equals(status)) {
             task.setStatus("REJECTED");
             departmentVerificationTaskRepository.save(task);
             
-            // Execute rejection of original transaction
+
             rejectOriginalTransaction(task.getTaskType(), task.getReferenceId());
             
             response.put("success", true);
@@ -1373,7 +1744,7 @@ public class AdminService {
             return response;
         }
 
-        // Recheck if all required departments signed APPROVED
+
         List<DepartmentTaskSignoff> allSignoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
         Set<String> approvedDepts = allSignoffs.stream()
                 .filter(s -> "APPROVED".equals(s.getStatus()))
@@ -1392,7 +1763,7 @@ public class AdminService {
             task.setStatus("APPROVED");
             departmentVerificationTaskRepository.save(task);
             
-            // Execute approval of original transaction
+
             approveOriginalTransaction(task.getTaskType(), task.getReferenceId());
             
             response.put("success", true);
@@ -1410,7 +1781,7 @@ public class AdminService {
             if ("WITHDRAWAL".equals(type)) {
                 dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
-                // mock process dispute refund success
+
                 System.out.println("Dispute refund #" + referenceId + " approved!");
             } else if ("KYC_VERIFICATION".equals(type)) {
                 System.out.println("KYC Verification #" + referenceId + " approved!");
@@ -1467,7 +1838,7 @@ public class AdminService {
             }
         }
 
-        // Clean up outdated verification tasks/signoffs containing KYC or SUP department references
+
         boolean hasOutdated = departmentVerificationTaskRepository.findAll().stream()
                 .anyMatch(t -> t.getRequiredDepartments().contains("KYC") || t.getRequiredDepartments().contains("SUP"));
         if (hasOutdated) {
@@ -1475,7 +1846,7 @@ public class AdminService {
             departmentVerificationTaskRepository.deleteAll();
         }
 
-        // Generate mock tasks if there are none to populate the list on UI load!
+
         if (departmentVerificationTaskRepository.findAll().isEmpty()) {
             departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
                     .taskType("WITHDRAWAL")
@@ -1533,7 +1904,7 @@ public class AdminService {
             req.setStatus("APPROVED");
             Employer employer = req.getEmployer();
             
-            // Copy fields from request to employer
+
             if (req.getDisplayName() != null) employer.setDisplayName(req.getDisplayName());
             if (req.getFullName() != null) employer.setFullName(req.getFullName());
             if (req.getPhone() != null) employer.setPhone(req.getPhone());
@@ -1548,11 +1919,11 @@ public class AdminService {
             if (req.getIndustry() != null) employer.setIndustry(req.getIndustry());
             employer.setUpdatedAt(LocalDateTime.now());
             
-            // Calculate completeness
+
             employer.setProfileCompleteness(calculateCompleteness(employer));
             employerRepository.save(employer);
 
-            // Update bank details if provided
+
             if (req.getBankName() != null || req.getAccountNumber() != null || req.getAccountHolder() != null || req.getBranch() != null) {
                 upsertDefaultBankAccount(employer.getEmployerId(), req.getBankName(), req.getAccountNumber(), req.getAccountHolder(), req.getBranch());
             }
@@ -1623,5 +1994,117 @@ public class AdminService {
             );
         }
     }
+
+    public Optional<Admin> getAdminById(int id) {
+        return adminRepository.findById(id);
+    }
+
+    @Transactional
+    public Map<String, Object> updateAdminProfile(int id, Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<Admin> adminOpt = adminRepository.findById(id);
+        if (adminOpt.isPresent()) {
+            Admin admin = adminOpt.get();
+            if (payload.containsKey("displayName")) {
+                admin.setDisplayName((String) payload.get("displayName"));
+            }
+            if (payload.containsKey("fullName")) {
+                admin.setFullName((String) payload.get("fullName"));
+            }
+            if (payload.containsKey("phone")) {
+                admin.setPhone((String) payload.get("phone"));
+            }
+            if (payload.containsKey("avatarUrl")) {
+                admin.setAvatarUrl((String) payload.get("avatarUrl"));
+            }
+            if (payload.containsKey("language")) {
+                admin.setLanguage((String) payload.get("language"));
+            }
+            if (payload.containsKey("timezone")) {
+                admin.setTimezone((String) payload.get("timezone"));
+            }
+            admin.setUpdatedAt(LocalDateTime.now());
+            adminRepository.save(admin);
+            
+            response.put("success", true);
+            response.put("message", "Đã cập nhật hồ sơ Admin thành công.");
+            return response;
+        }
+        response.put("success", false);
+        response.put("message", "Không tìm thấy tài khoản Admin.");
+        return response;
+    }
+
+    public VnpayConfig getVnpayConfig() {
+        VnpayConfig config = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc().orElse(
+            VnpayConfig.builder()
+                .tmnCode("DEMO2019")
+                .hashSecret("9A7F11E55E1C3806E0528B65355AA05C")
+                .vnpUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
+                .returnUrl("http://localhost:3000/payment-result")
+                .bankName("Techcombank")
+                .bankAccountNo("9009002045")
+                .bankAccountName("NGUYEN VAN THANH")
+                .isActive(true)
+                .build()
+        );
+        if (config.getBankName() == null) {
+            config.setBankName("Techcombank");
+        }
+        if (config.getBankAccountNo() == null) {
+            config.setBankAccountNo("9009002045");
+        }
+        if (config.getBankAccountName() == null) {
+            config.setBankAccountName("NGUYEN VAN THANH");
+        }
+        return config;
+    }
+
+    @Transactional
+    public VnpayConfig saveVnpayConfig(VnpayConfig config, int adminId) {
+        vnpayConfigRepository.findAll().forEach(c -> {
+            c.setIsActive(false);
+            vnpayConfigRepository.save(c);
+        });
+        
+        config.setIsActive(true);
+        VnpayConfig saved = vnpayConfigRepository.save(config);
+        
+        dashboardRepository.logAudit(adminId, "UPDATE_VNPAY_CONFIG", "FINANCE", 
+            "Đã cập nhật cấu hình cổng thanh toán VNPay: Terminal Code = " + config.getTmnCode());
+        
+        return saved;
+    }
+
+    public List<PaymentTransaction> getVnpayTransactions() {
+        return paymentTransactionRepository.findAll();
+    }
+
+    @Transactional
+    public Map<String, Object> reconcileVnpayTransaction(int transactionId, int adminId) {
+        Map<String, Object> result = new HashMap<>();
+        PaymentTransaction txn = paymentTransactionRepository.findById(transactionId)
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch ID: " + transactionId));
+        
+        if ("SUCCESS".equals(txn.getStatus())) {
+            result.put("success", false);
+            result.put("message", "Giao dịch này đã được thanh toán thành công trước đó.");
+            return result;
+        }
+
+        txn.setStatus("SUCCESS");
+        txn.setVnpTransactionNo("MANUAL_" + System.currentTimeMillis());
+        paymentTransactionRepository.save(txn);
+
+        projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+
+        dashboardRepository.logAudit(adminId, "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
+            "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());
+
+        result.put("success", true);
+        result.put("message", "Duyệt giao dịch và kích hoạt dự án thành công.");
+        return result;
+    }
 }
+
 

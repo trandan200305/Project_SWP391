@@ -14,6 +14,8 @@ import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
+import PaymentResultPage from '../pages/PaymentResultPage.jsx';
+import CheckoutPage from '../pages/CheckoutPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -29,12 +31,12 @@ export default function AppRoutes({
 }) {
   if (currentPage === 'admin') {
     if (user?.role === 'ADMIN') {
-      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
     if (user?.role === 'MANAGER') {
-      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
-    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
   if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {
@@ -81,6 +83,25 @@ export default function AppRoutes({
       />
     );
   }
+
+  if (currentPage === 'payment_result') {
+    return (
+      <PaymentResultPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
+  if (currentPage === 'checkout') {
+    return (
+      <CheckoutPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
 
   if (currentPage === 'onboard') {
     return (

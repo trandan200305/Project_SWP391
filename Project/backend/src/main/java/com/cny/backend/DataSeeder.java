@@ -64,7 +64,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Seed fixed departments first (always ensure they exist)
+        
         seedFixedDepartments();
         
         if (jobCategoryRepository.count() == 0) {
@@ -148,11 +148,11 @@ public class DataSeeder implements CommandLineRunner {
             String frontUrl = null;
             LocalDateTime subTime = null;
             
-            if (i == 0) { // Minh Anh
+            if (i == 0) { 
                 kycStat = "PENDING";
                 frontUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop";
                 subTime = LocalDateTime.now().minusDays(1);
-            } else if (i == 1) { // Quang Huy
+            } else if (i == 1) { 
                 kycStat = "APPROVED";
                 isVer = true;
                 frontUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop";
@@ -386,7 +386,7 @@ public class DataSeeder implements CommandLineRunner {
 
                     Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
                     if (ticketCount != null && ticketCount == 0) {
-                        // Ticket 1: Minh Anh
+                        
                         jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
                                 "VALUES (?, NULL, N'Hỗ trợ rút tiền', N'Yêu cầu rút tiền chưa nhận được', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
                         Integer tId1 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
@@ -396,7 +396,7 @@ public class DataSeeder implements CommandLineRunner {
                         jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
                                 "VALUES (?, NULL, NULL, ?, N'Chào bạn Minh Anh, chúng tôi đã tiếp nhận yêu cầu. Yêu cầu của bạn đang được Phòng Tài chính xử lý. Vui lòng chờ trong giây lát.', 1, DATEADD(hour, -1, GETDATE()))", tId1, adminId);
 
-                        // Ticket 2: LancerPro Client
+                        
                         List<Integer> clientIds = jdbcTemplate.queryForList("SELECT employer_id FROM employers WHERE email = 'client@lancerpro.vn'", Integer.class);
                         if (!clientIds.isEmpty()) {
                             Integer clientId = clientIds.get(0);
@@ -409,7 +409,7 @@ public class DataSeeder implements CommandLineRunner {
                         }
                     }
 
-                    // Seed Moderation Data (Violation Reports, Disputes, Warning Templates)
+                    
                     Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
                     if (reportCount != null && reportCount == 0) {
                         jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
@@ -442,7 +442,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedFixedDepartments() {
         try {
-            // 8 phòng ban cố định — cập nhật hoặc seed mới
+            
             String[][] departments = {
                 {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
                 {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
@@ -506,7 +506,7 @@ public class DataSeeder implements CommandLineRunner {
             Manager manager = managerRepository.findByEmail("managerstaff@gmail.com").orElse(null);
 
             if (staffRepository.count() == 0 && csDept != null && manager != null) {
-                // Elena Kostic
+                
                 Staff staff1 = Staff.builder()
                         .email("staff@gmail.com")
                         .passwordHash(passwordEncoder.encode("123456"))
@@ -524,7 +524,7 @@ public class DataSeeder implements CommandLineRunner {
                         .build();
                 staffRepository.save(staff1);
 
-                // Marcus Webb
+                
                 Staff staff2 = Staff.builder()
                         .email("marcus@lancerpro.com")
                         .passwordHash(passwordEncoder.encode("123456"))
@@ -542,7 +542,7 @@ public class DataSeeder implements CommandLineRunner {
                         .build();
                 staffRepository.save(staff2);
 
-                // Jia Song
+                
                 Staff staff3 = Staff.builder()
                         .email("jia@lancerpro.com")
                         .passwordHash(passwordEncoder.encode("123456"))
@@ -560,7 +560,7 @@ public class DataSeeder implements CommandLineRunner {
                         .build();
                 staffRepository.save(staff3);
 
-                // Seed 21 more staff to make exactly 24 staff (20 Active, 4 Inactive)
+                
                 for (int i = 1; i <= 21; i++) {
                     String status = (i <= 17) ? "ACTIVE" : "INACTIVE";
                     Staff extraStaff = Staff.builder()
