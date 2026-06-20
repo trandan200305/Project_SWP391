@@ -1032,11 +1032,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 { name: 'Moderation', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
                 { name: 'KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
                 { name: 'Finance', icon: BadgeDollarSign },
-                { name: 'Disputes', icon: ShieldAlert },
-                { name: 'CMS', icon: FileText },
-                { name: 'Audit Logs', icon: Clock },
-                { name: 'Notifications', icon: Bell },
-                { name: 'Settings', icon: Settings },
               ].map((item) => {
                 const IconComp = item.icon;
                 const isActive = activeTab === item.name;
@@ -1072,16 +1067,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           </div>
         </div>
 
-        {/* Sidebar Footer (Create Task Button) */}
-        <div className="p-4 border-t border-[#e1e8fd] bg-[#f9f9ff]">
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#006b2c] hover:bg-[#00873a] text-white py-2.5 rounded-lg font-bold text-body-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create New Task</span>
-          </button>
-        </div>
+
       </aside>
 
       {/* ---------------- MAIN CONTAINER ---------------- */}
@@ -1610,13 +1596,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </button>
                     ))}
                   </div>
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create New Task</span>
-                  </button>
+
                 </div>
               </div>
 
@@ -2426,108 +2406,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
         </div>
       </main>
 
-      {/* ---------------- MODAL: CREATE NEW TASK ---------------- */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd] animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e9edff]">
-              <h3 className="text-title-md font-extrabold text-[#141b2b]">Create New Staff Task</h3>
-              <button 
-                onClick={() => setShowCreateModal(false)}
-                className="p-1.5 hover:bg-[#f1f3ff] rounded-lg transition-colors text-[#6e7b6c]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleCreateTask} className="mt-4 space-y-4">
-              {/* Task Type */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Task Type</label>
-                <select
-                  value={createForm.type}
-                  onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                >
-                  <option value="Account Verification">Account Verification</option>
-                  <option value="Dispute Resolution">Dispute Resolution</option>
-                  <option value="Profile Review">Profile Review</option>
-                  <option value="KYC Document Approval">KYC Document Approval</option>
-                  <option value="Payment Processing">Payment Processing</option>
-                  <option value="Spam Moderation">Spam Moderation</option>
-                </select>
-              </div>
-
-              {/* User Assignee */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Assignee User Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Alex Rivera"
-                  value={createForm.user}
-                  onChange={(e) => setCreateForm({ ...createForm, user: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                />
-              </div>
-
-              {/* Priority & Deadline Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#6e7b6c] uppercase">Priority</label>
-                  <select
-                    value={createForm.priority}
-                    onChange={(e) => setCreateForm({ ...createForm, priority: e.target.value })}
-                    className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#6e7b6c] uppercase">Deadline</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Today, 5:00 PM"
-                    value={createForm.deadline}
-                    onChange={(e) => setCreateForm({ ...createForm, deadline: e.target.value })}
-                    className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Description Details</label>
-                <textarea
-                  rows="3"
-                  placeholder="Task notes or description..."
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 pt-3 border-t border-[#e9edff]">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
-                >
-                  Create Task
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ---------------- DRAWERS/MODAL: MANAGE/VIEW TASK DETAILS ---------------- */}
       {showManageModal && selectedTask && (
