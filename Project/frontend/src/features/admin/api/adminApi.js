@@ -24,6 +24,14 @@ export const adminApi = {
   getJobCategories: () => api.get('/admin/job-categories'),
   getKycRequests: () => api.get('/admin/kyc-requests'),
   getDisputes: () => api.get('/admin/disputes'),
+  resolveDispute: (id, status, note, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/disputes/${id}/resolve?status=${status}&note=${note || ''}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   getReports: () => api.get('/admin/reports'),
   getWarningTemplates: () => api.get('/admin/warning-templates'),
   getArticles: () => api.get('/admin/articles'),

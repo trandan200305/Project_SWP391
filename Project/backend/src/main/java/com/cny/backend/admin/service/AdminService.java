@@ -35,6 +35,7 @@ import com.cny.backend.admin.dto.UserGrowthTrendDto;
 import com.cny.backend.admin.dto.WarningTemplateDto;
 import com.cny.backend.admin.dto.WithdrawalDto;
 import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.Dispute;
 import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.entity.PaymentTransaction;
 import com.cny.backend.admin.repository.DashboardRepository;
@@ -778,6 +779,26 @@ public class AdminService {
                 .priority(d.getPriority())
                 .createdAt(d.getCreatedAt() != null ? d.getCreatedAt().toString() : "")
                 .build()).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> resolveDispute(int id, String status, String note, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<Dispute> disputeOpt = disputeRepository.findById(id);
+        if (disputeOpt.isPresent()) {
+            Dispute dispute = disputeOpt.get();
+            dispute.setStatus(status);
+            disputeRepository.save(dispute);
+            
+            writeAuditLog(adminId, "RESOLVE_DISPUTE", "MODERATION", "Xử lý khiếu nại #" + id + " thành " + status + " | Ghi chú: " + (note != null ? note : ""));
+            
+            response.put("success", true);
+            response.put("message", "Đã xử lý khiếu nại thành công.");
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy khiếu nại.");
+        }
+        return response;
     }
 
     public List<ReportDto> getReports() {
