@@ -1023,22 +1023,22 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hidden">
-            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Workspace</p>
+            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Không gian làm việc</p>
             <nav className="space-y-1">
               {[
-                { name: 'Dashboard', icon: LayoutDashboard },
-                { name: 'Tasks', icon: CheckSquare },
-                { name: 'Support', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
-                { name: 'Moderation', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
-                { name: 'KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
-                { name: 'Finance', icon: BadgeDollarSign },
+                { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
+                { id: 'Tasks', label: 'Công việc', icon: CheckSquare },
+                { id: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
+                { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
+                { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
+                { id: 'Finance', label: 'Tài chính', icon: BadgeDollarSign },
               ].map((item) => {
                 const IconComp = item.icon;
-                const isActive = activeTab === item.name;
+                const isActive = activeTab === item.id;
                 return (
                   <button
-                    key={item.name}
-                    onClick={() => setActiveTab(item.name)}
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
                       isActive 
                         ? 'bg-[#f7fff2] text-[#006b2c]' 
@@ -1053,7 +1053,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <IconComp className={`w-[20px] h-[20px] stroke-[2.2] transition-colors ${
                         isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
                       }`} />
-                      <span>{item.name}</span>
+                      <span>{item.label}</span>
                     </div>
                     {item.badge !== undefined && item.badge > 0 && (
                       <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
@@ -1083,7 +1083,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             </span>
             <input
               type="text"
-              placeholder="Search tasks, users, or reports..."
+              placeholder="Tìm kiếm công việc, người dùng..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border border-transparent transition-all"
@@ -1113,7 +1113,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             <div className="flex items-center gap-3">
               <div className="flex flex-col text-right">
                 <span className="text-body-sm font-bold text-[#141b2b] leading-tight">
-                  {user?.name || 'Staff Member'}
+                  {user?.name || 'Nhân viên'}
                 </span>
                 <span className="text-[10px] font-bold text-[#006b2c] tracking-wide uppercase">
                   {currentRole === 'MANAGER' ? 'Manager / CS Dept' : 'Staff / CS Dept'}
@@ -1126,7 +1126,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               />
               <button 
                 onClick={onNavigateToHome}
-                title="Exit Console"
+                title="Thoát"
                 className="p-2 text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
@@ -1145,17 +1145,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Sub-header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Dashboard Overview</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Welcome back. Here is what's happening with your tasks today.</p>
+                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Tổng quan hệ thống</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Chào mừng trở lại. Dưới đây là tình hình công việc của bạn hôm nay.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2">
                     <ArrowDownRight className="w-4 h-4" />
-                    <span>Export Data</span>
+                    <span>Xuất dữ liệu</span>
                   </button>
                   <button className="px-4 py-2 bg-[#006b2c] text-white rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#00873a] transition-all flex items-center gap-2">
                     <Filter className="w-4 h-4" />
-                    <span>Task Filters</span>
+                    <span>Lọc công việc</span>
                   </button>
                 </div>
               </div>
@@ -1176,7 +1176,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Assigned Tasks</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Công việc được giao</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countAssigned}</h2>
                     </div>
                     {/* Tiny sparkline */}
@@ -1196,12 +1196,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <Clock className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#0058be] bg-blue-50 px-2 py-0.5 rounded-full">
-                      <span>Stable</span>
+                      <span>Ổn định</span>
                     </span>
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Pending Approval</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Chờ phê duyệt</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countPending}</h2>
                     </div>
                     {/* Stable sparkline */}
@@ -1227,7 +1227,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Completed Today</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Hoàn thành hôm nay</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countCompleted}</h2>
                     </div>
                     {/* Up sparkline */}
@@ -1247,12 +1247,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <AlertTriangle className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#ba1a1a] bg-[#ffdad6] px-2 py-0.5 rounded-full">
-                      <span>! Critical</span>
+                      <span>Khẩn cấp</span>
                     </span>
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Overdue Tasks</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Quá hạn</p>
                       <h2 className="text-display-lg text-[#ba1a1a] mt-1">{countOverdue}</h2>
                     </div>
                     {/* Alert sparkline */}
@@ -1274,8 +1274,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 <div className="lg:col-span-2 card-level-1 p-6 bg-white flex flex-col justify-between min-h-[320px]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b]">Task Completion by Day</h3>
-                      <p className="text-xs text-[#3e4a3d]">Performance review based on finished admin requests.</p>
+                      <h3 className="text-body-lg font-bold text-[#141b2b]">Công việc hoàn thành theo ngày</h3>
+                      <p className="text-xs text-[#3e4a3d]">Đánh giá hiệu suất dựa trên các yêu cầu đã xử lý.</p>
                     </div>
                     <select
                       value={chartPeriod}
@@ -1285,8 +1285,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       }}
                       className="bg-[#f1f3ff] border-none text-[#141b2b] text-xs font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30"
                     >
-                      <option value="7days">Last 7 Days</option>
-                      <option value="30days">Last 30 Days</option>
+                      <option value="7days">7 ngày qua</option>
+                      <option value="30days">30 ngày qua</option>
                     </select>
                   </div>
 
