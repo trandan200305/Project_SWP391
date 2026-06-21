@@ -1774,7 +1774,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </div>
                       <h4 className="text-body-lg font-bold text-[#141b2b] mb-1">Chọn một hội thoại</h4>
                       <p className="text-body-sm text-[#6e7b6c] max-w-xs leading-relaxed">
-                        Choose a chat from the contact list on the left to start live support messaging and user moderation.
+                        Chọn một hội thoại từ danh sách bên trái để bắt đầu nhắn tin hỗ trợ và kiểm duyệt người dùng.
                       </p>
                     </div>
                   ) : (
@@ -1882,7 +1882,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                         <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
                           <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
                           <span className="text-xs font-bold text-slate-600">
-                            This user is currently suspended from chat.
+                            Người dùng này hiện đang bị đình chỉ chat.
                           </span>
                         </div>
                       ) : (
@@ -1921,7 +1921,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           />
                         </div>
                         <h3 className="font-bold text-title-md text-[#141b2b] mb-1">{activeChat.name}</h3>
-                        <p className="text-xs text-[#6e7b6c] font-semibold mb-3">{activeChat.sender_email || activeChat.senderEmail || 'No email provided'}</p>
+                        <p className="text-xs text-[#6e7b6c] font-semibold mb-3">{activeChat.sender_email || activeChat.senderEmail || 'Không có email'}</p>
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider ${
                           activeChat.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
                         }`}>
@@ -1932,19 +1932,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <div className="p-6 flex flex-col gap-6">
                         {/* Account Details */}
                         <div>
-                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Account Information</h4>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Thông tin tài khoản</h4>
                           <div className="space-y-3">
                             <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
-                              <span className="text-xs font-semibold text-[#3e4a3d]">Status</span>
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Trạng thái</span>
                               {(() => {
                                 const status = activeChat.sender_status;
-                                if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Locked</span>;
-                                if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Banned</span>;
-                                return <span className="text-xs font-bold text-emerald-600">Active</span>;
+                                if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Bị khóa</span>;
+                                if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Bị cấm</span>;
+                                return <span className="text-xs font-bold text-emerald-600">Hoạt động</span>;
                               })()}
                             </div>
                             <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
-                              <span className="text-xs font-semibold text-[#3e4a3d]">Member Since</span>
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Thành viên từ</span>
                               <span className="text-xs font-bold text-[#141b2b]">
                                 {activeChat.sender_created_at ? new Date(activeChat.sender_created_at).toLocaleDateString('vi-VN') : 'N/A'}
                               </span>
@@ -1954,31 +1954,31 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
                         {/* Moderation Actions */}
                         <div>
-                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Moderation Actions</h4>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Thao tác kiểm duyệt</h4>
                           
                           {/* Block Status / Options */}
                           <div className="flex flex-col gap-2 mb-4">
                             {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                                 <p className="text-xs font-semibold text-amber-800 mb-2">
-                                  Suspended until: <br />
+                                  Bị đình chỉ đến: <br />
                                   {new Date(activeChat.blocked_until).toLocaleString('vi-VN')}
                                 </p>
                                 <button
                                   onClick={() => handleBlockUser(0)}
                                   className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
                                 >
-                                  Unblock Now
+                                  Mở khóa ngay
                                 </button>
                               </div>
                             ) : (
                               <div className="bg-[#f9f9ff] border border-[#e1e8fd] rounded-xl p-3">
-                                <p className="text-xs font-semibold text-[#3e4a3d] mb-2">Suspend User Chat</p>
+                                <p className="text-xs font-semibold text-[#3e4a3d] mb-2">Đình chỉ chat người dùng</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <button onClick={() => handleBlockUser(1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 Day</button>
-                                  <button onClick={() => handleBlockUser(3)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-[#bdcaba] text-slate-700 rounded-lg text-xs font-bold transition-all">3 Days</button>
-                                  <button onClick={() => handleBlockUser(7)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 Days</button>
-                                  <button onClick={() => handleBlockUser(-1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Permanent</button>
+                                  <button onClick={() => handleBlockUser(1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 Ngày</button>
+                                  <button onClick={() => handleBlockUser(3)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-[#bdcaba] text-slate-700 rounded-lg text-xs font-bold transition-all">3 Ngày</button>
+                                  <button onClick={() => handleBlockUser(7)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 Ngày</button>
+                                  <button onClick={() => handleBlockUser(-1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Vĩnh viễn</button>
                                 </div>
                               </div>
                             )}
