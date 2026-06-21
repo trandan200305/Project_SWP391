@@ -125,6 +125,15 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getDisputes());
     }
 
+    @PutMapping("/disputes/{id}/resolve")
+    public ResponseEntity<Map<String, Object>> resolveDispute(
+            @PathVariable("id") int id,
+            @RequestParam("status") String status,
+            @RequestParam(value = "note", required = false) String note,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.resolveDispute(id, status, note, adminId));
+    }
+
     @GetMapping("/reports")
     public ResponseEntity<List<ReportDto>> getReports() {
         return ResponseEntity.ok(adminService.getReports());

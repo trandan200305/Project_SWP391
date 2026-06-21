@@ -83,6 +83,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [moderationItems, setModerationItems] = useState([]);
   const [violationReports, setViolationReports] = useState([]);
   const [escalationCases, setEscalationCases] = useState([]);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [selectedDispute, setSelectedDispute] = useState(null);
+  const [disputeNote, setDisputeNote] = useState('');
   const [warningTemplates, setWarningTemplates] = useState([]);
   const [moderationHistory, setModerationHistory] = useState([]);
   const [moderationView, setModerationView] = useState('queue');
@@ -348,6 +351,29 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     }).catch(err => console.error('Error fetching moderation items:', err));
   };
 
+  const handleResolveDispute = (status) => {
+    if (!selectedDispute) return;
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const adminId = user?.adminId || 1;
+
+    adminApi.resolveDispute(selectedDispute.raw.id, status, disputeNote, adminId)
+      .then(res => {
+        if (res.success) {
+          setToast({ message: res.message, type: 'success', show: true });
+          setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+          setShowDisputeModal(false);
+          setSelectedDispute(null);
+          setDisputeNote('');
+          fetchModerationData(); // Refresh list
+        } else {
+          setToast({ message: res.message, type: 'error', show: true });
+          setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+        }
+      })
+      .catch(err => console.error('Error resolving dispute:', err));
+  };
+
   const fetchModerationData = () => {
     adminApi.getReports().then(data => {
       if (Array.isArray(data)) {
@@ -370,7 +396,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           id: `ESC-${d.id}`,
           title: d.reason || 'Tranh chấp dự án',
           owner: d.clientName,
-          priority: d.priority === 'HIGH' ? 'Khẩn cấp' : 'Cao'
+          priority: d.priority === 'HIGH' ? 'Khẩn cấp' : 'Cao',
+          raw: d
         })));
       }
     }).catch(console.error);
@@ -2263,7 +2290,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           </div>
                           <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{esc.title}</h3>
                           <p className="text-sm text-[#3e4a3d] mb-4">Người yêu cầu chuyển: <strong>{esc.owner}</strong></p>
-                          <button className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors">
+                          <button 
+                            className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors"
+                            onClick={() => {
+                              setSelectedDispute(esc);
+                              setShowDisputeModal(true);
+                            }}
+                          >
                             Xem chi tiết & Xử lý
                           </button>
                         </div>
@@ -2526,6 +2559,91 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 }`}
               >
                 {confirmConfig.confirmText || 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- DISPUTE RESOLUTION MODAL ---------------- */}
+      {showDisputeModal && selectedDispute && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Xử lý Khiếu nại / Tranh chấp</h2>
+              <button 
+                onClick={() => {
+                  setShowDisputeModal(false);
+                  setSelectedDispute(null);
+                  setDisputeNote('');
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl mb-4">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs font-bold text-rose-600 uppercase">Ưu tiên: {selectedDispute.priority}</span>
+                  <span className="text-xs text-rose-500 font-medium">{selectedDispute.raw?.createdAt}</span>
+                </div>
+                <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedDispute.raw?.projectTitle}</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-[#f7fff2] border border-[#d6f2c6] p-3 rounded-lg">
+                  <p className="text-xs text-[#3e4a3d] mb-1">Bên Client (Thuê)</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.clientName}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                  <p className="text-xs text-[#3e4a3d] mb-1">Bên Freelancer</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.freelancerName}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Số tiền đang tranh chấp:</p>
+                <p className="text-title-lg text-rose-600 font-extrabold">{selectedDispute.raw?.amount?.toLocaleString('vi-VN')} VND</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung khiếu nại:</p>
+                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b]">
+                  {selectedDispute.raw?.reason || 'Không có mô tả chi tiết'}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-2">Ghi chú xử lý của bạn (nếu có):</p>
+                <textarea
+                  className="w-full h-24 border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] resize-none"
+                  placeholder="Nhập ghi chú hoặc lý do quyết định của bạn..."
+                  value={disputeNote}
+                  onChange={e => setDisputeNote(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
+              <button 
+                onClick={() => handleResolveDispute('RESOLVED_CLIENT_FAVOR')}
+                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+              >
+                Xử lý cho Client
+              </button>
+              <button 
+                onClick={() => handleResolveDispute('RESOLVED_FREELANCER_FAVOR')}
+                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+              >
+                Xử lý cho Freelancer
+              </button>
+              <button 
+                onClick={() => handleResolveDispute('CLOSED')}
+                className="w-full sm:w-auto py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+              >
+                Đóng khiếu nại
               </button>
             </div>
           </div>
