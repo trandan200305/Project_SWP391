@@ -1605,6 +1605,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               <td className="px-4 py-4 whitespace-nowrap text-right sticky right-0 bg-white group-hover:bg-[#f7fff2]/30 transition-colors">
                                 <button
                                   onClick={() => {
+                                    if (t.assignedToEmail && t.assignedToEmail !== (user?.email || 'staff@gmail.com')) {
+                                      showToast(`Tác vụ này đang được xử lý bởi nhân viên ${t.assignedToEmail}. Bạn không thể can thiệp!`, 'error');
+                                      return;
+                                    }
                                     setSelectedTask(t);
                                     setShowManageModal(true);
                                   }}
@@ -1689,6 +1693,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </div>
                       <button 
                         onClick={() => {
+                          if (t.assignedToEmail && t.assignedToEmail !== (user?.email || 'staff@gmail.com')) {
+                            showToast(`Tác vụ này đang được xử lý bởi nhân viên ${t.assignedToEmail}. Bạn không thể can thiệp!`, 'error');
+                            return;
+                          }
                           setSelectedTask(t);
                           setShowManageModal(true);
                         }}
