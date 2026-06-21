@@ -2300,8 +2300,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           {activeTab === 'KYC' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Identity KYC Approvals</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Review legal identity verifications for freelancers and employers to maintain a secure ecosystem.</p>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xét duyệt danh tính KYC</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Kiểm tra thông tin định danh hợp pháp của freelancer và nhà tuyển dụng để duy trì hệ sinh thái an toàn.</p>
               </div>
 
               {/* KYC Request List Grid */}
@@ -2323,19 +2323,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
                       <div className="py-4 space-y-2.5">
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Document Type:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Loại giấy tờ:</span>
                           <span className="font-bold text-[#141b2b]">{req.docType}</span>
                         </div>
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Submit Date:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Ngày gửi:</span>
                           <span className="font-bold text-[#3e4a3d]">{req.subDate}</span>
                         </div>
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Email Address:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Địa chỉ Email:</span>
                           <span className="font-bold text-[#141b2b]">{req.email}</span>
                         </div>
                         <div className="mt-3">
-                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Attached Document Preview:</span>
+                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm:</span>
                           <div className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 bg-slate-50 flex items-center justify-center group">
                             <img src={req.docUrl} alt="KYC Document" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -2365,17 +2365,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                             onClick={() => handleKycAction(req.idRaw, false, req.role)}
                             className="px-3 py-1.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-bold transition-all"
                           >
-                            Reject
+                            Từ chối
                           </button>
                           <button 
                             onClick={() => handleKycAction(req.idRaw, true, req.role)}
                             className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all"
                           >
-                            Approve Verify
+                            Duyệt xác thực
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#6e7b6c] font-bold">Processed</span>
+                        <span className="text-xs text-[#6e7b6c] font-bold">Đã xử lý</span>
                       )}
                     </div>
                   </div>
@@ -2390,7 +2390,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
               </div>
-              <h2 className="text-headline-lg font-extrabold text-[#141b2b]">{activeTab} Section</h2>
+              <h2 className="text-headline-lg font-extrabold text-[#141b2b]">Mục {activeTab}</h2>
               <p className="text-body-sm text-[#6e7b6c] max-w-md mx-auto">
                 Mục <strong>{activeTab}</strong> đang được đồng bộ hóa thông tin tự động từ máy chủ quản trị trung tâm. Vui lòng quay lại sau.
               </p>
@@ -2398,7 +2398,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 onClick={() => setActiveTab('Dashboard')}
                 className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow transition-all"
               >
-                Back to Dashboard
+                Quay lại Bảng điều khiển
               </button>
             </div>
           )}
@@ -2435,32 +2435,32 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   <img src={selectedTask.avatar} alt={selectedTask.user} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
                   <div>
                     <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.user}</h4>
-                    <p className="text-xs text-[#6e7b6c]">Assignee User</p>
+                    <p className="text-xs text-[#6e7b6c]">Người được giao</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-body-sm border-b border-[#e9edff] pb-4">
                   <div>
-                    <span className="font-semibold text-[#6e7b6c]">Priority:</span>
+                    <span className="font-semibold text-[#6e7b6c]">Mức độ:</span>
                     <span className={`block mt-1 font-bold text-sm ${
                       selectedTask.priority === 'High' ? 'text-[#ba1a1a]' : 'text-[#3e4a3d]'
                     }`}>{selectedTask.priority} Priority</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-[#6e7b6c]">Deadline:</span>
+                    <span className="font-semibold text-[#6e7b6c]">Hạn chót:</span>
                     <span className="block mt-1 font-bold text-[#141b2b]">{selectedTask.deadline}</span>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Task Description</span>
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Mô tả công việc</span>
                   <p className="text-body-sm text-[#141b2b] mt-2 leading-relaxed bg-[#f9f9ff] p-3 rounded-lg border border-[#e1e8fd]">
                     {selectedTask.description}
                   </p>
                 </div>
 
                 <div>
-                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Current State</span>
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Trạng thái hiện tại</span>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`w-3 h-3 rounded-full ${
                       selectedTask.status === 'Completed' ? 'bg-emerald-500' : selectedTask.status === 'In Progress' ? 'bg-[#006b2c]' : 'bg-blue-500'
@@ -2480,7 +2480,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'In Progress')}
                       className="w-full py-2.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
                     >
-                      Start Task (Mark In Progress)
+                      Bắt đầu xử lý (Đang làm)
                     </button>
                   )}
                   {selectedTask.status === 'In Progress' && (
@@ -2488,7 +2488,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
                       className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"
                     >
-                      Complete Task
+                      Hoàn thành công việc
                     </button>
                   )}
                   <button 
@@ -2499,12 +2499,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     }}
                     className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
                   >
-                    Flag Delay / Report Issue
+                    Báo cáo sự cố / Trì hoãn
                   </button>
                 </>
               ) : (
                 <div className="p-3 bg-[#f7fff2] border border-[#bdcaba] rounded-lg text-center text-[#006b2c] font-bold text-body-sm">
-                  ✓ Task completed successfully.
+                  ✓ Công việc đã hoàn thành thành công.
                 </div>
               )}
               <button
@@ -2514,7 +2514,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 }}
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm rounded-lg transition-all"
               >
-                Close Drawer
+                Đóng cửa sổ
               </button>
             </div>
           </div>
