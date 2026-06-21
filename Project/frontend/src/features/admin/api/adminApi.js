@@ -71,6 +71,17 @@ export const adminApi = {
     }).then(res => res.json());
   },
   getVerificationTasks: () => api.get('/admin/verification-tasks'),
+  claimVerificationTask: (taskId, verifierEmail) => {
+    const headers = {};
+    if (verifierEmail) headers['X-Verifier-Email'] = verifierEmail;
+    return fetch(`http://localhost:8080/api/admin/verification-tasks/${taskId}/claim`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
+    }).then(res => res.json());
+  },
   submitTaskSignoff: (taskId, payload, verifierEmail) => {
     const headers = {};
     if (verifierEmail) headers['X-Verifier-Email'] = verifierEmail;
