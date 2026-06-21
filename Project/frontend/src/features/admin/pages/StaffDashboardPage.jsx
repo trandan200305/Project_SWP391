@@ -2479,8 +2479,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
       {/* ---------------- DRAWERS/MODAL: MANAGE/VIEW TASK DETAILS ---------------- */}
       {showManageModal && selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl flex flex-col justify-between border-l border-[#e1e8fd] animate-in slide-in-from-right duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl flex flex-col border border-[#e1e8fd] animate-in zoom-in-95 duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
                 <div>
@@ -2541,7 +2541,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             </div>
 
             {/* Bottom Actions for Task */}
-            <div className="border-t border-[#e9edff] pt-4 space-y-3">
+            <div className="border-t border-[#e9edff] pt-4 space-y-3 mt-6">
               {selectedTask.status !== 'Completed' ? (
                 <>
                   {selectedTask.status === 'Pending' && (
