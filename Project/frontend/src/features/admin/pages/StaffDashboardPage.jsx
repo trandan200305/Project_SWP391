@@ -289,9 +289,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const fetchModerationItems = () => {
     Promise.all([
       adminApi.getPendingProjects().catch(() => []),
-      adminApi.getProfileRequests().catch(() => []),
-      adminApi.getWithdrawals().catch(() => [])
-    ]).then(([projectsData, profilesData, withdrawalsData]) => {
+      adminApi.getProfileRequests().catch(() => [])
+    ]).then(([projectsData, profilesData]) => {
       let mapped = [];
 
       if (Array.isArray(projectsData)) {
@@ -319,20 +318,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           reason: 'Cập nhật hồ sơ',
           subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
           status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
-        }))];
-      }
-
-      if (Array.isArray(withdrawalsData)) {
-        mapped = [...mapped, ...withdrawalsData.filter(w => w.status === 'PENDING').map(w => ({
-          id: `WTH-${w.id}`,
-          idRaw: w.id,
-          title: `Yêu cầu rút tiền: ${w.amount?.toLocaleString('vi-VN')} VND`,
-          type: 'WITHDRAWAL',
-          author: `Freelancer #${w.freelancerId}`,
-          detail: `Rút tiền về ${w.bankName} - ${w.accountNumber}`,
-          reason: 'Rút tiền',
-          subDate: w.createdAt ? String(w.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
-          status: 'Pending'
         }))];
       }
 
@@ -2160,8 +2145,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           { id: 'PROJECT', label: 'Dự án' },
                           { id: 'PROFILE', label: 'Hồ sơ' },
                           { id: 'GIG', label: 'Gói dịch vụ' },
-                          { id: 'REVIEW', label: 'Đánh giá' },
-                          { id: 'WITHDRAWAL', label: 'Rút tiền' }
+                          { id: 'REVIEW', label: 'Đánh giá' }
                         ].map(qTab => (
                           <button
                             key={qTab.id}
