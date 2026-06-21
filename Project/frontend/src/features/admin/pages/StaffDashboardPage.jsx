@@ -1378,8 +1378,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 {/* Column 3: Doughnut Support Status Overview */}
                 <div className="card-level-1 p-6 bg-white flex flex-col justify-between min-h-[320px]">
                   <div>
-                    <h3 className="text-body-lg font-bold text-[#141b2b]">Ticket Status Overview</h3>
-                    <p className="text-xs text-[#3e4a3d]">Current support request distribution.</p>
+                    <h3 className="text-body-lg font-bold text-[#141b2b]">Tổng quan Ticket Hỗ trợ</h3>
+                    <p className="text-xs text-[#3e4a3d]">Phân bổ trạng thái các yêu cầu hỗ trợ hiện tại.</p>
                   </div>
 
                   {/* Doughnut SVG */}
@@ -1423,7 +1423,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                         className="hover:stroke-[#4ae176] transition-all duration-200 cursor-pointer"
                       />
                       <g className="text-center">
-                        <text x="75" y="70" textAnchor="middle" className="text-[10px] font-bold text-[#6e7b6c] fill-current">TOTAL</text>
+                        <text x="75" y="70" textAnchor="middle" className="text-[10px] font-bold text-[#6e7b6c] fill-current">TỔNG</text>
                         <text x="75" y="90" textAnchor="middle" className="text-title-md font-extrabold text-[#141b2b] fill-current">{displayTotal}</text>
                       </g>
                     </svg>
@@ -1434,21 +1434,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#006b2c] rounded-full" />
-                        <span>In Progress</span>
+                        <span>Đang xử lý</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayInProgressPercent}%</span>
                     </div>
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#0058be] rounded-full" />
-                        <span>Pending</span>
+                        <span>Chờ xử lý</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayPendingPercent}%</span>
                     </div>
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#6bff8f] rounded-full" />
-                        <span>Waiting User</span>
+                        <span>Chờ phản hồi</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayWaitingUserPercent}%</span>
                     </div>
@@ -1460,7 +1460,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Data Table: My Assigned Work */}
               <div className="card-level-1 p-6 bg-white">
                 <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-[#e1e8fd] gap-4">
-                  <h3 className="text-title-md font-extrabold text-[#141b2b]">My Assigned Work</h3>
+                  <h3 className="text-title-md font-extrabold text-[#141b2b]">Công việc của tôi</h3>
                   
                   {/* Filters & Actions */}
                   <div className="flex flex-wrap items-center gap-3">
@@ -1476,7 +1476,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               : 'text-[#6e7b6c] hover:text-[#141b2b]'
                           }`}
                         >
-                          {tab}
+                          {tab === 'ALL' ? 'Tất cả' : tab === 'Pending' ? 'Chờ xử lý' : tab === 'In Progress' ? 'Đang xử lý' : 'Hoàn thành'}
                         </button>
                       ))}
                     </div>
@@ -1496,13 +1496,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     <table className="min-w-full divide-y divide-[#e9edff] text-left">
                       <thead>
                         <tr className="bg-[#f9f9ff]">
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Task ID</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Type</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">User</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Priority</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Deadline</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right sticky right-0 bg-[#f9f9ff]">Action</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã CV</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Loại</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Người dùng</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mức độ</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Hạn chót</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right sticky right-0 bg-[#f9f9ff]">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#e9edff] bg-white">
@@ -1549,7 +1549,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                                   }}
                                   className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
                                 >
-                                  Manage
+                                  Quản lý
                                 </button>
                               </td>
                             </tr>
@@ -1574,8 +1574,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           {activeTab === 'Tasks' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Tasks Directory</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Full registry of administrative tasks assignable to staff agents.</p>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Danh mục công việc</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Toàn bộ danh sách công việc quản trị được giao cho nhân viên.</p>
               </div>
 
               {/* Tasks Filters Card */}
