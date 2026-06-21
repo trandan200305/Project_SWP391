@@ -1074,22 +1074,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         
         {/* HEADER (64px Height) */}
-        <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-between shrink-0 z-10">
+        <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-end shrink-0 z-10">
           
-          {/* Search bar */}
-          <div className="w-80 relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
-              <Search className="w-4 h-4" />
-            </span>
-            <input
-              type="text"
-              placeholder="Tìm kiếm công việc, người dùng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border border-transparent transition-all"
-            />
-          </div>
-
           {/* User profile & Actions */}
           <div className="flex items-center gap-5">
             {/* Top Toolbar Icons */}
