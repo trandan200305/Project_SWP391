@@ -133,6 +133,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   });
   const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
   const [deletedChats, setDeletedChats] = useState([]);
+  const [confirmCountdown, setConfirmCountdown] = useState(null);
+
+  useEffect(() => {
+    if (showConfirmModal && confirmCountdown !== null && confirmCountdown > 0) {
+      const timer = setTimeout(() => setConfirmCountdown(confirmCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (showConfirmModal && confirmCountdown === 0) {
+      setShowConfirmModal(false);
+      setConfirmCountdown(null);
+    }
+  }, [showConfirmModal, confirmCountdown]);
 
   const supportSubTabRef = useRef(supportSubTab);
   useEffect(() => {
@@ -815,8 +826,27 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       });
   };
 
-  // Moderation action supporting multiple types
+  // Confirmation prompt for moderation action
   const handleModAction = (item, approve) => {
+    setConfirmConfig({
+      title: approve ? 'Xác nhận phê duyệt' : 'Xác nhận từ chối',
+      message: approve 
+        ? `Bạn có chắc chắn muốn PHÊ DUYỆT nội dung: "${item.title}"?`
+        : `Bạn có chắc chắn muốn TỪ CHỐI nội dung: "${item.title}"?`,
+      type: approve ? 'success' : 'danger',
+      confirmText: approve ? 'Phê duyệt' : 'Từ chối',
+      onConfirm: () => {
+        setShowConfirmModal(false);
+        setConfirmCountdown(null);
+        executeModAction(item, approve);
+      }
+    });
+    setConfirmCountdown(15);
+    setShowConfirmModal(true);
+  };
+
+  // Moderation action supporting multiple types
+  const executeModAction = (item, approve) => {
     const adminId = user?.id || 1;
     let apiCall;
     const reason = approve ? 'Phê duyệt hợp lệ' : 'Không đáp ứng tiêu chuẩn kiểm duyệt';
@@ -2570,7 +2600,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   confirmConfig.type === 'danger' ? 'bg-[#ba1a1a] hover:bg-[#93000a]' : 'bg-[#006b2c] hover:bg-[#00873a]'
                 }`}
               >
-                {confirmConfig.confirmText || 'Xác nhận'}
+                {confirmConfig.confirmText || 'Xác nhận'} {confirmCountdown !== null ? `(${confirmCountdown}s)` : ''}
               </button>
             </div>
           </div>
