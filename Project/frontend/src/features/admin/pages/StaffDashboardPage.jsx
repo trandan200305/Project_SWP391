@@ -2556,7 +2556,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     >
                       {selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')
                         ? 'Đã được nhận bởi ' + selectedTask.assignedToEmail
-                        : 'Bắt đầu xử lý (Đang làm)'}
+                        : 'Bắt đầu xử lý'}
                     </button>
                   )}
                   {selectedTask.status === 'In Progress' && selectedTask.assignedToEmail === (user?.email || 'staff@gmail.com') && (
