@@ -9,12 +9,12 @@ import CTA from '../components/CTA.jsx';
 export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
   return (
     <>
-      <Hero onSearch={onSearch} />
+      <Hero onSearch={onSearch} onNavigate={onNavigate} user={user} />
       <Stats />
       <HowItWorks />
-      <FeaturedJobs searchQuery={searchQuery} />
+      <FeaturedJobs searchQuery={searchQuery} onNavigate={onNavigate} />
       <Testimonials onNavigate={onNavigate} />
-      <CTA onNavigate={onNavigate} user={user} />
+      {user?.role !== 'FREELANCER' && <CTA onNavigate={onNavigate} user={user} />}
     </>
   );
 }

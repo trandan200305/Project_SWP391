@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { Search, MapPin, Sparkles } from 'lucide-react';
 
-export default function Hero({ onSearch }) {
+export default function Hero({ onSearch, onNavigate, user }) {
   const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('');
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (onSearch) {
-      onSearch(query, location);
+    if (onNavigate) {
+      onNavigate('find_jobs', { query: query, category: 'all' });
+    } else if (onSearch) {
+      onSearch(query, '');
     }
   };
 
   const handleQuickTagClick = (tag) => {
     setQuery(tag);
-    if (onSearch) {
-      onSearch(tag, location);
+    if (onNavigate) {
+      onNavigate('find_jobs', { query: tag, category: 'all' });
+    } else if (onSearch) {
+      onSearch(tag, '');
     }
   };
 
@@ -47,31 +50,20 @@ export default function Hero({ onSearch }) {
           Kết nối với những chuyên gia hàng đầu về Công nghệ, Thiết kế, Marketing và Viết lách tại Việt Nam để hiện thực hóa ý tưởng của bạn một cách nhanh chóng và an toàn.
         </p>
 
+
         {}
         <form 
           onSubmit={handleSearchSubmit} 
           className="max-w-4xl mx-auto bg-surface p-3 rounded-2xl shadow-level-2 border border-muted-light/60 flex flex-col md:flex-row items-stretch gap-2 transition-all duration-300 hover:shadow-xl hover:border-secondary/30"
         >
           {}
-          <div className="flex-1 flex items-center px-4 gap-3 border-b md:border-b-0 md:border-r border-muted-light/60 py-2 md:py-0">
+          <div className="flex-1 flex items-center px-4 gap-3 py-2 md:py-0">
             <Search className="w-5 h-5 text-muted shrink-0" />
             <input 
               type="text" 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Thử tìm 'Thiết kế Logo', 'Lập trình React'..."
-              className="w-full bg-transparent border-none text-body-md py-3 focus:outline-none focus:ring-0 text-primary placeholder-muted"
-            />
-          </div>
-
-          {}
-          <div className="flex-1 flex items-center px-4 gap-3 py-2 md:py-0">
-            <MapPin className="w-5 h-5 text-muted shrink-0" />
-            <input 
-              type="text" 
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Hồ Chí Minh, Hà Nội, Toàn quốc..."
+              placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)"
               className="w-full bg-transparent border-none text-body-md py-3 focus:outline-none focus:ring-0 text-primary placeholder-muted"
             />
           </div>
@@ -86,19 +78,21 @@ export default function Hero({ onSearch }) {
         </form>
 
         {}
-        <div className="mt-8 flex flex-wrap justify-center items-center gap-3">
-          <span className="text-body-sm text-muted font-medium">Gợi ý phổ biến:</span>
-          {['Lập trình React', 'Thiết kế Landing Page', 'Quản trị Fanpage', 'Viết content', 'SEO chuyên sâu'].map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => handleQuickTagClick(tag)}
-              className="px-4 py-1.5 bg-muted-light/40 border border-muted-light/80 rounded-full text-body-sm font-medium hover:bg-secondary-light hover:text-secondary-dark hover:border-secondary/40 transition-all duration-200"
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+        {user?.role !== 'FREELANCER' && (
+          <div className="mt-8 flex flex-wrap justify-center items-center gap-3">
+            <span className="text-body-sm text-muted font-medium">Gợi ý phổ biến:</span>
+            {['Lập trình React', 'Thiết kế Landing Page', 'Quản trị Fanpage', 'Viết content', 'SEO chuyên sâu'].map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => handleQuickTagClick(tag)}
+                className="px-4 py-1.5 bg-muted-light/40 border border-muted-light/80 rounded-full text-body-sm font-medium hover:bg-secondary-light hover:text-secondary-dark hover:border-secondary/40 transition-all duration-200"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
