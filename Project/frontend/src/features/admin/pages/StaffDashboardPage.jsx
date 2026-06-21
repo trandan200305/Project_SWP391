@@ -81,6 +81,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
+  const [showModerationModal, setShowModerationModal] = useState(false);
+  const [selectedModerationItem, setSelectedModerationItem] = useState(null);
   const [violationReports, setViolationReports] = useState([]);
   const [escalationCases, setEscalationCases] = useState([]);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -2157,6 +2159,16 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                                 {item.status === 'Pending' ? (
                                   <div className="flex items-center justify-end gap-2">
                                     <button 
+                                      onClick={() => {
+                                        setSelectedModerationItem(item);
+                                        setShowModerationModal(true);
+                                      }}
+                                      className="p-1.5 border border-[#bdcaba] hover:bg-[#e1e8fd] hover:text-[#141b2b] text-[#6e7b6c] rounded transition-all"
+                                      title="Xem chi tiết"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button 
                                       onClick={() => handleModAction(item, true)}
                                       className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
                                       title="Duyệt"
@@ -2645,6 +2657,85 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               >
                 Đóng khiếu nại
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODERATION DETAIL MODAL ---------------- */}
+      {showModerationModal && selectedModerationItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết kiểm duyệt</h2>
+              <button 
+                onClick={() => {
+                  setShowModerationModal(false);
+                  setSelectedModerationItem(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              <div className="flex justify-between items-center mb-1">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#f7fff2] text-[#006b2c]">
+                  {selectedModerationItem.type}
+                </span>
+                <span className="text-xs text-[#6e7b6c] font-medium">{selectedModerationItem.subDate}</span>
+              </div>
+              <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedModerationItem.title}</h3>
+              
+              <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-sm">
+                <p className="text-[#3e4a3d] mb-1">Người đăng:</p>
+                <p className="font-bold text-[#141b2b]">{selectedModerationItem.author}</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Lý do đưa vào hàng đợi:</p>
+                <p className="text-sm font-semibold text-amber-700">{selectedModerationItem.reason}</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung chi tiết:</p>
+                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b] whitespace-pre-wrap">
+                  {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
+              {selectedModerationItem.status === 'Pending' ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, true);
+                      setShowModerationModal(false);
+                    }}
+                    className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" /> Phê duyệt
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, false);
+                      setShowModerationModal(false);
+                    }}
+                    className="flex-1 py-2 px-3 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" /> Từ chối
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowModerationModal(false)}
+                  className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+                >
+                  Đóng cửa sổ
+                </button>
+              )}
             </div>
           </div>
         </div>
