@@ -1084,12 +1084,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#ba1a1a] rounded-full border border-white" />
               </button>
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
-                <HelpCircle className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
-                <Grid className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Vertical Divider */}
