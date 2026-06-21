@@ -23,14 +23,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    
-    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            
             .csrf(AbstractHttpConfigurer::disable)
-            
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll() 
@@ -38,21 +34,14 @@ public class SecurityConfig {
         return http.build();
     }
 
-    
-    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
         configuration.setAllowedOriginPatterns(java.util.Collections.singletonList("*"));
-        
         configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
         configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Content-Type", "Cache-Control", "X-Admin-Id", "X-Verifier-Email"));
-        
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

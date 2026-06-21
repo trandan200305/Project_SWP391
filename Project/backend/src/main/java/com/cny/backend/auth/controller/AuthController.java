@@ -44,8 +44,7 @@ public class AuthController {
     private final Map<String, Long> codeTimestamps = new ConcurrentHashMap<>();
 
     private final Map<String, Boolean> verifiedForReset = new ConcurrentHashMap<>();
-    private static final long TEMP_PIN_TTL_MILLIS = 5 * 60 * 1000L;
-    private final Map<String, Long> tempPinExpiresAt = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> tempPinUsers = new ConcurrentHashMap<>();
 
     private final Map<String, Map<String, String>> pendingRegistrations = new ConcurrentHashMap<>();
     private final Map<String, String> registrationCodes = new ConcurrentHashMap<>();
@@ -83,7 +82,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        
+
         try {
             
             String table = role.equals("EMPLOYER") ? "employers" : "freelancers";
@@ -378,7 +377,7 @@ public class AuthController {
 
         boolean success = authService.setMessengerPin(userId, role, pin); 
         if (success) {
-            tempPinExpiresAt.remove(role.toUpperCase() + ":" + userId);
+            tempPinUsers.remove(role.toUpperCase() + ":" + userId);
         }
         response.put("success", success);
         response.put("message", success ? "Cài đặt mã PIN thành công." : "Có lỗi xảy ra.");
@@ -399,16 +398,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        String key = role.toUpperCase() + ":" + userId;
-        Long expiresAt = tempPinExpiresAt.get(key);
-        boolean hasTempPin = expiresAt != null;
-        if (hasTempPin && System.currentTimeMillis() > expiresAt) {
-            tempPinExpiresAt.remove(key);
-            response.put("success", false);
-            response.put("message", "Mã PIN tạm thời đã hết hiệu lực. Vui lòng yêu cầu lấy lại mã PIN mới.");
-            return ResponseEntity.badRequest().body(response);
-        }
-
         boolean isValid = authService.verifyMessengerPin(userId, role, pin);
         response.put("success", isValid);
         response.put("message", isValid ? "Mã PIN chính xác." : "Mã PIN không khớp.");
@@ -417,9 +406,9 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        if (hasTempPin) {
+        String key = role.toUpperCase() + ":" + userId;
+        if (tempPinUsers.getOrDefault(key, false)) {
             response.put("isTemporary", true);
-            response.put("expiresInSeconds", Math.max(0, (expiresAt - System.currentTimeMillis()) / 1000));
         }
 
         return ResponseEntity.ok(response);
@@ -441,10 +430,9 @@ public class AuthController {
         try {
             String resetEmail = authService.resetAndEmailMessengerPin(userId, role, mailSender);
             if (resetEmail != null) {
-                tempPinExpiresAt.put(role.toUpperCase() + ":" + userId, System.currentTimeMillis() + TEMP_PIN_TTL_MILLIS);
+                tempPinUsers.put(role.toUpperCase() + ":" + userId, true);
                 response.put("success", true);
                 response.put("message", "Mã PIN mới đã được gửi về email: " + resetEmail);
-                response.put("expiresInSeconds", TEMP_PIN_TTL_MILLIS / 1000);
             } else {
                 response.put("success", false);
                 response.put("message", "Không thể gửi email đặt lại mã PIN.");

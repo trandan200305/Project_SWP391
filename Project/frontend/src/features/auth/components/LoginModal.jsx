@@ -552,9 +552,16 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
 
                 {/* Social Login with Google */}
                 <div className="mb-3.5 flex flex-col items-center justify-center w-full">
-                  {!import.meta.env.VITE_GOOGLE_CLIENT_ID || !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes("googleusercontent.com") ? (
+                  {!import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+                  !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes(
+                    "googleusercontent.com",
+                  ) ? (
                     <div className="w-[320px] p-3 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] font-medium leading-relaxed mb-1 text-center shadow-sm">
-                      ⚠️ <strong>Google Login chưa cấu hình:</strong> Đổi <strong className="font-semibold">VITE_GOOGLE_CLIENT_ID</strong> trong file <strong className="font-bold">.env</strong>.
+                      ⚠️ <strong>Google Login chưa cấu hình:</strong> Đổi{" "}
+                      <strong className="font-semibold">
+                        VITE_GOOGLE_CLIENT_ID
+                      </strong>{" "}
+                      trong file <strong className="font-bold">.env</strong>.
                       <div className="mt-1.5 font-bold text-[10px] text-amber-700 bg-amber-100/50 py-1 px-2 rounded-lg">
                         Tài khoản test: client@lancerpro.vn / 123456
                       </div>

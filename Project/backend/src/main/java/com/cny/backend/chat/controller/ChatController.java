@@ -33,7 +33,6 @@ public class ChatController {
     @Autowired
     private SupportChatService chatService;
 
-    // chat support
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
         boolean shouldSendAutoReply = false;
@@ -51,9 +50,7 @@ public class ChatController {
 
         ChatMessageDto savedMessage = chatService.saveMessage(chatMessage);
 
-        // mo phong chat
         messagingTemplate.convertAndSend("/topic/ticket." + savedMessage.getTicketId(), savedMessage);
-        // mo chat chung
         messagingTemplate.convertAndSend("/topic/admin", savedMessage);
 
         if (shouldSendAutoReply) {
@@ -72,7 +69,7 @@ public class ChatController {
 
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
-        // Gửi tin nhắn của Staff trực tiếp tới kênh cá nhân của khách hàng
+
         if ("ADMIN".equals(savedMessage.getSenderRole()) || "STAFF".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {

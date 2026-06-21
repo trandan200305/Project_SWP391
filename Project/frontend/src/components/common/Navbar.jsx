@@ -72,15 +72,15 @@ export default function Navbar({
         userId: user.id,
         role: user.role,
       });
-        if (data.success) {
-          setResetPinSuccess(
-            data.message || "Mã PIN mới đã được gửi về email của bạn.",
-          );
-          setTempPinSecondsLeft(Number(data.expiresInSeconds) || 300);
-          setPinAttempts(0);
-          setPinValues(["", "", "", ""]);
-          document.getElementById("pin-0")?.focus();
-        } else {
+      if (data.success) {
+        setResetPinSuccess(
+          data.message || "Mã PIN mới đã được gửi về email của bạn.",
+        );
+        setTempPinSecondsLeft(Number(data.expiresInSeconds) || 300);
+        setPinAttempts(0);
+        setPinValues(["", "", "", ""]);
+        document.getElementById("pin-0")?.focus();
+      } else {
         setPinError(data.message || "Không thể gửi yêu cầu khôi phục.");
       }
     } catch (e) {
@@ -113,7 +113,9 @@ export default function Navbar({
           // tam thoi qua mail
           if (data.isTemporary) {
             setIsResettingTempPin(true);
-            setTempPinSecondsLeft(Number(data.expiresInSeconds) || tempPinSecondsLeft);
+            setTempPinSecondsLeft(
+              Number(data.expiresInSeconds) || tempPinSecondsLeft,
+            );
             setPinValues(["", "", "", ""]);
             setConfirmPinValues(["", "", "", ""]);
             setIsConfirmingPin(false);
@@ -137,13 +139,14 @@ export default function Navbar({
       }
       return;
     }
-    //xác nhận lại mã PIN mới mà chính user vừa nhập lần 1
+    //nhap pin moi lan dau hoac reset temp pin
     if (!isConfirmingPin) {
       const pin = pinValues.join("");
       if (pin.length !== 4) {
         setPinError("Vui lòng nhập đủ 4 chữ số.");
         return;
       }
+      // chuyển sang bước xác nhận
       setIsConfirmingPin(true);
       setPinError("");
     } else {
@@ -231,7 +234,9 @@ export default function Navbar({
       newPins[index] = e.key;
       setValues(newPins);
       setPinError("");
-      const nextInput = document.getElementById(`${prefix}${Math.min(index + 1, 3)}`);
+      const nextInput = document.getElementById(
+        `${prefix}${Math.min(index + 1, 3)}`,
+      );
       if (nextInput) nextInput.focus();
       return;
     }
@@ -243,7 +248,10 @@ export default function Navbar({
   };
 
   const handlePinPaste = (e) => {
-    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 4);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 4);
     if (!pasted) return;
     e.preventDefault();
     const nextValues = ["", "", "", ""];
@@ -257,11 +265,15 @@ export default function Navbar({
     }
     setPinError("");
     const prefix = isConfirmingPin ? "pin-confirm-" : "pin-";
-    document.getElementById(`${prefix}${Math.min(pasted.length, 4) - 1}`)?.focus();
+    document
+      .getElementById(`${prefix}${Math.min(pasted.length, 4) - 1}`)
+      ?.focus();
   };
 
   const formatTempPinTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const minutes = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
     const remainingSeconds = (seconds % 60).toString().padStart(2, "0");
     return `${minutes}:${remainingSeconds}`;
   };
@@ -497,7 +509,9 @@ export default function Navbar({
                       </button>
                     )}
 
-                    {(user.role === "ADMIN" || user.role === "STAFF" || user.role === "MANAGER") && (
+                    {(user.role === "ADMIN" ||
+                      user.role === "STAFF" ||
+                      user.role === "MANAGER") && (
                       <button
                         onClick={() => {
                           setShowProfileMenu(false);
@@ -505,7 +519,12 @@ export default function Navbar({
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all mt-1"
                       >
-                        <Shield className="w-4 h-4" /> {user.role === "ADMIN" ? "Dashboard Admin" : user.role === "MANAGER" ? "Dashboard Manager" : "Dashboard Staff"}
+                        <Shield className="w-4 h-4" />{" "}
+                        {user.role === "ADMIN"
+                          ? "Dashboard Admin"
+                          : user.role === "MANAGER"
+                            ? "Dashboard Manager"
+                            : "Dashboard Staff"}
                       </button>
                     )}
 
@@ -627,17 +646,25 @@ export default function Navbar({
             </a>
 
             {}
-            {user && (user.role === "ADMIN" || user.role === "STAFF" || user.role === "MANAGER") && (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  onNavigateToAdmin();
-                }}
-                className="w-full text-center bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <Shield className="w-4 h-4" /> {user.role === "ADMIN" ? "Admin Control Panel" : user.role === "MANAGER" ? "Manager Control Panel" : "Staff Control Panel"}
-              </button>
-            )}
+            {user &&
+              (user.role === "ADMIN" ||
+                user.role === "STAFF" ||
+                user.role === "MANAGER") && (
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onNavigateToAdmin();
+                  }}
+                  className="w-full text-center bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Shield className="w-4 h-4" />{" "}
+                  {user.role === "ADMIN"
+                    ? "Admin Control Panel"
+                    : user.role === "MANAGER"
+                      ? "Manager Control Panel"
+                      : "Staff Control Panel"}
+                </button>
+              )}
 
             {user && user.role === "EMPLOYER" && (
               <>
@@ -807,16 +834,21 @@ export default function Navbar({
                     {resetPinSuccess}
                   </p>
                 )}
-                {!isResettingTempPin && resetPinSuccess && tempPinSecondsLeft > 0 && (
-                  <p className="text-xs text-amber-600 mb-3 text-center font-bold">
-                    Mã PIN tạm thời hết hiệu lực sau {formatTempPinTime(tempPinSecondsLeft)}.
-                  </p>
-                )}
-                {!isResettingTempPin && resetPinSuccess && tempPinSecondsLeft === 0 && (
-                  <p className="text-xs text-rose-500 mb-3 text-center font-bold">
-                    Mã PIN tạm thời đã hết hiệu lực. Vui lòng lấy lại mã mới.
-                  </p>
-                )}
+                {!isResettingTempPin &&
+                  resetPinSuccess &&
+                  tempPinSecondsLeft > 0 && (
+                    <p className="text-xs text-amber-600 mb-3 text-center font-bold">
+                      Mã PIN tạm thời hết hiệu lực sau{" "}
+                      {formatTempPinTime(tempPinSecondsLeft)}.
+                    </p>
+                  )}
+                {!isResettingTempPin &&
+                  resetPinSuccess &&
+                  tempPinSecondsLeft === 0 && (
+                    <p className="text-xs text-rose-500 mb-3 text-center font-bold">
+                      Mã PIN tạm thời đã hết hiệu lực. Vui lòng lấy lại mã mới.
+                    </p>
+                  )}
 
                 <div className="flex gap-3 mt-4">
                   <button
