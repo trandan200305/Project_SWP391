@@ -242,6 +242,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             if (t.status === 'APPROVED') displayStatus = 'Completed';
             else if (t.status === 'REJECTED') displayStatus = 'Rejected';
             else if (t.status === 'IN_PROGRESS') displayStatus = 'In Progress';
+            else if (t.status === 'ESCALATED') displayStatus = 'Escalated';
 
             return {
               id: `#TSK-${t.taskId}`,
@@ -2532,7 +2533,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   <span className="text-xs font-bold text-[#6e7b6c] uppercase">Trạng thái hiện tại</span>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`w-3 h-3 rounded-full ${
-                      selectedTask.status === 'Completed' ? 'bg-emerald-500' : selectedTask.status === 'In Progress' ? 'bg-[#006b2c]' : 'bg-blue-500'
+                      selectedTask.status === 'Completed' ? 'bg-emerald-500' : 
+                      selectedTask.status === 'In Progress' ? 'bg-[#006b2c]' : 
+                      selectedTask.status === 'Escalated' ? 'bg-red-500' : 
+                      'bg-blue-500'
                     }`} />
                     <span className="text-body-sm font-bold text-[#141b2b]">{selectedTask.status}</span>
                   </div>
@@ -2568,10 +2572,22 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     </button>
                   )}
                   <button 
-                    onClick={() => {
-                      setShowManageModal(false);
-                      setSelectedTask(null);
-                      showToast('Đã báo cáo trì hoãn cho Task!', 'error');
+                    onClick={async () => {
+                      try {
+                        const res = await adminApi.escalateVerificationTask(selectedTask.taskId);
+                        if (res.success) {
+                          showToast(res.message || 'Đã báo cáo sự cố và chuyển cấp tác vụ!', 'success');
+                          setTasks(prev => prev.map(t => 
+                            t.taskId === selectedTask.taskId ? { ...t, status: 'Escalated', assignedToEmail: null } : t
+                          ));
+                          setShowManageModal(false);
+                          setSelectedTask(null);
+                        } else {
+                          showToast(res.message || 'Có lỗi xảy ra', 'error');
+                        }
+                      } catch (error) {
+                        showToast('Lỗi kết nối tới máy chủ', 'error');
+                      }
                     }}
                     className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
                   >

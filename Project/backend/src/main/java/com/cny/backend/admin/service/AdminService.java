@@ -1726,6 +1726,35 @@ public class AdminService {
         return response;
     }
 
+    @Transactional
+    public Map<String, Object> escalateVerificationTask(int taskId, String staffEmail) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);
+        if (!taskOpt.isPresent()) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tác vụ kiểm chứng!");
+            return response;
+        }
+
+        DepartmentVerificationTask task = taskOpt.get();
+        if ("APPROVED".equals(task.getStatus()) || "REJECTED".equals(task.getStatus()) || "COMPLETED".equals(task.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Tác vụ này đã hoàn thành, không thể báo cáo sự cố!");
+            return response;
+        }
+
+        task.setStatus("ESCALATED");
+        task.setAssignedToEmail(null);
+        departmentVerificationTaskRepository.save(task);
+
+        writeAuditLog(0, "TASK_ESCALATE", "DEPARTMENTS", 
+                "Tài khoản " + staffEmail + " đã báo cáo sự cố và chuyển cấp tác vụ #" + taskId);
+
+        response.put("success", true);
+        response.put("message", "Đã báo cáo sự cố và chuyển cấp tác vụ thành công.");
+        return response;
+    }
+
     public Map<String, Object> submitTaskSignoff(int taskId, Map<String, Object> payload, String verifierEmail) {
         Map<String, Object> response = new HashMap<>();
         Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);

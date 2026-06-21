@@ -89,16 +89,12 @@ export const adminApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...headers
-      },
-      body: JSON.stringify(payload)
-    }).then(res => res.json());
-  },
   moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
-  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
-  getVnpayConfig: () => api.get('/admin/vnpay-config'),
-  saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
+  claimVerificationTask: (taskId) => api.post(`/admin/verification-tasks/${taskId}/claim`),
+  submitTaskSignoff: (taskId, data) => api.post(`/admin/verification-tasks/${taskId}/signoff`, data),
+  escalateVerificationTask: (taskId) => api.post(`/admin/verification-tasks/${taskId}/escalate`),
+
+  // Disputes & IssuesVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
   getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
   reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`)
 };
-
