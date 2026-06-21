@@ -585,7 +585,6 @@ public class AuthService {
         return false;
     }
 
-
     public boolean verifyMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId)

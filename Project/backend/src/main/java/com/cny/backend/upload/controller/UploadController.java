@@ -16,7 +16,6 @@ import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,21 +46,21 @@ public class UploadController {
         }
 
         try {
-            
+
             File dir = new File(UPLOADS_DIR);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
-            
             String originalFilename = file.getOriginalFilename();
             String extension = "";
             if (originalFilename != null && originalFilename.lastIndexOf('.') != -1) {
                 extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
             }
+            // chánh lặp tên file
             String uniqueName = UUID.randomUUID().toString() + extension;
 
-            
+            // save ô cứng máy chủ
             Path path = Paths.get(UPLOADS_DIR, uniqueName);
             Files.write(path, file.getBytes());
 

@@ -231,7 +231,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[580px] animate-scale-up border border-slate-100"
+        className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl min-h-[580px] max-h-[95vh] animate-scale-up border border-slate-100"
       >
         
         <button
