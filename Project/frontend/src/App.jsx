@@ -194,6 +194,9 @@ export default function App() {
   };
 
   const handleNavigate = (page, params = null) => {
+    if (page !== 'coming_soon') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     const protectedPages = ['admin', 'coming_soon', 'messenger', 'post_job', 'employer_profile', 'profile', 'checkout'];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage('login');

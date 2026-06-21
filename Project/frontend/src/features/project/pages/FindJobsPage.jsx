@@ -3,14 +3,14 @@ import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function FindJobsPage({ onNavigate, initialCategory = 'all', user }) {
+export default function FindJobsPage({ onNavigate, initialCategory = 'all', initialKeyword = '', user }) {
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(initialKeyword || '');
   const [minSalary, setMinSalary] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorToast, setErrorToast] = useState(null);
@@ -30,6 +30,13 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
       setPage(0);
     }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialKeyword !== undefined) {
+      setKeyword(initialKeyword);
+      setPage(0);
+    }
+  }, [initialKeyword]);
 
   const isValidSalary = (value) => {
     if (!value) return true; 
@@ -119,6 +126,11 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     setPage(0); 
   };
 
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleExecuteSearch = () => {
     if (!isValidSalary(minSalary)) {
       setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
@@ -127,12 +139,14 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     }
     setErrorToast(null);
     setPage(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     fetchJobs(keyword, activeCategory, minSalary, 0, size);
   };
 
   const handleCategoryChange = (catId) => {
     setActiveCategory(catId);
-    setPage(0); 
+    setPage(0); // reset to first page when changing category
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatCurrency = (amount) => {
@@ -330,7 +344,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
               
               {startPage > 0 && (
                 <button 
-                  onClick={() => setPage(0)}
+                  onClick={() => handlePageChange(0)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Đầu
@@ -341,7 +355,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
               {pageButtons.map((btnIndex) => (
                 <button
                   key={btnIndex}
-                  onClick={() => setPage(btnIndex)}
+                  onClick={() => handlePageChange(btnIndex)}
                   className={`min-w-[40px] h-10 px-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
                     page === btnIndex 
                       ? 'bg-[#1e40af] text-white border-transparent hover:-translate-y-0.5 shadow-blue-500/30' 
@@ -355,7 +369,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
               
               {endPage < totalPages - 1 && (
                 <button 
-                  onClick={() => setPage(totalPages - 1)}
+                  onClick={() => handlePageChange(totalPages - 1)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Cuối

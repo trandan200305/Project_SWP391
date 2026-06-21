@@ -1,8 +1,9 @@
 @echo off
-title LancerPro Backend
+title LancerPro Frontend
 echo =======================================================
-echo   Starting LancerPro Backend
+echo   Starting LancerPro Frontend
 echo =======================================================
 cd /d "%~dp0"
-call mvnw.cmd clean spring-boot:run
+call npm install
+call npm run dev
 pause

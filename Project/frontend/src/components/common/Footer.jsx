@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Globe, Mail, Send, CheckCircle2 } from 'lucide-react';
 
-export default function Footer() {
+export default function Footer({ onNavigate, user }) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -42,10 +42,19 @@ export default function Footer() {
             Dành cho Khách hàng
           </h4>
           <ul className="space-y-3 text-white/60 text-body-sm">
-            <li><a href="#post-job" className="hover:text-secondary transition-colors">Đăng dự án</a></li>
-            <li><a href="#find-freelancer" className="hover:text-secondary transition-colors">Tìm freelancer</a></li>
-            <li><a href="#process" className="hover:text-secondary transition-colors">Quy trình làm việc</a></li>
-            <li><a href="#pricing" className="hover:text-secondary transition-colors">Bảng phí dịch vụ</a></li>
+            {user?.role !== 'FREELANCER' ? (
+              <>
+                <li><a href="#post-job" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('post_job'); }} className="hover:text-secondary transition-colors cursor-pointer">Đăng dự án</a></li>
+                <li><a href="#find-freelancer" className="hover:text-secondary transition-colors cursor-pointer">Tìm freelancer</a></li>
+              </>
+            ) : (
+              <>
+                <li><a href="#post-job" onClick={(e) => { e.preventDefault(); alert('Rất tiếc! Bạn đang đăng nhập dưới quyền Freelancer, không thể thao tác các tính năng của Khách hàng.'); }} className="hover:text-secondary transition-colors cursor-pointer">Đăng dự án</a></li>
+                <li><a href="#find-freelancer" onClick={(e) => { e.preventDefault(); alert('Rất tiếc! Bạn đang đăng nhập dưới quyền Freelancer, không thể thao tác các tính năng của Khách hàng.'); }} className="hover:text-secondary transition-colors cursor-pointer">Tìm freelancer</a></li>
+              </>
+            )}
+            <li><a href="#process" onClick={(e) => { if(user?.role === 'FREELANCER') { e.preventDefault(); alert('Rất tiếc! Bạn đang đăng nhập dưới quyền Freelancer, không thể thao tác các tính năng của Khách hàng.'); } }} className="hover:text-secondary transition-colors cursor-pointer">Quy trình làm việc</a></li>
+            <li><a href="#pricing" onClick={(e) => { if(user?.role === 'FREELANCER') { e.preventDefault(); alert('Rất tiếc! Bạn đang đăng nhập dưới quyền Freelancer, không thể thao tác các tính năng của Khách hàng.'); } }} className="hover:text-secondary transition-colors cursor-pointer">Bảng phí dịch vụ</a></li>
           </ul>
         </div>
 
@@ -55,10 +64,10 @@ export default function Footer() {
             Dành cho Freelancer
           </h4>
           <ul className="space-y-3 text-white/60 text-body-sm">
-            <li><a href="#find-jobs" className="hover:text-secondary transition-colors">Tìm việc làm</a></li>
-            <li><a href="#create-profile" className="hover:text-secondary transition-colors">Tạo hồ sơ năng lực</a></li>
-            <li><a href="#membership" className="hover:text-secondary transition-colors">Gói thành viên</a></li>
-            <li><a href="#assessments" className="hover:text-secondary transition-colors">Đánh giá kỹ năng</a></li>
+            <li><a href="#find-jobs" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('find_jobs'); }} className="hover:text-secondary transition-colors cursor-pointer">Tìm việc làm</a></li>
+            <li><a href="#create-profile" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('profile', { tab: 'portfolio' }); }} className="hover:text-secondary transition-colors cursor-pointer">Tạo hồ sơ năng lực</a></li>
+            <li><a href="#membership" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('coming_soon'); }} className="hover:text-secondary transition-colors cursor-pointer">Gói thành viên</a></li>
+            <li><a href="#assessments" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('coming_soon'); }} className="hover:text-secondary transition-colors cursor-pointer">Đánh giá kỹ năng</a></li>
           </ul>
         </div>
 

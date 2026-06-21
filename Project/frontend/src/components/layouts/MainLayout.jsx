@@ -15,7 +15,7 @@ export default function MainLayout({ children, onNavigate, onNavigateToAdmin, cu
       <main>
         {children}
       </main>
-      <Footer />
+      <Footer onNavigate={onNavigate} user={user} />
     </div>
   );
 }

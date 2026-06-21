@@ -9,6 +9,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [targetId, setTargetId] = useState(user?.id || 1);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'work_profile', 'portfolio', 'preferences'
   const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger', 'kyc'
+
+  // For Portfolio Tab
+  const [attachmentType, setAttachmentType] = useState('url');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -103,12 +108,33 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     relatedService: '',
     productLink: ''
   });
+  const [successToast, setSuccessToast] = useState(null);
+  const [errorToasts, setErrorToasts] = useState([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
 
-  // Fetch Categories on Mount
+  const formatExternalLink = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `https://${url}`;
+  };
+
+  const showSuccess = (msg) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(null), 3000);
+  };
+
+  const showError = (msg) => {
+    const id = Date.now() + Math.random();
+    setErrorToasts((prev) => [...prev, { id, msg }]);
+    setTimeout(() => {
+      setErrorToasts((prev) => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
   useEffect(() => {
     fetchCategories();
   }, []);
+
+
 
   const fetchCategories = async () => {
     try {
@@ -347,17 +373,136 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setSelectedFile(null);
+      setFilePreview(null);
+      return;
+    }
+
+    const errors = [];
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      errors.push('Dung lượng tệp vượt quá 5MB');
+    }
+
+    const allowedDocs = ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf'];
+    const allowedImages = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    const isDoc = allowedDocs.includes(file.type);
+    const isAllowedImage = allowedImages.includes(file.type);
+    const isImageLike = file.type.startsWith('image/');
+
+    if (!isDoc && !isAllowedImage) {
+      errors.push('Định dạng không hỗ trợ (chỉ nhận .doc, .docx, .pdf, .jpg, .png, .gif)');
+    }
+
+    if (isImageLike) {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const { width, height } = img;
+        if (width < 380 || height < 214) {
+          errors.push(`Kích thước ảnh quá nhỏ (${width}x${height}px)`);
+        } else if (width > 1920 || height > 1920 || (width > 1080 && height > 1080)) {
+          errors.push(`Kích thước ảnh quá lớn (${width}x${height}px)`);
+        }
+
+        if (errors.length > 0) {
+          showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+          e.target.value = null;
+          setSelectedFile(null);
+          setFilePreview(null);
+          URL.revokeObjectURL(img.src);
+          return;
+        }
+
+        setSelectedFile(file);
+        setFilePreview({
+          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+          format: file.name.split('.').pop().toUpperCase(),
+          dimensions: `${width} x ${height} px`
+        });
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+        if (isAllowedImage) {
+          errors.push('Không thể đọc file ảnh');
+        }
+        if (errors.length > 0) {
+          showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+          e.target.value = null;
+          setSelectedFile(null);
+          setFilePreview(null);
+        }
+        URL.revokeObjectURL(img.src);
+      };
+    } else {
+      if (errors.length > 0) {
+        showError('Tệp đính kèm không hợp lệ. Vui lòng chọn tệp đúng định dạng, dung lượng và kích thước yêu cầu.');
+        e.target.value = null;
+        setSelectedFile(null);
+        setFilePreview(null);
+        return;
+      }
+
+      setSelectedFile(file);
+      setFilePreview({
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        format: file.name.split('.').pop().toUpperCase(),
+        dimensions: 'N/A'
+      });
+    }
+  };
+
   const handleSavePortfolio = async () => {
-    if (!newPortfolio.title || !newPortfolio.attachmentUrl || !newPortfolio.description) {
-      alert('Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc (*)');
+    if (!newPortfolio.title || !newPortfolio.description) {
+      showError('Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc (*)');
+      return;
+    }
+
+    if (attachmentType === 'url' && !newPortfolio.attachmentUrl) {
+      showError('Vui lòng nhập đường dẫn liên kết cho File đính kèm (*)');
+      return;
+    }
+
+    if (attachmentType === 'file' && !selectedFile) {
+      showError('Vui lòng tải lên tệp tin đính kèm (*)');
       return;
     }
 
     try {
+      let finalAttachmentUrl = newPortfolio.attachmentUrl;
+
+      if (attachmentType === 'file' && selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await fetch('http://localhost:8080/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!uploadRes.ok) {
+          showError('Tải tệp lên thất bại. Vui lòng thử lại.');
+          return;
+        }
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalAttachmentUrl = uploadData.fileUrl;
+        } else {
+          showError('Tải tệp lên thất bại: ' + uploadData.message);
+          return;
+        }
+      }
+
+      const payload = {
+        ...newPortfolio,
+        attachmentUrl: finalAttachmentUrl
+      };
+
       const res = await fetch(`http://localhost:8080/api/freelancers/${targetId}/portfolios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPortfolio)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         alert('Thêm hồ sơ năng lực thành công!');
@@ -366,6 +511,9 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         setNewPortfolio({
           title: '', attachmentUrl: '', description: '', relatedService: '', productLink: ''
         });
+        setSelectedFile(null);
+        setFilePreview(null);
+        setAttachmentType('url');
       } else {
         alert('Thêm hồ sơ thất bại! Hãy thử lại.');
       }
@@ -836,7 +984,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                                   Xem chi tiết
                                 </button>
                                 <button 
-                                  onClick={() => handleDeletePortfolio(pf.portfolioId)}
+                                  onClick={() => handleDeletePortfolio(pf.portfolioId || pf.id)}
                                   className="text-sm font-semibold text-red-500 hover:text-red-700 hover:underline"
                                 >
                                   Xóa
@@ -855,108 +1003,165 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                           )}
                         </div>
                       )}
-                    </div>
 
-                    {(portfolios.length === 0 || isAddingPortfolio) && (
-                      <>
-                        <div className="w-full h-px bg-slate-100"></div>
+                      {(portfolios.length === 0 || isAddingPortfolio) && (
+                        <>
+                          <div className="w-full h-px bg-slate-100"></div>
 
-                        <div>
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
-                              2
+                          <div>
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                2
+                              </div>
+                              <h2 className="text-lg font-bold text-slate-800 uppercase">Thêm hồ sơ</h2>
                             </div>
-                            <h2 className="text-lg font-bold text-slate-800 uppercase">Thêm hồ sơ</h2>
-                          </div>
 
-                          <div className="space-y-6">
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="w-48 font-semibold text-slate-700 pt-2">Tiêu đề <span className="text-red-500">*</span></div>
-                              <div className="flex-1">
-                                <input 
-                                  type="text" 
-                                  placeholder="Tiêu đề" 
-                                  value={newPortfolio.title}
-                                  onChange={(e) => setNewPortfolio({...newPortfolio, title: e.target.value})}
-                                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
-                                />
+                            <div className="space-y-6">
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Tiêu đề <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tiêu đề" 
+                                    value={newPortfolio.title}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, title: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">Tên dự án hoặc tên sản phẩm bạn đã thực hiện</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Hình thức tải lên <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <select 
+                                    value={attachmentType} 
+                                    onChange={(e) => setAttachmentType(e.target.value)}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2"
+                                  >
+                                    <option value="url">Nhập URL</option>
+                                    <option value="file">Tải tệp lên</option>
+                                  </select>
+                                  <p className="text-xs text-slate-400">Chọn phương thức bạn muốn sử dụng để cung cấp file hồ sơ năng lực.</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">File đính kèm <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  {attachmentType === 'url' ? (
+                                    <>
+                                      <input 
+                                        type="text" 
+                                        placeholder="Nhập URL file đính kèm..."
+                                        value={newPortfolio.attachmentUrl}
+                                        onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
+                                        className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
+                                      />
+                                      <p className="text-xs text-slate-400">Vui lòng cung cấp đường dẫn truy cập trực tiếp đến sản phẩm hoặc dự án của bạn (ví dụ: Google Drive, Github, Figma...).</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <input 
+                                        type="file" 
+                                        onChange={handleFileChange}
+                                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white mb-2" 
+                                      />
+                                      {filePreview && (
+                                        <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                                          <div className="font-semibold mb-1">Thông tin tệp:</div>
+                                          <div><span className="font-medium">Định dạng:</span> {filePreview.format}</div>
+                                          <div><span className="font-medium">Dung lượng:</span> {filePreview.size}</div>
+                                          {filePreview.dimensions !== 'N/A' && (
+                                            <div><span className="font-medium">Kích thước ảnh:</span> {filePreview.dimensions}</div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="text-xs text-slate-400 space-y-1">
+                                        <p>1. Kích thước không quá 5 MB</p>
+                                        <p>2. Định dạng được hỗ trợ</p>
+                                        <p className="pl-2">- Tài liệu: .doc, .docx, .pdf</p>
+                                        <p className="pl-2">- Hình ảnh: .jpg, .jpeg, .png, .gif</p>
+                                        <p>3. Nếu là ảnh:</p>
+                                        <p className="pl-2">- Kích thước tối đa: 1920 x 1080 (16:9) hoặc 1080 x 1920 (9:16) (Chuẩn FHD)</p>
+                                        <p className="pl-2">- Kích thước tối thiểu: 380 x 214</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Mô tả chi tiết <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-slate-600 mb-1">Mô tả về dự án</p>
+                                  <p className="text-xs text-slate-400 mb-2">Vui lòng không điền các thông tin liên lạc như email, số điện thoại... trong nội dung bên dưới.</p>
+                                  <textarea 
+                                    rows={8} 
+                                    placeholder="Mô tả"
+                                    value={newPortfolio.description}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, description: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y mb-1"
+                                  />
+                                  <p className="text-xs text-slate-400">Hãy viết thật chi tiết về sản phẩm hoặc dự án này để người xem có thể hiểu được những công việc thực sự bạn đã làm.</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Dịch vụ liên quan</div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tên dịch vụ (VD : Thiết kế banner facebook,...)" 
+                                    value={newPortfolio.relatedService}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, relatedService: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Bạn cần nhập 1 dịch vụ mà bạn có thể cung cấp cho khách hàng...</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Link sản phẩm</div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Link web dẫn đến dự án hoặc sản phẩm này" 
+                                    value={newPortfolio.productLink}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, productLink: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                </div>
                               </div>
                             </div>
-
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="w-48 font-semibold text-slate-700 pt-2">File đính kèm <span className="text-red-500">*</span></div>
-                              <div className="flex-1">
-                                <input 
-                                  type="text" 
-                                  placeholder="Nhập URL file đính kèm..."
-                                  value={newPortfolio.attachmentUrl}
-                                  onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
-                                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="w-48 font-semibold text-slate-700 pt-2">Mô tả chi tiết <span className="text-red-500">*</span></div>
-                              <div className="flex-1">
-                                <textarea 
-                                  rows={8} 
-                                  placeholder="Mô tả"
-                                  value={newPortfolio.description}
-                                  onChange={(e) => setNewPortfolio({...newPortfolio, description: e.target.value})}
-                                  className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y mb-1"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="w-48 font-semibold text-slate-700 pt-2">Dịch vụ liên quan</div>
-                              <div className="flex-1">
-                                <input 
-                                  type="text" 
-                                  placeholder="Tên dịch vụ (VD : Thiết kế banner facebook,...)" 
-                                  value={newPortfolio.relatedService}
-                                  onChange={(e) => setNewPortfolio({...newPortfolio, relatedService: e.target.value})}
-                                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="w-48 font-semibold text-slate-700 pt-2">Link sản phẩm</div>
-                              <div className="flex-1">
-                                <input 
-                                  type="text" 
-                                  placeholder="Link web dẫn đến dự án hoặc sản phẩm này" 
-                                  value={newPortfolio.productLink}
-                                  onChange={(e) => setNewPortfolio({...newPortfolio, productLink: e.target.value})}
-                                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="pt-6 flex justify-start">
-                            <button 
-                              onClick={handleSavePortfolio} 
-                              className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
-                            >
-                              Lưu hồ sơ
-                            </button>
-                            {portfolios.length > 0 && (
+                            
+                            <div className="pt-6 flex justify-start">
                               <button 
-                                onClick={() => setIsAddingPortfolio(false)} 
-                                className="ml-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-6 rounded-lg transition-colors"
+                                onClick={handleSavePortfolio} 
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
                               >
-                                Hủy
+                                Lưu hồ sơ
                               </button>
-                            )}
+                              {portfolios.length > 0 && (
+                                <button 
+                                  onClick={() => {
+                                    setIsAddingPortfolio(false);
+                                    setNewPortfolio({ title: '', attachmentUrl: '', description: '', relatedService: '', productLink: '' });
+                                    setSelectedFile(null);
+                                    setFilePreview(null);
+                                  }}
+                                  className="ml-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-6 rounded-lg transition-colors"
+                                >
+                                  Hủy bỏ
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
                       </>
                     )}
                   </div>
-               )}
+                </div>
+              )}
 
                {activeTab === 'preferences' && <UserSettings {...allProps} />}
             </div>
@@ -996,24 +1201,49 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                 
                 {selectedPortfolio.attachmentUrl && (
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">File đính kèm</h4>
-                    <a href={selectedPortfolio.attachmentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      {selectedPortfolio.attachmentUrl}
-                    </a>
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">File đính kèm</h4>
+                    {(() => {
+                      const url = formatExternalLink(selectedPortfolio.attachmentUrl);
+                      const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+                      const isPdf = url.match(/\.(pdf)$/i);
+                      
+                      if (isImage) {
+                        return (
+                          <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                            <img src={url} alt="Attachment" className="w-full h-auto object-contain max-h-[500px]" />
+                          </div>
+                        );
+                      }
+                      
+                      if (isPdf) {
+                        return (
+                          <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                            <iframe src={url} title="PDF Attachment" className="w-full h-[500px]" />
+                          </div>
+                        );
+                      }
+                      
+                      // Fallback to link if not a direct image or pdf
+                      return (
+                        <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100 w-fit">
+                          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          <span className="truncate max-w-md">{selectedPortfolio.attachmentUrl}</span>
+                        </a>
+                      );
+                    })()}
                   </div>
                 )}
 
                 {selectedPortfolio.productLink && (
                   <div>
                     <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Link sản phẩm</h4>
-                    <a href={selectedPortfolio.productLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <a href={formatExternalLink(selectedPortfolio.productLink)} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
-                      {selectedPortfolio.productLink}
+                      <span className="truncate max-w-md">{selectedPortfolio.productLink}</span>
                     </a>
                   </div>
                 )}
@@ -1031,6 +1261,25 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           </div>
         </div>
       )}
+      {/* Success Toast */}
+      {successToast && (
+        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="bg-emerald-500 rounded-full p-1">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <span className="font-medium text-sm">{successToast}</span>
+        </div>
+      )}
+
+      {/* Error Toasts */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {errorToasts.map(toast => (
+          <div key={toast.id} className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
+            <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span className="font-medium text-sm">{toast.msg}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
