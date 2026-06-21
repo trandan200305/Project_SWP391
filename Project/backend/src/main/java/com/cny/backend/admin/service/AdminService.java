@@ -1727,7 +1727,7 @@ public class AdminService {
     }
 
     @Transactional
-    public Map<String, Object> escalateVerificationTask(int taskId, String staffEmail) {
+    public Map<String, Object> escalateVerificationTask(int taskId, Map<String, Object> payload, String staffEmail) {
         Map<String, Object> response = new HashMap<>();
         Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);
         if (!taskOpt.isPresent()) {
@@ -1743,12 +1743,14 @@ public class AdminService {
             return response;
         }
 
+        String reason = payload.containsKey("reason") ? payload.get("reason").toString() : "Không có lý do";
+
         task.setStatus("ESCALATED");
         task.setAssignedToEmail(null);
         departmentVerificationTaskRepository.save(task);
 
         writeAuditLog(0, "TASK_ESCALATE", "DEPARTMENTS", 
-                "Tài khoản " + staffEmail + " đã báo cáo sự cố và chuyển cấp tác vụ #" + taskId);
+                "Tài khoản " + staffEmail + " đã báo cáo sự cố tác vụ #" + taskId + " với lý do: " + reason);
 
         response.put("success", true);
         response.put("message", "Đã báo cáo sự cố và chuyển cấp tác vụ thành công.");
