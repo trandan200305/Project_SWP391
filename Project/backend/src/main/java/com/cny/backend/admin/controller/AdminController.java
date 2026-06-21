@@ -232,8 +232,9 @@ public class AdminController {
     @PostMapping("/verification-tasks/{id}/escalate")
     public ResponseEntity<Map<String, Object>> escalateVerificationTask(
             @PathVariable("id") int id,
+            @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Verifier-Email", required = false, defaultValue = "admin@lancerpro.com") String verifierEmail) {
-        return ResponseEntity.ok(adminService.escalateVerificationTask(id, verifierEmail));
+        return ResponseEntity.ok(adminService.escalateVerificationTask(id, payload, verifierEmail));
     }
 
     @PostMapping("/verification-tasks/{id}/signoff")

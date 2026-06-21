@@ -134,6 +134,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
   const [deletedChats, setDeletedChats] = useState([]);
   const [confirmCountdown, setConfirmCountdown] = useState(null);
+  const [showEscalateReasons, setShowEscalateReasons] = useState(false);
+  const [selectedEscalateReason, setSelectedEscalateReason] = useState('');
 
   useEffect(() => {
     if (showConfirmModal && confirmCountdown !== null && confirmCountdown > 0) {
@@ -2571,28 +2573,72 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       Hoàn thành công việc
                     </button>
                   )}
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await adminApi.escalateVerificationTask(selectedTask.taskId);
-                        if (res.success) {
-                          showToast(res.message || 'Đã báo cáo sự cố và chuyển cấp tác vụ!', 'success');
-                          setTasks(prev => prev.map(t => 
-                            t.taskId === selectedTask.taskId ? { ...t, status: 'Escalated', assignedToEmail: null } : t
-                          ));
-                          setShowManageModal(false);
-                          setSelectedTask(null);
-                        } else {
-                          showToast(res.message || 'Có lỗi xảy ra', 'error');
-                        }
-                      } catch (error) {
-                        showToast('Lỗi kết nối tới máy chủ', 'error');
-                      }
-                    }}
-                    className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
-                  >
-                    Báo cáo sự cố / Trì hoãn
-                  </button>
+                  {!showEscalateReasons ? (
+                    <button 
+                      onClick={() => setShowEscalateReasons(true)}
+                      className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
+                    >
+                      Báo cáo sự cố / Trì hoãn
+                    </button>
+                  ) : (
+                    <div className="border border-[#ffdad6] bg-[#fff5f4] rounded-lg p-4 space-y-3">
+                      <p className="text-body-sm font-bold text-[#ba1a1a]">Chọn lý do chuyển cấp:</p>
+                      <div className="space-y-2">
+                        {['Hồ sơ có dấu hiệu giả mạo tinh vi', 'Thiếu thẩm quyền để giải quyết', 'Tranh chấp phức tạp cần Manager phân xử', 'Lỗi hệ thống / Bug phần mềm', 'Lý do khác'].map((reason, idx) => (
+                          <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="escalateReason" 
+                              value={reason} 
+                              checked={selectedEscalateReason === reason}
+                              onChange={(e) => setSelectedEscalateReason(e.target.value)}
+                              className="mt-1"
+                            />
+                            <span className="text-body-sm text-[#3e4a3d]">{reason}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button 
+                          onClick={() => {
+                            setShowEscalateReasons(false);
+                            setSelectedEscalateReason('');
+                          }}
+                          className="flex-1 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-body-sm transition-all"
+                        >
+                          Hủy
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (!selectedEscalateReason) {
+                              showToast('Vui lòng chọn lý do báo cáo sự cố', 'error');
+                              return;
+                            }
+                            try {
+                              const res = await adminApi.escalateVerificationTask(selectedTask.taskId, selectedEscalateReason);
+                              if (res.success) {
+                                showToast(res.message || 'Đã báo cáo sự cố và chuyển cấp tác vụ!', 'success');
+                                setTasks(prev => prev.map(t => 
+                                  t.taskId === selectedTask.taskId ? { ...t, status: 'Escalated', assignedToEmail: null } : t
+                                ));
+                                setShowManageModal(false);
+                                setSelectedTask(null);
+                                setShowEscalateReasons(false);
+                                setSelectedEscalateReason('');
+                              } else {
+                                showToast(res.message || 'Có lỗi xảy ra', 'error');
+                              }
+                            } catch (error) {
+                              showToast('Lỗi kết nối tới máy chủ', 'error');
+                            }
+                          }}
+                          className="flex-1 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white rounded-lg font-bold text-body-sm transition-all"
+                        >
+                          Xác nhận gửi
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="p-3 bg-[#f7fff2] border border-[#bdcaba] rounded-lg text-center text-[#006b2c] font-bold text-body-sm">
@@ -2603,6 +2649,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 onClick={() => {
                   setShowManageModal(false);
                   setSelectedTask(null);
+                  setShowEscalateReasons(false);
+                  setSelectedEscalateReason('');
                 }}
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm rounded-lg transition-all"
               >
