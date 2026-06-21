@@ -255,7 +255,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               deadline: t.status === 'APPROVED' ? 'Completed' : 'Pending Review',
               description: t.description || 'No description provided.',
               requiredDepartments: t.requiredDepartments,
-              signoffs: t.signoffs
+              signoffs: t.signoffs,
+              assignedToEmail: t.assignedToEmail || null
             };
           });
           setTasks(mapped);
@@ -605,10 +606,31 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const handleUpdateTaskStatus = (id, newStatus) => {
     if (!selectedTask) return;
     
+    setIsLoading(true);
+    if (newStatus === 'In Progress') {
+      adminApi.claimVerificationTask(selectedTask.taskId, user?.email || 'staff@gmail.com')
+        .then(res => {
+          setIsLoading(false);
+          if (res.success === false) {
+            showToast(res.message || 'Lỗi khi nhận tác vụ.', 'error');
+          } else {
+            showToast('Nhận tác vụ thành công!', 'success');
+            fetchTasks();
+            setShowManageModal(false);
+            setSelectedTask(null);
+          }
+        })
+        .catch(err => {
+          setIsLoading(false);
+          console.error(err);
+          showToast('Lỗi hệ thống khi nhận tác vụ.', 'error');
+        });
+      return;
+    }
+
     const reqDepts = selectedTask.requiredDepartments?.split(',') || ['CS'];
     const deptCode = reqDepts[0] || 'CS';
 
-    setIsLoading(true);
     adminApi.submitTaskSignoff(selectedTask.taskId, {
       status: newStatus === 'Completed' ? 'APPROVED' : 'PENDING',
       note: `Ký duyệt trạng thái ${newStatus} bởi CS Staff`,
@@ -2487,10 +2509,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Task Details Info */}
               <div className="py-6 space-y-4">
                 <div className="flex items-center gap-3 bg-[#f1f3ff] p-4 rounded-xl">
-                  <img src={selectedTask.avatar} alt={selectedTask.user} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
+                  <img src={selectedTask.avatar} alt={selectedTask.assignedToEmail || 'Chưa ai nhận'} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
                   <div>
-                    <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.user}</h4>
-                    <p className="text-xs text-[#6e7b6c]">Người được giao</p>
+                    <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.assignedToEmail ? selectedTask.assignedToEmail : 'Chưa có ai nhận'}</h4>
+                    <p className="text-xs text-[#6e7b6c]">Người đang xử lý</p>
                   </div>
                 </div>
 
@@ -2533,12 +2555,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   {selectedTask.status === 'Pending' && (
                     <button 
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'In Progress')}
-                      className="w-full py-2.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
+                      disabled={selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')}
+                      className={`w-full py-2.5 rounded-lg font-bold text-body-sm shadow transition-all ${
+                        selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-[#006b2c] hover:bg-[#00873a] text-white'
+                      }`}
                     >
-                      Bắt đầu xử lý (Đang làm)
+                      {selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')
+                        ? 'Đã được nhận bởi ' + selectedTask.assignedToEmail
+                        : 'Bắt đầu xử lý (Đang làm)'}
                     </button>
                   )}
-                  {selectedTask.status === 'In Progress' && (
+                  {selectedTask.status === 'In Progress' && selectedTask.assignedToEmail === (user?.email || 'staff@gmail.com') && (
                     <button 
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
                       className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"

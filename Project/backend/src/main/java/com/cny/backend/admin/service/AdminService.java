@@ -1676,6 +1676,7 @@ public class AdminService {
             map.put("requiredDepartments", task.getRequiredDepartments());
             map.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : null);
             map.put("updatedAt", task.getUpdatedAt() != null ? task.getUpdatedAt().toString() : null);
+            map.put("assignedToEmail", task.getAssignedToEmail());
             
 
             List<DepartmentTaskSignoff> signoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
@@ -1697,6 +1698,34 @@ public class AdminService {
     }
 
     @Transactional
+    public Map<String, Object> claimVerificationTask(int taskId, String staffEmail) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);
+        if (!taskOpt.isPresent()) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy tác vụ kiểm chứng!");
+            return response;
+        }
+
+        DepartmentVerificationTask task = taskOpt.get();
+        if (task.getAssignedToEmail() != null && !task.getAssignedToEmail().equals(staffEmail)) {
+            response.put("success", false);
+            response.put("message", "Tác vụ này đã được nhân viên khác nhận xử lý (" + task.getAssignedToEmail() + ")!");
+            return response;
+        }
+
+        task.setAssignedToEmail(staffEmail);
+        task.setStatus("IN_PROGRESS");
+        departmentVerificationTaskRepository.save(task);
+
+        writeAuditLog(0, "TASK_CLAIM", "DEPARTMENTS", 
+                "Tài khoản " + staffEmail + " đã nhận xử lý tác vụ #" + taskId);
+
+        response.put("success", true);
+        response.put("message", "Đã nhận tác vụ thành công.");
+        return response;
+    }
+
     public Map<String, Object> submitTaskSignoff(int taskId, Map<String, Object> payload, String verifierEmail) {
         Map<String, Object> response = new HashMap<>();
         Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);

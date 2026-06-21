@@ -34,6 +34,9 @@ public class DepartmentVerificationTask {
     @Column(name = "required_departments", nullable = false)
     private String requiredDepartments; 
 
+    @Column(name = "assigned_to_email")
+    private String assignedToEmail;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
