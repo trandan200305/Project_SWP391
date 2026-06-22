@@ -23,7 +23,7 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {
-    return <UserProfilePage user={user} defaultTab={currentPage} onNavigate={handleNavigate} onLogout={onLogout} />;
+    return <UserProfilePage user={user} defaultTab={currentPage} onLogout={onLogout} onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'coming_soon') {

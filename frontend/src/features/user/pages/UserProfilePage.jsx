@@ -4,16 +4,16 @@ import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
 
-export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab = 'profile' }) {
-  const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
-  const [targetId, setTargetId] = useState(user?.id || 1);
+export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate }) {
+  const [role, setRole] = useState(user.role.toLowerCase());
+  const [targetId, setTargetId] = useState(user.id);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
   const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger'
-  
+
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
-  
+
   // ================= COMMON STATE =================
   const [avatarUrl, setAvatarUrl] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -23,12 +23,12 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [hideEmail, setHideEmail] = useState(false);
   const [hidePhone, setHidePhone] = useState(false);
   const [hideLocation, setHideLocation] = useState(false);
-  
+
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // ================= KYC STATE =================
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
-  const [isVerified, setIsVerified] = useState(false);
+
   const [kycRejectedReason, setKycRejectedReason] = useState('');
   const [isUploadingKyc, setIsUploadingKyc] = useState(false);
   // Freelancer KYC
@@ -53,20 +53,20 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
-  
+
   // Freelancer Read-only Stats
   const [profileCompleteness, setProfileCompleteness] = useState(0);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [projectsCompleted, setProjectsCompleted] = useState(0);
   const [averageRating, setAverageRating] = useState(0);
-  
+
   // ================= EMPLOYER STATE =================
   const [companyName, setCompanyName] = useState('');
   const [companyDescription, setCompanyDescription] = useState('');
   const [website, setWebsite] = useState('');
   const [companySize, setCompanySize] = useState('');
   const [industry, setIndustry] = useState('');
-  
+
   // Employer Read-only Stats
   const [totalSpent, setTotalSpent] = useState(0);
   const [projectsPosted, setProjectsPosted] = useState(0);
@@ -76,16 +76,16 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
   useEffect(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
-    
+
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
     setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
     setHideEmail(false); setHidePhone(false); setHideLocation(false);
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
-    setKycStatus('UNVERIFIED'); setIsVerified(false); setKycRejectedReason('');
+    setKycStatus('UNVERIFIED'); setKycRejectedReason('');
     setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
-    
+
     fetch(endpoint)
       .then(res => res.text())
       .then(text => {
@@ -108,7 +108,6 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.createdAt) setCreatedAt(data.createdAt);
         if (data.lastLoginAt) setLastLoginAt(data.lastLoginAt);
         if (data.kycStatus) setKycStatus(data.kycStatus);
-        if (data.isVerified !== undefined) setIsVerified(data.isVerified);
         if (data.kycRejectedReason) setKycRejectedReason(data.kycRejectedReason);
         if (data.idCardFrontUrl) setIdCardFrontUrl(data.idCardFrontUrl);
         if (data.idCardBackUrl) setIdCardBackUrl(data.idCardBackUrl);
@@ -116,7 +115,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         if (data.taxCode) setTaxCode(data.taxCode);
         if (data.businessLicenseUrl) setBusinessLicenseUrl(data.businessLicenseUrl);
         if (data.representativeIdCardUrl) setRepresentativeIdCardUrl(data.representativeIdCardUrl);
-        
+
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
@@ -155,42 +154,41 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
 
   // Hàm: Lưu thông tin chỉnh sửa hồ sơ
   const handleSaveProfile = (e) => {
-    if(e) e.preventDefault();
-    
+
     const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
-    
+
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
+      payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
+      payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
-    
+
     fetch(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => {
-      alert('Đã lưu thông tin hồ sơ thành công!');
-    })
-    .catch(error => {
-      alert('Lỗi kết nối máy chủ!');
-    });
+      .then(res => {
+        alert('Đã lưu thông tin hồ sơ thành công!');
+      })
+      .catch(error => {
+        alert('Lỗi kết nối máy chủ!');
+      });
   };
 
 
 
   const formatDate = (dateString) => {
-    if(!dateString) return 'Chưa cập nhật';
+    if (!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
+    return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
   };
 
   const formatDateTime = (dateString) => {
-    if(!dateString) return 'Chưa cập nhật';
+    if (!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN', {hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'}).format(d);
+    return new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
   };
 
   const formatCurrency = (amount) => {
@@ -209,13 +207,13 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
   };
 
-    const allProps = {
-      user, onLogout,
-      role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
+  const allProps = {
+    user, onLogout,
+    role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage,
     isUploadingAvatar, setIsUploadingAvatar,
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
-    kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+    kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
@@ -229,124 +227,107 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 pt-24 pb-12">
-        
+
         <main className="flex-1 px-4 sm:px-8">
 
-          
+
           <div className="max-w-[1000px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            
+
             {/* Cover Banner */}
             <div className="h-48 bg-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 relative">
-               <div className="absolute inset-0 bg-white/30 backdrop-blur-[1px]"></div>
-               <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+              <div className="absolute inset-0 bg-white/30 backdrop-blur-[1px]"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
             </div>
 
             {/* Profile Header Block */}
             <div className="px-6 sm:px-10 pb-6 relative">
-               {/* Avatar */}
-               <div className="absolute -top-16 left-6 sm:left-10 w-32 h-32 rounded-full border-[5px] border-white shadow-sm bg-white overflow-hidden group cursor-pointer z-10">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-5xl font-bold text-gray-400">
-                      {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Camera className="w-6 h-6 text-white mb-1" />
-                    <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Uploading...' : 'Change'}</span>
-                    <input type="file" className="hidden" accept="image/*" disabled={isUploadingAvatar} onChange={async (e)=>{
-                        // Hàm: Xử lý sự kiện Upload Avatar và lưu trực tiếp vào CSDL
-                        const file = e.target.files[0];
-                        if(!file) return;
-                        
-                        setIsUploadingAvatar(true);
-                        
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        try {
-                          const res = await fetch('http://localhost:8080/api/upload', {
-                            method: 'POST',
-                            body: formData
-                          });
-                          const data = await res.json();
-                          
-                          if (data.success) {
-                            setAvatarUrl(data.fileUrl);
-                            
-                            const updateEndpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
-                            await fetch(updateEndpoint, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ avatarUrl: data.fileUrl })
-                            });
-                            
-                            alert('Đã tải ảnh lên và lưu vào CSDL thành công!');
-                          } else {
-                            alert('Upload ảnh thất bại!');
-                          }
-                        } catch (err) {
-                          alert('Lỗi upload ảnh! Đảm bảo Backend đang chạy.');
-                        } finally {
-                          setIsUploadingAvatar(false);
-                          e.target.value = '';
-                        }
-                    }}/>
-                  </label>
-                 </div>
+              {/* Avatar */}
+              <div className="absolute -top-16 left-6 sm:left-10 w-32 h-32 rounded-full border-[5px] border-white shadow-sm bg-white overflow-hidden group cursor-pointer z-10">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-5xl font-bold text-gray-400">
+                    {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Camera className="w-6 h-6 text-white mb-1" />
+                  <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Uploading...' : 'Change'}</span>
+                  <input type="file" className="hidden" accept="image/*" disabled={isUploadingAvatar} onChange={async (e) => {
+                    // Hàm: Xử lý sự kiện Upload Avatar và lưu trực tiếp vào CSDL
+                    const file = e.target.files[0];
+                    if (!file) return;
 
-               {/* Name & Actions Header */}
-               <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
-                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
-                       {(isVerified || kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
-                    </h2>
-                    <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                        {role === 'freelancer' && professionalTitle && (
-                          <span className="flex items-center gap-1">
-                            {professionalTitle}
-                          </span>
-                        )}
-                        {role === 'freelancer' && professionalTitle && <span className="w-1 h-1 bg-gray-400 rounded-full"></span>}
-                        {role === 'employer' && (
-                          <span className="flex items-center gap-1 text-indigo-600 font-bold">
-                            Doanh nghiệp
-                          </span>
-                        )}
-                        {role === 'employer' && <span className="w-1 h-1 bg-gray-400 rounded-full"></span>}
-                       <div className="flex items-center gap-0.5" title="Đánh giá trung bình">
-                         {[1, 2, 3, 4, 5].map(star => {
-                           const val = averageRating || 0;
-                           if (val >= star) {
-                             return <Star key={star} className="w-4 h-4 fill-yellow-500 text-yellow-500" />;
-                           } else if (val > star - 1) {
-                             const fillPercent = (val - (star - 1)) * 100;
-                             return (
-                               <div key={star} className="relative w-4 h-4">
-                                 <Star className="w-4 h-4 fill-gray-200 text-gray-200 absolute inset-0" />
-                                 <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
-                                   <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                                 </div>
-                               </div>
-                             );
-                           } else {
-                             return <Star key={star} className="w-4 h-4 fill-gray-200 text-gray-200" />;
-                           }
-                         })}
-                         <span className="font-bold text-gray-900 ml-1.5 text-sm">{averageRating || '0.0'}</span>
-                       </div>
+                    setIsUploadingAvatar(true);
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                      const res = await fetch('http://localhost:8080/api/upload', {
+                        method: 'POST',
+                        body: formData
+                      });
+                      const data = await res.json();
+
+                      if (data.success) {
+                        setAvatarUrl(data.fileUrl);
+
+                        const updateEndpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
+                        await fetch(updateEndpoint, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ avatarUrl: data.fileUrl })
+                        });
+
+                        alert('Đã tải ảnh lên và lưu vào CSDL thành công!');
+                      } else {
+                        alert('Upload ảnh thất bại!');
+                      }
+                    } catch (err) {
+                      alert('Lỗi upload ảnh! Đảm bảo Backend đang chạy.');
+                    } finally {
+                      setIsUploadingAvatar(false);
+                      e.target.value = '';
+                    }
+                  }} />
+                </label>
+              </div>
+
+              {/* Name & Actions Header */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
+                    {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
+                    {(kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" />}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
+                    {role === 'freelancer' && professionalTitle && (
+                      <span className="flex items-center gap-1">
+                        {professionalTitle}
+                      </span>
+                    )}
+
+                    {role === 'employer' && (
+                      <span className="flex items-center gap-1 text-indigo-600 font-bold">
+                        Doanh nghiệp
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-1" title="Đánh giá trung bình">
+                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                      <span className="font-bold text-gray-900 text-sm">{averageRating || '0.0'}</span>
                     </div>
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
 
             {/* Tab Contents Area */}
             <div className="p-6 sm:px-10 py-8 border-t border-gray-100">
-               {activeTab === 'profile' && <UserProfile {...allProps} />}
-               {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
-               {activeTab === 'preferences' && <UserSettings {...allProps} />}
+              {activeTab === 'profile' && <UserProfile {...allProps} />}
+              {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
+              {activeTab === 'preferences' && <UserSettings {...allProps} />}
             </div>
           </div>
         </main>

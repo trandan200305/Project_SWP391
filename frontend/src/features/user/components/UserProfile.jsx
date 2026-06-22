@@ -57,50 +57,27 @@ export default function UserProfile({
             Thông tin cơ bản
           </h3>
           <div className="space-y-5">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-blue-500" />
-              </div>
-              <div className="pt-0.5">
-                <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Vị trí / Địa chỉ</p>
-                <p className={`text-[15px] font-bold ${hideLocation ? 'text-gray-400 italic' : 'text-gray-900'}`}>
-                  {hideLocation ? 'Đã ẩn bởi người dùng' : ([address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật')}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                <Phone className="w-5 h-5 text-green-500" />
-              </div>
-              <div className="pt-0.5">
-                <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Số điện thoại</p>
-                <p className={`text-[15px] font-bold ${hidePhone ? 'text-gray-400 italic' : 'text-gray-900'}`}>
-                  {hidePhone ? 'Đã ẩn bởi người dùng' : (phone || 'Chưa cập nhật')}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                <Mail className="w-5 h-5 text-purple-500" />
-              </div>
-              <div className="pt-0.5 overflow-hidden">
-                <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Email</p>
-                <p className={`text-[15px] font-bold truncate ${hideEmail ? 'text-gray-400 italic' : 'text-gray-900'}`}>
-                  {hideEmail ? 'Đã ẩn bởi người dùng' : (email || 'Chưa cập nhật')}
-                </p>
-              </div>
-            </div>
-
+            <ReadOnlyRow
+              label="Địa chỉ"
+              icon={MapPin}
+              value={hideLocation ? <span className="text-gray-400 italic">Đã ẩn</span> : ([city, country].filter(Boolean).join(', ') || 'Chưa cập nhật')}
+            />
+            <ReadOnlyRow
+              label="Số điện thoại"
+              icon={Phone}
+              value={hidePhone ? <span className="text-gray-400 italic">Đã ẩn</span> : (phone || 'Chưa cập nhật')}
+            />
+            <ReadOnlyRow
+              label="Email"
+              icon={Mail}
+              value={hideEmail ? <span className="text-gray-400 italic">Đã ẩn</span> : (email || 'Chưa cập nhật')}
+            />
             {role === 'employer' && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                  <Globe className="w-5 h-5 text-indigo-500" />
-                </div>
-                <div className="pt-0.5 overflow-hidden">
-                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Website</p>
-                  <p className="text-[15px] font-bold text-gray-900 truncate">{website || 'Chưa cập nhật'}</p>
-                </div>
-              </div>
+              <ReadOnlyRow
+                label="Website"
+                icon={Globe}
+                value={website || 'Chưa cập nhật'}
+              />
             )}
           </div>
         </div>

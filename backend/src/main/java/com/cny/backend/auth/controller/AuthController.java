@@ -159,11 +159,18 @@ public class AuthController {
         String role = (String) payload.get("role");
         String currentPassword = (String) payload.get("currentPassword");
         String newPassword = (String) payload.get("newPassword");
+        String confirmPassword = (String) payload.get("confirmPassword");
         
         Map<String, Object> response = new HashMap<>();
-        if (userId == null || role == null || currentPassword == null || newPassword == null) {
+        if (userId == null || role == null || currentPassword == null || newPassword == null || confirmPassword == null) {
             response.put("success", false);
             response.put("message", "Dữ liệu không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (!newPassword.equals(confirmPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu xác nhận không khớp.");
             return ResponseEntity.badRequest().body(response);
         }
         
