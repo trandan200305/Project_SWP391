@@ -37,6 +37,10 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
         setLoading(false);
         if (data.success) {
           setInviteInfo(data);
+          if (data.fullName) setFullName(data.fullName);
+          if (data.displayName) setDisplayName(data.displayName);
+          if (data.phone) setPhone(data.phone);
+          if (data.citizenId) setCitizenId(data.citizenId);
         } else {
           setErrorMsg(data.message || 'Mã xác minh không hợp lệ hoặc đã hết hạn.');
         }
@@ -213,26 +217,32 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!fullName.trim()) {
-      alert('Vui lòng nhập Họ tên!');
-      return;
+    
+    const isFieldsHidden = inviteInfo?.role === 'STAFF' || inviteInfo?.role === 'MANAGER';
+    
+    if (!isFieldsHidden) {
+      if (!fullName.trim()) {
+        alert('Vui lòng nhập Họ tên!');
+        return;
+      }
+      if (!phone.trim()) {
+        alert('Vui lòng nhập Số điện thoại!');
+        return;
+      }
+      if (!/^(0[35789]\d{8}|\+84[35789]\d{8})$/.test(phone.trim())) {
+        alert('Số điện thoại không đúng định dạng (ví dụ: 0987654321 hoặc +84987654321)!');
+        return;
+      }
+      if (!citizenId.trim()) {
+        alert('Vui lòng nhập Số Căn cước công dân!');
+        return;
+      }
+      if (!/^\d{12}$/.test(citizenId.trim())) {
+        alert('Số Căn cước công dân phải bao gồm đúng 12 chữ số!');
+        return;
+      }
     }
-    if (!phone.trim()) {
-      alert('Vui lòng nhập Số điện thoại!');
-      return;
-    }
-    if (!/^(0[35789]\d{8}|\+84[35789]\d{8})$/.test(phone.trim())) {
-      alert('Số điện thoại không đúng định dạng (ví dụ: 0987654321 hoặc +84987654321)!');
-      return;
-    }
-    if (!citizenId.trim()) {
-      alert('Vui lòng nhập Số Căn cước công dân!');
-      return;
-    }
-    if (!/^\d{12}$/.test(citizenId.trim())) {
-      alert('Số Căn cước công dân phải bao gồm đúng 12 chữ số!');
-      return;
-    }
+    
     const verificationCode = otp.join('');
     if (verificationCode.length !== 6) {
       alert('Vui lòng nhập đủ mã xác nhận gồm 6 chữ số!');
@@ -359,7 +369,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 border-2 border-slate-900 bg-[#ffedd5] text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_#1c1917]">
                 <span className="w-2.5 h-2.5 rounded-none bg-orange-600 border border-slate-900"></span>
-                {inviteInfo?.role === 'MANAGER' ? 'Manager Portal' : 'Staff Portal'}
+                {inviteInfo?.role === 'ADMIN' ? 'Admin Portal' : inviteInfo?.role === 'MANAGER' ? 'Manager Portal' : 'Staff Portal'}
               </div>
 
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight mt-6 mb-4 font-serif">
@@ -396,82 +406,90 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
-                  Họ và Tên
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nhập họ và tên của bạn"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
-                  />
+              {inviteInfo?.role === 'ADMIN' && !inviteInfo?.fullName && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
+                    Họ và Tên
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nhập họ và tên của bạn"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
-                  Tên hiển thị (@alias)
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: A Nguyen"
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
-                  />
+              {inviteInfo?.role === 'ADMIN' && !inviteInfo?.displayName && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
+                    Tên hiển thị (@alias)
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: A Nguyen"
+                      value={displayName}
+                      onChange={e => setDisplayName(e.target.value)}
+                      className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
-                  Số điện thoại
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
-                  <input
-                    key="onboard-phone-input"
-                    type="tel"
-                    id="ob_p"
-                    name="ob_p"
-                    autoComplete="new-password"
-                    required
-                    placeholder="Nhập số điện thoại của bạn (ví dụ: 0987654321)"
-                    value={phone}
-                    onKeyDown={handlePhoneKeyDown}
-                    onChange={handlePhoneChange}
-                    className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
-                  />
+              {inviteInfo?.role === 'ADMIN' && !inviteInfo?.phone && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
+                    Số điện thoại
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
+                    <input
+                      key="onboard-phone-input"
+                      type="tel"
+                      id="ob_p"
+                      name="ob_p"
+                      autoComplete="new-password"
+                      required
+                      placeholder="Nhập số điện thoại của bạn (ví dụ: 0987654321)"
+                      value={phone}
+                      onKeyDown={handlePhoneKeyDown}
+                      onChange={handlePhoneChange}
+                      className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
-                  Số Căn cước công dân (CCCD)
-                </label>
-                <div className="relative">
-                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
-                  <input
-                    key="onboard-citizenId-input"
-                    type="text"
-                    id="ob_c"
-                    name="ob_c"
-                    autoComplete="new-password"
-                    required
-                    placeholder="Nhập 12 số CCCD của bạn"
-                    value={citizenId}
-                    onKeyDown={handleCitizenIdKeyDown}
-                    onChange={handleCitizenIdChange}
-                    className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
-                  />
+              {inviteInfo?.role === 'ADMIN' && !inviteInfo?.citizenId && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest block mb-1">
+                    Số Căn cước công dân (CCCD)
+                  </label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-900" />
+                    <input
+                      key="onboard-citizenId-input"
+                      type="text"
+                      id="ob_c"
+                      name="ob_c"
+                      autoComplete="new-password"
+                      required
+                      placeholder="Nhập 12 số CCCD của bạn"
+                      value={citizenId}
+                      onKeyDown={handleCitizenIdKeyDown}
+                      onChange={handleCitizenIdChange}
+                      className="w-full pl-11 pr-4 py-2 bg-white border-2 border-slate-900 focus:bg-amber-50/20 focus:outline-none text-xs text-slate-900 font-bold placeholder-slate-400 shadow-[2px_2px_0px_0px_#1c1917] focus:shadow-none transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <div className="flex items-center justify-between mb-1">
