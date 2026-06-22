@@ -26,6 +26,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [isForceChangePassword, setIsForceChangePassword] = useState(false);
+  const [firstLoginUser, setFirstLoginUser] = useState(null);
+  const [firstLoginPassword, setFirstLoginPassword] = useState("");
+
   
   useEffect(() => {
     if (timer <= 0) return;
@@ -42,10 +46,16 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       const data = await authApi.login(payload);
       if (data.success) {
         setLoading(false);
-        setSuccess(true);
-        setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user);
-        }, 1200);
+        if (data.mustChangePassword) {
+          setFirstLoginUser(data.user);
+          setFirstLoginPassword(payload.password);
+          setIsForceChangePassword(true);
+        } else {
+          setSuccess(true);
+          setTimeout(() => {
+            if (onLoginSuccess) onLoginSuccess(data.user);
+          }, 1200);
+        }
       } else if (
         data.accountStatus === "LOCKED" ||
         data.accountStatus === "BANNED"
@@ -180,6 +190,43 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
+  const handleFirstLoginChangePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setErrorMsg("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg("Mật khẩu phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const data = await authApi.changePassword({
+        userId: firstLoginUser.id,
+        role: firstLoginUser.role,
+        currentPassword: firstLoginPassword,
+        newPassword,
+      });
+      if (data.success) {
+        setSuccessMsg("✅ Đổi mật khẩu thành công! Đang đăng nhập...");
+        setSuccess(true);
+        setTimeout(() => {
+          if (onLoginSuccess) onLoginSuccess(firstLoginUser);
+        }, 1500);
+      } else {
+        setErrorMsg(data.message || "Có lỗi xảy ra!");
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Lỗi kết nối đến máy chủ!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       onClick={onClose}
@@ -245,8 +292,73 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         {/* RIGHT PANEL */}
         <div className="w-full md:w-[52%] p-8 flex flex-col justify-between bg-white relative overflow-y-auto h-full">
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
-            {/* ===================== FORGOT PASSWORD FLOW ===================== */}
-            {isForgotPassword ? (
+            {isForceChangePassword ? (
+              <>
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  Đổi mật khẩu lần đầu
+                </h2>
+                <p className="font-sans text-muted text-[13px] mb-4">
+                  Vì lý do bảo mật, vui lòng tạo mật khẩu mới cho tài khoản của bạn trước khi tiếp tục.
+                </p>
+
+                {errorMsg && (
+                  <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center">
+                    {errorMsg}
+                  </div>
+                )}
+                {successMsg && (
+                  <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-[11px] font-semibold text-center">
+                    {successMsg}
+                  </div>
+                )}
+
+                <form onSubmit={handleFirstLoginChangePassword} className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Xác nhận mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
+                      success
+                        ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                        : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      "Đăng nhập thành công!"
+                    ) : (
+                      "Đổi mật khẩu & Đăng nhập"
+                    )}
+                  </button>
+                </form>
+              </>
+            ) : isForgotPassword ? (
               <>
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
                   {isResettingPassword
