@@ -200,9 +200,26 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       showToast('Vui lòng chọn Khoa/Phòng ban!', 'error');
       return;
     }
+    if (createForm.phone && !/^0\d{9}$/.test(createForm.phone)) {
+      showToast('Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng 0.', 'error');
+      return;
+    }
+    if (createForm.citizenId && !/^\d{12}$/.test(createForm.citizenId)) {
+      showToast('Căn cước công dân không hợp lệ! Vui lòng nhập đúng 12 chữ số.', 'error');
+      return;
+    }
 
     setIsLoading(true);
-    adminApi.inviteStaffOrManager(createForm.email, createRole, createForm.departmentId, createForm.managerId)
+    adminApi.inviteStaffOrManager(
+      createForm.email, 
+      createRole, 
+      createForm.departmentId, 
+      createForm.managerId, 
+      createForm.fullName, 
+      createForm.phone, 
+      createForm.citizenId, 
+      createForm.displayName
+    )
       .then(data => {
         setIsLoading(false);
         if (data.success === false) {
@@ -5010,8 +5027,58 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Hệ thống sẽ gửi email tự động kèm liên kết kích hoạt. Người nhận sẽ tự điền Họ và tên, SĐT và đặt mật khẩu.
+                Hệ thống sẽ gửi email tự động kèm liên kết kích hoạt. Người nhận sẽ tự đặt mật khẩu của riêng họ.
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Họ và Tên <span className="text-rose-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Nguyễn Văn A" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.fullName}
+                  onChange={e => setCreateForm({ ...createForm, fullName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tên Hiển Thị <span className="text-rose-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Nguyen A" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.displayName}
+                  onChange={e => setCreateForm({ ...createForm, displayName: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số điện thoại <span className="text-rose-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="0912345678" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.phone}
+                  onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số CCCD / CMND <span className="text-rose-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="001012345678" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  value={createForm.citizenId}
+                  onChange={e => setCreateForm({ ...createForm, citizenId: e.target.value })}
+                />
+              </div>
             </div>
 
             
