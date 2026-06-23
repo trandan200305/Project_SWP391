@@ -18,6 +18,8 @@ import com.cny.backend.chat.service.*;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
@@ -26,8 +28,12 @@ public interface EmployerRepository extends JpaRepository<Employer, Integer> {
     Optional<Employer> findByEmail(String email);
     int countByEmail(String email);
     int countByPhone(String phone);
-    int countByPhoneAndEmployerIdNot(String phone, Integer employerId);
-    int countByTaxCode(String taxCode);
-    int countByTaxCodeAndEmployerIdNot(String taxCode, Integer employerId);
+    @Query("SELECT COUNT(e) " +
+            "FROM Employer e " +
+            "WHERE (e.phone = :phone OR e.taxCode = :taxCode) " +
+            "AND e.employerId <> :employerId")
+    int countTaxCodeORcountPhone(@Param("phone") String phone , @Param("taxCode") String taxCode,
+                                 @Param("employerId")Integer employerId);
+
     int countByDisplayName(String displayName);
 }

@@ -1521,25 +1521,12 @@ public class AdminService {
         if (approve) {
             Employer employer = req.getEmployer();
             
-            // Validate duplicate phone
-            if (req.getPhone() != null && !req.getPhone().trim().isEmpty()) {
-                String phoneToCheck = req.getPhone().trim();
-                if (employerRepository.countByPhoneAndEmployerIdNot(phoneToCheck, employer.getEmployerId()) > 0 ||
-                        freelancerRepository.countByPhone(phoneToCheck) > 0) {
-                    response.put("success", false);
-                    response.put("message", "Không thể phê duyệt vì số điện thoại '" + phoneToCheck + "' đã được sử dụng bởi tài khoản khác!");
-                    return response;
-                }
-            }
-
-            // Validate duplicate tax code
-            if (req.getTaxCode() != null && !req.getTaxCode().trim().isEmpty()) {
-                String taxCodeToCheck = req.getTaxCode().trim();
-                if (employerRepository.countByTaxCodeAndEmployerIdNot(taxCodeToCheck, employer.getEmployerId()) > 0) {
-                    response.put("success", false);
-                    response.put("message", "Không thể phê duyệt vì mã số thuế '" + taxCodeToCheck + "' đã được đăng ký bởi doanh nghiệp khác!");
-                    return response;
-                }
+            // Validate duplicate phone and tax code
+            if (employerRepository.countTaxCodeORcountPhone(req.getPhone(), req.getTaxCode(), employer.getEmployerId()) > 0 ||
+                    (req.getPhone() != null && freelancerRepository.countByPhone(req.getPhone()) > 0)) {
+                response.put("success", false);
+                response.put("message", "Không thể phê duyệt vì số điện thoại hoặc mã số thuế đã được sử dụng bởi tài khoản khác!");
+                return response;
             }
 
             req.setStatus("APPROVED");

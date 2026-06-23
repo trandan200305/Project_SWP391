@@ -20,8 +20,7 @@ import {
     Sparkles,
     Coins,
     ArrowLeftRight,
-    ChevronRight,
-    Upload
+    ChevronRight
 } from 'lucide-react';
 
 const emptyForm = {
@@ -48,7 +47,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState(null);
-    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     // Added states for projects
     const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
@@ -347,11 +345,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        if (form.companyLogoUrl && !urlRegex.test(form.companyLogoUrl.trim())) {
-            setNotice({type: 'error', message: 'Đường dẫn ảnh Logo không hợp lệ.'});
-            return false;
-        }
-
         // Validate MST (Tax Code)
         const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
         if (form.taxCode && !taxCodeRegex.test(form.taxCode.trim())) {
@@ -434,35 +427,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             setNotice({type: 'error', message: error.message || 'Không thể lưu thay đổi.'});
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleLogoUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setIsUploadingLogo(true);
-        setNotice(null);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch('http://localhost:8080/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-            if (data.success) {
-                updateField('companyLogoUrl', data.fileUrl);
-                setNotice({type: 'success', message: 'Tải logo lên thành công!'});
-            } else {
-                setNotice({type: 'error', message: data.message || 'Tải logo thất bại!'});
-            }
-        } catch (err) {
-            setNotice({type: 'error', message: 'Lỗi tải ảnh lên! Vui lòng kiểm tra lại kết nối đến máy chủ.'});
-        } finally {
-            setIsUploadingLogo(false);
         }
     };
 
@@ -622,41 +586,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                onChange={(value) => updateField('website', value)}
                                                icon={<Globe2 className="w-4 h-4"/>}
                                                placeholder="https://company.com"/>
-                                    
-                                    <div className="block">
-                                        <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">
-                                            Logo công ty
-                                        </span>
-                                        <div className="flex items-center justify-between gap-3 border border-slate-200 rounded-xl bg-slate-50 px-3 h-[46px] relative">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                {form.companyLogoUrl ? (
-                                                    <img 
-                                                        src={form.companyLogoUrl} 
-                                                        alt="Logo công ty" 
-                                                        className="w-7 h-7 rounded-lg object-cover border border-slate-200 bg-white shrink-0" 
-                                                    />
-                                                ) : (
-                                                    <div className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 shrink-0">
-                                                        <Building2 className="w-3.5 h-3.5" />
-                                                    </div>
-                                                )}
-                                                <span className="text-[12px] text-slate-500 truncate font-semibold">
-                                                    {form.companyLogoUrl ? 'Đã tải ảnh lên' : 'Chưa có logo'}
-                                                </span>
-                                            </div>
-                                            <label className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-extrabold hover:bg-slate-800 transition-all active:scale-[0.98] shrink-0">
-                                                {isUploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                                                {isUploadingLogo ? 'Tải...' : 'Chọn file'}
-                                                <input 
-                                                    type="file" 
-                                                    className="hidden" 
-                                                    accept="image/*" 
-                                                    disabled={isUploadingLogo} 
-                                                    onChange={handleLogoUpload} 
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
 
                                     <TextInput label="Quốc gia" value={form.country}
                                                onChange={(value) => updateField('country', value)}

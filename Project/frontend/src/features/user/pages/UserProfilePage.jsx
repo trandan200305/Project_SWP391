@@ -37,6 +37,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [portraitUrl, setPortraitUrl] = useState('');
   const [isUploadingKyc, setIsUploadingKyc] = useState(false);
 
+  // ================= COMPANY LOGO STATE =================
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
+  const [isUploadingCompanyLogo, setIsUploadingCompanyLogo] = useState(false);
+
   // Common Read-only Stats
   const [status, setStatus] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
@@ -205,6 +209,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.projectsPosted) setProjectsPosted(data.projectsPosted);
           if (data.averageRating) setAverageRating(data.averageRating);
           if (data.taxCode) setTaxCode(data.taxCode);
+          if (data.companyLogoUrl) setCompanyLogoUrl(data.companyLogoUrl);
         } else {
            if (data.fullName) setFullName(data.fullName);
            if (data.adminLevel) setAdminLevel(data.adminLevel);
@@ -250,6 +255,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         alert("Địa chỉ Website không hợp lệ.");
         return;
       }
+      if (companyLogoUrl && !urlRegex.test(companyLogoUrl.trim())) {
+        alert("Đường dẫn Logo không hợp lệ.");
+        return;
+      }
     }
 
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
@@ -257,7 +266,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     if (role === 'freelancer') {
        payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, taxCode };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, taxCode, companyLogoUrl };
     } else if (role === 'admin') {
        payload = { displayName, fullName, phone, language, timezone, avatarUrl };
     }
