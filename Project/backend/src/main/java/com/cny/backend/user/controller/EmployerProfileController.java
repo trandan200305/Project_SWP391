@@ -51,6 +51,19 @@ public class EmployerProfileController {
             return ResponseEntity.notFound().build();
         }
 
+        // Intercept direct avatar update
+        if (payload.containsKey("avatarUrl") && (payload.size() == 1 || (payload.size() == 2 && payload.containsKey("employerId")))) {
+            String newAvatarUrl = text(payload.get("avatarUrl"));
+            employer.setAvatarUrl(newAvatarUrl);
+            employer.setUpdatedAt(LocalDateTime.now());
+            employerRepository.save(employer);
+
+            Map<String, Object> response = buildProfileResponse(employer);
+            response.put("success", true);
+            response.put("message", "Cập nhật ảnh đại diện thành công.");
+            return ResponseEntity.ok(response);
+        }
+
         Map<String, Object> billing = asMap(payload.get("billing"));
 
         // Backend validations
@@ -78,13 +91,7 @@ public class EmployerProfileController {
                 errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
                 return ResponseEntity.badRequest().body(errResponse);
             }
-            if (employerRepository.countByPhoneAndEmployerIdNot(phone, employerId) > 0 ||
-                    freelancerRepository.countByPhone(phone) > 0) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Số điện thoại này đã được sử dụng trên hệ thống. Vui lòng nhập số khác!");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
+
         }
 
         String taxCode = text(payload.get("taxCode"));
@@ -95,12 +102,14 @@ public class EmployerProfileController {
                 errResponse.put("message", "Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
                 return ResponseEntity.badRequest().body(errResponse);
             }
-            if (employerRepository.countByTaxCodeAndEmployerIdNot(taxCode, employerId) > 0) {
+
+            if (employerRepository.countTaxCodeORcountPhone(phone, taxCode, employerId) > 0) {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
-                errResponse.put("message", "Mã số thuế này đã được đăng ký bởi doanh nghiệp khác.");
+                errResponse.put("message", "Mã số thuế  or phone này đã được đăng ký bởi doanh nghiệp khác.");
                 return ResponseEntity.badRequest().body(errResponse);
             }
+
         }
 
         String urlPattern = "^(https?://)?([a-zA-Z0-9][-a-zA-Z0-9]*\\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\\d+)?(/.*)?$";
@@ -226,7 +235,7 @@ public class EmployerProfileController {
             e.setKycStatus("PENDING");
             e.setKycSubmittedAt(LocalDateTime.now());
             e.setUpdatedAt(LocalDateTime.now());
-            
+
             employerRepository.save(e);
             response.put("success", true);
             response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
