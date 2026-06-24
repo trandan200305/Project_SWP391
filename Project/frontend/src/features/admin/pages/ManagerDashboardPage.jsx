@@ -94,6 +94,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
   const [escalationCases, setEscalationCases] = useState([]);
+  const [violationReports, setViolationReports] = useState([]);
+  const [reportFilter, setReportFilter] = useState('ALL');
+  const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
+  const [reportSearch, setReportSearch] = useState('');
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeNote, setDisputeNote] = useState('');
@@ -480,6 +484,23 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       .catch(err => console.error(err));
   };
 
+  const fetchReports = () => {
+    adminApi.getReports().then(data => {
+      if (Array.isArray(data)) {
+        setViolationReports(data.map(r => ({
+          id: `RPT-${r.id}`,
+          target: r.targetType,
+          reporter: r.reporterName,
+          accused: r.reportedName,
+          severity: r.severity === 'HIGH' ? 'Cao' : r.severity === 'LOW' ? 'Thấp' : 'Trung bình',
+          type: r.targetType === 'PROJECT' ? 'Dự án' : 'Hồ sơ',
+          status: r.status === 'PENDING' ? 'Chờ xử lý' : 'Đã xử lý',
+          evidence: r.reason + (r.evidence ? ` - Link: ${r.evidence}` : '')
+        })));
+      }
+    }).catch(console.error);
+  };
+
   const fetchDisputes = () => {
     adminApi.getDisputes()
       .then(data => {
@@ -525,6 +546,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     fetchTrends();
     fetchStaffAndDepartments();
     fetchDisputes();
+    fetchReports();
   }, [chartPeriod]);
 
   
@@ -2927,8 +2949,178 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             );
           })()}
 
+          {/* ---------------- TAB: REPORTS (Báo cáo vi phạm) ---------------- */}
+          {activeTab === 'Reports' && (() => {
+            const severityClass = (severity) => severity === 'Cao' || severity === 'Khẩn cấp' || severity === 'HIGH'
+              ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ffdad6]'
+              : 'bg-amber-50 text-amber-700 border-amber-200';
+
+            const filteredReports = violationReports.filter(r => {
+              // Status filter
+              if (reportFilter !== 'ALL') {
+                const isPending = r.status === 'Chờ xử lý' || r.status === 'PENDING';
+                if (reportFilter === 'PENDING' && !isPending) return false;
+                if (reportFilter === 'RESOLVED' && isPending) return false;
+              }
+              // Type filter
+              if (reportTypeFilter !== 'ALL') {
+                if (reportTypeFilter === 'PROJECT' && r.target !== 'PROJECT') return false;
+                if (reportTypeFilter === 'USER' && r.target !== 'USER') return false;
+              }
+              // Search filter
+              if (reportSearch) {
+                const searchLower = reportSearch.toLowerCase();
+                const matchesTarget = r.target?.toLowerCase().includes(searchLower);
+                const matchesReporter = r.reporter?.toLowerCase().includes(searchLower);
+                const matchesAccused = r.accused?.toLowerCase().includes(searchLower);
+                const matchesEvidence = r.evidence?.toLowerCase().includes(searchLower);
+                if (!matchesTarget && !matchesReporter && !matchesAccused && !matchesEvidence) return false;
+              }
+              return true;
+            });
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Báo cáo vi phạm</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">Xử lý các báo cáo vi phạm bài đăng, hồ sơ và người dùng từ hệ thống.</p>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filter controls */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Status filter buttons */}
+                      <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                        {[
+                          { key: 'ALL', label: 'Tất cả' },
+                          { key: 'PENDING', label: 'Chờ xử lý' },
+                          { key: 'RESOLVED', label: 'Đã xử lý' }
+                        ].map((btn) => (
+                          <button
+                            key={btn.key}
+                            onClick={() => setReportFilter(btn.key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                              reportFilter === btn.key 
+                                ? 'bg-white text-[#006b2c] shadow-sm' 
+                                : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Type filter buttons */}
+                      <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                        {[
+                          { key: 'ALL', label: 'Tất cả loại' },
+                          { key: 'PROJECT', label: 'Dự án' },
+                          { key: 'USER', label: 'Người dùng' }
+                        ].map((btn) => (
+                          <button
+                            key={btn.key}
+                            onClick={() => setReportTypeFilter(btn.key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                              reportTypeFilter === btn.key 
+                                ? 'bg-white text-[#006b2c] shadow-sm' 
+                                : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Search bar */}
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm báo cáo..."
+                        value={reportSearch}
+                        onChange={(e) => setReportSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reports list */}
+                  <div className="space-y-4">
+                    {filteredReports.map(report => (
+                      <div key={report.id} className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${severityClass(report.severity)}`}>
+                                Mức độ: {report.severity}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold border border-slate-200">
+                                {report.type}
+                              </span>
+                            </div>
+                            <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
+                          </div>
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${
+                            report.status === 'Chờ xử lý' || report.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {report.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
+                          <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
+                          <div className="flex gap-4">
+                            <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
+                            <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
+                          </div>
+                          {(report.status === 'Chờ xử lý' || report.status === 'PENDING') && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Bạn có chắc chắn muốn đánh dấu báo cáo ${report.id} là đã xử lý?`)) {
+                                  adminApi.resolveReport(report.id.replace('RPT-', ''), 'RESOLVED', user?.id || 1)
+                                    .then(res => {
+                                      if (res.success) {
+                                        showToast(res.message, 'success');
+                                        fetchReports();
+                                      } else {
+                                        showToast(res.message, 'error');
+                                      }
+                                    }).catch(err => {
+                                      console.error(err);
+                                      showToast('Có lỗi xảy ra khi xử lý báo cáo.', 'error');
+                                    });
+                                }
+                              }}
+                              className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
+                            >
+                              Xử lý báo cáo →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {filteredReports.length === 0 && (
+                      <div className="text-center py-12 text-[#6e7b6c]">
+                        Chưa có báo cáo vi phạm nào phù hợp với bộ lọc.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Staff Management', 'Support', 'Moderation', 'KYC', 'Disputes'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Staff Management', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />

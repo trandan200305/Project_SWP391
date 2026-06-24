@@ -36,6 +36,7 @@ import com.cny.backend.admin.dto.WarningTemplateDto;
 import com.cny.backend.admin.dto.WithdrawalDto;
 import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.Dispute;
+import com.cny.backend.admin.entity.ViolationReport;
 import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.entity.PaymentTransaction;
 import com.cny.backend.admin.repository.DashboardRepository;
@@ -795,6 +796,26 @@ public class AdminService {
         } else {
             response.put("success", false);
             response.put("message", "Không tìm thấy khiếu nại.");
+        }
+        return response;
+    }
+
+    public Map<String, Object> resolveReport(int id, String status, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<ViolationReport> opt = violationReportRepository.findById(id);
+        if (opt.isPresent()) {
+            ViolationReport report = opt.get();
+            report.setStatus(status);
+            report.setUpdatedAt(LocalDateTime.now());
+            violationReportRepository.save(report);
+            
+            writeAuditLog(adminId, "RESOLVE_REPORT", "MODERATION", "Xử lý báo cáo vi phạm #" + id + " thành " + status);
+            
+            response.put("success", true);
+            response.put("message", "Đã xử lý báo cáo vi phạm thành công.");
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy báo cáo vi phạm.");
         }
         return response;
     }

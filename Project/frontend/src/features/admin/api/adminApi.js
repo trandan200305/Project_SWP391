@@ -33,6 +33,14 @@ export const adminApi = {
     }).then(res => res.json());
   },
   getReports: () => api.get('/admin/reports'),
+  resolveReport: (id, status, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/reports/${id}/resolve?status=${status}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   getWarningTemplates: () => api.get('/admin/warning-templates'),
   getArticles: () => api.get('/admin/articles'),
   getTickets: () => api.get('/admin/tickets'),

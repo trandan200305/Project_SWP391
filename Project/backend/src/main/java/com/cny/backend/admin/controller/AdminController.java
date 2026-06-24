@@ -139,6 +139,14 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getReports());
     }
 
+    @PutMapping("/reports/{id}/resolve")
+    public ResponseEntity<Map<String, Object>> resolveReport(
+            @PathVariable("id") int id,
+            @RequestParam("status") String status,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.resolveReport(id, status, adminId));
+    }
+
     @GetMapping("/warning-templates")
     public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
         return ResponseEntity.ok(adminService.getWarningTemplates());
