@@ -1329,10 +1329,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               <div className="space-y-1">
                 <button
                   onClick={() => toggleSection('taskManagement')}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest hover:text-[#141b2b] transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
                 >
-                  <span>Task Management</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sectionsOpen.taskManagement ? 'rotate-0' : '-rotate-90'}`} />
+                  <div className="flex items-center gap-3">
+                    <Grid className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
+                    <span>TASK MANAGEMENT</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.taskManagement ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.taskManagement && (
                   <div className="pl-3 space-y-1 animate-in fade-in duration-200">
@@ -1384,10 +1387,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               <div className="space-y-1">
                 <button
                   onClick={() => toggleSection('moderation')}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest hover:text-[#141b2b] transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
                 >
-                  <span>Moderation</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sectionsOpen.moderation ? 'rotate-0' : '-rotate-90'}`} />
+                  <div className="flex items-center gap-3">
+                    <Gavel className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
+                    <span>MODERATION</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.moderation ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.moderation && (
                   <div className="pl-3 space-y-1 animate-in fade-in duration-200">
@@ -1439,10 +1445,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               <div className="space-y-1">
                 <button
                   onClick={() => toggleSection('finance')}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest hover:text-[#141b2b] transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
                 >
-                  <span>Finance</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
+                  <div className="flex items-center gap-3">
+                    <BadgeDollarSign className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
+                    <span>FINANCE</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.finance && (
                   <div className="pl-3 space-y-1 animate-in fade-in duration-200">
@@ -1489,10 +1498,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               <div className="space-y-1">
                 <button
                   onClick={() => toggleSection('system')}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest hover:text-[#141b2b] transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
                 >
-                  <span>System & Management</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sectionsOpen.system ? 'rotate-0' : '-rotate-90'}`} />
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
+                    <span>SYSTEM & MANAGEMENT</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.system ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.system && (
                   <div className="pl-3 space-y-1 animate-in fade-in duration-200">
