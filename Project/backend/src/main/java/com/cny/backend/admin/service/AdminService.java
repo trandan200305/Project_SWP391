@@ -1951,44 +1951,6 @@ public class AdminService {
                 departmentRepository.save(d);
             }
         }
-
-
-        boolean hasOutdated = departmentVerificationTaskRepository.findAll().stream()
-                .anyMatch(t -> t.getRequiredDepartments().contains("KYC") || t.getRequiredDepartments().contains("SUP"));
-        if (hasOutdated) {
-            departmentTaskSignoffRepository.deleteAll();
-            departmentVerificationTaskRepository.deleteAll();
-        }
-
-
-        if (departmentVerificationTaskRepository.findAll().isEmpty()) {
-            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
-                    .taskType("WITHDRAWAL")
-                    .referenceId(1)
-                    .title("Yêu cầu rút tiền lớn từ Nguyễn Minh Anh")
-                    .description("Yêu cầu rút 15.000.000 VND về tài khoản Techcombank 1903xxx. Cần FIN (xác nhận số tiền) và AUD (kiểm tra tuân thủ) ký duyệt.")
-                    .status("PENDING")
-                    .requiredDepartments("FIN,AUD")
-                    .build());
-
-            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
-                    .taskType("DISPUTE_REFUND")
-                    .referenceId(1)
-                    .title("Hoàn tiền tranh chấp dự án Laravel Website")
-                    .description("Yêu cầu hoàn trả 7.500.000 VND cho Client do Freelancer chậm tiến độ. Cần DIS (phân tích bằng chứng), FIN (tính toán hoàn tiền) và MOD (đánh giá vi phạm) ký duyệt.")
-                    .status("PENDING")
-                    .requiredDepartments("DIS,FIN,MOD")
-                    .build());
-
-            departmentVerificationTaskRepository.save(DepartmentVerificationTask.builder()
-                    .taskType("KYC_VERIFICATION")
-                    .referenceId(1)
-                    .title("Xác thực thông tin KYC người dùng")
-                    .description("Xác thực thông tin CCCD và ảnh selfie của Nguyễn Minh Anh. Cần MOD (xác minh giấy tờ) và AUD (kiểm tra hồ sơ) ký duyệt.")
-                    .status("PENDING")
-                    .requiredDepartments("MOD,AUD")
-                    .build());
-        }
     }
 
     public List<EmployerProfileRequest> getPendingProfileRequests() {
