@@ -76,6 +76,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
   const [reportSearch, setReportSearch] = useState('');
 
+  // Finance states
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [withdrawalFilter, setWithdrawalFilter] = useState('ALL');
+  const [vnpayTxns, setVnpayTxns] = useState([]);
+  const [vnpayFilter, setVnpayFilter] = useState('ALL');
+  const [financeSearch, setFinanceSearch] = useState('');
+
   // ---------------- REAL DATABASE DATA STATES ----------------
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -526,6 +533,41 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       .catch(err => console.error('Error revenue growth:', err));
   };
 
+  const fetchWithdrawals = () => {
+    adminApi.getWithdrawals().then(data => {
+      if (Array.isArray(data)) {
+        setWithdrawals(data.map(w => ({
+          id: w.id,
+          amount: w.amount,
+          status: w.status === 'PENDING' ? 'Chờ xử lý' : w.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối',
+          statusRaw: w.status,
+          date: w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN') : '',
+          user: w.userName || 'Không rõ',
+          email: w.userEmail || '',
+          bank: w.bankName || 'N/A',
+          account: w.accountNumber || 'N/A'
+        })));
+      }
+    }).catch(console.error);
+  };
+
+  const fetchVnpayTransactions = () => {
+    adminApi.getVnpayTransactions().then(data => {
+      if (Array.isArray(data)) {
+        setVnpayTxns(data.map(t => ({
+          id: t.id,
+          txnRef: t.txnRef,
+          amount: t.amount,
+          status: t.status, // SUCCESS, FAILED, PENDING
+          vnpTxnNo: t.vnpTransactionNo || 'N/A',
+          date: t.createdAt ? new Date(t.createdAt).toLocaleString('vi-VN') : '',
+          employerId: t.employerId,
+          projectId: t.projectId
+        })));
+      }
+    }).catch(console.error);
+  };
+
   // Mount logic
   useEffect(() => {
     fetchStats();
@@ -535,6 +577,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     fetchModerationData();
     fetchSupportChats();
     fetchTrends();
+    fetchWithdrawals();
+    fetchVnpayTransactions();
   }, [chartPeriod]);
 
   // Messages fetch on selection
@@ -2866,8 +2910,344 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             );
           })()}
 
+          {/* ---------------- TAB: WITHDRAWALS (Rút tiền) ---------------- */}
+          {activeTab === 'Withdrawals' && (() => {
+            const filteredWds = withdrawals.filter(w => {
+              if (withdrawalFilter !== 'ALL' && w.statusRaw !== withdrawalFilter) return false;
+              if (financeSearch) {
+                const term = financeSearch.toLowerCase();
+                return w.user.toLowerCase().includes(term) || w.email.toLowerCase().includes(term) || w.bank.toLowerCase().includes(term);
+              }
+              return true;
+            });
+
+            const handleWithdrawalAction = (id, status) => {
+              const adminId = user?.id || 1;
+              if (window.confirm(`Bạn có chắc chắn muốn ${status === 'APPROVED' ? 'DUYỆT' : 'TỪ CHỐI'} yêu cầu rút tiền này?`)) {
+                adminApi.processWithdrawal(id, status, adminId)
+                  .then(res => {
+                    if (res.success) {
+                      showToast(res.message, 'success');
+                      fetchWithdrawals();
+                      fetchStats(); // Update stats count
+                    } else {
+                      showToast(res.message, 'error');
+                    }
+                  }).catch(err => {
+                    console.error(err);
+                    showToast('Có lỗi xảy ra khi xử lý rút tiền.', 'error');
+                  });
+              }
+            };
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Rút tiền</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Duyệt và xử lý các yêu cầu rút số dư tài khoản từ Freelancer.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filters & Actions */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'PENDING', label: 'Chờ xử lý' },
+                        { key: 'APPROVED', label: 'Đã duyệt' },
+                        { key: 'REJECTED', label: 'Đã từ chối' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setWithdrawalFilter(tab.key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                            withdrawalFilter === tab.key 
+                              ? 'bg-white text-[#006b2c] shadow-sm' 
+                              : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên, email, ngân hàng..."
+                        value={financeSearch}
+                        onChange={(e) => setFinanceSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã Yêu Cầu</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thành Viên</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thông Tin Tài Khoản</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Số Tiền (VND)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Ngày gửi</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {filteredWds.length > 0 ? (
+                          filteredWds.map(w => (
+                            <tr key={w.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">#{w.id}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <div className="text-body-sm font-bold text-[#141b2b]">{w.user}</div>
+                                <div className="text-[11px] text-slate-400 font-normal">{w.email}</div>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm">
+                                <div className="font-semibold text-[#141b2b]">{w.bank}</div>
+                                <div className="text-[11px] text-[#3e4a3d]">STK: {w.account}</div>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-extrabold text-rose-600 text-right">
+                                {w.amount.toLocaleString('vi-VN')}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#3e4a3d]">{w.date}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  w.statusRaw === 'PENDING'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : w.statusRaw === 'APPROVED'
+                                      ? 'bg-[#f7fff2] text-[#006b2c]'
+                                      : 'bg-[#ffdad6] text-[#ba1a1a]'
+                                }`}>
+                                  {w.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-right text-xs font-bold space-x-2">
+                                {w.statusRaw === 'PENDING' ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleWithdrawalAction(w.id, 'APPROVED')}
+                                      className="px-2.5 py-1 bg-[#006b2c] hover:bg-[#00873a] text-white rounded transition-colors"
+                                    >
+                                      Duyệt
+                                    </button>
+                                    <button
+                                      onClick={() => handleWithdrawalAction(w.id, 'REJECTED')}
+                                      className="px-2.5 py-1 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 rounded transition-colors"
+                                    >
+                                      Từ chối
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-[#6e7b6c] font-normal">N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-10 text-[#6e7b6c] text-sm">
+                              Không tìm thấy yêu cầu rút tiền nào.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: REFUNDS (Hoàn tiền) ---------------- */}
+          {activeTab === 'Refunds' && (() => {
+            const refundsList = escalationCases.filter(esc => esc.raw?.status === 'RESOLVED_CLIENT_FAVOR');
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Hoàn tiền</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Lịch sử hoàn trả tiền ký quỹ Escrow về tài khoản Client do tranh chấp được giải quyết.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b]">Danh sách giao dịch hoàn tiền ({refundsList.length})</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {refundsList.map(ref => (
+                      <div key={ref.id} className="border border-[#e9edff] rounded-xl p-4 bg-[#f9f9ff] flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded border border-[#bdcaba]">#{ref.id}</span>
+                            <span className="text-xs font-bold text-[#006b2c] bg-emerald-100 px-2 py-0.5 rounded">Đã hoàn tiền</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-1">{ref.title}</h3>
+                          <div className="text-xs text-[#3e4a3d] space-y-1">
+                            <p>Dự án gốc: <strong className="text-[#141b2b]">{ref.raw?.projectTitle}</strong></p>
+                            <p>Nhận hoàn tiền (Client): <strong>{ref.raw?.clientName}</strong></p>
+                            <p>Đối tác (Freelancer): <strong>{ref.raw?.freelancerName}</strong></p>
+                            <p className="mt-2 text-body-sm font-extrabold text-rose-600">Số tiền hoàn lại: {(ref.raw?.amount || 0).toLocaleString('vi-VN')} VND</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {refundsList.length === 0 && (
+                      <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                        Chưa có lịch sử hoàn tiền nào được ghi nhận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: FAILED TRANSACTIONS (Giao dịch lỗi) ---------------- */}
+          {activeTab === 'FailedTransactions' && (() => {
+            const filteredTxns = vnpayTxns.filter(t => {
+              if (vnpayFilter !== 'ALL' && t.status !== vnpayFilter) return false;
+              if (financeSearch) {
+                const term = financeSearch.toLowerCase();
+                return t.txnRef.toLowerCase().includes(term) || t.vnpTxnNo.toLowerCase().includes(term);
+              }
+              return true;
+            });
+
+            const handleReconcile = (id) => {
+              const adminId = user?.id || 1;
+              if (window.confirm(`Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${id}?`)) {
+                adminApi.reconcileVnpayTransaction(id, adminId)
+                  .then(res => {
+                    if (res.success) {
+                      showToast(res.message, 'success');
+                      fetchVnpayTransactions();
+                    } else {
+                      showToast(res.message, 'error');
+                    }
+                  }).catch(err => {
+                    console.error(err);
+                    showToast('Có lỗi xảy ra khi đối soát giao dịch.', 'error');
+                  });
+              }
+            };
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Đối soát giao dịch VNPay</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Quản lý và đối soát các giao dịch thanh toán từ ví VNPay.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'FAILED', label: 'Giao dịch lỗi (FAILED)' },
+                        { key: 'SUCCESS', label: 'Thành công (SUCCESS)' },
+                        { key: 'PENDING', label: 'Chờ xử lý (PENDING)' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setVnpayFilter(tab.key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                            vnpayFilter === tab.key 
+                              ? 'bg-white text-[#006b2c] shadow-sm' 
+                              : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo mã giao dịch..."
+                        value={financeSearch}
+                        onChange={(e) => setFinanceSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã Đối Soát (TxnRef)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Số Tiền (VND)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD VNPay</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thời gian</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {filteredTxns.length > 0 ? (
+                          filteredTxns.map(t => (
+                            <tr key={t.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">#{t.id}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">{t.txnRef}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-extrabold text-emerald-600 text-right">
+                                {t.amount.toLocaleString('vi-VN')}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm text-[#3e4a3d]">{t.vnpTxnNo}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  t.status === 'SUCCESS'
+                                    ? 'bg-[#f7fff2] text-[#006b2c]'
+                                    : t.status === 'FAILED'
+                                      ? 'bg-[#ffdad6] text-[#ba1a1a]'
+                                      : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#3e4a3d]">{t.date}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-right text-xs font-bold">
+                                {t.status === 'FAILED' ? (
+                                  <button
+                                    onClick={() => handleReconcile(t.id)}
+                                    className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg transition-colors"
+                                  >
+                                    Đối soát lại
+                                  </button>
+                                ) : (
+                                  <span className="text-[#6e7b6c] font-normal">N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-10 text-[#6e7b6c] text-sm">
+                              Không tìm thấy giao dịch nào.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
