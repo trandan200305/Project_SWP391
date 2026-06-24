@@ -1,30 +1,25 @@
 package com.cny.backend.auth.service;
 
-import com.cny.backend.auth.entity.*;
-import com.cny.backend.admin.entity.*;
-import com.cny.backend.project.entity.*;
-import com.cny.backend.user.entity.*;
-import com.cny.backend.auth.repository.*;
-import com.cny.backend.admin.repository.*;
-import com.cny.backend.project.repository.*;
-import com.cny.backend.user.repository.*;
-import com.cny.backend.admin.dto.*;
-import com.cny.backend.chat.dto.*;
-import com.cny.backend.project.dto.*;
-import com.cny.backend.user.dto.*;
-import com.cny.backend.auth.service.*;
-import com.cny.backend.admin.service.*;
-import com.cny.backend.chat.service.*;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.StaffInvitation;
+import com.cny.backend.admin.repository.AdminRepository;
+import com.cny.backend.admin.repository.StaffInvitationRepository;
+import com.cny.backend.auth.entity.LoginHistory;
+import com.cny.backend.auth.repository.LoginHistoryRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 
 @Service
 public class AuthService {
@@ -130,6 +125,7 @@ public class AuthService {
         String userStatus = "ACTIVE";
         boolean hasMessengerPin = false;
         boolean isVerified = false;
+        boolean isFirstLogin = false;
 
         if ("ADMIN".equals(assignedRole)) {
             if (totalRoles > 0 && emailInAdmins == 0) {
@@ -264,13 +260,27 @@ public class AuthService {
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
                         .findByEmail(email);
-                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
-                    response.put("success", false);
-                    response.put("message",
-                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
-                    return response;
+                
+                boolean isTempPassword = false;
+                if (!isOAuthLogin && invOpt.isPresent() && password != null && password.equals(invOpt.get().getTempPassword())) {
+                    isTempPassword = true;
                 }
-                if (!isOAuthLogin) {
+
+                if (!isTempPassword && invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    if (!isOAuthLogin) {
+                        if (dbManager.getPasswordHash() != null && passwordEncoder.matches(passwordHash, dbManager.getPasswordHash())) {
+                            isFirstLogin = true;
+                        } else {
+                            response.put("success", false);
+                            response.put("message", "Sai mật khẩu hoặc tài khoản chưa được kích hoạt!");
+                            return response;
+                        }
+                    } else {
+                        isFirstLogin = true;
+                    }
+                }
+                
+                if (!isOAuthLogin && !isTempPassword && !isFirstLogin) {
                     if (dbManager.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbManager.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
@@ -317,13 +327,27 @@ public class AuthService {
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
                         .findByEmail(email);
-                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
-                    response.put("success", false);
-                    response.put("message",
-                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
-                    return response;
+                
+                boolean isTempPassword = false;
+                if (!isOAuthLogin && invOpt.isPresent() && password != null && password.equals(invOpt.get().getTempPassword())) {
+                    isTempPassword = true;
                 }
-                if (!isOAuthLogin) {
+
+                if (!isTempPassword && invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    if (!isOAuthLogin) {
+                        if (dbStaff.getPasswordHash() != null && passwordEncoder.matches(passwordHash, dbStaff.getPasswordHash())) {
+                            isFirstLogin = true;
+                        } else {
+                            response.put("success", false);
+                            response.put("message", "Sai mật khẩu hoặc tài khoản chưa được kích hoạt!");
+                            return response;
+                        }
+                    } else {
+                        isFirstLogin = true;
+                    }
+                }
+                
+                if (!isOAuthLogin && !isTempPassword && !isFirstLogin) {
                     if (dbStaff.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbStaff.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
@@ -505,6 +529,11 @@ public class AuthService {
         userObj.put("isVerified", isVerified);
 
         response.put("user", userObj);
+        
+        if (isFirstLogin) {
+            response.put("mustChangePassword", true);
+        }
+        
         return response;
     }
 
@@ -715,8 +744,14 @@ public class AuthService {
         return updated;
     }
 
-    private boolean isUserSuspendedOrDeleted(String email, String role) {
-        if ("MANAGER".equalsIgnoreCase(role)) {
+        private boolean isUserSuspendedOrDeleted(String email, String role) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Admin> admOpt = adminRepository.findByEmail(email);
+            if (admOpt.isPresent()) {
+                com.cny.backend.admin.entity.Admin adm = admOpt.get();
+                return Boolean.TRUE.equals(adm.getIsDeleted()) || "LOCKED".equalsIgnoreCase(adm.getStatus()) || "DELETED".equalsIgnoreCase(adm.getStatus()) || "BANNED".equalsIgnoreCase(adm.getStatus()) || "SUSPENDED".equalsIgnoreCase(adm.getStatus());
+            }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
             Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
             if (mgrOpt.isPresent()) {
                 com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
@@ -732,292 +767,10 @@ public class AuthService {
         return false;
     }
 
-    public Map<String, Object> verifyInvitationToken(String token) {
-        Map<String, Object> response = new HashMap<>();
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ hoặc đã hết hạn!");
-            return response;
-        }
-        StaffInvitation invitation = opt.get();
-        if ("ACCEPTED".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã được xác nhận trước đó. Bạn không thể xác thực lại liên kết cũ!");
-            return response;
-        }
-        if ("REVOKED".equalsIgnoreCase(invitation.getStatus()) || isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            if (!"REVOKED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("REVOKED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Yêu cầu thiết lập tài khoản này đã bị thu hồi hoặc tài khoản đã bị vô hiệu hóa bởi Quản trị viên.");
-            return response;
-        }
-        if ("EXPIRED".equalsIgnoreCase(invitation.getStatus()) || invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            if (!"EXPIRED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("EXPIRED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn (chỉ có hiệu lực trong 24 giờ)!");
-            return response;
-        }
-        if (!"PENDING".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời này không hợp lệ!");
-            return response;
-        }
-        response.put("success", true);
-        response.put("email", invitation.getEmail());
-        response.put("role", invitation.getRole());
-        return response;
-    }
-
-    @Transactional
-    public Map<String, Object> acceptInvitation(Map<String, String> payload) {
-        Map<String, Object> response = new HashMap<>();
-        String token = payload.get("token");
-        String fullName = payload.get("fullName");
-        String displayName = payload.get("displayName");
-        String verificationCode = payload.get("verificationCode");
-        String phone = payload.get("phone");
-        String citizenId = payload.get("citizenId");
-
-        if (token == null || token.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Token không được để trống!");
-            return response;
-        }
-        if (fullName == null || fullName.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Họ tên không được để trống!");
-            return response;
-        }
-        if (phone == null || phone.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Số điện thoại không được để trống!");
-            return response;
-        }
-        phone = phone.trim();
-        if (!phone.matches("^(0[35789]\\d{8}|\\+84[35789]\\d{8})$")) {
-            response.put("success", false);
-            response.put("message", "Số điện thoại không đúng định dạng (Ví dụ: 0987654321)!");
-            return response;
-        }
-        if (citizenId == null || citizenId.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Số căn cước công dân không được để trống!");
-            return response;
-        }
-        citizenId = citizenId.trim();
-        if (!citizenId.matches("^\\d{12}$")) {
-            response.put("success", false);
-            response.put("message", "Số căn cước công dân phải bao gồm đúng 12 chữ số!");
-            return response;
-        }
-        if (verificationCode == null || verificationCode.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Mã xác nhận không được để trống!");
-            return response;
-        }
-
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ!");
-            return response;
-        }
-        StaffInvitation invitation = opt.get();
-        if ("ACCEPTED".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã được xác nhận trước đó. Bạn không thể xác thực lại liên kết cũ!");
-            return response;
-        }
-        if ("REVOKED".equalsIgnoreCase(invitation.getStatus()) || isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            if (!"REVOKED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("REVOKED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Yêu cầu thiết lập tài khoản này đã bị thu hồi hoặc tài khoản đã bị vô hiệu hóa bởi Quản trị viên.");
-            return response;
-        }
-        if ("EXPIRED".equalsIgnoreCase(invitation.getStatus()) || invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            if (!"EXPIRED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("EXPIRED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn (chỉ có hiệu lực trong 24 giờ)!");
-            return response;
-        }
-        if (!"PENDING".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời này không hợp lệ!");
-            return response;
-        }
 
 
-        String savedCode = invitation.getVerificationCode();
-        if (savedCode == null || !savedCode.equals(verificationCode.trim())) {
-            response.put("success", false);
-            response.put("message", "Mã xác nhận không chính xác!");
-            return response;
-        }
-
-        String email = invitation.getEmail();
-        String role = invitation.getRole();
 
 
-        boolean phoneTaken = managerRepository.existsByPhoneActiveAndEmailNot(phone, email)
-                || staffRepository.existsByPhoneActiveAndEmailNot(phone, email)
-                || employerRepository.existsByPhoneActiveAndEmailNot(phone, email)
-                || freelancerRepository.existsByPhoneActiveAndEmailNot(phone, email);
-
-        if (phoneTaken) {
-            response.put("success", false);
-            response.put("message", "Số điện thoại này đã được sử dụng bởi một tài khoản khác!");
-            return response;
-        }
-
-
-        boolean citizenIdTaken = managerRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email)
-                || staffRepository.existsByCitizenIdActiveAndEmailNot(citizenId, email);
-
-        if (citizenIdTaken) {
-            response.put("success", false);
-            response.put("message", "Số căn cước công dân này đã được đăng ký trên hệ thống!");
-            return response;
-        }
-
-
-        if ("MANAGER".equals(role)) {
-            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
-            if (mgrOpt.isPresent()) {
-                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                mgr.setFullName(fullName);
-                mgr.setPhone(phone);
-                mgr.setCitizenId(citizenId);
-                mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
-                        : (fullName != null ? fullName : email.split("@")[0]));
-                mgr.setStatus("ACTIVE");
-                mgr.setIsDeleted(false);
-                mgr.setUpdatedAt(LocalDateTime.now());
-                managerRepository.save(mgr);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không tìm thấy tài khoản Manager tương ứng!");
-                return response;
-            }
-        } else {
-            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
-            if (stfOpt.isPresent()) {
-                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                stf.setFullName(fullName);
-                stf.setPhone(phone);
-                stf.setCitizenId(citizenId);
-                stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
-                        : (fullName != null ? fullName : email.split("@")[0]));
-                stf.setStatus("ACTIVE");
-                stf.setIsDeleted(false);
-                stf.setUpdatedAt(LocalDateTime.now());
-                staffRepository.save(stf);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không tìm thấy tài khoản Staff tương ứng!");
-                return response;
-            }
-        }
-
-
-        invitation.setStatus("ACCEPTED");
-        invitation.setUpdatedAt(LocalDateTime.now());
-        staffInvitationRepository.save(invitation);
-
-        response.put("success", true);
-        response.put("message", "Thiết lập tài khoản thành công! Bạn hiện đã có thể đăng nhập vào hệ thống.");
-        return response;
-    }
-
-    @Transactional
-    public Map<String, Object> sendInvitationVerificationCode(String token) {
-        Map<String, Object> response = new HashMap<>();
-        if (token == null || token.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Token không được để trống!");
-            return response;
-        }
-
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ!");
-            return response;
-        }
-
-        StaffInvitation invitation = opt.get();
-        if ("ACCEPTED".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã được xác nhận trước đó. Bạn không thể xác thực lại liên kết cũ!");
-            return response;
-        }
-        if ("REVOKED".equalsIgnoreCase(invitation.getStatus()) || isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            if (!"REVOKED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("REVOKED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Yêu cầu thiết lập tài khoản này đã bị thu hồi hoặc tài khoản đã bị vô hiệu hóa bởi Quản trị viên.");
-            return response;
-        }
-        if ("EXPIRED".equalsIgnoreCase(invitation.getStatus()) || invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            if (!"EXPIRED".equalsIgnoreCase(invitation.getStatus())) {
-                invitation.setStatus("EXPIRED");
-                staffInvitationRepository.save(invitation);
-            }
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn (chỉ có hiệu lực trong 24 giờ)!");
-            return response;
-        }
-        if (!"PENDING".equalsIgnoreCase(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời này không hợp lệ!");
-            return response;
-        }
-
-
-        String code = String.format("%06d", (int) (Math.random() * 1000000));
-        invitation.setVerificationCode(code);
-        staffInvitationRepository.save(invitation);
-
-
-        try {
-            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
-            message.setTo(invitation.getEmail());
-            message.setSubject("[LancerPro] Mã xác nhận kích hoạt tài khoản của bạn");
-
-            String emailContent = "Chào bạn,\n\n"
-                    + "Bạn đang thiết lập tài khoản quản trị hệ thống tại LancerPro.\n\n"
-                    + "Mã xác nhận của bạn là: " + code + "\n\n"
-                    + "Vui lòng nhập mã này vào form để hoàn tất thiết lập tài khoản.\n\n"
-                    + "Trân trọng,\n"
-                    + "Đội ngũ LancerPro";
-
-            message.setText(emailContent);
-            mailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.put("success", false);
-            response.put("message", "Không thể gửi email chứa mã xác nhận. Chi tiết: " + e.getMessage());
-            return response;
-        }
-
-        response.put("success", true);
-        response.put("message", "Mã xác nhận đã được gửi về email của bạn!");
-        return response;
-    }
 
     public boolean changePassword(Integer userId, String role, String currentPassword, String newPassword) {
         if ("ADMIN".equalsIgnoreCase(role)) {
@@ -1046,6 +799,11 @@ public class AuthService {
             if (manager != null && passwordEncoder.matches(currentPassword, manager.getPasswordHash())) {
                 manager.setPasswordHash(passwordEncoder.encode(newPassword));
                 managerRepository.save(manager);
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(manager.getEmail());
+                if (invOpt.isPresent() && "PENDING".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    invOpt.get().setStatus("ACCEPTED");
+                    staffInvitationRepository.save(invOpt.get());
+                }
                 return true;
             }
         } else if ("STAFF".equalsIgnoreCase(role)) {
@@ -1053,6 +811,11 @@ public class AuthService {
             if (staff != null && passwordEncoder.matches(currentPassword, staff.getPasswordHash())) {
                 staff.setPasswordHash(passwordEncoder.encode(newPassword));
                 staffRepository.save(staff);
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(staff.getEmail());
+                if (invOpt.isPresent() && "PENDING".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    invOpt.get().setStatus("ACCEPTED");
+                    staffInvitationRepository.save(invOpt.get());
+                }
                 return true;
             }
         }

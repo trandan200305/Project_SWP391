@@ -5,7 +5,7 @@ export const adminApi = {
   getFeeConfig: () => api.get('/admin/fee-config'),
   updateFeeConfig: (newFee) => api.post(`/admin/fee-config?fee=${newFee}`),
   getAuditLogs: () => api.get('/admin/audit-logs'),
-  inviteStaffOrManager: (email, role, departmentId, managerId) => api.post('/admin/invite', { email, role, departmentId, managerId }),
+  inviteStaffOrManager: (email, role, departmentId, managerId, fullName, phone, citizenId, displayName) => api.post('/admin/invite', { email, role, departmentId, managerId, fullName, phone, citizenId, displayName }),
   getDepartments: () => api.get('/admin/departments'),
   getDepartmentSessions: (deptId) => api.get(`/admin/departments/${deptId}/sessions`),
   getDepartmentLogs: (deptId) => api.get(`/admin/departments/${deptId}/logs`),

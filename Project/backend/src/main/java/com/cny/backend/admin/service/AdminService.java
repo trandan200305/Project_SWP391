@@ -439,7 +439,6 @@ public class AdminService {
                         Map<String, Object> revokeEvent = new HashMap<>();
                         revokeEvent.put("status", "REVOKED");
                         revokeEvent.put("message", "Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.");
-                        messagingTemplate.convertAndSend("/topic/invitation-status/" + invitation.getToken(), revokeEvent);
                     }
                 }
                 
@@ -482,7 +481,6 @@ public class AdminService {
                         Map<String, Object> revokeEvent = new HashMap<>();
                         revokeEvent.put("status", "REVOKED");
                         revokeEvent.put("message", "Thao tác thiết lập tài khoản đã bị hủy bỏ bởi Quản trị viên.");
-                        messagingTemplate.convertAndSend("/topic/invitation-status/" + invitation.getToken(), revokeEvent);
                     }
                 }
                 
@@ -1146,13 +1144,11 @@ public class AdminService {
         }
 
         Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
-        String token = "";
         String tempPassword = "";
         String status = "ACTIVE";
 
         if (invOpt.isPresent()) {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
-            token = inv.getToken();
             tempPassword = inv.getTempPassword();
             status = inv.getStatus();
             if ("PENDING".equalsIgnoreCase(status) && inv.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -1187,11 +1183,9 @@ public class AdminService {
                 inv.setTempPassword(tempPassword);
                 staffInvitationRepository.save(inv);
             } else {
-                token = java.util.UUID.randomUUID().toString();
                 com.cny.backend.admin.entity.StaffInvitation inv = com.cny.backend.admin.entity.StaffInvitation.builder()
                         .email(email)
                         .role(role.toUpperCase())
-                        .token(token)
                         .expiresAt(LocalDateTime.now().plusHours(24))
                         .status("PENDING")
                         .tempPassword(tempPassword)
@@ -1201,7 +1195,7 @@ public class AdminService {
             }
         }
 
-        String setupLink = "http://localhost:3000/?token=" + token;
+        String setupLink = "http://localhost:3000";
 
         response.put("success", true);
         response.put("email", email);
@@ -1256,46 +1250,21 @@ public class AdminService {
         }
 
         String tempPassword = generateRandomPassword(10);
-        String hashedPassword = passwordEncoder.encode(tempPassword);
 
-        if ("MANAGER".equalsIgnoreCase(role)) {
-            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
-            if (mgrOpt.isPresent()) {
-                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                mgr.setPasswordHash(hashedPassword);
-                managerRepository.save(mgr);
-            }
-        } else if ("STAFF".equalsIgnoreCase(role)) {
-            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
-            if (stfOpt.isPresent()) {
-                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                stf.setPasswordHash(hashedPassword);
-                staffRepository.save(stf);
-            }
-        }
-
-        String token = "";
         String status = "ACTIVE";
         if (invOpt.isPresent()) {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
             inv.setTempPassword(tempPassword);
             if ("PENDING".equalsIgnoreCase(inv.getStatus()) || "EXPIRED".equalsIgnoreCase(inv.getStatus()) || inv.getExpiresAt().isBefore(LocalDateTime.now())) {
-
-                token = java.util.UUID.randomUUID().toString();
-                inv.setToken(token);
                 inv.setStatus("PENDING");
                 inv.setExpiresAt(LocalDateTime.now().plusHours(24));
-            } else {
-                token = inv.getToken();
             }
             staffInvitationRepository.save(inv);
             status = inv.getStatus();
         } else {
-            token = java.util.UUID.randomUUID().toString();
             com.cny.backend.admin.entity.StaffInvitation inv = com.cny.backend.admin.entity.StaffInvitation.builder()
                     .email(email)
                     .role(role.toUpperCase())
-                    .token(token)
                     .expiresAt(LocalDateTime.now().plusHours(24))
                     .status("PENDING")
                     .tempPassword(tempPassword)
@@ -1304,8 +1273,28 @@ public class AdminService {
             status = "PENDING";
         }
 
-        String setupLink = "http://localhost:3000/?token=" + token;
+        String rawUserPassword = null;
+        if ("PENDING".equalsIgnoreCase(status)) {
+            rawUserPassword = generateRandomPassword(10);
+            String hashedPassword = passwordEncoder.encode(rawUserPassword);
+            if ("MANAGER".equalsIgnoreCase(role)) {
+                Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+                if (mgrOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                    mgr.setPasswordHash(hashedPassword);
+                    managerRepository.save(mgr);
+                }
+            } else if ("STAFF".equalsIgnoreCase(role)) {
+                Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+                if (stfOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                    stf.setPasswordHash(hashedPassword);
+                    staffRepository.save(stf);
+                }
+            }
+        }
 
+        String setupLink = "http://localhost:3000";
 
         if ("PENDING".equalsIgnoreCase(status)) {
             String roleLabel = "MANAGER".equalsIgnoreCase(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
@@ -1344,13 +1333,17 @@ public class AdminService {
                     + "      </table>"
                     + "    </div>"
                     + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
-                    + "      Anh/Chị hãy nhấn vào nút dưới đây để thiết lập thông tin cá nhân và hoàn tất thủ tục đăng ký tài khoản mới:"
+                    + "      Anh/Chị hãy truy cập vào hệ thống để đăng nhập và thiết lập mật khẩu cá nhân:"
                     + "    </p>"
+                    + "    <div style=\"background-color: #f1f5f9; padding: 15px; text-align: center; border-radius: 6px; margin-bottom: 25px;\">"
+                    + "      <p style=\"margin: 0; font-size: 15px; color: #475569;\">Mật khẩu đăng nhập tạm thời:</p>"
+                    + "      <div style=\"font-family: monospace; font-size: 24px; font-weight: bold; color: #ef4444; letter-spacing: 2px; margin-top: 10px;\">" + rawUserPassword + "</div>"
+                    + "    </div>"
                     + "    <div style=\"text-align: center; margin: 30px 0;\">"
-                    + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #ef4444; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);\">KÍCH HOẠT TÀI KHOẢN MỚI</a>"
+                    + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #ef4444; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);\">ĐĂNG NHẬP HỆ THỐNG</a>"
                     + "    </div>"
                     + "    <p style=\"font-size: 14px; color: #ef4444; line-height: 1.5; font-style: italic; margin-top: 20px;\">"
-                    + "      * Lưu ý: Liên kết kích hoạt mới này chỉ có hiệu lực trong vòng 24 giờ kể từ lúc nhận thư này. Các liên kết được cấp trước đó đã bị vô hiệu hóa."
+                    + "      * Lưu ý: Mật khẩu mới này chỉ có hiệu lực đăng nhập lần đầu tiên. Vui lòng đổi mật khẩu ngay sau khi đăng nhập thành công."
                     + "    </p>"
                     + "    <p style=\"font-size: 15px; line-height: 1.6; margin-top: 25px; margin-bottom: 0;\">"
                     + "      Chúc Anh/Chị thành công!<br/>"
@@ -1379,7 +1372,11 @@ public class AdminService {
         response.put("password", tempPassword);
         response.put("status", status);
         response.put("setupLink", setupLink);
-        response.put("message", "Đã cấp lại mật khẩu mới và gửi email kích hoạt thành công!");
+        if ("PENDING".equalsIgnoreCase(status)) {
+            response.put("message", "Đã cấp lại mật khẩu mới và gửi email kích hoạt thành công!");
+        } else {
+            response.put("message", "Đã cấp lại mật khẩu cho Admin quản lý (tài khoản đã kích hoạt, không gửi email).");
+        }
 
         return response;
     }
@@ -1391,6 +1388,10 @@ public class AdminService {
         String role = payload.get("role") != null ? payload.get("role").toString() : null;
         String departmentIdStr = payload.get("departmentId") != null ? payload.get("departmentId").toString() : null;
         String managerIdStr = payload.get("managerId") != null ? payload.get("managerId").toString() : null;
+        String fullName = payload.get("fullName") != null ? payload.get("fullName").toString() : null;
+        String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
+        String citizenId = payload.get("citizenId") != null ? payload.get("citizenId").toString() : null;
+        String displayName = payload.get("displayName") != null ? payload.get("displayName").toString() : null;
 
         if (email == null || email.trim().isEmpty()) {
             response.put("success", false);
@@ -1401,6 +1402,22 @@ public class AdminService {
             response.put("success", false);
             response.put("message", "Vai trò không hợp lệ!");
             return response;
+        }
+
+        if (phone != null && !phone.trim().isEmpty()) {
+            if (!phone.matches("^0\\d{9}$")) {
+                response.put("success", false);
+                response.put("message", "Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng số 0.");
+                return response;
+            }
+        }
+
+        if (citizenId != null && !citizenId.trim().isEmpty()) {
+            if (!citizenId.matches("^\\d{12}$")) {
+                response.put("success", false);
+                response.put("message", "Căn cước công dân không hợp lệ! Vui lòng nhập đúng 12 chữ số.");
+                return response;
+            }
         }
 
         email = email.trim().toLowerCase();
@@ -1436,9 +1453,9 @@ public class AdminService {
             } catch (Exception e) {}
         }
 
-        String token = java.util.UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
 
+        String rawAdminPassword = generateRandomPassword(10);
         String rawPassword = generateRandomPassword(10);
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
@@ -1447,18 +1464,16 @@ public class AdminService {
         if (existingInvOpt.isPresent()) {
             invitation = existingInvOpt.get();
             invitation.setRole(role);
-            invitation.setToken(token);
             invitation.setExpiresAt(expiresAt);
             invitation.setStatus("PENDING");
-            invitation.setTempPassword(rawPassword);
+            invitation.setTempPassword(rawAdminPassword);
         } else {
             invitation = com.cny.backend.admin.entity.StaffInvitation.builder()
                     .email(email)
                     .role(role)
-                    .token(token)
                     .expiresAt(expiresAt)
                     .status("PENDING")
-                    .tempPassword(rawPassword)
+                    .tempPassword(rawAdminPassword)
                     .build();
         }
         staffInvitationRepository.save(invitation);
@@ -1479,11 +1494,18 @@ public class AdminService {
                 managerPlaceholder.setManagedByAdmin(adminId);
                 managerPlaceholder.setIsDeleted(false);
                 managerPlaceholder.setUpdatedAt(LocalDateTime.now());
+                if (fullName != null) managerPlaceholder.setFullName(fullName);
+                if (phone != null) managerPlaceholder.setPhone(phone);
+                if (citizenId != null) managerPlaceholder.setCitizenId(citizenId);
+                if (displayName != null) managerPlaceholder.setDisplayName(displayName);
             } else {
                 managerPlaceholder = com.cny.backend.admin.entity.Manager.builder()
                         .email(email)
                         .passwordHash(hashedPassword)
-                        .displayName(emailPrefix)
+                        .displayName(displayName != null && !displayName.trim().isEmpty() ? displayName : emailPrefix)
+                        .fullName(fullName)
+                        .phone(phone)
+                        .citizenId(citizenId)
                         .status("ACTIVE")
                         .department(dept != null ? dept.getName() : "General")
                         .departmentEntity(dept)
@@ -1514,11 +1536,18 @@ public class AdminService {
                 stf.setCreatedByAdmin(adminId);
                 stf.setIsDeleted(false);
                 stf.setUpdatedAt(LocalDateTime.now());
+                if (fullName != null) stf.setFullName(fullName);
+                if (phone != null) stf.setPhone(phone);
+                if (citizenId != null) stf.setCitizenId(citizenId);
+                if (displayName != null) stf.setDisplayName(displayName);
             } else {
                 stf = com.cny.backend.admin.entity.Staff.builder()
                         .email(email)
                         .passwordHash(hashedPassword)
-                        .displayName(emailPrefix)
+                        .displayName(displayName != null && !displayName.trim().isEmpty() ? displayName : emailPrefix)
+                        .fullName(fullName)
+                        .phone(phone)
+                        .citizenId(citizenId)
                         .status("ACTIVE")
                         .specialization("General")
                         .manager(mgr)
@@ -1542,7 +1571,7 @@ public class AdminService {
 
         String roleLabel = "MANAGER".equals(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
         String deptName = dept != null ? dept.getName() + " (" + dept.getCode() + ")" : "Chưa phân bổ";
-        String setupLink = "http://localhost:3000/?token=" + token;
+        String setupLink = "http://localhost:3000";
 
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String currentDateStr = java.time.LocalDate.now().format(dtf);
@@ -1556,7 +1585,7 @@ public class AdminService {
                 + "    <div style=\"text-align: right; font-size: 13px; color: #666666; margin-bottom: 20px; font-style: italic;\">"
                 + "      Hà Nội, ngày " + currentDateStr + ""
                 + "    </div>"
-                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 20px;\">"
+                + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 15px;\">"
                 + "      Kính gửi <strong>Anh/Chị</strong>,"
                 + "    </p>"
                 + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
@@ -1573,19 +1602,23 @@ public class AdminService {
                 + "          <td style=\"padding: 6px 0; font-weight: 600; color: #3b82f6;\">" + roleLabel + "</td>"
                 + "        </tr>"
                 + "        <tr>"
-                + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Phòng ban:</td>"
+                + "          <td style=\"color: #64748b; padding: 6px 0; font-weight: 600;\">Đơn vị/Phòng:</td>"
                 + "          <td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">" + deptName + "</td>"
                 + "        </tr>"
                 + "      </table>"
                 + "    </div>"
                 + "    <p style=\"font-size: 15px; line-height: 1.6; margin-bottom: 25px;\">"
-                + "      Anh/Chị hãy nhấn vào nút dưới đây để xác thực OTP và hoàn tất thiết lập tài khoản của mình:"
+                + "      Anh/Chị hãy truy cập vào hệ thống để đăng nhập và thiết lập mật khẩu cá nhân:"
                 + "    </p>"
+                + "    <div style=\"background-color: #f1f5f9; padding: 15px; text-align: center; border-radius: 6px; margin-bottom: 25px;\">"
+                + "      <p style=\"margin: 0; font-size: 15px; color: #475569;\">Mật khẩu đăng nhập tạm thời:</p>"
+                + "      <div style=\"font-family: monospace; font-size: 24px; font-weight: bold; color: #ef4444; letter-spacing: 2px; margin-top: 10px;\">" + rawPassword + "</div>"
+                + "    </div>"
                 + "    <div style=\"text-align: center; margin: 30px 0;\">"
-                + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);\">KÍCH HOẠT TÀI KHOẢN</a>"
+                + "      <a href=\"http://localhost:3000\" style=\"display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);\">ĐĂNG NHẬP HỆ THỐNG</a>"
                 + "    </div>"
                 + "    <p style=\"font-size: 14px; color: #ef4444; line-height: 1.5; font-style: italic; margin-top: 20px;\">"
-                + "      * Lưu ý: Liên kết kích hoạt trên chỉ có hiệu lực trong vòng 24 giờ kể từ lúc nhận thư này."
+                + "      * Lưu ý: Vui lòng đăng nhập và đổi mật khẩu trong vòng 24 giờ kể từ lúc nhận thư này."
                 + "    </p>"
                 + "    <p style=\"font-size: 15px; line-height: 1.6; margin-top: 25px; margin-bottom: 0;\">"
                 + "      Chúc Anh/Chị thành công!<br/>"
@@ -1606,10 +1639,10 @@ public class AdminService {
         response.put("success", true);
         response.put("message", "Đã tạo tài khoản thành công!");
         response.put("generatedEmail", email);
-        response.put("generatedPassword", rawPassword);
+        response.put("generatedPassword", rawAdminPassword);
         response.put("role", role);
         response.put("department", deptName);
-        response.put("setupLink", setupLink);
+        response.put("setupLink", null);
         response.put("status", "PENDING");
         response.put("userId", savedUserId);
         return response;
