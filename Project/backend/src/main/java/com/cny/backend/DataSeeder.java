@@ -393,6 +393,30 @@ public class DataSeeder implements CommandLineRunner {
                             qhFreelancerId, qhBankId);
                 }
 
+                // Also automatically seed withdrawal requests for user 'tdan9704@gmail.com' if they exist in the DB
+                List<Integer> customIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'tdan9704@gmail.com'", Integer.class);
+                if (!customIds.isEmpty()) {
+                    Integer customId = customIds.get(0);
+                    List<Integer> customBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, customId);
+                    if (customBankIds.isEmpty()) {
+                        jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                                customId, "MB Bank", "9999999999", "TRAN DAN");
+                        customBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, customId);
+                    }
+                    Integer customBankId = customBankIds.get(0);
+
+                    // Check if they already have withdrawal requests, if not seed some
+                    Integer customWdCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM withdrawal_requests WHERE freelancer_id = ?", Integer.class, customId);
+                    if (customWdCount != null && customWdCount == 0) {
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 8000000, ?, 'PENDING', GETDATE())",
+                                customId, customBankId);
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 15000000, ?, 'APPROVED', DATEADD(day, -2, GETDATE()))",
+                                customId, customBankId);
+                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 2000000, ?, 'REJECTED', DATEADD(day, -4, GETDATE()))",
+                                customId, customBankId);
+                    }
+                }
+
                 // 3. Seed admin_audit_logs if empty
                 Integer auditLogCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM admin_audit_logs", Integer.class);
                 if (auditLogCount != null && auditLogCount == 0) {
