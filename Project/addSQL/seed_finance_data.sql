@@ -1,6 +1,16 @@
 USE CNY;
 GO
 
+-- Sửa kiểu dữ liệu các cột trong bảng disputes sang NVARCHAR để hỗ trợ Unicode tiếng Việt
+ALTER TABLE disputes ALTER COLUMN project_title NVARCHAR(255);
+ALTER TABLE disputes ALTER COLUMN client_name NVARCHAR(255);
+ALTER TABLE disputes ALTER COLUMN freelancer_name NVARCHAR(255);
+GO
+
+-- Xóa các bản ghi có ký tự bị lỗi dấu để chèn lại cho đẹp
+DELETE FROM disputes WHERE status = 'RESOLVED_CLIENT_FAVOR';
+GO
+
 -- ============================================================================
 -- 1. SQL chèn dữ liệu mẫu cho mục "Hoàn tiền" (Refunds)
 -- (Danh mục này hiển thị các tranh chấp có trạng thái 'RESOLVED_CLIENT_FAVOR'

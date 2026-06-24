@@ -22,13 +22,13 @@ public class Dispute {
     @Column(name = "dispute_id")
     private Integer disputeId;
 
-    @Column(name = "project_title")
+    @Column(name = "project_title", columnDefinition = "NVARCHAR(255)")
     private String projectTitle;
 
-    @Column(name = "client_name")
+    @Column(name = "client_name", columnDefinition = "NVARCHAR(255)")
     private String clientName;
 
-    @Column(name = "freelancer_name")
+    @Column(name = "freelancer_name", columnDefinition = "NVARCHAR(255)")
     private String freelancerName;
 
     @Column(name = "amount", precision = 15, scale = 2)
