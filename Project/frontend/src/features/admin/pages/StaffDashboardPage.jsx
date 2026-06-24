@@ -63,6 +63,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   
   // Notification Toast
   const [toast, setToast] = useState({ message: '', type: 'success', show: false });
@@ -549,6 +551,27 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
         })));
       }
     }).catch(console.error);
+  };
+
+  const handleWithdrawalAction = (id, status) => {
+    const adminId = user?.id || 1;
+    if (window.confirm(`Bạn có chắc chắn muốn ${status === 'APPROVED' ? 'DUYỆT' : 'TỪ CHỐI'} yêu cầu rút tiền này?`)) {
+      adminApi.processWithdrawal(id, status, adminId)
+        .then(res => {
+          if (res.success) {
+            showToast(res.message, 'success');
+            fetchWithdrawals();
+            fetchStats(); // Update stats count
+            setShowWithdrawalModal(false);
+            setSelectedWithdrawal(null);
+          } else {
+            showToast(res.message, 'error');
+          }
+        }).catch(err => {
+          console.error(err);
+          showToast('Có lỗi xảy ra khi xử lý rút tiền.', 'error');
+        });
+    }
   };
 
   const fetchVnpayTransactions = () => {
@@ -2921,25 +2944,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               return true;
             });
 
-            const handleWithdrawalAction = (id, status) => {
-              const adminId = user?.id || 1;
-              if (window.confirm(`Bạn có chắc chắn muốn ${status === 'APPROVED' ? 'DUYỆT' : 'TỪ CHỐI'} yêu cầu rút tiền này?`)) {
-                adminApi.processWithdrawal(id, status, adminId)
-                  .then(res => {
-                    if (res.success) {
-                      showToast(res.message, 'success');
-                      fetchWithdrawals();
-                      fetchStats(); // Update stats count
-                    } else {
-                      showToast(res.message, 'error');
-                    }
-                  }).catch(err => {
-                    console.error(err);
-                    showToast('Có lỗi xảy ra khi xử lý rút tiền.', 'error');
-                  });
-              }
-            };
-
             return (
               <div className="space-y-6 max-w-7xl mx-auto">
                 <div>
@@ -3002,7 +3006,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <tbody className="divide-y divide-[#e9edff] bg-white">
                         {filteredWds.length > 0 ? (
                           filteredWds.map(w => (
-                            <tr key={w.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                            <tr 
+                              key={w.id} 
+                              onClick={() => {
+                                setSelectedWithdrawal(w);
+                                setShowWithdrawalModal(true);
+                              }}
+                              className="hover:bg-[#f7fff2]/30 transition-colors cursor-pointer"
+                            >
                               <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">#{w.id}</td>
                               <td className="px-5 py-4 whitespace-nowrap">
                                 <div className="text-body-sm font-bold text-[#141b2b]">{w.user}</div>
@@ -3031,13 +3042,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                                 {w.statusRaw === 'PENDING' ? (
                                   <>
                                     <button
-                                      onClick={() => handleWithdrawalAction(w.id, 'APPROVED')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWithdrawalAction(w.id, 'APPROVED');
+                                      }}
                                       className="px-2.5 py-1 bg-[#006b2c] hover:bg-[#00873a] text-white rounded transition-colors"
                                     >
                                       Duyệt
                                     </button>
                                     <button
-                                      onClick={() => handleWithdrawalAction(w.id, 'REJECTED')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWithdrawalAction(w.id, 'REJECTED');
+                                      }}
                                       className="px-2.5 py-1 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 rounded transition-colors"
                                     >
                                       Từ chối
@@ -3639,6 +3656,98 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
                 >
                   Đóng cửa sổ
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showWithdrawalModal && selectedWithdrawal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết Yêu cầu Rút tiền</h2>
+              <button 
+                onClick={() => {
+                  setShowWithdrawalModal(false);
+                  setSelectedWithdrawal(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded border border-[#bdcaba]">
+                  Yêu cầu #{selectedWithdrawal.id}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  selectedWithdrawal.statusRaw === 'PENDING'
+                    ? 'bg-amber-100 text-amber-800'
+                    : selectedWithdrawal.statusRaw === 'APPROVED'
+                      ? 'bg-[#f7fff2] text-[#006b2c]'
+                      : 'bg-[#ffdad6] text-[#ba1a1a]'
+                }`}>
+                  {selectedWithdrawal.status}
+                </span>
+              </div>
+
+              <div className="border-t border-[#e9edff] pt-3 space-y-3">
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thành viên gửi yêu cầu</p>
+                  <p className="font-bold text-[#141b2b]">{selectedWithdrawal.user}</p>
+                  <p className="text-xs text-slate-400">{selectedWithdrawal.email}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thông tin tài khoản nhận tiền</p>
+                  <div className="bg-[#f9f9ff] border border-[#e9edff] p-3 rounded-lg">
+                    <p className="font-bold text-[#141b2b]">{selectedWithdrawal.bank}</p>
+                    <p className="text-xs text-[#3e4a3d] font-mono mt-0.5">Số tài khoản: {selectedWithdrawal.account}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thời gian yêu cầu</p>
+                  <p className="font-medium text-[#141b2b]">{selectedWithdrawal.date}</p>
+                </div>
+
+                <div className="bg-rose-50/50 border border-rose-100/55 p-3 rounded-lg flex justify-between items-center">
+                  <span className="text-xs text-rose-800 font-bold uppercase">Số tiền rút:</span>
+                  <span className="text-title-md font-extrabold text-rose-600">
+                    {selectedWithdrawal.amount.toLocaleString('vi-VN')} VND
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3">
+              {selectedWithdrawal.statusRaw === 'PENDING' ? (
+                <>
+                  <button 
+                    onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'APPROVED')}
+                    className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+                  >
+                    Phê duyệt
+                  </button>
+                  <button 
+                    onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'REJECTED')}
+                    className="flex-1 py-2 px-3 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 font-bold text-sm rounded-lg shadow transition-colors text-center"
+                  >
+                    Từ chối
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setShowWithdrawalModal(false);
+                    setSelectedWithdrawal(null);
+                  }}
+                  className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+                >
+                  Đóng
                 </button>
               )}
             </div>
