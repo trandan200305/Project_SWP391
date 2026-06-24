@@ -1,13 +1,21 @@
 USE CNY;
 GO
 
--- Sửa kiểu dữ liệu các cột trong bảng disputes sang NVARCHAR để hỗ trợ Unicode tiếng Việt
+-- Sửa kiểu dữ liệu các cột trong bảng projects, contracts và disputes sang NVARCHAR để hỗ trợ Unicode tiếng Việt
+ALTER TABLE projects ALTER COLUMN title NVARCHAR(300) NOT NULL;
+ALTER TABLE contracts ALTER COLUMN title NVARCHAR(255) NOT NULL;
 ALTER TABLE disputes ALTER COLUMN project_title NVARCHAR(255);
 ALTER TABLE disputes ALTER COLUMN client_name NVARCHAR(255);
 ALTER TABLE disputes ALTER COLUMN freelancer_name NVARCHAR(255);
 GO
 
--- Xóa các bản ghi có ký tự bị lỗi dấu để chèn lại cho đẹp
+-- Cập nhật/Sửa lỗi các chữ bị lỗi dấu hỏi (?) thành chữ tiếng Việt đúng ở dữ liệu cũ (nếu có)
+UPDATE projects SET title = N'Xây dựng App bán hàng iOS/Android' WHERE title LIKE N'Xây d%ng App bán hàng%';
+UPDATE contracts SET title = N'Hợp đồng phát triển Website bán hàng' WHERE title LIKE N'H%p đồng%';
+UPDATE disputes SET project_title = N'Xây dựng App bán hàng iOS/Android' WHERE project_title LIKE N'Xây d%ng App bán hàng%';
+GO
+
+-- Xóa các bản ghi hoàn tiền mẫu cũ để chèn lại cho đẹp
 DELETE FROM disputes WHERE status = 'RESOLVED_CLIENT_FAVOR';
 GO
 

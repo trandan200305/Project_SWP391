@@ -36,7 +36,7 @@ public class Contract {
     @JoinColumn(name = "client_id", nullable = false)
     private Employer client;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 255, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(name = "agreed_amount", nullable = false, precision = 15, scale = 2)
