@@ -1338,45 +1338,39 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.taskManagement ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.taskManagement && (
-                  <div className="pl-3 space-y-1 animate-in fade-in duration-200">
+                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
                       { name: 'Tasks', label: 'Công việc', icon: CheckSquare },
                       { name: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
                       { name: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
-                    ].map((item, idx, arr) => {
+                    ].map((item) => {
                       const IconComp = item.icon;
                       const isActive = activeTab === item.name;
-                      const isLast = idx === arr.length - 1;
                       return (
-                        <div key={item.name} className="relative flex items-center">
-                          <div className="absolute left-[-2px] top-0 bottom-0 w-3 flex items-center pointer-events-none">
-                            <div className={`absolute left-0 w-[1.5px] bg-[#bdcaba]/60 ${isLast ? 'top-0 h-1/2' : 'top-0 bottom-0'}`} />
-                            <div className="absolute left-0 top-1/2 w-3.5 h-[1.5px] bg-[#bdcaba]/60" />
+                        <button
+                          key={item.name}
+                          onClick={() => setActiveTab(item.name)}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                            isActive 
+                              ? 'bg-[#f7fff2] text-[#006b2c]' 
+                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                          )}
+                          <div className="flex items-center gap-2.5">
+                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
+                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                            }`} />
+                            <span>{item.label}</span>
                           </div>
-                          <button
-                            onClick={() => setActiveTab(item.name)}
-                            className={`flex-1 flex items-center justify-between ml-3.5 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                              isActive 
-                                ? 'bg-[#f7fff2] text-[#006b2c]' 
-                                : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                            }`}
-                          >
-                            {isActive && (
-                              <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                            )}
-                            <div className="flex items-center gap-2.5">
-                              <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                                isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                              }`} />
-                              <span>{item.label}</span>
-                            </div>
-                            {item.badge !== undefined && item.badge > 0 && (
-                              <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                                {item.badge}
-                              </span>
-                            )}
-                          </button>
-                        </div>
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
@@ -1396,45 +1390,39 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.moderation ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.moderation && (
-                  <div className="pl-3 space-y-1 animate-in fade-in duration-200">
+                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
                       { name: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
                       { name: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
                       { name: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length }
-                    ].map((item, idx, arr) => {
+                    ].map((item) => {
                       const IconComp = item.icon;
                       const isActive = activeTab === item.name;
-                      const isLast = idx === arr.length - 1;
                       return (
-                        <div key={item.name} className="relative flex items-center">
-                          <div className="absolute left-[-2px] top-0 bottom-0 w-3 flex items-center pointer-events-none">
-                            <div className={`absolute left-0 w-[1.5px] bg-[#bdcaba]/60 ${isLast ? 'top-0 h-1/2' : 'top-0 bottom-0'}`} />
-                            <div className="absolute left-0 top-1/2 w-3.5 h-[1.5px] bg-[#bdcaba]/60" />
+                        <button
+                          key={item.name}
+                          onClick={() => setActiveTab(item.name)}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                            isActive 
+                              ? 'bg-[#f7fff2] text-[#006b2c]' 
+                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                          )}
+                          <div className="flex items-center gap-2.5">
+                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
+                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                            }`} />
+                            <span>{item.label}</span>
                           </div>
-                          <button
-                            onClick={() => setActiveTab(item.name)}
-                            className={`flex-1 flex items-center justify-between ml-3.5 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                              isActive 
-                                ? 'bg-[#f7fff2] text-[#006b2c]' 
-                                : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                            }`}
-                          >
-                            {isActive && (
-                              <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                            )}
-                            <div className="flex items-center gap-2.5">
-                              <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                                isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                              }`} />
-                              <span>{item.label}</span>
-                            </div>
-                            {item.badge !== undefined && item.badge > 0 && (
-                              <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                                {item.badge}
-                              </span>
-                            )}
-                          </button>
-                        </div>
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
@@ -1454,40 +1442,34 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.finance && (
-                  <div className="pl-3 space-y-1 animate-in fade-in duration-200">
+                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
                       { name: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign },
                       { name: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
                       { name: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle }
-                    ].map((item, idx, arr) => {
+                    ].map((item) => {
                       const IconComp = item.icon;
                       const isActive = activeTab === item.name;
-                      const isLast = idx === arr.length - 1;
                       return (
-                        <div key={item.name} className="relative flex items-center">
-                          <div className="absolute left-[-2px] top-0 bottom-0 w-3 flex items-center pointer-events-none">
-                            <div className={`absolute left-0 w-[1.5px] bg-[#bdcaba]/60 ${isLast ? 'top-0 h-1/2' : 'top-0 bottom-0'}`} />
-                            <div className="absolute left-0 top-1/2 w-3.5 h-[1.5px] bg-[#bdcaba]/60" />
+                        <button
+                          key={item.name}
+                          onClick={() => setActiveTab(item.name)}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                            isActive 
+                              ? 'bg-[#f7fff2] text-[#006b2c]' 
+                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                          )}
+                          <div className="flex items-center gap-2.5">
+                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
+                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                            }`} />
+                            <span>{item.label}</span>
                           </div>
-                          <button
-                            onClick={() => setActiveTab(item.name)}
-                            className={`flex-1 flex items-center justify-between ml-3.5 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                              isActive 
-                                ? 'bg-[#f7fff2] text-[#006b2c]' 
-                                : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                            }`}
-                          >
-                            {isActive && (
-                              <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                            )}
-                            <div className="flex items-center gap-2.5">
-                              <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                                isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                              }`} />
-                              <span>{item.label}</span>
-                            </div>
-                          </button>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -1507,48 +1489,42 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.system ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {sectionsOpen.system && (
-                  <div className="pl-3 space-y-1 animate-in fade-in duration-200">
+                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
                       { name: 'Staff Management', label: 'Quản lý nhân sự', icon: Users },
                       { name: 'Audit Logs', label: 'Nhật ký hệ thống', icon: Activity },
                       { name: 'Notifications', label: 'Thông báo', icon: Bell },
                       { name: 'Settings', label: 'Cài đặt', icon: Settings },
                       { name: 'Profile', label: 'Hồ sơ cá nhân', icon: User }
-                    ].map((item, idx, arr) => {
+                    ].map((item) => {
                       const IconComp = item.icon;
                       const isActive = activeTab === item.name;
-                      const isLast = idx === arr.length - 1;
                       return (
-                        <div key={item.name} className="relative flex items-center">
-                          <div className="absolute left-[-2px] top-0 bottom-0 w-3 flex items-center pointer-events-none">
-                            <div className={`absolute left-0 w-[1.5px] bg-[#bdcaba]/60 ${isLast ? 'top-0 h-1/2' : 'top-0 bottom-0'}`} />
-                            <div className="absolute left-0 top-1/2 w-3.5 h-[1.5px] bg-[#bdcaba]/60" />
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            if (item.name === 'Profile') {
+                              onNavigate && onNavigate('profile');
+                            } else {
+                              setActiveTab(item.name);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                            isActive 
+                              ? 'bg-[#f7fff2] text-[#006b2c]' 
+                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                          )}
+                          <div className="flex items-center gap-2.5">
+                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
+                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                            }`} />
+                            <span>{item.label}</span>
                           </div>
-                          <button
-                            onClick={() => {
-                              if (item.name === 'Profile') {
-                                onNavigate && onNavigate('profile');
-                              } else {
-                                setActiveTab(item.name);
-                              }
-                            }}
-                            className={`flex-1 flex items-center justify-between ml-3.5 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                              isActive 
-                                ? 'bg-[#f7fff2] text-[#006b2c]' 
-                                : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                            }`}
-                          >
-                            {isActive && (
-                              <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                            )}
-                            <div className="flex items-center gap-2.5">
-                              <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                                isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                              }`} />
-                              <span>{item.label}</span>
-                            </div>
-                          </button>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
