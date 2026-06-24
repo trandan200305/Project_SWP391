@@ -1091,47 +1091,151 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hidden">
-            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Không gian làm việc</p>
-            <nav className="space-y-1">
-              {[
-                { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
-                { id: 'Tasks', label: 'Công việc', icon: CheckSquare },
-                { id: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
-                { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
-                { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
-                { id: 'Finance', label: 'Tài chính', icon: BadgeDollarSign },
-              ].map((item) => {
-                const IconComp = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                      isActive 
-                        ? 'bg-[#f7fff2] text-[#006b2c]' 
-                        : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                    }`}
-                  >
-                    {/* Left Active border bar */}
-                    {isActive && (
-                      <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                    )}
-                    <div className="flex items-center gap-3">
-                      <IconComp className={`w-[20px] h-[20px] stroke-[2.2] transition-colors ${
-                        isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                      }`} />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hidden">
+            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-1">Không gian làm việc</p>
+            <nav className="space-y-4">
+              {/* Dashboard Section */}
+              <div className="space-y-1">
+                {[
+                  { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'bg-[#f7fff2] text-[#006b2c]' 
+                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
+                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                        }`} />
+                        <span>{item.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Task Management Section */}
+              <div className="space-y-1">
+                <p className="text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest px-3 mb-1.5">Task Management</p>
+                {[
+                  { id: 'Tasks', label: 'Công việc', icon: CheckSquare },
+                  { id: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
+                  { id: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'bg-[#f7fff2] text-[#006b2c]' 
+                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
+                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                        }`} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Moderation Section */}
+              <div className="space-y-1">
+                <p className="text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest px-3 mb-1.5">Moderation</p>
+                {[
+                  { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
+                  { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
+                  { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'bg-[#f7fff2] text-[#006b2c]' 
+                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
+                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                        }`} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Finance Section */}
+              <div className="space-y-1">
+                <p className="text-[9px] font-extrabold text-[#6e7b6c] uppercase tracking-widest px-3 mb-1.5">Finance</p>
+                {[
+                  { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign },
+                  { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
+                  { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'bg-[#f7fff2] text-[#006b2c]' 
+                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
+                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                        }`} />
+                        <span>{item.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </nav>
           </div>
         </div>
