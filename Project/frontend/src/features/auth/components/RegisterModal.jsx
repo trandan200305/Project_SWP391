@@ -231,7 +231,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl min-h-[580px] max-h-[95vh] animate-scale-up border border-slate-100"
+        className="relative bg-white rounded-3xl shadow-2xl flex flex-row items-stretch overflow-hidden w-full max-w-4xl max-h-[calc(100vh-2rem)] animate-scale-up border border-slate-100"
       >
         
         <button
@@ -243,7 +243,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         </button>
 
         
-        <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
+        <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden self-stretch">
           
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -318,7 +318,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         </div>
 
         {/* RIGHT PANEL: Registration Form */}
-        <div className="w-full md:w-[52%] p-6 flex flex-col justify-between bg-white relative overflow-y-auto no-scrollbar h-full">
+        <div className="w-full md:w-[52%] p-6 flex flex-col justify-between bg-white relative overflow-y-auto no-scrollbar self-stretch min-h-0">
           {/* Main Content Area */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
             {step === 1 ? (
