@@ -2610,8 +2610,89 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             </div>
           )}
 
+          {/* ---------------- TAB: DISPUTES ---------------- */}
+          {activeTab === 'Disputes' && (() => {
+            const pendingDisputes = escalationCases.filter(esc => esc.raw?.status === 'OPEN' || esc.raw?.status === 'PENDING');
+            const resolvedDisputes = escalationCases.filter(esc => esc.raw?.status !== 'OPEN' && esc.raw?.status !== 'PENDING');
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xử lý Tranh chấp / Khiếu nại</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">
+                      Phân xử số tiền ký quỹ Escrow giữa Client và Freelancer khi xảy ra mâu thuẫn dự án.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 min-w-[240px]">
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Chưa giải quyết</p>
+                      <p className="text-title-md font-extrabold text-[#ba1a1a]">{pendingDisputes.length}</p>
+                    </div>
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Đã giải quyết</p>
+                      <p className="text-title-md font-extrabold text-[#006b2c]">{resolvedDisputes.length}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Danh sách Tranh chấp ({escalationCases.length})</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {escalationCases.map(esc => {
+                      const isPending = esc.raw?.status === 'OPEN' || esc.raw?.status === 'PENDING';
+                      return (
+                        <div key={esc.id} className={`border rounded-xl p-4 transition-all hover:shadow-md ${
+                          isPending ? 'border-rose-200 bg-rose-50/50' : 'border-[#e1e8fd] bg-white'
+                        }`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              esc.priority === 'Khẩn cấp' || esc.priority === 'HIGH'
+                                ? 'bg-rose-200 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {esc.priority}
+                            </span>
+                            <span className="text-xs text-[#6e7b6c] font-semibold">{esc.id}</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-1">{esc.title}</h3>
+                          <div className="text-xs text-[#3e4a3d] space-y-1 mb-4">
+                            <p>Dự án: <strong className="text-[#141b2b]">{esc.raw?.projectTitle}</strong></p>
+                            <p>Client: <strong>{esc.raw?.clientName}</strong> | Freelancer: <strong>{esc.raw?.freelancerName}</strong></p>
+                            <p>Số tiền: <strong className="text-rose-600">{(esc.raw?.amount || 0).toLocaleString('vi-VN')} VND</strong></p>
+                            <p>Trạng thái: <strong className={isPending ? 'text-rose-600' : 'text-[#006b2c]'}>{isPending ? 'Chưa giải quyết' : 'Đã giải quyết'}</strong></p>
+                          </div>
+                          {isPending ? (
+                            <button 
+                              className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
+                              onClick={() => {
+                                setSelectedDispute(esc);
+                                setShowDisputeModal(true);
+                              }}
+                            >
+                              Xem chi tiết & Xử lý
+                            </button>
+                          ) : (
+                            <div className="w-full py-2 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs rounded-lg text-center">
+                              Kết quả: {esc.raw?.status === 'RESOLVED_CLIENT_FAVOR' ? 'Hoàn tiền Client' : 'Thanh toán Freelancer'}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {escalationCases.length === 0 && (
+                      <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                        Chưa có tranh chấp nào được ghi nhận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
