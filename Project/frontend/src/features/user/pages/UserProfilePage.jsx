@@ -48,6 +48,10 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   const [representativeIdCardUrl, setRepresentativeIdCardUrl] = useState('');
   const [isUploadingKyc, setIsUploadingKyc] = useState(false);
 
+  // ================= COMPANY LOGO STATE =================
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
+  const [isUploadingCompanyLogo, setIsUploadingCompanyLogo] = useState(false);
+
   // Common Read-only Stats
   const [status, setStatus] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
@@ -252,6 +256,8 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
           if (data.totalSpent) setTotalSpent(data.totalSpent);
           if (data.projectsPosted) setProjectsPosted(data.projectsPosted);
           if (data.averageRating) setAverageRating(data.averageRating);
+          if (data.taxCode) setTaxCode(data.taxCode);
+          if (data.companyLogoUrl) setCompanyLogoUrl(data.companyLogoUrl);
         } else {
            if (data.fullName) setFullName(data.fullName);
            if (data.adminLevel) setAdminLevel(data.adminLevel);
@@ -271,12 +277,44 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
 
   const handleSaveProfile = (e) => {
     if(e) e.preventDefault();
+
+    // Client-side validations
+    if (!displayName || displayName.trim().length < 3 || displayName.trim().length > 50) {
+      alert("Tên hiển thị phải từ 3 đến 50 ký tự.");
+      return;
+    }
+    if (fullName && (fullName.trim().length < 3 || fullName.trim().length > 50)) {
+      alert("Họ và tên phải từ 3 đến 50 ký tự.");
+      return;
+    }
+    const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
+    if (phone && !phoneRegex.test(phone.trim())) {
+      alert("Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
+      return;
+    }
+    if (role === 'employer') {
+      const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
+      if (taxCode && !taxCodeRegex.test(taxCode.trim())) {
+        alert("Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+        return;
+      }
+      const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9]*\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\d+)?(\/.*)?$/;
+      if (website && !urlRegex.test(website.trim())) {
+        alert("Địa chỉ Website không hợp lệ.");
+        return;
+      }
+      if (companyLogoUrl && !urlRegex.test(companyLogoUrl.trim())) {
+        alert("Đường dẫn Logo không hợp lệ.");
+        return;
+      }
+    }
+
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
     let payload = {};
     if (role === 'freelancer') {
        payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'employer') {
-       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
+       payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation, taxCode, companyLogoUrl };
     } else if (role === 'admin') {
        payload = { displayName, fullName, phone, language, timezone, avatarUrl };
     }
@@ -286,8 +324,13 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => {
-      alert('Đã lưu thông tin hồ sơ thành công!');
+    .then(async res => {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        alert(data.message || 'Đã lưu thông tin hồ sơ thành công!');
+      } else {
+        alert(data.message || 'Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.');
+      }
     })
     .catch(error => {
       alert('Lỗi kết nối máy chủ!');

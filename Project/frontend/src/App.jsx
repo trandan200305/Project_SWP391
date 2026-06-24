@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import { Client } from '@stomp/stompjs';
+import React, {useState, useEffect, useRef} from 'react';
+import {GoogleOAuthProvider} from '@react-oauth/google';
+import {Client} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import MainLayout from './components/layouts/MainLayout.jsx';
 import AppRoutes from './routes/AppRoutes.jsx';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
 
 function SuspendedOverlay({ reason, onGoHome }) {
   return (
@@ -105,17 +104,15 @@ function SuspendedOverlay({ reason, onGoHome }) {
         </p>
       </div>
 
-      
       <style>{`
         @keyframes suspendFadeIn {
           from { opacity: 0; transform: scale(0.92); }
           to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
-    </div>
-  );
+        </div>
+    );
 }
-
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -139,10 +136,7 @@ export default function App() {
     }
   }, []);
 
-
-  
   useEffect(() => {
-    
     if (stompClientRef.current) {
       try { stompClientRef.current.deactivate(); } catch (_) {}
       stompClientRef.current = null;
@@ -164,7 +158,7 @@ export default function App() {
         try {
           const event = JSON.parse(message.body);
           if (event.type === 'ACCOUNT_SUSPENDED') {
-            setSuspended({ reason: event.reason });
+            setSuspended({reason: event.reason});
           } else if (event.type === 'ACCOUNT_REACTIVATED') {
             setSuspended(null);
           }
@@ -180,7 +174,9 @@ export default function App() {
     stompClientRef.current = client;
 
     return () => {
-      try { client.deactivate(); } catch (_) {}
+      try {
+        client.deactivate();
+      } catch (_) {}
     };
   }, [user]);
 
@@ -189,7 +185,7 @@ export default function App() {
     setSearchLocation(location);
     const projectsSection = document.getElementById('find-work');
     if (projectsSection) {
-      projectsSection.scrollIntoView({ behavior: "smooth" });
+      projectsSection.scrollIntoView({behavior: "smooth"});
     }
   };
 
@@ -237,7 +233,6 @@ export default function App() {
     setCurrentPage('home');
   };
 
-  
   const handleSuspendedGoHome = () => {
     setSuspended(null);
     setUser(null);
@@ -281,7 +276,6 @@ export default function App() {
         routesContent
       )}
 
-      
       {suspended && (
         <SuspendedOverlay
           reason={suspended.reason}

@@ -35,6 +35,7 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Integer>
     Optional<Freelancer> findByEmail(String email);
     int countByEmail(String email);
     int countByPhone(String phone);
+    int countByPhoneAndProfileIdNot(String phone, Integer profileId);
     int countByDisplayName(String displayName);
 
     @Query("SELECT COUNT(f) > 0 FROM Freelancer f WHERE f.phone = :phone AND (f.isDeleted IS NULL OR f.isDeleted = false) AND f.email <> :email")

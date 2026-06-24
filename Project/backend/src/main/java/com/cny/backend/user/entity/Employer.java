@@ -99,6 +99,10 @@ public class Employer {
 
     private String industry;
 
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 
@@ -136,9 +140,6 @@ public class Employer {
 
     @Column(name = "portrait_url", length = 500)
     private String portraitUrl;
-
-    @Column(name = "tax_code", length = 50)
-    private String taxCode;
 
     @Column(name = "business_license_url", length = 500)
     private String businessLicenseUrl;
