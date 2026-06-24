@@ -11,8 +11,19 @@ GO
 
 -- Cập nhật/Sửa lỗi các chữ bị lỗi dấu hỏi (?) thành chữ tiếng Việt đúng ở dữ liệu cũ (nếu có)
 UPDATE projects SET title = N'Xây dựng App bán hàng iOS/Android' WHERE title LIKE N'Xây d%ng App bán hàng%';
+UPDATE projects SET title = N'Thiết kế giao diện Figma cho Web App' WHERE title LIKE N'Thi%t k% giao di%n%';
+UPDATE projects SET title = N'Viết bài viết SEO Marketing 30 bài' WHERE title LIKE N'Vi%t bài vi%t%';
+UPDATE projects SET title = N'Chạy quảng cáo Facebook Ads 1 tháng' WHERE title LIKE N'Ch%y qu%ng cáo%';
+
 UPDATE contracts SET title = N'Hợp đồng phát triển Website bán hàng' WHERE title LIKE N'H%p đồng%';
+UPDATE contracts SET title = N'Thiết kế giao diện Figma cho Web App' WHERE title LIKE N'Thi%t k% giao di%n%';
+UPDATE contracts SET title = N'Viết bài viết SEO Marketing 30 bài' WHERE title LIKE N'Vi%t bài vi%t%';
+UPDATE contracts SET title = N'Chạy quảng cáo Facebook Ads 1 tháng' WHERE title LIKE N'Ch%y qu%ng cáo%';
+
 UPDATE disputes SET project_title = N'Xây dựng App bán hàng iOS/Android' WHERE project_title LIKE N'Xây d%ng App bán hàng%';
+UPDATE disputes SET project_title = N'Thiết kế giao diện Figma cho Web App' WHERE project_title LIKE N'Thi%t k% giao di%n%';
+UPDATE disputes SET project_title = N'Viết bài viết SEO Marketing 30 bài' WHERE project_title LIKE N'Vi%t bài vi%t%';
+UPDATE disputes SET project_title = N'Chạy quảng cáo Facebook Ads 1 tháng' WHERE project_title LIKE N'Ch%y qu%ng cáo%';
 GO
 
 -- Xóa các bản ghi hoàn tiền mẫu cũ để chèn lại cho đẹp
