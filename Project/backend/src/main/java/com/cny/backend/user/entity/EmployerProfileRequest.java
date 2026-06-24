@@ -51,7 +51,10 @@ public class EmployerProfileRequest {
 
     private String industry;
 
-    
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+    // Bank Account details
     @Column(name = "bank_name")
     private String bankName;
 

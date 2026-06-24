@@ -3791,6 +3791,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 <p><strong>Ngành nghề:</strong> {req.employer.industry || 'Chưa cập nhật'}</p>
                                 <p><strong>Quy mô:</strong> {req.employer.companySize || 'Chưa cập nhật'}</p>
                                 <p><strong>Website:</strong> {req.employer.website || 'Chưa cập nhật'}</p>
+                                <p><strong>Mã số thuế:</strong> {req.employer.taxCode || 'Chưa cập nhật'}</p>
                                 <p><strong>Địa chỉ:</strong> {req.employer.address ? `${req.employer.address}, ${req.employer.city || ''}, ${req.employer.country || ''}` : 'Chưa cập nhật'}</p>
                                 <p><strong>Mô tả:</strong> {req.employer.companyDescription || 'Chưa cập nhật'}</p>
                               </div>
@@ -3799,13 +3800,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <div className="space-y-1.5">
                               <p className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Thông tin đề xuất thay đổi</p>
                               <div className="bg-indigo-50/20 border border-indigo-100/70 p-4 rounded-2xl space-y-1.5">
-                                <p><strong>Tên hiển thị:</strong> <span className={req.displayName !== req.employer.displayName ? "text-indigo-650 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.displayName}</span></p>
+                                <p><strong>Tên hiển thị:</strong> <span className={req.displayName !== req.employer.displayName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.displayName}</span></p>
                                 <p><strong>Họ tên:</strong> <span className={req.fullName !== req.employer.fullName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.fullName || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Số điện thoại:</strong> <span className={req.phone !== req.employer.phone ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.phone || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Tên công ty:</strong> <span className={req.companyName !== req.employer.companyName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companyName || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Ngành nghề:</strong> <span className={req.industry !== req.employer.industry ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.industry || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Quy mô:</strong> <span className={req.companySize !== req.employer.companySize ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companySize || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Website:</strong> <span className={req.website !== req.employer.website ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.website || 'Chưa cập nhật'}</span></p>
+                                <p><strong>Mã số thuế:</strong> <span className={req.taxCode !== req.employer.taxCode ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.taxCode || 'Chưa cập nhật'}</span></p>
                                 <p><strong>Địa chỉ:</strong> <span className={(req.address !== req.employer.address || req.city !== req.employer.city || req.country !== req.employer.country) ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.address ? `${req.address}, ${req.city || ''}, ${req.country || ''}` : 'Chưa cập nhật'}</span></p>
                                 <p><strong>Mô tả:</strong> <span className={req.companyDescription !== req.employer.companyDescription ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded block whitespace-pre-line" : ""}>{req.companyDescription || 'Chưa cập nhật'}</span></p>
                                 <p className="pt-2 border-t border-indigo-100/60 font-semibold text-slate-700">Thông tin Ngân hàng:</p>

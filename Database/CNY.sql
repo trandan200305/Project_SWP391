@@ -144,6 +144,7 @@ CREATE TABLE employers (
     country             NVARCHAR(100),
     company_size        NVARCHAR(50),
     industry            NVARCHAR(100),
+    tax_code            NVARCHAR(50),
     profile_completeness INT DEFAULT 0,
     total_spent         DECIMAL(15,2) DEFAULT 0,
     projects_posted     INT DEFAULT 0,

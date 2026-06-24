@@ -17,8 +17,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 
 export default function UserProfile({
   setActiveTab, onNavigate, role, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
-  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness,
-  hideEmail, hidePhone, hideLocation
+  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness, taxCode, hideEmail, hidePhone, hideLocation
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -122,15 +121,26 @@ export default function UserProfile({
               </div>
             )}
             {role === 'employer' && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                  <Globe className="w-5 h-5 text-indigo-500" />
+              <>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                    <Globe className="w-5 h-5 text-indigo-500" />
+                  </div>
+                  <div className="pt-0.5 overflow-hidden">
+                    <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Website</p>
+                    <p className="text-[15px] font-bold text-gray-900 truncate">{website || 'Chưa cập nhật'}</p>
+                  </div>
                 </div>
-                <div className="pt-0.5 overflow-hidden">
-                  <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Website</p>
-                  <p className="text-[15px] font-bold text-gray-900 truncate">{website || 'Chưa cập nhật'}</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                    <Briefcase className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="pt-0.5 overflow-hidden">
+                    <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Mã số thuế</p>
+                    <p className="text-[15px] font-bold text-gray-900 truncate">{taxCode || 'Chưa cập nhật'}</p>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>

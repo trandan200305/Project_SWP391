@@ -2015,10 +2015,19 @@ public class AdminService {
         int validAdminId = getValidAdminId(adminId);
 
         if (approve) {
-            req.setStatus("APPROVED");
             Employer employer = req.getEmployer();
             
+            // Validate duplicate phone and tax code
+            if (employerRepository.countTaxCodeORcountPhone(req.getPhone(), req.getTaxCode(), employer.getEmployerId()) > 0 ||
+                    (req.getPhone() != null && freelancerRepository.countByPhone(req.getPhone()) > 0)) {
+                response.put("success", false);
+                response.put("message", "Không thể phê duyệt vì số điện thoại hoặc mã số thuế đã được sử dụng bởi tài khoản khác!");
+                return response;
+            }
 
+            req.setStatus("APPROVED");
+            
+            // Copy fields from request to employer
             if (req.getDisplayName() != null) employer.setDisplayName(req.getDisplayName());
             if (req.getFullName() != null) employer.setFullName(req.getFullName());
             if (req.getPhone() != null) employer.setPhone(req.getPhone());
@@ -2031,6 +2040,7 @@ public class AdminService {
             if (req.getCountry() != null) employer.setCountry(req.getCountry());
             if (req.getCompanySize() != null) employer.setCompanySize(req.getCompanySize());
             if (req.getIndustry() != null) employer.setIndustry(req.getIndustry());
+            if (req.getTaxCode() != null) employer.setTaxCode(req.getTaxCode());
             employer.setUpdatedAt(LocalDateTime.now());
             
 

@@ -5,6 +5,7 @@ import com.cny.backend.user.entity.EmployerProfileRequest;
 import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.user.repository.EmployerProfileRequestRepository;
 import com.cny.backend.user.dto.EmployerDto;
+import com.cny.backend.user.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,6 +28,9 @@ public class EmployerController {
 
     @Autowired
     private EmployerProfileRequestRepository employerProfileRequestRepository;
+
+    @Autowired
+    private FreelancerRepository freelancerRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -63,6 +67,19 @@ public class EmployerController {
             return ResponseEntity.notFound().build();
         }
 
+        // Intercept direct avatar update
+        if (payload.containsKey("avatarUrl") && (payload.size() == 1 || (payload.size() == 2 && payload.containsKey("employerId")))) {
+            String newAvatarUrl = text(payload.get("avatarUrl"));
+            employer.setAvatarUrl(newAvatarUrl);
+            employer.setUpdatedAt(LocalDateTime.now());
+            employerRepository.save(employer);
+
+            Map<String, Object> response = buildProfileResponse(employer);
+            response.put("success", true);
+            response.put("message", "Cập nhật ảnh đại diện thành công.");
+            return ResponseEntity.ok(response);
+        }
+
         Map<String, Object> billing = asMap(payload.get("billing"));
 
         
@@ -90,9 +107,28 @@ public class EmployerController {
                 errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
                 return ResponseEntity.badRequest().body(errResponse);
             }
+
         }
 
-        String urlPattern = "^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*\\/?$";
+        String taxCode = text(payload.get("taxCode"));
+        if (!isBlank(taxCode)) {
+            if (!taxCode.matches("^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+
+            if (employerRepository.countTaxCodeORcountPhone(phone, taxCode, employerId) > 0) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Mã số thuế  or phone này đã được đăng ký bởi doanh nghiệp khác.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+
+        }
+
+        String urlPattern = "^(https?://)?([a-zA-Z0-9][-a-zA-Z0-9]*\\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\\d+)?(/.*)?$";
         String website = text(payload.get("website"));
         if (!isBlank(website) && !website.matches(urlPattern)) {
             Map<String, Object> errResponse = new HashMap<>();
@@ -112,8 +148,9 @@ public class EmployerController {
         String bankName = text(billing.get("bankName"));
         String accountNumber = text(billing.get("accountNumber"));
         String accountHolder = text(billing.get("accountHolder"));
+        String branch = text(billing.get("branch"));
 
-        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder)) {
+        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder) || !isBlank(branch)) {
             if (isBlank(bankName) || isBlank(accountNumber) || isBlank(accountHolder)) {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
@@ -124,6 +161,30 @@ public class EmployerController {
                 Map<String, Object> errResponse = new HashMap<>();
                 errResponse.put("success", false);
                 errResponse.put("message", "Số tài khoản ngân hàng chỉ được phép chứa các chữ số.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (accountNumber.length() > 30) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Số tài khoản ngân hàng tối đa 30 ký tự.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (!accountHolder.matches("^[\\p{L} ]+$")) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (accountHolder.length() > 150) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Tên chủ tài khoản tối đa 150 ký tự.");
+                return ResponseEntity.badRequest().body(errResponse);
+            }
+            if (branch != null && branch.length() > 100) {
+                Map<String, Object> errResponse = new HashMap<>();
+                errResponse.put("success", false);
+                errResponse.put("message", "Chi nhánh ngân hàng tối đa 100 ký tự.");
                 return ResponseEntity.badRequest().body(errResponse);
             }
         }
@@ -142,6 +203,7 @@ public class EmployerController {
                 .country(text(payload.get("country")))
                 .companySize(text(payload.get("companySize")))
                 .industry(text(payload.get("industry")))
+                .taxCode(taxCode)
                 .bankName(text(billing.get("bankName")))
                 .accountNumber(text(billing.get("accountNumber")))
                 .accountHolder(text(billing.get("accountHolder")))
@@ -189,7 +251,7 @@ public class EmployerController {
             e.setKycStatus("PENDING");
             e.setKycSubmittedAt(LocalDateTime.now());
             e.setUpdatedAt(LocalDateTime.now());
-            
+
             employerRepository.save(e);
             response.put("success", true);
             response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
@@ -258,6 +320,7 @@ public class EmployerController {
         response.put("country", employer.getCountry());
         response.put("companySize", employer.getCompanySize());
         response.put("industry", employer.getIndustry());
+        response.put("taxCode", employer.getTaxCode());
         response.put("profileCompleteness", employer.getProfileCompleteness());
         response.put("totalSpent", employer.getTotalSpent());
         response.put("projectsPosted", employer.getProjectsPosted());
