@@ -344,95 +344,126 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedAdminEntities() {
         try {
-            
-            Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
-            if (bankCount != null && bankCount == 0) {
-                
-                List<Integer> adminIds = jdbcTemplate.queryForList("SELECT admin_id FROM admins WHERE email = 'admin@lancerpro.com'", Integer.class);
-                List<Integer> maIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'minhanh@gmail.com'", Integer.class);
-                List<Integer> qhIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'quanghuy@gmail.com'", Integer.class);
+            List<Integer> adminIds = jdbcTemplate.queryForList("SELECT admin_id FROM admins WHERE email = 'admin@lancerpro.com'", Integer.class);
+            List<Integer> maIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'minhanh@gmail.com'", Integer.class);
+            List<Integer> qhIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'quanghuy@gmail.com'", Integer.class);
 
-                if (!adminIds.isEmpty() && !maIds.isEmpty() && !qhIds.isEmpty()) {
-                    Integer adminId = adminIds.get(0);
-                    Integer maFreelancerId = maIds.get(0);
-                    Integer qhFreelancerId = qhIds.get(0);
+            if (!adminIds.isEmpty() && !maIds.isEmpty() && !qhIds.isEmpty()) {
+                Integer adminId = adminIds.get(0);
+                Integer maFreelancerId = maIds.get(0);
+                Integer qhFreelancerId = qhIds.get(0);
 
-                    
+                // 1. Seed bank_accounts if empty
+                Integer bankCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bank_accounts", Integer.class);
+                if (bankCount != null && bankCount == 0) {
                     jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
                             maFreelancerId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
                     jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
                             qhFreelancerId, "Techcombank", "190345129", "TRAN QUANG HUY");
+                }
 
-                    
-                    List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, maFreelancerId);
-                    List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, qhFreelancerId);
+                // Ensure bank accounts exist for both freelancers to prevent foreign key errors on withdrawal requests
+                List<Integer> maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, maFreelancerId);
+                List<Integer> qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, qhFreelancerId);
 
-                    if (!maBankIds.isEmpty() && !qhBankIds.isEmpty()) {
-                        Integer maBankId = maBankIds.get(0);
-                        Integer qhBankId = qhBankIds.get(0);
+                if (maBankIds.isEmpty()) {
+                    jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            maFreelancerId, "Vietcombank", "102345910", "NGUYEN MINH ANH");
+                    maBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, maFreelancerId);
+                }
+                if (qhBankIds.isEmpty()) {
+                    jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
+                            qhFreelancerId, "Techcombank", "190345129", "TRAN QUANG HUY");
+                    qhBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, qhFreelancerId);
+                }
 
-                        
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
-                                maFreelancerId, maBankId);
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
-                                qhFreelancerId, qhBankId);
-                    }
+                Integer maBankId = maBankIds.get(0);
+                Integer qhBankId = qhBankIds.get(0);
 
-                    
+                // 2. Seed withdrawal_requests if empty
+                Integer withdrawalCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM withdrawal_requests", Integer.class);
+                if (withdrawalCount != null && withdrawalCount == 0) {
+                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
+                            maFreelancerId, maBankId);
+                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
+                            qhFreelancerId, qhBankId);
+                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 3500000, ?, 'APPROVED', DATEADD(day, -3, GETDATE()))",
+                            maFreelancerId, maBankId);
+                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 1500000, ?, 'REJECTED', DATEADD(day, -5, GETDATE()))",
+                            qhFreelancerId, qhBankId);
+                }
+
+                // 3. Seed admin_audit_logs if empty
+                Integer auditLogCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM admin_audit_logs", Integer.class);
+                if (auditLogCount != null && auditLogCount == 0) {
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer Minh Anh', GETDATE())",
                             adminId);
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
                             adminId);
+                }
 
-                    Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
-                    if (ticketCount != null && ticketCount == 0) {
-                        
+                // 4. Seed support_tickets if empty
+                Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
+                if (ticketCount != null && ticketCount == 0) {
+                    jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
+                            "VALUES (?, NULL, N'Hỗ trợ rút tiền', N'Yêu cầu rút tiền chưa nhận được', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
+                    Integer tId1 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
+
+                    jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
+                            "VALUES (?, ?, NULL, NULL, N'Chào Admin, tôi đã gửi yêu cầu rút tiền từ hôm qua nhưng chưa thấy tài khoản nhận được tiền. Nhờ admin kiểm tra giúp tôi với ạ.', 0, DATEADD(hour, -2, GETDATE()))", tId1, maFreelancerId);
+                    jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
+                            "VALUES (?, NULL, NULL, ?, N'Chào bạn Minh Anh, chúng tôi đã tiếp nhận yêu cầu. Yêu cầu của bạn đang được Phòng Tài chính xử lý. Vui lòng chờ trong giây lát.', 1, DATEADD(hour, -1, GETDATE()))", tId1, adminId);
+
+                    List<Integer> clientIds = jdbcTemplate.queryForList("SELECT employer_id FROM employers WHERE email = 'client@lancerpro.vn'", Integer.class);
+                    if (!clientIds.isEmpty()) {
+                        Integer clientId = clientIds.get(0);
                         jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
-                                "VALUES (?, NULL, N'Hỗ trợ rút tiền', N'Yêu cầu rút tiền chưa nhận được', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
-                        Integer tId1 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
+                                "VALUES (NULL, ?, N'Duyệt dự án mới', N'Bài đăng dự án ở trạng thái chờ duyệt', 'OPEN', 'LOW', GETDATE(), GETDATE())", clientId);
+                        Integer tId2 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
 
                         jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                                "VALUES (?, ?, NULL, NULL, N'Chào Admin, tôi đã gửi yêu cầu rút tiền từ hôm qua nhưng chưa thấy tài khoản nhận được tiền. Nhờ admin kiểm tra giúp tôi với ạ.', 0, DATEADD(hour, -2, GETDATE()))", tId1, maFreelancerId);
-                        jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                                "VALUES (?, NULL, NULL, ?, N'Chào bạn Minh Anh, chúng tôi đã tiếp nhận yêu cầu. Yêu cầu của bạn đang được Phòng Tài chính xử lý. Vui lòng chờ trong giây lát.', 1, DATEADD(hour, -1, GETDATE()))", tId1, adminId);
-
-                        
-                        List<Integer> clientIds = jdbcTemplate.queryForList("SELECT employer_id FROM employers WHERE email = 'client@lancerpro.vn'", Integer.class);
-                        if (!clientIds.isEmpty()) {
-                            Integer clientId = clientIds.get(0);
-                            jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
-                                    "VALUES (NULL, ?, N'Duyệt dự án mới', N'Bài đăng dự án ở trạng thái chờ duyệt', 'OPEN', 'LOW', GETDATE(), GETDATE())", clientId);
-                            Integer tId2 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
-
-                            jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                                    "VALUES (?, NULL, ?, NULL, N'Tôi vừa đăng dự án mới nhưng trạng thái là PENDING_REVIEW. Bao lâu thì bài đăng của tôi được hiển thị?', 0, DATEADD(hour, -3, GETDATE()))", tId2, clientId);
-                        }
+                                "VALUES (?, NULL, ?, NULL, N'Tôi vừa đăng dự án mới nhưng trạng thái là PENDING_REVIEW. Bao lâu thì bài đăng của tôi được hiển thị?', 0, DATEADD(hour, -3, GETDATE()))", tId2, clientId);
                     }
+                }
 
-                    
-                    Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
-                    if (reportCount != null && reportCount == 0) {
-                        jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
-                                "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
-                        jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
-                                "VALUES ('USER', 'USR-405', N'Nguyễn Minh Anh', N'Vũ Hoàng Nam', 'MEDIUM', 'RESOLVED', N'Lời lẽ thô tục xúc phạm trong khung chat', N'https://example.com/evidence2.jpg', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
-                    }
+                // 5. Seed violation_reports if empty
+                Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
+                if (reportCount != null && reportCount == 0) {
+                    jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
+                            "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
+                    jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
+                            "VALUES ('USER', 'USR-405', N'Nguyễn Minh Anh', N'Vũ Hoàng Nam', 'MEDIUM', 'RESOLVED', N'Lời lẽ thô tục xúc phạm trong khung chat', N'https://example.com/evidence2.jpg', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
+                }
 
-                    Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
-                    if (disputeCount != null && disputeCount == 0) {
-                        jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                                "VALUES (N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
-                        jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                                "VALUES (N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
-                    }
+                // 6. Seed disputes if empty (include RESOLVED_CLIENT_FAVOR for Refunds)
+                Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
+                if (disputeCount != null && disputeCount == 0) {
+                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
+                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
+                }
 
-                    Integer warningCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM warning_templates", Integer.class);
-                    if (warningCount != null && warningCount == 0) {
-                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Vi phạm quy định cộng đồng: Sử dụng ngôn từ không phù hợp', 1, GETDATE())");
-                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Spam hệ thống: Đăng bài nhiều lần với cùng nội dung', 1, GETDATE())");
-                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hành vi gian lận: Cố tình lách luật thanh toán ngoài nền tảng', 1, GETDATE())");
-                        jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hồ sơ giả mạo: Sử dụng hình ảnh/thông tin của người khác', 1, GETDATE())");
-                    }
+                // 7. Seed payment_transactions if empty
+                Integer transactionCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_transactions", Integer.class);
+                if (transactionCount != null && transactionCount == 0) {
+                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
+                            "VALUES ('TXN12345678', 1, 101, 15000000, 'SUCCESS', '14012345', GETDATE(), GETDATE())");
+                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
+                            "VALUES ('TXN87654321', 1, 102, 5000000, 'FAILED', 'N/A', DATEADD(day, -1, GETDATE()), DATEADD(day, -1, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
+                            "VALUES ('TXN99999999', 1, 103, 3500000, 'PENDING', 'N/A', DATEADD(hour, -2, GETDATE()), DATEADD(hour, -2, GETDATE()))");
+                }
+
+                // 8. Seed warning_templates if empty
+                Integer warningCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM warning_templates", Integer.class);
+                if (warningCount != null && warningCount == 0) {
+                    jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Vi phạm quy định cộng đồng: Sử dụng ngôn từ không phù hợp', 1, GETDATE())");
+                    jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Spam hệ thống: Đăng bài nhiều lần với cùng nội dung', 1, GETDATE())");
+                    jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hành vi gian lận: Cố tình lách luật thanh toán ngoài nền tảng', 1, GETDATE())");
+                    jdbcTemplate.update("INSERT INTO warning_templates (content, is_active, created_at) VALUES (N'Hồ sơ giả mạo: Sử dụng hình ảnh/thông tin của người khác', 1, GETDATE())");
                 }
             }
         } catch (Exception e) {
