@@ -1559,7 +1559,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           filteredTasks.map((t) => (
                             <tr key={t.id} className="hover:bg-[#f7fff2]/30 transition-colors group">
                               <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">{t.id}</td>
-                              <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">{t.type}</td>
+                              <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">
+                                <div>{t.type}</div>
+                                <div className="text-[11px] text-slate-400 font-normal mt-0.5">{t.title}</div>
+                              </td>
                               <td className="px-4 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2.5">
                                   <img src={t.avatar} alt={t.user} className="w-6 h-6 rounded-full object-cover border border-[#bdcaba]" />
@@ -1659,7 +1662,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   <div key={t.id} className="card-level-1 p-5 bg-white flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between">
-                        <span className="text-xs font-bold text-[#006b2c]">{t.id}</span>
+                        <span className="text-xs font-bold text-[#006b2c]">{t.id} - {t.type}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           t.priority === 'High' 
                             ? 'bg-[#ffdad6] text-[#ba1a1a]' 
@@ -1670,7 +1673,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           {t.priority}
                         </span>
                       </div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.type}</h3>
+                      <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.title}</h3>
                       <p className="text-body-sm text-[#3e4a3d] line-clamp-2 mt-1.5">{t.description}</p>
                     </div>
 
