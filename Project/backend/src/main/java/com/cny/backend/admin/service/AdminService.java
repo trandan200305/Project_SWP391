@@ -617,6 +617,7 @@ public class AdminService {
                 .id(p.getId())
                 .amount(p.getAmount())
                 .status(p.getStatus())
+                .reason(p.getReason())
                 .createdAt(p.getCreatedAt())
                 .userName(p.getFreelancerName())
                 .userEmail(p.getFreelancerEmail())
@@ -628,11 +629,20 @@ public class AdminService {
 
     @Transactional
     public Map<String, Object> processWithdrawal(int id, String status, int adminId) {
+        return processWithdrawal(id, status, null, adminId);
+    }
+
+    @Transactional
+    public Map<String, Object> processWithdrawal(int id, String status, String reason, int adminId) {
         Map<String, Object> response = new HashMap<>();
         try {
             int validAdminId = getValidAdminId(adminId);
-            dashboardRepository.processWithdrawalRequest(id, status, validAdminId);
-            writeAuditLog(validAdminId, "PROCESS_WITHDRAWAL", "FINANCE", "Xử lý yêu cầu rút tiền #" + id + " thành " + status);
+            dashboardRepository.processWithdrawalRequest(id, status, reason, validAdminId);
+            String auditMsg = "Xử lý yêu cầu rút tiền #" + id + " thành " + status;
+            if (reason != null && !reason.trim().isEmpty()) {
+                auditMsg += " (Lý do: " + reason + ")";
+            }
+            writeAuditLog(validAdminId, "PROCESS_WITHDRAWAL", "FINANCE", auditMsg);
             response.put("success", true);
             response.put("message", "Đã xử lý yêu cầu rút tiền thành công.");
         } catch (Exception e) {
@@ -1914,7 +1924,7 @@ public class AdminService {
     private void approveOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", getValidAdminId(1));
+                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", null, getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
 
                 System.out.println("Dispute refund #" + referenceId + " approved!");
@@ -1929,7 +1939,7 @@ public class AdminService {
     private void rejectOriginalTransaction(String type, int referenceId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", getValidAdminId(1));
+                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", "Rejection via reconciliation log analysis", getValidAdminId(1));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 System.out.println("Dispute refund #" + referenceId + " rejected!");
             } else if ("KYC_VERIFICATION".equals(type)) {

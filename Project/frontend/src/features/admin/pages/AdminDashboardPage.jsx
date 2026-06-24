@@ -705,7 +705,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   
   const handleWithdrawalAction = (withdrawalId, approve) => {
     const status = approve ? 'APPROVED' : 'REJECTED';
-    adminApi.processWithdrawal(withdrawalId, status, user?.id)
+    let reason = null;
+    if (status === 'REJECTED') {
+      reason = window.prompt("Nhập lý do từ chối yêu cầu rút tiền này (bắt buộc):");
+      if (reason === null) return; // user cancelled
+      if (!reason.trim()) {
+        alert("Vui lòng nhập lý do từ chối.");
+        return;
+      }
+    }
+    adminApi.processWithdrawal(withdrawalId, status, user?.id, reason)
       .then(() => {
         adminApi.getWithdrawals()
           .then(data => setWithdrawals(data));

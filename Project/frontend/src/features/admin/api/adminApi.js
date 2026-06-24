@@ -70,10 +70,12 @@ export const adminApi = {
       headers
     }).then(res => res.json());
   },
-  processWithdrawal: (withdrawalId, status, adminId) => {
+  processWithdrawal: (withdrawalId, status, adminId, reason) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`, {
+    let url = `http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`;
+    if (reason) url += `&reason=${encodeURIComponent(reason)}`;
+    return fetch(url, {
       method: 'PUT',
       headers
     }).then(res => res.json());
