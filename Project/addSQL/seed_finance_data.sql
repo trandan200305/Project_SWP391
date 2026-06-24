@@ -113,6 +113,13 @@ GO
 -- 3. SQL chèn dữ liệu mẫu cho mục "Rút tiền" (Withdrawals)
 -- ============================================================================
 
+-- Đảm bảo bảng withdrawal_requests có cột reason để lưu lý do từ chối
+IF NOT EXISTS(SELECT * FROM sys.columns WHERE Name = N'reason' AND Object_ID = Object_ID(N'withdrawal_requests'))
+BEGIN
+    ALTER TABLE withdrawal_requests ADD reason NVARCHAR(555) NULL;
+END
+GO
+
 -- Tạo tài khoản ngân hàng mẫu nếu chưa có tài khoản nào
 IF NOT EXISTS (SELECT 1 FROM bank_accounts WHERE account_number = '102345910')
 BEGIN

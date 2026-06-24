@@ -543,6 +543,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           amount: w.amount,
           status: w.status === 'PENDING' ? 'Chờ xử lý' : w.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối',
           statusRaw: w.status,
+          reason: w.reason || '',
           date: w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN') : '',
           user: w.userName || 'Không rõ',
           email: w.userEmail || '',
@@ -553,10 +554,24 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     }).catch(console.error);
   };
 
-  const handleWithdrawalAction = (id, status) => {
+  const handleWithdrawalAction = (id, status, reason = null) => {
     const adminId = user?.id || 1;
-    if (window.confirm(`Bạn có chắc chắn muốn ${status === 'APPROVED' ? 'DUYỆT' : 'TỪ CHỐI'} yêu cầu rút tiền này?`)) {
-      adminApi.processWithdrawal(id, status, adminId)
+    let confirmMsg = `Bạn có chắc chắn muốn DUYỆT yêu cầu rút tiền này?`;
+    
+    if (status === 'REJECTED') {
+      confirmMsg = `Bạn có chắc chắn muốn TỪ CHỐI yêu cầu rút tiền này?`;
+      if (!reason) {
+        reason = window.prompt("Nhập lý do từ chối yêu cầu rút tiền này (bắt buộc):");
+        if (reason === null) return; // user cancelled
+        if (!reason.trim()) {
+          showToast("Vui lòng nhập lý do từ chối.", "error");
+          return;
+        }
+      }
+    }
+
+    if (window.confirm(confirmMsg)) {
+      adminApi.processWithdrawal(id, status, adminId, reason)
         .then(res => {
           if (res.success) {
             showToast(res.message, 'success');
@@ -3713,6 +3728,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thời gian yêu cầu</p>
                   <p className="font-medium text-[#141b2b]">{selectedWithdrawal.date}</p>
                 </div>
+                {selectedWithdrawal.statusRaw === 'REJECTED' && (
+                  <div>
+                    <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Lý do từ chối</p>
+                    <p className="font-semibold text-rose-600 bg-rose-50 border border-rose-100 p-2.5 rounded-lg">
+                      {selectedWithdrawal.reason || 'Không có lý do cụ thể'}
+                    </p>
+                  </div>
+                )}
 
                 <div className="bg-rose-50/50 border border-rose-100/55 p-3 rounded-lg flex justify-between items-center">
                   <span className="text-xs text-rose-800 font-bold uppercase">Số tiền rút:</span>

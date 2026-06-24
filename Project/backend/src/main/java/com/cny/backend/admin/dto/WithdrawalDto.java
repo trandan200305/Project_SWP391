@@ -35,4 +35,5 @@ public class WithdrawalDto {
     private String userEmail;
     private String bankName;
     private String accountNumber;
+    private String reason;
 }

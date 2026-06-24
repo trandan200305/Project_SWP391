@@ -101,8 +101,9 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> processWithdrawal(
             @PathVariable("id") int id,
             @RequestParam("status") String status,
+            @RequestParam(value = "reason", required = false) String reason,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.processWithdrawal(id, status, adminId));
+        return ResponseEntity.ok(adminService.processWithdrawal(id, status, reason, adminId));
     }
 
     @GetMapping("/audit-logs")
