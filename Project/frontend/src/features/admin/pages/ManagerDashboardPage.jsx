@@ -1869,13 +1869,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={onNavigateToHome}
-                title="Exit Console"
-                className="p-2 text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </header>
