@@ -5,14 +5,14 @@ import {
   Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  XCircle, ShieldBan, ChevronDown
+  XCircle, ShieldBan, ChevronDown, Edit3, Shield
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-export default function StaffDashboardPage({ user, onNavigateToHome }) {
+export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   // Styles & Brand Settings
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
@@ -1159,6 +1159,147 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+
+        /* PROFILE CUSTOM HOVER DROPDOWN STYLE */
+        .profile-menu-wrapper {
+          position: relative;
+        }
+
+        .profile-menu-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          height: 20px;
+          z-index: 98;
+        }
+
+        .profile-menu-dropdown {
+          background-color: #ffffff; /* White background */
+          border: 1px solid #e1e8fd; /* Light border matching dashboard */
+          border-radius: 16px;
+          position: absolute;
+          width: 280px;
+          right: 0;
+          top: calc(100% + 6px);
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+          z-index: 9999 !important;
+          padding: 8px;
+          cursor: default;
+          clip-path: inset(0% 0% 100% 0% round 16px);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-dropdown {
+          clip-path: inset(0% 0% 0% 0% round 16px);
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .profile-menu-item {
+          --delay: 0.1s;
+          --trdelay: 0.05s;
+          transform: translateY(-15px);
+          opacity: 0;
+          transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(1) { transition-delay: var(--delay); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(2) { transition-delay: calc(var(--delay) + var(--trdelay)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(3) { transition-delay: calc(var(--delay) + (var(--trdelay) * 2)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(4) { transition-delay: calc(var(--delay) + (var(--trdelay) * 3)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
+
+        /* Light theme typography and border overrides */
+        .profile-menu-dropdown .border-b {
+          border-color: #e9edff !important;
+        }
+
+        .profile-menu-dropdown .bg-slate-100 {
+          background-color: #e9edff !important;
+        }
+
+        .profile-menu-dropdown p.text-slate-400 {
+          color: #6e7b6c !important; /* Muted slate green */
+        }
+
+        .profile-menu-dropdown p.text-slate-800 {
+          color: #141b2b !important; /* Dark text matching theme */
+        }
+
+        .profile-menu-btn {
+          color: #3e4a3d !important; /* Dark slate green */
+          background-color: transparent !important;
+          white-space: nowrap !important;
+        }
+
+        .profile-menu-btn:hover {
+          color: #006b2c !important; /* Brand green */
+          background-color: #f7fff2 !important; /* Light green hover background */
+        }
+
+        .profile-menu-btn.profile-menu-active {
+          color: #006b2c !important;
+          background-color: #f7fff2 !important;
+        }
+
+        .profile-menu-btn.text-rose-600 {
+          color: #ba1a1a !important; /* Red */
+        }
+
+        .profile-menu-btn.text-rose-600:hover {
+          color: #ba1a1a !important;
+          background-color: #ffdad6 !important; /* Light red hover */
+        }
+
+        /* ORBITAL SELECTOR INDICATOR FOR PROFILE MENU ITEMS */
+        .profile-menu-circle {
+          width: 12px;
+          height: 12px;
+          background-color: transparent;
+          border: 1.5px solid #bdcaba; /* Light green/slate border */
+          border-radius: 50%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+        }
+
+        .profile-menu-circle::before {
+          content: "";
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: #006b2c; /* Brand green */
+          border-radius: 50%;
+          transform: scale(0);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .profile-menu-circle::after {
+          content: "";
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          border: 1.5px solid transparent;
+          border-radius: 50%;
+          border-top-color: #006b2c; /* Brand green */
+          opacity: 0;
+          transform: scale(0.8);
+          transition: all 0.3s ease;
+        }
       `}</style>
 
       {/* Global Toast Alert */}
@@ -1408,19 +1549,115 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
             {/* Profile widget */}
             <div className="flex items-center gap-3">
-              <div className="flex flex-col text-right">
-                <span className="text-body-sm font-bold text-[#141b2b] leading-tight">
-                  {user?.name || 'Nhân viên'}
-                </span>
-                <span className="text-[10px] font-bold text-[#006b2c] tracking-wide uppercase">
-                  {currentRole === 'MANAGER' ? 'Manager / CS Dept' : 'Staff / CS Dept'}
-                </span>
+              <div className="profile-menu-wrapper">
+                <div 
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-full border border-[#bdcaba]/60 bg-slate-50/40 hover:bg-slate-50 hover:border-emerald-600/40 hover:shadow-sm transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="flex flex-col text-right sm:block hidden">
+                    <span className="text-[13px] font-bold text-[#141b2b] leading-tight truncate max-w-[150px] block" title={user?.displayName || user?.name || user?.email}>
+                      {user?.displayName || user?.name || user?.email || "Nhân viên"}
+                    </span>
+                    <div className="flex justify-end mt-0.5">
+                      <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-50 text-[#006b2c] border border-emerald-100/60 leading-none">
+                        {currentRole === 'MANAGER' ? 'Manager / CS' : 'Staff / CS'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="relative">
+                    {user?.avatar || user?.avatarUrl ? (
+                      <img
+                        src={user?.avatar || user?.avatarUrl}
+                        alt="Avatar"
+                        className="w-9 h-9 rounded-full border-2 border-emerald-500/85 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-sm border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                      </div>
+                    )}
+                    
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                  </div>
+                  
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-300 group-hover:rotate-180" />
+                </div>
+
+                <div className="profile-menu-dropdown">
+                  <div className="profile-menu-item px-3 py-2 border-b border-slate-50 mb-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
+                      Tài khoản
+                    </p>
+                    <p
+                      className="text-sm font-bold text-slate-800 truncate text-left"
+                      title={user?.email}
+                    >
+                      {user?.email || user?.name}
+                    </p>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onNavigate) onNavigate("edit_profile");
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
+                    >
+                      <span className="profile-menu-circle" />
+                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    </button>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onNavigate) onNavigate("preferences");
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
+                    >
+                      <span className="profile-menu-circle" />
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        setActiveTab("Dashboard");
+                        if (onNavigate) onNavigate("admin");
+                      }}
+                      className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold rounded-xl transition-all mt-1 ${
+                        activeTab === 'Dashboard'
+                          ? 'profile-menu-active text-emerald-600 bg-emerald-50'
+                          : 'text-slate-650 hover:text-emerald-700 hover:bg-emerald-50'
+                      }`}
+                    >
+                      <span className="profile-menu-circle" />
+                      <Shield className="w-4 h-4" /> Dashboard Staff
+                    </button>
+                  </div>
+
+                  <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onLogout) {
+                          onLogout();
+                        } else {
+                          localStorage.clear();
+                          window.location.reload();
+                        }
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                      <span className="profile-menu-circle" />
+                      <LogOut className="w-4 h-4" /> Đăng xuất
+                    </button>
+                  </div>
+                </div>
               </div>
-              <img
-                src={user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&fit=crop&auto=format&q=60"}
-                alt="Avatar"
-                className="w-10 h-10 rounded-full border border-[#bdcaba] object-cover"
-              />
+
               <button 
                 onClick={onNavigateToHome}
                 title="Thoát"
