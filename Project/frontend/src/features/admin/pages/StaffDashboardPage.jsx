@@ -1596,16 +1596,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     </p>
                   </div>
 
-                  <div className="profile-menu-item">
-                    <button
-                      onClick={() => {
-                        if (onNavigate) onNavigate("edit_profile");
-                      }}
-                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
-                    >
-                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
-                    </button>
-                  </div>
+
 
                   <div className="profile-menu-item">
                     <button
