@@ -32,7 +32,7 @@ BEGIN TRY
         VALUES (N'Phòng Kỹ thuật (IT & Development)', 'IT', N'Bảo trì hệ thống, cấu hình, CMS, SEO, vận hành kỹ thuật', 5);
 
     -- 2. Tạo mã BCrypt cho mật khẩu mặc định: 123456
-    DECLARE @HashPassword NVARCHAR(255) = '$2a$10$r92g32Q1U8Q/D73m6f5ZxeKz49fN7VqO/kM1Gg8yXlA/4Zt51HhKe';
+    DECLARE @HashPassword NVARCHAR(255) = '$2a$10$YU4Q7OvsRZ4o5zCh270J.eC4ethXU2zxCbg5SdfEglxW.VIbU/M8e';
 
     -- [1] Staff Phòng Tài chính (Finance) - FIN
     IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.finance@gmail.com')
