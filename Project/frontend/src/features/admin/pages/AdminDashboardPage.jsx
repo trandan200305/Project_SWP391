@@ -5470,7 +5470,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <option value="DIS">Phòng Tranh chấp (Dispute Resolution - DIS)</option>
                   <option value="CS">Phòng Hỗ trợ (Customer Support - CS)</option>
                   <option value="IT">Phòng Kỹ thuật (IT & Development - IT)</option>
-                  <option value="AUD">Phòng Kiểm toán (Audit & Compliance - AUD)</option>
                 </select>
               </div>
 

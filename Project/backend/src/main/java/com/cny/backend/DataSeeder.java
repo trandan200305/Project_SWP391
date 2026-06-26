@@ -499,14 +499,11 @@ public class DataSeeder implements CommandLineRunner {
         try {
             
             String[][] departments = {
-                {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
+                {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, MOD"},
                 {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
                 {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
                 {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
-                {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: Tất cả"},
-                {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"},
-                {"MKT", "Marketing", "Phòng Truyền thông và Marketing"},
-                {"GEN", "General", "Phòng tổng hợp"}
+                {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
             };
 
             for (String[] dept : departments) {
@@ -533,23 +530,23 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedStaffAndManagers() {
         try {
-            com.cny.backend.department.entity.Department genDept = departmentRepository.findByCode("GEN").orElse(null);
             com.cny.backend.department.entity.Department csDept = departmentRepository.findByCode("CS").orElse(null);
             com.cny.backend.department.entity.Department itDept = departmentRepository.findByCode("IT").orElse(null);
+            com.cny.backend.department.entity.Department primaryDept = csDept != null ? csDept : itDept;
 
             Admin admin = adminRepository.findByEmail("admin@lancerpro.com").orElse(null);
 
-            if (managerRepository.count() == 0 && genDept != null) {
+            if (managerRepository.count() == 0 && primaryDept != null) {
                 Manager manager = Manager.builder()
                         .email("managerstaff@gmail.com")
                         .passwordHash(passwordEncoder.encode("123456"))
                         .displayName("ManagerStaff")
-                        .fullName("General Manager")
+                        .fullName("Customer Support Manager")
                         .phone("0987654321")
                         .avatarUrl("https://ui-avatars.com/api/?name=ManagerStaff&background=006b2c&color=fff")
                         .status("ACTIVE")
-                        .department("General")
-                        .departmentEntity(genDept)
+                        .department(primaryDept.getName())
+                        .departmentEntity(primaryDept)
                         .managedByAdmin(admin != null ? admin.getAdminId() : 1)
                         .isDeleted(false)
                         .createdAt(LocalDateTime.now())

@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class DepartmentService {
+    private static final Set<String> ACTIVE_DEPARTMENT_CODES = Set.of("FIN", "MOD", "DIS", "CS", "IT");
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -46,7 +48,9 @@ public class DepartmentService {
     
 
     public List<Department> getAllDepartments() {
-        return departmentRepository.findAll();
+        return departmentRepository.findAll().stream()
+                .filter(department -> ACTIVE_DEPARTMENT_CODES.contains(department.getCode()))
+                .toList();
     }
 
     

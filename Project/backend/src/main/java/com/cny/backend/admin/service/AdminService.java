@@ -945,7 +945,7 @@ public class AdminService {
             dept = departmentRepository.findById(dto.getDepartmentId()).orElse(null);
         }
         if (dept == null) {
-            dept = departmentRepository.findByCode("GEN").orElse(null);
+            dept = departmentRepository.findByCode("CS").orElse(null);
         }
 
         Optional<com.cny.backend.admin.entity.Manager> existingManager = managerRepository.findByEmail(email);
@@ -956,7 +956,7 @@ public class AdminService {
             mgr.setFullName(dto.getFullName());
             mgr.setPhone(dto.getPhone());
             mgr.setPasswordHash(dto.getPassword() != null ? dto.getPassword() : "123456");
-            mgr.setDepartment(dept != null ? dept.getName() : "General");
+            mgr.setDepartment(dept != null ? dept.getName() : "Customer Support");
             mgr.setDepartmentEntity(dept);
             mgr.setStatus("ACTIVE");
             mgr.setIsDeleted(false);
@@ -971,7 +971,7 @@ public class AdminService {
                     .fullName(dto.getFullName())
                     .phone(dto.getPhone())
                     .status("ACTIVE")
-                    .department(dept != null ? dept.getName() : "General")
+                    .department(dept != null ? dept.getName() : "Customer Support")
                     .departmentEntity(dept)
                     .managedByAdmin(adminId)
                     .isDeleted(false)
@@ -1043,7 +1043,7 @@ public class AdminService {
             dept = mgr.getDepartmentEntity();
         }
         if (dept == null) {
-            dept = departmentRepository.findByCode("GEN").orElse(null);
+            dept = departmentRepository.findByCode("CS").orElse(null);
         }
 
         Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
@@ -1476,7 +1476,7 @@ public class AdminService {
             } catch (Exception e) {}
         }
         if (dept == null) {
-            dept = departmentRepository.findByCode("GEN").orElse(null);
+            dept = departmentRepository.findByCode("CS").orElse(null);
         }
 
         com.cny.backend.admin.entity.Manager mgr = null;
@@ -1523,7 +1523,7 @@ public class AdminService {
                 managerPlaceholder = existingManager.get();
                 managerPlaceholder.setPasswordHash(hashedPassword);
                 managerPlaceholder.setStatus("ACTIVE");
-                managerPlaceholder.setDepartment(dept != null ? dept.getName() : "General");
+                managerPlaceholder.setDepartment(dept != null ? dept.getName() : "Customer Support");
                 managerPlaceholder.setDepartmentEntity(dept);
                 managerPlaceholder.setManagedByAdmin(adminId);
                 managerPlaceholder.setIsDeleted(false);
@@ -1541,7 +1541,7 @@ public class AdminService {
                         .phone(phone)
                         .citizenId(citizenId)
                         .status("ACTIVE")
-                        .department(dept != null ? dept.getName() : "General")
+                        .department(dept != null ? dept.getName() : "Customer Support")
                         .departmentEntity(dept)
                         .managedByAdmin(adminId)
                         .isDeleted(false)
@@ -1955,14 +1955,11 @@ public class AdminService {
 
     private void initPresetDepartments() {
         String[][] presets = {
-            {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, AUD"},
+            {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, MOD"},
             {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
             {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
             {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
-            {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: Tất cả"},
-            {"AUD", "Phòng Kiểm toán (Audit & Compliance)", "Giám sát, audit logs, đánh giá tuân thủ | Liên kết với: FIN, DIS"},
-            {"MKT", "Marketing", "Phòng Truyền thông và Marketing"},
-            {"GEN", "General", "Phòng tổng hợp"}
+            {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
         };
 
         for (String[] preset : presets) {
