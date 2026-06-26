@@ -17,6 +17,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
   const currentRole = user?.role || "STAFF";
+  const activeDepartmentCodes = ['FIN', 'MOD', 'DIS', 'CS', 'IT'];
+  const isActiveDepartment = (department) => activeDepartmentCodes.includes(department?.code);
   const normalizeRole = (role) => String(role || '').toUpperCase();
   const normalizeId = (id) => String(id ?? '');
   const isCustomerMessage = (message) =>
@@ -77,6 +79,15 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [showTransferRequestModal, setShowTransferRequestModal] = useState(false);
   const [transferRequestTargetDeptId, setTransferRequestTargetDeptId] = useState('');
   const [transferRequestReason, setTransferRequestReason] = useState('');
+  const [transferRequestDetails, setTransferRequestDetails] = useState({
+    desiredPosition: '',
+    desiredStartDate: '',
+    transferType: 'Yêu cầu cá nhân',
+    skills: '',
+    achievements: '',
+    attachmentName: '',
+    confirmed: false
+  });
   const [myProfile, setMyProfile] = useState(null);
   const [departmentsList, setDepartmentsList] = useState([]);
   const [isSubmittingTransferRequest, setIsSubmittingTransferRequest] = useState(false);
@@ -195,16 +206,46 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     }
   }, [showTransferRequestModal]);
 
+  const resetTransferRequestForm = () => {
+    setTransferRequestReason('');
+    setTransferRequestTargetDeptId('');
+    setTransferRequestDetails({
+      desiredPosition: '',
+      desiredStartDate: '',
+      transferType: 'Yêu cầu cá nhân',
+      skills: '',
+      achievements: '',
+      attachmentName: '',
+      confirmed: false
+    });
+  };
+
+  const closeTransferRequestModal = () => {
+    setShowTransferRequestModal(false);
+  };
+
   const handleTransferRequestSubmit = (e) => {
     e.preventDefault();
-    if (!transferRequestTargetDeptId || !user?.id) return;
+    if (!transferRequestTargetDeptId || !user?.id || !transferRequestDetails.confirmed) return;
 
     setIsSubmittingTransferRequest(true);
+    const selectedDepartment = departmentsList.find(d => String(d.departmentId) === String(transferRequestTargetDeptId));
+    const structuredReason = [
+      `Lý do điều chuyển: ${transferRequestReason}`,
+      `Phòng ban mong muốn: ${selectedDepartment?.name || 'Chưa xác định'}${selectedDepartment?.code ? ` (${selectedDepartment.code})` : ''}`,
+      `Vị trí mong muốn: ${transferRequestDetails.desiredPosition || 'Chưa cung cấp'}`,
+      `Ngày mong muốn bắt đầu: ${transferRequestDetails.desiredStartDate || 'Chưa cung cấp'}`,
+      `Loại điều chuyển: ${transferRequestDetails.transferType}`,
+      `Kỹ năng liên quan & kinh nghiệm trước đây: ${transferRequestDetails.skills || 'Chưa cung cấp'}`,
+      `Thành tích nổi bật & lý do phù hợp: ${transferRequestDetails.achievements || 'Chưa cung cấp'}`,
+      `Tệp đính kèm: ${transferRequestDetails.attachmentName || 'Không có'}`
+    ].join('\n');
+
     const payload = {
       userType: 'STAFF',
       userId: user.id,
       toDepartmentId: parseInt(transferRequestTargetDeptId, 10),
-      reason: transferRequestReason
+      reason: structuredReason
     };
 
     adminApi.transferDepartmentMember(payload)
@@ -213,8 +254,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         if (res.success !== false) {
           showToast('Điều chuyển phòng ban thành công!', 'success');
           setShowTransferRequestModal(false);
-          setTransferRequestReason('');
-          setTransferRequestTargetDeptId('');
+          resetTransferRequestForm();
           fetchMyProfile();
         } else {
           showToast(res.message || 'Điều chuyển thất bại.', 'error');
@@ -4070,81 +4110,242 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
       {/* ---------------- DEPARTMENT TRANSFER REQUEST MODAL ---------------- */}
       {showTransferRequestModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e1e8fd] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
-              <h2 className="text-title-md font-extrabold text-[#141b2b]">Yêu cầu điều chuyển</h2>
-              <button 
-                onClick={() => setShowTransferRequestModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleTransferRequestSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Họ tên & Email</label>
-                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b] font-medium">
-                  {user?.displayName || user?.name} ({user?.email})
-                </div>
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#f7f8f7] px-4 py-8">
+          <div className="mx-auto flex min-h-full w-full max-w-[920px] flex-col">
+            <div className="mb-8 flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[17px] font-extrabold text-[#009b3a]">FelanPro</span>
+                <span className="h-4 w-px bg-[#cfd8cd]" />
+                <span className="text-[12px] font-medium text-[#3e4a3d]">HR Terminal</span>
               </div>
-
-              <div>
-                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Phòng ban hiện tại</label>
-                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-sm text-[#006b2c] font-bold">
-                  {myProfile?.departmentName || 'Đang tải...'}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Chọn phòng ban chuyển đến</label>
-                <select
-                  required
-                  className="w-full border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] bg-white cursor-pointer"
-                  value={transferRequestTargetDeptId}
-                  onChange={e => setTransferRequestTargetDeptId(e.target.value)}
-                >
-                  <option value="">-- Chọn phòng ban --</option>
-                  {departmentsList
-                    .filter(d => d.departmentId !== myProfile?.departmentId)
-                    .map(d => (
-                      <option key={d.departmentId} value={d.departmentId}>
-                        {d.name} ({d.code})
-                      </option>
-                    ))
-                  }
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-2">Lý do điều chuyển</label>
-                <textarea
-                  required
-                  className="w-full h-24 border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] resize-none"
-                  placeholder="Nhập lý do chi tiết..."
-                  value={transferRequestReason}
-                  onChange={e => setTransferRequestReason(e.target.value)}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex items-center gap-4 text-[#141b2b]">
+                <Bell className="h-5 w-5" />
+                <HelpCircle className="h-5 w-5" />
                 <button
                   type="button"
-                  onClick={() => setShowTransferRequestModal(false)}
-                  className="flex-1 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
+                  onClick={closeTransferRequestModal}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#3e4a3d] hover:bg-[#edf4ea]"
+                  aria-label="Đóng đơn điều chuyển"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleTransferRequestSubmit} className="rounded-xl border border-[#e5ece2] bg-white p-6 shadow-[0_8px_24px_rgba(20,27,43,0.08)] sm:p-8">
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-[28px] font-extrabold leading-tight text-black sm:text-[32px]">Đơn yêu cầu điều chuyển phòng ban</h2>
+                  <p className="mt-2 text-[15px] text-[#3e4a3d]">Gửi yêu cầu chuyển sang phòng ban khác</p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#e8f5e7] px-3 py-1 text-[12px] font-bold text-[#006b2c]">
+                  <span className="h-2 w-2 rounded-full bg-[#00a63e]" />
+                  Bản nháp
+                </span>
+              </div>
+
+              <div className="space-y-8">
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <User className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Thông tin nhân viên</h3>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Mã nhân viên</label>
+                      <input readOnly value={myProfile?.staffCode || myProfile?.employeeCode || `FP-${user?.id || '----'}`} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Họ và tên</label>
+                      <input readOnly value={user?.displayName || user?.name || myProfile?.fullName || ''} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Phòng ban hiện tại</label>
+                      <input readOnly value={myProfile?.departmentName || 'Đang tải...'} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Chức vụ hiện tại</label>
+                      <input readOnly value={myProfile?.position || myProfile?.title || currentRole} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Quản lý hiện tại</label>
+                      <input readOnly value={myProfile?.managerName || 'Chưa cập nhật'} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Email</label>
+                      <input readOnly value={user?.email || ''} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <ArrowLeftRight className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Thông tin điều chuyển</h3>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Phòng ban muốn chuyển đến</label>
+                      <select
+                        required
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        value={transferRequestTargetDeptId}
+                        onChange={e => setTransferRequestTargetDeptId(e.target.value)}
+                      >
+                        <option value="">Chọn phòng ban</option>
+                        {departmentsList
+                          .filter(d => isActiveDepartment(d) && d.departmentId !== myProfile?.departmentId)
+                          .map(d => (
+                            <option key={d.departmentId} value={d.departmentId}>
+                              {d.name}{d.code ? ` (${d.code})` : ''}
+                            </option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Vị trí mong muốn</label>
+                      <input
+                        value={transferRequestDetails.desiredPosition}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredPosition: e.target.value }))}
+                        placeholder="Nhập vị trí dự kiến"
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Ngày mong muốn bắt đầu</label>
+                      <input
+                        type="date"
+                        value={transferRequestDetails.desiredStartDate}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredStartDate: e.target.value }))}
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Loại điều chuyển</label>
+                      <select
+                        value={transferRequestDetails.transferType}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, transferType: e.target.value }))}
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      >
+                        <option>Yêu cầu cá nhân</option>
+                        <option>Theo nhu cầu dự án</option>
+                        <option>Phát triển nghề nghiệp</option>
+                        <option>Khác</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <FileText className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Lý do điều chuyển</h3>
+                  </div>
+                  <label className="mb-2 block text-[13px] font-bold text-black">Chi tiết lý do</label>
+                  <textarea
+                    required
+                    value={transferRequestReason}
+                    onChange={e => setTransferRequestReason(e.target.value)}
+                    placeholder="Trình bày lý do bạn muốn chuyển sang phòng ban khác"
+                    className="min-h-[110px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                  />
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <Activity className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Kỹ năng và kinh nghiệm</h3>
+                  </div>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Kỹ năng liên quan & Kinh nghiệm trước đây</label>
+                      <textarea
+                        value={transferRequestDetails.skills}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, skills: e.target.value }))}
+                        placeholder="Liệt kê các kỹ năng phù hợp với vị trí mới..."
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Thành tích nổi bật & Lý do bạn phù hợp</label>
+                      <textarea
+                        value={transferRequestDetails.achievements}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, achievements: e.target.value }))}
+                        placeholder="Nêu bật những lý do bạn là ứng viên sáng giá cho vị trí này..."
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <Paperclip className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Tệp đính kèm</h3>
+                  </div>
+                  <label className="flex min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#9fbd98] bg-[#edf7ea] px-4 text-center transition-colors hover:bg-[#e4f3df]">
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      onChange={e => setTransferRequestDetails(prev => ({ ...prev, attachmentName: e.target.files?.[0]?.name || '' }))}
+                    />
+                    <Paperclip className="mb-4 h-9 w-9 text-[#00a63e]" />
+                    <span className="text-[14px] font-medium text-[#3e4a3d]">{transferRequestDetails.attachmentName || 'Kéo và thả tệp vào đây'}</span>
+                    <span className="mt-1 text-[13px] text-[#3e4a3d]">Tải lên tài liệu hỗ trợ</span>
+                    <span className="mt-4 rounded-full bg-white px-4 py-1 text-[11px] font-bold text-[#6e7b6c]">PDF, DOCX, PNG, JPG</span>
+                    <span className="mt-2 text-[11px] italic text-[#3e4a3d]">Không bắt buộc, tối đa 10MB</span>
+                  </label>
+                </section>
+
+                <label className="flex items-start gap-3 rounded-lg bg-[#edf7ea] p-4 text-[14px] leading-6 text-[#263326]">
+                  <input
+                    type="checkbox"
+                    checked={transferRequestDetails.confirmed}
+                    onChange={e => setTransferRequestDetails(prev => ({ ...prev, confirmed: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-[#b8d0b2] text-[#009b3a] focus:ring-[#009b3a]"
+                  />
+                  <span>Tôi xác nhận rằng các thông tin đã cung cấp là chính xác và hoàn toàn chịu trách nhiệm về tính trung thực của các thông tin này.</span>
+                </label>
+              </div>
+
+              <div className="mt-9 flex flex-col gap-3 border-t border-[#d7e2d4] pt-6 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeTransferRequestModal}
+                  className="h-12 rounded-lg border border-[#9aa69a] bg-white px-7 text-[14px] font-semibold text-[#6e7b6c] transition-colors hover:bg-[#f1f4f0]"
                 >
                   Hủy
                 </button>
                 <button
+                  type="button"
+                  onClick={() => {
+                    showToast('Đã lưu bản nháp yêu cầu điều chuyển.', 'success');
+                    closeTransferRequestModal();
+                  }}
+                  className="h-12 rounded-lg border border-[#00a63e] bg-white px-7 text-[14px] font-semibold text-[#009b3a] transition-colors hover:bg-[#edf7ea]"
+                >
+                  Lưu bản nháp
+                </button>
+                <button
                   type="submit"
-                  disabled={isSubmittingTransferRequest || !transferRequestTargetDeptId}
-                  className="flex-1 py-2.5 rounded-lg font-bold text-body-sm shadow transition-all text-white bg-[#006b2c] hover:bg-[#00873a] disabled:opacity-50"
+                  disabled={isSubmittingTransferRequest || !transferRequestTargetDeptId || !transferRequestDetails.confirmed}
+                  className="h-12 rounded-lg bg-[#00a63e] px-8 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#008f36] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSubmittingTransferRequest ? 'Đang gửi...' : 'Gửi yêu cầu'}
                 </button>
               </div>
             </form>
+
+            <div className="mt-9 flex flex-col gap-3 border-t border-[#cfd8cd] px-1 py-5 text-[11px] text-[#263326] sm:flex-row sm:items-center sm:justify-between">
+              <span>© 2024 FelanPro HR Systems. High-Efficiency Environment.</span>
+              <div className="flex gap-6">
+                <span>Privacy Policy</span>
+                <span>Terms of Service</span>
+                <span>Support</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
