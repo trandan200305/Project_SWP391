@@ -1248,15 +1248,15 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         }
 
         .profile-menu-dropdown {
-          background-color: #1e293b; /* Dark slate */
-          border: 1px solid #334155; /* Slate border */
+          background-color: #ffffff; /* White background */
+          border: 1px solid #e1e8fd; /* Light border matching dashboard */
           border-radius: 16px;
           position: absolute;
           width: 280px;
           right: 0;
           top: calc(100% + 6px);
           overflow: hidden;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
           z-index: 9999 !important;
           padding: 8px;
           cursor: default;
@@ -1292,46 +1292,46 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
         .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
 
-        /* Dark theme typography and border overrides */
+        /* Light theme typography and border overrides */
         .profile-menu-dropdown .border-b {
-          border-color: #334155 !important;
-        }
+          border-color: #e9edff !important;
+        } 
 
         .profile-menu-dropdown .bg-slate-100 {
-          background-color: #334155 !important;
+          background-color: #e9edff !important;
         }
 
         .profile-menu-dropdown p.text-slate-400 {
-          color: #94a3b8 !important;
+          color: #6e7b6c !important; /* Muted slate green */
         }
 
         .profile-menu-dropdown p.text-slate-800 {
-          color: #f1f5f9 !important;
+          color: #141b2b !important; /* Dark text matching theme */
         }
 
         .profile-menu-btn {
-          color: #cbd5e1 !important;
+          color: #3e4a3d !important; /* Dark slate green */
           background-color: transparent !important;
           white-space: nowrap !important;
         }
 
         .profile-menu-btn:hover {
-          color: #ffffff !important;
-          background-color: rgba(255, 255, 255, 0.08) !important;
+          color: #006b2c !important; /* Brand green */
+          background-color: #f7fff2 !important; /* Light green hover background */
         }
 
         .profile-menu-btn.profile-menu-active {
-          color: #34d399 !important; /* emerald-400 */
-          background-color: rgba(16, 185, 129, 0.15) !important;
+          color: #006b2c !important;
+          background-color: #f7fff2 !important;
         }
 
         .profile-menu-btn.text-rose-600 {
-          color: #f87171 !important; /* rose-400 */
+          color: #ba1a1a !important; /* Red */
         }
 
         .profile-menu-btn.text-rose-600:hover {
-          color: #ffffff !important;
-          background-color: rgba(239, 68, 68, 0.2) !important;
+          color: #ba1a1a !important;
+          background-color: #ffdad6 !important; /* Light red hover */
         }
 
         /* ORBITAL SELECTOR INDICATOR FOR PROFILE MENU ITEMS */
@@ -1339,7 +1339,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           width: 12px;
           height: 12px;
           background-color: transparent;
-          border: 1.5px solid #475569; /* Slate border */
+          border: 1.5px solid #bdcaba; /* Light green/slate border */
           border-radius: 50%;
           position: relative;
           display: flex;
@@ -1354,7 +1354,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           position: absolute;
           width: 4px;
           height: 4px;
-          background: #3b82f6;
+          background: #006b2c; /* Brand green */
           border-radius: 50%;
           transform: scale(0);
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1367,14 +1367,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           height: 18px;
           border: 1.5px solid transparent;
           border-radius: 50%;
-          border-top-color: #3b82f6;
+          border-top-color: #006b2c; /* Brand green */
           opacity: 0;
           transform: scale(0.8);
           transition: all 0.3s ease;
         }
 
         .profile-menu-btn:hover .profile-menu-circle {
-          border-color: #3b82f6;
+          border-color: #006b2c;
           transform: scale(1.1);
         }
 
@@ -1390,21 +1390,21 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
         /* Active states */
         .profile-menu-btn.profile-menu-active .profile-menu-circle {
-          border-color: #34d399;
+          border-color: #006b2c;
           transform: scale(1.0);
         }
 
         .profile-menu-btn.profile-menu-active .profile-menu-circle::before {
           transform: scale(1);
-          background-color: #34d399;
+          background-color: #006b2c;
         }
 
         .profile-menu-btn.profile-menu-active .profile-menu-circle::after {
           opacity: 1;
           transform: scale(1.3);
-          border-top-color: #34d399;
+          border-top-color: #006b2c;
           animation: profile-orbit 2s infinite linear;
-          box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+          box-shadow: 0 0 8px rgba(0, 107, 44, 0.4);
         }
 
         @keyframes profile-orbit {
