@@ -89,5 +89,14 @@ export const adminApi = {
   getVnpayConfig: () => api.get('/admin/vnpay-config'),
   saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
   getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
-  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`)
+  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`),
+  getPendingGigs: () => api.get('/admin/gigs/pending'),
+  moderateGig: (gigId, approve, reasonParam, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  }
 };
