@@ -1603,7 +1603,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       }}
                       className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
                     >
-                      <span className="profile-menu-circle" />
                       <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
                     </button>
                   </div>
@@ -1615,7 +1614,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       }}
                       className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
                     >
-                      <span className="profile-menu-circle" />
                       <Settings className="w-4 h-4" /> Cài đặt chung
                     </button>
                   </div>
@@ -1632,7 +1630,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                           : 'text-slate-650 hover:text-emerald-700 hover:bg-emerald-50'
                       }`}
                     >
-                      <span className="profile-menu-circle" />
                       <Shield className="w-4 h-4" /> Dashboard Staff
                     </button>
                   </div>
@@ -1651,7 +1648,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       }}
                       className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                     >
-                      <span className="profile-menu-circle" />
                       <LogOut className="w-4 h-4" /> Đăng xuất
                     </button>
                   </div>
