@@ -31,7 +31,7 @@ public class Gig {
     @Column(name = "description", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "price", nullable = false, precision = 18, scale = 2)
+    @Column(name = "price", nullable = false)
     private Double price;
 
     @Column(name = "status", nullable = false, length = 50)
