@@ -1816,21 +1816,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     </div>
                   )}
 
-                  <div className="profile-menu-item">
-                    <button
-                      onClick={() => {
-                        setActiveTab("Dashboard");
-                        if (onNavigate) onNavigate("admin");
-                      }}
-                      className={`profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold rounded-xl transition-all mt-1 ${
-                        activeTab === 'Dashboard'
-                          ? 'profile-menu-active text-emerald-600 bg-emerald-50'
-                          : 'text-slate-650 hover:text-emerald-700 hover:bg-emerald-50'
-                      }`}
-                    >
-                      <Shield className="w-4 h-4" /> Dashboard Manager
-                    </button>
-                  </div>
+
 
                   <div className="h-[1px] bg-slate-100 my-1 mx-2" />
 
