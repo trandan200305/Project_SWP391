@@ -1781,6 +1781,20 @@ public class AdminService {
             return response;
         }
 
+        Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findByEmail(staffEmail);
+        if (staffOpt.isPresent()) {
+            com.cny.backend.admin.entity.Staff staff = staffOpt.get();
+            String requiredDepts = task.getRequiredDepartments();
+            if (requiredDepts != null && !requiredDepts.isEmpty() && staff.getDepartmentEntity() != null) {
+                String staffDeptCode = staff.getDepartmentEntity().getCode();
+                if (staffDeptCode != null && !requiredDepts.contains(staffDeptCode)) {
+                    response.put("success", false);
+                    response.put("message", "Bạn không thuộc phòng ban được phép xử lý tác vụ này!");
+                    return response;
+                }
+            }
+        }
+
         task.setAssignedToEmail(staffEmail);
         task.setStatus("IN_PROGRESS");
         departmentVerificationTaskRepository.save(task);
