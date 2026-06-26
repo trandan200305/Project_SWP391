@@ -8,7 +8,6 @@ import SuspendedOverlay from "./components/common/SuspendedOverlay.jsx";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [pageParams, setPageParams] = useState(null);

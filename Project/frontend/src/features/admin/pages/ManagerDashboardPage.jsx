@@ -312,8 +312,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     Promise.all([
       adminApi.getPendingProjects().catch(() => []),
       adminApi.getProfileRequests().catch(() => []),
-      adminApi.getWithdrawals().catch(() => [])
-    ]).then(([projectsData, profilesData, withdrawalsData]) => {
+      adminApi.getWithdrawals().catch(() => []),
+      adminApi.getPendingGigs().catch(() => []),
+      adminApi.getReports().catch(() => [])
+    ]).then(([projectsData, profilesData, withdrawalsData, gigsData, reportsData]) => {
       let mapped = [];
 
       if (Array.isArray(projectsData)) {
@@ -358,30 +360,34 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         }))];
       }
 
-      
-      mapped.push({
-        id: 'GIG-MOCK-1',
-        idRaw: 9991,
-        title: 'Thiết kế Logo Doanh nghiệp trọn gói',
-        type: 'GIG',
-        author: 'Freelancer Alex',
-        detail: 'Gói dịch vụ mới tạo, giá 2.000.000 VND',
-        reason: 'Dịch vụ mới',
-        subDate: new Date().toISOString().substring(0, 10),
-        status: 'Pending'
-      });
+      if (Array.isArray(gigsData)) {
+        mapped = [...mapped, ...gigsData.map(g => ({
+          id: `GIG-${g.id}`,
+          idRaw: g.id,
+          title: g.title,
+          type: 'GIG',
+          author: g.freelancerName || 'Freelancer',
+          detail: g.description,
+          reason: 'Dịch vụ mới',
+          subDate: g.createdAt ? String(g.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending'
+        }))];
+      }
 
-      mapped.push({
-        id: 'REV-MOCK-1',
-        idRaw: 9992,
-        title: 'Đánh giá bị báo cáo: Dự án Web App',
-        type: 'REVIEW',
-        author: 'Client John',
-        detail: 'Đánh giá chứa từ ngữ không phù hợp.',
-        reason: 'Bị cắm cờ (Flagged)',
-        subDate: new Date().toISOString().substring(0, 10),
-        status: 'Pending'
-      });
+      if (Array.isArray(reportsData)) {
+        const reviewReports = reportsData.filter(r => r.targetType === 'REVIEW' && r.status === 'PENDING');
+        mapped = [...mapped, ...reviewReports.map(r => ({
+          id: `REV-${r.id}`,
+          idRaw: r.id,
+          title: `Đánh giá bị báo cáo: ID #${r.id}`,
+          type: 'REVIEW',
+          author: r.reporterName || 'User',
+          detail: r.reason,
+          reason: 'Báo cáo vi phạm',
+          subDate: r.createdAt ? String(r.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending'
+        }))];
+      }
 
       setModerationItems(mapped);
     }).catch(err => console.error('Error fetching moderation items:', err));
@@ -1011,8 +1017,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     } else if (item.type === 'WITHDRAWAL') {
       const status = approve ? 'COMPLETED' : 'REJECTED'; 
       apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
+    } else if (item.type === 'GIG') {
+      apiCall = adminApi.moderateGig(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'REVIEW') {
+      const status = approve ? 'RESOLVED' : 'DISMISSED';
+      apiCall = adminApi.resolveReport(item.idRaw, status, adminId);
     } else {
-      
       apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
     }
 

@@ -92,6 +92,9 @@ public class AdminService {
     private EmployerProfileRequestRepository employerProfileRequestRepository;
 
     @Autowired
+    private com.cny.backend.project.repository.GigRepository gigRepository;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -2221,6 +2224,41 @@ public class AdminService {
         result.put("success", true);
         result.put("message", "Duyệt giao dịch và kích hoạt dự án thành công.");
         return result;
+    }
+
+    public List<com.cny.backend.admin.dto.PendingGigDto> getPendingGigs() {
+        return gigRepository.findByStatusOrderByCreatedAtDesc("PENDING").stream().map(g -> 
+            com.cny.backend.admin.dto.PendingGigDto.builder()
+                .id(g.getGigId())
+                .title(g.getTitle())
+                .description(g.getDescription())
+                .price(g.getPrice())
+                .createdAt(g.getCreatedAt() != null ? g.getCreatedAt().toString() : "")
+                .freelancerName(g.getFreelancer() != null ? g.getFreelancer().getDisplayName() : "Freelancer")
+                .status(g.getStatus())
+                .build()
+        ).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> moderateGig(int id, boolean approve, String reason, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String newStatus = approve ? "APPROVED" : "REJECTED";
+        Optional<com.cny.backend.project.entity.Gig> gigOpt = gigRepository.findById(id);
+        if (gigOpt.isPresent()) {
+            com.cny.backend.project.entity.Gig gig = gigOpt.get();
+            gig.setStatus(newStatus);
+            gigRepository.save(gig);
+            
+            writeAuditLog(adminId, "MODERATE_GIG", "PROJECTS", "Duyệt dịch vụ #" + id + " thành " + newStatus + " | Lý do: " + (reason != null ? reason : ""));
+            
+            response.put("success", true);
+            response.put("message", "Đã duyệt dịch vụ thành công.");
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy dịch vụ.");
+        }
+        return response;
     }
 }
 

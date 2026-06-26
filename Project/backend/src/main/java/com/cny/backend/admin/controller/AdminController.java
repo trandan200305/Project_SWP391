@@ -92,6 +92,20 @@ public class AdminController {
         return ResponseEntity.ok(adminService.moderateProject(id, approve, reason, adminId));
     }
 
+    @GetMapping("/gigs/pending")
+    public ResponseEntity<List<com.cny.backend.admin.dto.PendingGigDto>> getPendingGigs() {
+        return ResponseEntity.ok(adminService.getPendingGigs());
+    }
+
+    @PutMapping("/gigs/{id}/moderate")
+    public ResponseEntity<Map<String, Object>> moderateGig(
+            @PathVariable("id") int id,
+            @RequestParam("approve") boolean approve,
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.moderateGig(id, approve, reason, adminId));
+    }
+
     @GetMapping("/withdrawals")
     public ResponseEntity<List<WithdrawalDto>> getWithdrawals() {
         return ResponseEntity.ok(adminService.getWithdrawals());
