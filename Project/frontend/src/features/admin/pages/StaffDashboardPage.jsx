@@ -1149,10 +1149,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
   const commonSidebarItems = [
     { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
-    { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: myTasks.filter(t => t.status !== 'Completed').length },
-    { id: 'Notifications', label: 'Thông báo', icon: Bell },
-    { label: 'Đơn điều chuyển', icon: ArrowLeftRight, onClick: () => setShowTransferRequestModal(true) },
-    { id: 'Profile', label: 'Hồ sơ cá nhân', icon: User }
+    { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: myTasks.filter(t => t.status !== 'Completed').length }
   ];
 
   const departmentSidebarGroups = {
