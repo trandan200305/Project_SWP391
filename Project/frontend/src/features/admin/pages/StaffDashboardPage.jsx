@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, CheckSquare, MessageSquare, ShieldAlert, UserCheck, 
   BadgeDollarSign, Gavel, FileText, Bell, Settings, Search, HelpCircle, 
-  Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
+  Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter,
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
   XCircle, ShieldBan, ChevronDown, Edit3, Shield, ArrowLeftRight
@@ -47,9 +47,11 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   // Tab states
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sectionsOpen, setSectionsOpen] = useState({
-    taskManagement: true,
+    finance: true,
     moderation: true,
-    finance: true
+    disputeResolution: true,
+    customerSupport: true,
+    itDevelopment: true
   });
   const toggleSection = (section) => {
     setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
@@ -1100,8 +1102,130 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       });
   };
 
+  const normalizeDepartmentCode = (value) => {
+    const normalized = String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+
+    if (!normalized) return '';
+    if (normalized.includes('FIN') || normalized.includes('TAI CHINH') || normalized.includes('FINANCE')) return 'FIN';
+    if (normalized.includes('MOD') || normalized.includes('KIEM DUYET') || normalized.includes('MODERATION')) return 'MOD';
+    if (normalized.includes('DIS') || normalized.includes('TRANH CHAP') || normalized.includes('DISPUTE')) return 'DIS';
+    if (normalized.includes('CS') || normalized.includes('HO TRO') || normalized.includes('CUSTOMER SUPPORT') || normalized.includes('SUPPORT')) return 'CS';
+    if (normalized.includes('IT') || normalized.includes('KY THUAT') || normalized.includes('DEVELOPMENT')) return 'IT';
+    return '';
+  };
+
+  const staffDepartmentCode =
+    normalizeDepartmentCode(myProfile?.departmentCode) ||
+    normalizeDepartmentCode(user?.departmentCode) ||
+    normalizeDepartmentCode(user?.department) ||
+    normalizeDepartmentCode(myProfile?.departmentName) ||
+    normalizeDepartmentCode(user?.departmentName) ||
+    normalizeDepartmentCode(myProfile?.specialization) ||
+    normalizeDepartmentCode(user?.specialization) ||
+    'CS';
+
+  const taskBelongsToCurrentStaff = (task) => {
+    if (normalizeRole(currentRole) === 'ADMIN' || normalizeRole(currentRole) === 'MANAGER') return true;
+    if (task.assignedToEmail && user?.email && task.assignedToEmail === user.email) return true;
+
+    const requiredDepartments = String(task.requiredDepartments || '')
+      .split(',')
+      .map(dept => normalizeDepartmentCode(dept.trim()))
+      .filter(Boolean);
+
+    return requiredDepartments.length === 0 || requiredDepartments.includes(staffDepartmentCode);
+  };
+
+  const myTasks = tasks.filter(taskBelongsToCurrentStaff);
+  const pendingModerationCount = moderationItems.filter(i => i.status === 'Pending').length;
+  const pendingKycCount = kycRequests.filter(r => r.status === 'Pending').length;
+  const unreadSupportCount = supportChats.reduce((sum, c) => sum + (c.unread || 0), 0);
+  const pendingWithdrawalCount = withdrawals.filter(w => w.status === 'PENDING' || w.status === 'Pending').length;
+  const failedTransactionCount = vnpayTxns.filter(tx => tx.status === 'FAILED' || tx.status === 'Failed' || tx.status === 'ERROR').length;
+  const openDisputeCount = escalationCases.filter(item => item.status !== 'Resolved').length;
+
+  const commonSidebarItems = [
+    { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
+    { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: myTasks.filter(t => t.status !== 'Completed').length },
+    { id: 'Notifications', label: 'Thông báo', icon: Bell },
+    { label: 'Đơn điều chuyển', icon: ArrowLeftRight, onClick: () => setShowTransferRequestModal(true) },
+    { id: 'Profile', label: 'Hồ sơ cá nhân', icon: User }
+  ];
+
+  const departmentSidebarGroups = {
+    FIN: {
+      key: 'finance',
+      title: 'FINANCE',
+      icon: BadgeDollarSign,
+      items: [
+        { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign, badge: pendingWithdrawalCount },
+        { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
+        { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle, badge: failedTransactionCount }
+      ]
+    },
+    MOD: {
+      key: 'moderation',
+      title: 'MODERATION',
+      icon: Gavel,
+      items: [
+        { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
+        { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
+        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount }
+      ]
+    },
+    DIS: {
+      key: 'disputeResolution',
+      title: 'DISPUTE RESOLUTION',
+      icon: ShieldAlert,
+      items: [
+        { id: 'Disputes', label: 'Tranh chấp Freelancer - Employer', icon: ShieldAlert, badge: openDisputeCount },
+        { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
+        { id: 'DisputeHistory', label: 'Lịch sử xử lý tranh chấp', icon: FileText }
+      ]
+    },
+    CS: {
+      key: 'customerSupport',
+      title: 'CUSTOMER SUPPORT',
+      icon: MessageSquare,
+      items: [
+        { id: 'Support', label: 'Ticket hỗ trợ', icon: MessageSquare, badge: unreadSupportCount },
+        { id: 'SupportChat', label: 'Chat hỗ trợ', icon: MessageSquare },
+        { id: 'CustomerRequests', label: 'Yêu cầu khách hàng', icon: HelpCircle }
+      ]
+    },
+    IT: {
+      key: 'itDevelopment',
+      title: 'IT & DEVELOPMENT',
+      icon: Activity,
+      items: [
+        { id: 'SystemBugs', label: 'Báo cáo lỗi hệ thống', icon: AlertTriangle },
+        { id: 'SystemMonitoring', label: 'Giám sát hệ thống', icon: Activity },
+        { id: 'Maintenance', label: 'Quản lý bảo trì', icon: Settings },
+        { id: 'InternalTechSupport', label: 'Hỗ trợ kỹ thuật nội bộ', icon: HelpCircle }
+      ]
+    }
+  };
+
+  const activeDepartmentSidebarGroup = departmentSidebarGroups[staffDepartmentCode] || departmentSidebarGroups.CS;
+  const visibleSidebarTabIds = [
+    ...commonSidebarItems.filter(item => item.id).map(item => item.id),
+    ...activeDepartmentSidebarGroup.items.map(item => item.id)
+  ];
+  const visibleSidebarTabKey = visibleSidebarTabIds.join('|');
+
+  useEffect(() => {
+    if (!visibleSidebarTabIds.includes(activeTab)) {
+      setActiveTab('Dashboard');
+    }
+  }, [activeTab, staffDepartmentCode, visibleSidebarTabKey]);
+
   // Filter tasks based on search query and status filter
   const filteredTasks = tasks.filter(t => {
+    if (!taskBelongsToCurrentStaff(t)) return false;
+
     const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.type.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.user.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1111,10 +1235,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   });
 
   // Calculate stats count
-  const countAssigned = tasks.length;
-  const countPending = tasks.filter(t => t.status === 'Pending').length;
-  const countCompleted = tasks.filter(t => t.status === 'Completed').length;
-  const countOverdue = tasks.filter(t => t.status === 'In Progress' && t.deadline.includes('Today')).length;
+  const countAssigned = myTasks.length;
+  const countPending = myTasks.filter(t => t.status === 'Pending').length;
+  const countCompleted = myTasks.filter(t => t.status === 'Completed').length;
+  const countOverdue = myTasks.filter(t => t.status === 'In Progress' && t.deadline.includes('Today')).length;
 
   // Chart coordinates calculator
   const activeChartData = userGrowthTrend.length > 0 
@@ -1194,6 +1318,72 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const displayInProgressPercent = supportStats.total > 0 ? supportStats.inProgressPercent : 54;
   const displayPendingPercent = supportStats.total > 0 ? supportStats.pendingPercent : 28;
   const displayWaitingUserPercent = supportStats.total > 0 ? supportStats.waitingUserPercent : 18;
+
+  const renderSidebarItem = (item, compact = false) => {
+    const IconComp = item.icon;
+    const isActive = item.id && activeTab === item.id;
+    const handleClick = () => {
+      if (item.onClick) {
+        item.onClick();
+        return;
+      }
+      if (item.id) {
+        setActiveTab(item.id);
+      }
+    };
+
+    return (
+      <button
+        key={item.id || item.label}
+        onClick={handleClick}
+        className={`w-full flex items-center justify-between px-3 ${compact ? 'py-1.5' : 'py-2'} rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+          isActive
+            ? 'bg-[#f7fff2] text-[#006b2c]'
+            : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+        }`}
+      >
+        {isActive && (
+          <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+        )}
+        <div className={`flex items-center ${compact ? 'gap-2.5' : 'gap-3'} min-w-0`}>
+          <IconComp className={`${compact ? 'w-[16px] h-[16px]' : 'w-[18px] h-[18px]'} stroke-[2.2] shrink-0 transition-colors ${
+            isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+          }`} />
+          <span className="truncate">{item.label}</span>
+        </div>
+        {item.badge !== undefined && item.badge > 0 && (
+          <span className="ml-2 px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white shrink-0">
+            {item.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const renderSidebarGroup = (group) => {
+    const GroupIcon = group.icon;
+    const isOpen = sectionsOpen[group.key];
+
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={() => toggleSection(group.key)}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <GroupIcon className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-colors" />
+            <span className="truncate">{group.title}</span>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+        </button>
+        {isOpen && (
+          <div className="pl-6 space-y-1 animate-in fade-in duration-200">
+            {group.items.map(item => renderSidebarItem(item, true))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
@@ -1447,187 +1637,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hidden">
             <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-1">Không gian làm việc</p>
             <nav className="space-y-4">
-              {/* Dashboard Section */}
               <div className="space-y-1">
-                {[
-                  { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard }
-                ].map((item) => {
-                  const IconComp = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                        isActive 
-                          ? 'bg-[#f7fff2] text-[#006b2c]' 
-                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                      }`}
-                    >
-                      {isActive && (
-                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                      )}
-                      <div className="flex items-center gap-3">
-                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
-                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                        }`} />
-                        <span>{item.label}</span>
-                      </div>
-                    </button>
-                  );
-                })}
+                {commonSidebarItems.map(item => renderSidebarItem(item))}
               </div>
 
-              {/* Task Management Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('taskManagement')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <Grid className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>TASK MANAGEMENT</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.taskManagement ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.taskManagement && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { id: 'Tasks', label: 'Công việc', icon: CheckSquare },
-                      { id: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
-                      { id: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveTab(item.id)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && item.badge > 0 && (
-                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              {renderSidebarGroup(activeDepartmentSidebarGroup)}
 
-              {/* Moderation Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('moderation')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <Gavel className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>MODERATION</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.moderation ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.moderation && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
-                      { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
-                      { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveTab(item.id)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && item.badge > 0 && (
-                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Finance Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('finance')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <BadgeDollarSign className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>FINANCE</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.finance && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign },
-                      { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
-                      { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveTab(item.id)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </nav>
           </div>
         </div>

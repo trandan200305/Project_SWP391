@@ -66,6 +66,7 @@ public class StaffController {
                 .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().toString() : null)
                 .updatedAt(s.getUpdatedAt() != null ? s.getUpdatedAt().toString() : null)
                 .departmentId(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getDepartmentId() : null)
+                .departmentCode(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getCode() : null)
                 .departmentName(s.getDepartmentEntity() != null ? s.getDepartmentEntity().getName() : null)
                 .build();
     }
