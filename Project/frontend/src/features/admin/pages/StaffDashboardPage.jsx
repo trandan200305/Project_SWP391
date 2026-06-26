@@ -1656,15 +1656,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     </button>
                   </div>
                 </div>
-              </div>
-
-              <button 
-                onClick={onNavigateToHome}
-                title="Thoát"
-                className="p-2 text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </header>
