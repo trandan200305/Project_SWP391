@@ -5,7 +5,7 @@ import {
   Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown
+  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown, ArrowLeftRight
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
@@ -76,6 +76,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     setToast({ message, type, show: true });
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
+
+  // Manager Own Department Transfer States
+  const [showTransferRequestModal, setShowTransferRequestModal] = useState(false);
+  const [transferRequestTargetDeptId, setTransferRequestTargetDeptId] = useState('');
+  const [transferRequestReason, setTransferRequestReason] = useState('');
+  const [myProfile, setMyProfile] = useState(null);
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [isSubmittingTransferRequest, setIsSubmittingTransferRequest] = useState(false);
 
   
   const [stats, setStats] = useState({
@@ -167,6 +175,65 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   });
   const [supportSubTab, setSupportSubTab] = useState('unclaimed'); 
   const [deletedChats, setDeletedChats] = useState([]);
+
+  const fetchMyProfile = () => {
+    if (!user?.id) return;
+    adminApi.getManagerProfile(user.id)
+      .then(data => {
+        if (data) {
+          setMyProfile(data);
+        }
+      })
+      .catch(err => console.error("Error fetching manager profile:", err));
+  };
+
+  useEffect(() => {
+    fetchMyProfile();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (showTransferRequestModal) {
+      fetchMyProfile();
+      adminApi.getDepartments()
+        .then(data => {
+          if (Array.isArray(data)) {
+            setDepartmentsList(data);
+          }
+        })
+        .catch(err => console.error("Error fetching departments:", err));
+    }
+  }, [showTransferRequestModal]);
+
+  const handleTransferRequestSubmit = (e) => {
+    e.preventDefault();
+    if (!transferRequestTargetDeptId || !user?.id) return;
+
+    setIsSubmittingTransferRequest(true);
+    const payload = {
+      userType: 'MANAGER',
+      userId: user.id,
+      toDepartmentId: parseInt(transferRequestTargetDeptId, 10),
+      reason: transferRequestReason
+    };
+
+    adminApi.transferDepartmentMember(payload)
+      .then(res => {
+        setIsSubmittingTransferRequest(false);
+        if (res.success !== false) {
+          showToast('Điều chuyển phòng ban thành công!', 'success');
+          setShowTransferRequestModal(false);
+          setTransferRequestReason('');
+          setTransferRequestTargetDeptId('');
+          fetchMyProfile();
+        } else {
+          showToast(res.message || 'Điều chuyển thất bại.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsSubmittingTransferRequest(false);
+        showToast(err.response?.data?.message || 'Có lỗi xảy ra khi thực hiện điều chuyển.', 'error');
+      });
+  };
 
   const supportSubTabRef = useRef(supportSubTab);
   useEffect(() => {
@@ -1745,7 +1812,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     </span>
                     <div className="flex justify-end mt-0.5">
                       <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100/60 leading-none">
-                        {user?.role || "MANAGER"}
+                        {(user?.role || "MANAGER") + (myProfile?.departmentName ? ` / ${myProfile.departmentName}` : '')}
                       </span>
                     </div>
                   </div>
@@ -1796,6 +1863,17 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       }`}
                     >
                       <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        setShowTransferRequestModal(true);
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-emerald-600 hover:bg-emerald-50"
+                    >
+                      <ArrowLeftRight className="w-4 h-4" /> Yêu cầu điều chuyển
                     </button>
                   </div>
 
@@ -4003,6 +4081,87 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- DEPARTMENT TRANSFER REQUEST MODAL ---------------- */}
+      {showTransferRequestModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e1e8fd] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Yêu cầu điều chuyển</h2>
+              <button 
+                onClick={() => setShowTransferRequestModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleTransferRequestSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Họ tên & Email</label>
+                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b] font-medium">
+                  {user?.displayName || user?.name} ({user?.email})
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Phòng ban hiện tại</label>
+                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-sm text-[#006b2c] font-bold">
+                  {myProfile?.departmentName || 'Đang tải...'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-1">Chọn phòng ban chuyển đến</label>
+                <select
+                  required
+                  className="w-full border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] bg-white cursor-pointer"
+                  value={transferRequestTargetDeptId}
+                  onChange={e => setTransferRequestTargetDeptId(e.target.value)}
+                >
+                  <option value="">-- Chọn phòng ban --</option>
+                  {departmentsList
+                    .filter(d => d.departmentId !== myProfile?.departmentId)
+                    .map(d => (
+                      <option key={d.departmentId} value={d.departmentId}>
+                        {d.name} ({d.code})
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-body-sm text-[#3e4a3d] font-bold mb-2">Lý do điều chuyển</label>
+                <textarea
+                  required
+                  className="w-full h-24 border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] resize-none"
+                  placeholder="Nhập lý do chi tiết..."
+                  value={transferRequestReason}
+                  onChange={e => setTransferRequestReason(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTransferRequestModal(false)}
+                  className="flex-1 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingTransferRequest || !transferRequestTargetDeptId}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-body-sm shadow transition-all text-white bg-[#006b2c] hover:bg-[#00873a] disabled:opacity-50"
+                >
+                  {isSubmittingTransferRequest ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

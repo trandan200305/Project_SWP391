@@ -65,6 +65,8 @@ public class ManagerController {
                 .status(m.getStatus())
                 .createdAt(m.getCreatedAt() != null ? m.getCreatedAt().toString() : null)
                 .updatedAt(m.getUpdatedAt() != null ? m.getUpdatedAt().toString() : null)
+                .departmentId(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getDepartmentId() : null)
+                .departmentName(m.getDepartmentEntity() != null ? m.getDepartmentEntity().getName() : null)
                 .build();
     }
 }
