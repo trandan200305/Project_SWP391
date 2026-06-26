@@ -1656,6 +1656,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     </button>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
         </header>
