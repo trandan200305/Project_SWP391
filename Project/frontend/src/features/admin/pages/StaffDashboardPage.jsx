@@ -2303,7 +2303,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 ? unclaimedChats.filter(matchesChatSearch)
                 : supportSubTab === 'blocked'
                   ? blockedChats.filter(matchesChatSearch)
-                  : deletedChats.filter(matchesChatSearch);
+                  : deletedChats.filter(matchesChatSearch).filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
 
             const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
 
