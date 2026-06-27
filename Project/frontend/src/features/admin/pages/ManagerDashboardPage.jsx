@@ -23,12 +23,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const isCustomerMessage = (message) =>
     ['EMPLOYER', 'FREELANCER', 'CLIENT'].includes(normalizeRole(message?.senderRole));
   const isOwnSupportMessage = (message) => {
-    if (isCustomerMessage(message)) return false;
-
-    return (
-      normalizeRole(message?.senderRole) === normalizeRole(currentRole) &&
-      normalizeId(message?.senderId) === normalizeId(user?.id)
-    );
+    return !isCustomerMessage(message);
   };
   const publishSupportReadReceipt = (ticketId) => {
     if (!ticketId || !stompClientRef.current?.connected) return;
@@ -2448,7 +2443,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           {activeTab === 'Support' && (() => {
             const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
             const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
-            const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
+            const claimedChats = openChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
             const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date());
             const displayedChats = supportSubTab === 'claimed'
@@ -2460,6 +2455,17 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   : deletedChats.filter(matchesChatSearch);
 
             const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
+
+            const handleClaimTicket = async () => {
+              try {
+                if (!user?.id || !selectedChatId) return;
+                await messengerApi.claimTicket(selectedChatId, user.id);
+                showToast("Đã tiếp nhận hội thoại thành công", "success");
+              } catch (err) {
+                console.error("Failed to claim support ticket", err);
+                showToast("Không thể tiếp nhận hội thoại", "error");
+              }
+            };
 
             return (
               <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] flex flex-col">
@@ -2683,6 +2689,23 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                           <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
                           <span className="text-xs font-bold text-slate-600">
                             This user is currently suspended from chat.
+                          </span>
+                        </div>
+                      ) : !(activeChat.assigned_staff_id || activeChat.assignedStaffId) ? (
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border-t border-[#e1e8fd] h-[76px] shrink-0">
+                          <button 
+                            onClick={handleClaimTicket}
+                            className="px-6 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Nhận hỗ trợ hội thoại này
+                          </button>
+                        </div>
+                      ) : normalizeId(activeChat.assigned_staff_id || activeChat.assignedStaffId) !== normalizeId(user?.id) ? (
+                        <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
+                          <AlertCircle className="w-5 h-5 text-amber-500 mr-2 shrink-0" />
+                          <span className="text-xs font-bold text-slate-600">
+                            Hội thoại này đang được xử lý bởi quản lý/nhân viên khác.
                           </span>
                         </div>
                       ) : (
