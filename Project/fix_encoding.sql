@@ -1,0 +1,24 @@
+ALTER TABLE employer_profile_requests ALTER COLUMN company_name NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN company_description NVARCHAR(MAX);
+ALTER TABLE employer_profile_requests ALTER COLUMN display_name NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN full_name NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN address NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN city NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN country NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN industry NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN company_size NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN reject_reason NVARCHAR(MAX);
+ALTER TABLE employer_profile_requests ALTER COLUMN account_holder NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN bank_name NVARCHAR(255);
+ALTER TABLE employer_profile_requests ALTER COLUMN branch NVARCHAR(255);
+
+ALTER TABLE freelancer_profile_requests ALTER COLUMN display_name NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN full_name NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN address NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN city NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN country NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN bio NVARCHAR(MAX);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN reject_reason NVARCHAR(MAX);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN account_holder NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN bank_name NVARCHAR(255);
+ALTER TABLE freelancer_profile_requests ALTER COLUMN branch NVARCHAR(255);

@@ -435,21 +435,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           author: p.clientName || 'Employer',
           detail: p.description,
           reason: 'Dự án mới cần duyệt',
-          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
+          subDate: p.createdAt ? String(p.createdAt) : '',
           status: 'Pending'
         }))];
       }
 
       if (Array.isArray(profilesData)) {
         mapped = [...mapped, ...profilesData.map(pr => ({
-          id: `PROF-${pr.id}`,
-          idRaw: pr.id,
+          id: `PROF-${pr.id || pr.requestId}`,
+          idRaw: pr.id || pr.requestId,
           title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
           type: 'PROFILE',
           author: pr.displayName || 'Employer',
           detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
           reason: 'Cập nhật hồ sơ',
-          subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          subDate: pr.createdAt ? String(pr.createdAt) : new Date().toISOString(),
           status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
         }))];
       }
@@ -463,7 +463,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           author: g.freelancerName || 'Freelancer',
           detail: g.description,
           reason: 'Dịch vụ mới',
-          subDate: g.createdAt ? String(g.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          subDate: g.createdAt ? String(g.createdAt) : new Date().toISOString(),
           status: 'Pending'
         }))];
       }

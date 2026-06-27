@@ -162,6 +162,20 @@ public class AdminController {
         return ResponseEntity.ok(adminService.resolveReport(id, status, adminId));
     }
 
+    @GetMapping("/profile-requests")
+    public ResponseEntity<List<com.cny.backend.user.entity.EmployerProfileRequest>> getProfileRequests() {
+        return ResponseEntity.ok(adminService.getPendingProfileRequests());
+    }
+
+    @PutMapping("/profile-requests/{id}/moderate")
+    public ResponseEntity<Map<String, Object>> moderateProfileRequest(
+            @PathVariable("id") int id,
+            @RequestParam("approve") boolean approve,
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
+    }
+
     @GetMapping("/warning-templates")
     public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
         return ResponseEntity.ok(adminService.getWarningTemplates());
