@@ -2525,7 +2525,22 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       </div>
 
                       {/* Input panel / block banner */}
-                      {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
+                      {supportSubTab === 'deleted' ? (
+                        <div className="flex items-center justify-between p-4 bg-slate-100 border-t border-[#e1e8fd] shrink-0">
+                          <div className="flex items-center">
+                            <AlertCircle className="w-5 h-5 text-slate-500 mr-2 shrink-0" />
+                            <span className="text-xs font-bold text-slate-600">
+                              Hội thoại này đã bị xóa. Bạn không thể nhắn tin thêm.
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleRestoreTicket}
+                            className="px-4 py-2 bg-emerald-50 hover:bg-[#f7fff2] text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+                          >
+                            Khôi phục hội thoại
+                          </button>
+                        </div>
+                      ) : activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                         <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
                           <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
                           <span className="text-xs font-bold text-slate-600">
