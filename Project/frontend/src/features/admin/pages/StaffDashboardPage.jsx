@@ -408,9 +408,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             role: r.userRole || 'FREELANCER',
             docType: 'CCCD/ID Card',
             subDate: r.submittedAt ? r.submittedAt.substring(0, 10) : '',
+            subDateFull: r.submittedAt || '',
             docUrl: r.idCard || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop',
             status: r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : 'Pending'
           }));
+          
+          mapped.sort((a, b) => new Date(b.subDateFull) - new Date(a.subDateFull));
           setKycRequests(mapped);
         }
       })
