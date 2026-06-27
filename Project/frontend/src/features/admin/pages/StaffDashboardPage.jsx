@@ -406,10 +406,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             name: r.userName,
             email: r.userEmail,
             role: r.userRole || 'FREELANCER',
-            docType: 'CCCD/ID Card',
+            docType: r.userRole === 'EMPLOYER' ? 'Giấy phép KD & CCCD Đại diện' : 'CCCD/ID Card',
             subDate: r.submittedAt ? r.submittedAt.substring(0, 10) : '',
             subDateFull: r.submittedAt || '',
-            docUrl: r.idCard || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop',
+            docUrls: r.documentUrls && r.documentUrls.length > 0 ? r.documentUrls.filter(url => url !== "") : (r.idCard ? [r.idCard] : []),
             status: r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : 'Pending'
           }));
           
@@ -3071,14 +3071,20 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                           <span className="font-bold text-[#141b2b]">{req.email}</span>
                         </div>
                         <div className="mt-3">
-                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm:</span>
-                          <div className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 bg-slate-50 flex items-center justify-center group">
-                            <img src={req.docUrl} alt="KYC Document" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <a href={req.docUrl} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
-                                <Eye className="w-4 h-4" />
-                              </a>
-                            </div>
+                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm ({req.docUrls?.length || 0}):</span>
+                          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                             {req.docUrls && req.docUrls.length > 0 ? req.docUrls.map((url, i) => (
+                                <div key={i} className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 w-48 flex-shrink-0 bg-slate-50 flex items-center justify-center group">
+                                  <img src={url} alt={`KYC Document ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <a href={url} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
+                                      <Eye className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                             )) : (
+                                <div className="text-xs text-gray-500 italic py-2">Không có tài liệu nào</div>
+                             )}
                           </div>
                         </div>
                       </div>
