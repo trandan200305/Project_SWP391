@@ -30,7 +30,7 @@ public class KycRequestDto {
     private int id;
     private String userName;
     private String userEmail;
-    private String idCard;
+    private java.util.List<String> documentUrls;
     private String status;
     private String submittedAt;
     private String userRole;

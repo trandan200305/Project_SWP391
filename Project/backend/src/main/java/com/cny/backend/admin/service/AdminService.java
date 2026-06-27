@@ -690,7 +690,11 @@ public class AdminService {
                             .id(f.getProfileId())
                             .userName(f.getDisplayName() != null ? f.getDisplayName() : (f.getFullName() != null ? f.getFullName() : f.getEmail()))
                             .userEmail(f.getEmail())
-                            .idCard(f.getIdCardFrontUrl() != null ? f.getIdCardFrontUrl() : "")
+                            .documentUrls(java.util.Arrays.asList(
+                                    f.getIdCardFrontUrl() != null ? f.getIdCardFrontUrl() : "",
+                                    f.getIdCardBackUrl() != null ? f.getIdCardBackUrl() : "",
+                                    f.getPortraitUrl() != null ? f.getPortraitUrl() : ""
+                            ))
                             .status(f.getKycStatus())
                             .submittedAt(f.getKycSubmittedAt() != null ? f.getKycSubmittedAt().toString() : "")
                             .userRole("FREELANCER")
@@ -709,7 +713,10 @@ public class AdminService {
                             .id(emp.getEmployerId())
                             .userName(emp.getDisplayName() != null ? emp.getDisplayName() : (emp.getFullName() != null ? emp.getFullName() : emp.getEmail()))
                             .userEmail(emp.getEmail())
-                            .idCard(emp.getIdCardFrontUrl() != null ? emp.getIdCardFrontUrl() : "")
+                            .documentUrls(java.util.Arrays.asList(
+                                    emp.getBusinessLicenseUrl() != null ? emp.getBusinessLicenseUrl() : "",
+                                    emp.getRepresentativeIdCardUrl() != null ? emp.getRepresentativeIdCardUrl() : ""
+                            ))
                             .status(emp.getKycStatus())
                             .submittedAt(emp.getKycSubmittedAt() != null ? emp.getKycSubmittedAt().toString() : "")
                             .userRole("EMPLOYER")
