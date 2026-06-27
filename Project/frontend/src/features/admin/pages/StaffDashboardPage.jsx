@@ -401,11 +401,11 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .then(data => {
         if (Array.isArray(data)) {
           const mapped = data.map(r => ({
-            id: `KYC-00${r.id}`,
+            id: `KYC-${r.userRole === 'EMPLOYER' ? 'EMP' : 'FL'}-${r.id}`,
             idRaw: r.id,
             name: r.userName,
             email: r.userEmail,
-            role: 'FREELANCER',
+            role: r.userRole || 'FREELANCER',
             docType: 'CCCD/ID Card',
             subDate: r.submittedAt ? r.submittedAt.substring(0, 10) : '',
             docUrl: r.idCard || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop',
