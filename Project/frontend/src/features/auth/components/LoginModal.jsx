@@ -5,17 +5,18 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from "../api/authApi.js";
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  
+
   const [role, setRole] = useState("freelancer");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [accountLocked, setAccountLocked] = useState(null);
 
-  
+
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -30,14 +31,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [firstLoginUser, setFirstLoginUser] = useState(null);
   const [firstLoginPassword, setFirstLoginPassword] = useState("");
 
-  
+
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer((t) => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  
+
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg("");
@@ -74,7 +75,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -87,7 +88,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  
+
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -99,7 +100,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  
+
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -123,7 +124,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  
+
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join("");
@@ -150,7 +151,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -236,7 +237,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        
+
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -245,7 +246,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        
+
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -342,11 +343,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <button
                     type="submit"
                     disabled={loading || success}
-                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                      success
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
                         ? "bg-emerald-600 text-white shadow-lg animate-pulse"
                         : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
-                    }`}
+                      }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -585,22 +585,20 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 {/* Display lock warning when account is blocked */}
                 {accountLocked && (
                   <div
-                    className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
-                      accountLocked.status === "BANNED"
+                    className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${accountLocked.status === "BANNED"
                         ? "bg-rose-50 border-rose-300"
                         : "bg-amber-50 border-amber-300"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
                         {accountLocked.status === "BANNED" ? "🚫" : "⚠️"}
                       </span>
                       <h3
-                        className={`font-bold text-[13px] ${
-                          accountLocked.status === "BANNED"
+                        className={`font-bold text-[13px] ${accountLocked.status === "BANNED"
                             ? "text-rose-800"
                             : "text-amber-800"
-                        }`}
+                          }`}
                       >
                         {accountLocked.status === "BANNED"
                           ? "Tài khoản đã bị cấm vĩnh viễn"
@@ -608,20 +606,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       </h3>
                     </div>
                     <p
-                      className={`text-[11px] leading-relaxed ${
-                        accountLocked.status === "BANNED"
+                      className={`text-[11px] leading-relaxed ${accountLocked.status === "BANNED"
                           ? "text-rose-700"
                           : "text-amber-700"
-                      }`}
+                        }`}
                     >
                       {accountLocked.message}
                     </p>
                     <div
-                      className={`text-[10px] font-bold pt-1 border-t ${
-                        accountLocked.status === "BANNED"
+                      className={`text-[10px] font-bold pt-1 border-t ${accountLocked.status === "BANNED"
                           ? "border-rose-200 text-rose-500"
                           : "border-amber-200 text-amber-500"
-                      }`}
+                        }`}
                     >
                       Mã trạng thái: {accountLocked.status} • Liên hệ:
                       support@vlance.vn
@@ -641,22 +637,20 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => setRole("freelancer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "freelancer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "freelancer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Freelancer
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("employer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "employer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "employer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Employer
                   </button>
@@ -665,9 +659,9 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 {/* Social Login with Google */}
                 <div className="mb-3.5 flex flex-col items-center justify-center w-full">
                   {!import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-                  !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes(
-                    "googleusercontent.com",
-                  ) ? (
+                    !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes(
+                      "googleusercontent.com",
+                    ) ? (
                     <div className="w-[320px] p-3 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] font-medium leading-relaxed mb-1 text-center shadow-sm">
                       ⚠️ <strong>Google Login chưa cấu hình:</strong> Đổi{" "}
                       <strong className="font-semibold">
@@ -768,11 +762,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <button
                     type="submit"
                     disabled={loading || success}
-                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                      success
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
                         ? "bg-emerald-600 text-white shadow-lg animate-pulse"
                         : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
-                    }`}
+                      }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -802,7 +795,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             )}
           </div>
 
-          
+
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

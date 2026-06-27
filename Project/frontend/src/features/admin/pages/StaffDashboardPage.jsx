@@ -130,6 +130,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [moderationHistory, setModerationHistory] = useState([]);
   const [moderationView, setModerationView] = useState('queue');
   const [queueTab, setQueueTab] = useState('ALL');
+  const [queueSearch, setQueueSearch] = useState('');
+  const [selectedQueueItems, setSelectedQueueItems] = useState([]);
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1176,7 +1178,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       icon: Gavel,
       items: [
         { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
-        { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
         { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount }
       ]
     },
@@ -1355,11 +1356,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           }`} />
           <span className="truncate">{item.label}</span>
         </div>
-        {item.badge !== undefined && item.badge > 0 && (
-          <span className="ml-2 px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white shrink-0">
-            {item.badge}
-          </span>
-        )}
       </button>
     );
   };
@@ -2743,46 +2739,94 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 </div>
 
                 {moderationView === 'queue' && (() => {
-                  const filteredPendingItems = queueTab === 'ALL' 
-                    ? pendingItems 
-                    : pendingItems.filter(item => item.type === queueTab);
-                  
+                  const filteredPendingItems = pendingItems.filter(item => {
+                    if (queueTab !== 'ALL' && item.type !== queueTab) return false;
+                    if (queueSearch) {
+                      const lowerSearch = queueSearch.toLowerCase();
+                      return (item.title?.toLowerCase().includes(lowerSearch) || 
+                              item.author?.toLowerCase().includes(lowerSearch) ||
+                              item.reason?.toLowerCase().includes(lowerSearch));
+                    }
+                    return true;
+                  });
+
+                  const formatTimeRelative = (dateString) => {
+                    if (!dateString) return 'Vừa xong';
+                    const diff = new Date() - new Date(dateString);
+                    if (isNaN(diff)) return dateString;
+                    const minutes = Math.floor(diff / 60000);
+                    if (minutes < 60) return `${minutes} phút trước`;
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return `${hours} giờ trước`;
+                    return new Date(dateString).toLocaleString('vi-VN');
+                  };
+
+                  const handleSelectAll = (e) => {
+                    if (e.target.checked) {
+                      setSelectedQueueItems(filteredPendingItems.map(i => i.id));
+                    } else {
+                      setSelectedQueueItems([]);
+                    }
+                  };
+
+                  const handleSelectItem = (id) => {
+                    setSelectedQueueItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+                  };
+
                   return (
-                  <div className="bg-white border border-[#e1e8fd] rounded-xl overflow-hidden">
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl overflow-hidden shadow-sm">
                     <div className="px-5 py-4 flex flex-col gap-4 border-b border-[#e9edff]">
                       <div className="flex items-center justify-between">
                         <div>
                           <h2 className="text-title-md font-extrabold text-[#141b2b]">Hàng đợi kiểm duyệt</h2>
                           <p className="text-xs text-[#6e7b6c] mt-0.5">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
                         </div>
+                        {selectedQueueItems.length > 0 && (
+                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                            <span className="text-xs font-bold text-[#006b2c] mr-2">Đã chọn {selectedQueueItems.length} mục</span>
+                            <button onClick={() => { setSelectedQueueItems([]); /* execute action */ }} className="px-3 py-1.5 bg-[#ba1a1a] text-white hover:bg-[#93000a] text-xs font-bold rounded shadow-sm flex items-center gap-1 transition-colors"><X className="w-3.5 h-3.5" /> Từ chối</button>
+                            <button onClick={() => { setSelectedQueueItems([]); /* execute action */ }} className="px-3 py-1.5 bg-[#006b2c] text-white hover:bg-[#00873a] text-xs font-bold rounded shadow-sm flex items-center gap-1 transition-colors"><Check className="w-3.5 h-3.5" /> Duyệt hàng loạt</button>
+                          </div>
+                        )}
                       </div>
-                      {/* Sub-tabs for queue items */}
-                      <div className="flex gap-2 border-b border-[#e9edff] pb-2 overflow-x-auto">
-                        {[
-                          { id: 'ALL', label: 'Tất cả' },
-                          { id: 'PROJECT', label: 'Dự án' },
-                          { id: 'PROFILE', label: 'Hồ sơ' },
-                          { id: 'GIG', label: 'Gói dịch vụ' },
-                          { id: 'REVIEW', label: 'Đánh giá' }
-                        ].map(qTab => (
-                          <button
-                            key={qTab.id}
-                            onClick={() => setQueueTab(qTab.id)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
-                              queueTab === qTab.id
-                                ? 'bg-[#141b2b] text-white border-[#141b2b]'
-                                : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
-                            }`}
-                          >
-                            {qTab.label}
-                          </button>
-                        ))}
+                      
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e9edff] pb-2">
+                        <div className="flex gap-2 overflow-x-auto">
+                          {[
+                            { id: 'ALL', label: 'Tất cả' },
+                            { id: 'PROJECT', label: 'Dự án' },
+                            { id: 'PROFILE', label: 'Hồ sơ' },
+                            { id: 'GIG', label: 'Gói dịch vụ' },
+                            { id: 'REVIEW', label: 'Đánh giá' }
+                          ].map(qTab => (
+                            <button
+                              key={qTab.id}
+                              onClick={() => setQueueTab(qTab.id)}
+                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                                queueTab === qTab.id
+                                  ? 'bg-[#141b2b] text-white border-[#141b2b] shadow-sm'
+                                  : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                              }`}
+                            >
+                              {qTab.label}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <div className="w-full md:w-64 relative">
+                          <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]"><Search className="w-4 h-4" /></span>
+                          <input type="text" placeholder="Tìm tên, người đăng..." value={queueSearch} onChange={(e) => setQueueSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-[#f9f9ff] border border-[#e1e8fd] rounded-full text-xs font-medium text-[#141b2b] focus:outline-none focus:border-[#006b2c] focus:ring-1 focus:ring-[#006b2c]/20 transition-all" />
+                        </div>
                       </div>
                     </div>
+                    
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <table className="min-w-full text-left">
                         <thead>
-                          <tr className="bg-[#f9f9ff]">
+                          <tr className="bg-[#f9f9ff] border-b border-[#e9edff]">
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider w-10">
+                              <input type="checkbox" className="w-4 h-4 text-[#006b2c] border-[#bdcaba] rounded focus:ring-[#006b2c]" checked={selectedQueueItems.length > 0 && selectedQueueItems.length === filteredPendingItems.length} onChange={handleSelectAll} />
+                            </th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Nội dung</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Người đăng</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Lý do</th>
@@ -2791,23 +2835,35 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#e9edff] bg-white">
+                        <tbody className="divide-y divide-[#e1e8fd] bg-white">
                           {filteredPendingItems.map((item) => (
-                            <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                            <tr key={item.id} className={`hover:bg-[#f7fff2]/30 transition-colors ${selectedQueueItems.includes(item.id) ? 'bg-[#f7fff2]' : ''}`}>
+                              <td className="px-4 py-4">
+                                <input type="checkbox" className="w-4 h-4 text-[#006b2c] border-[#bdcaba] rounded focus:ring-[#006b2c]" checked={selectedQueueItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} />
+                              </td>
                               <td className="px-4 py-4">
                                 <div className="min-w-[240px]">
-                                  <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${item.type === 'PROJECT' ? 'bg-[#e9edff] text-[#141b2b] border-[#bdcaba]' : item.type === 'PROFILE' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-purple-50 text-purple-800 border-purple-200'}`}>
+                                    {item.type === 'PROJECT' && <FileText className="w-3 h-3" />}
+                                    {item.type === 'PROFILE' && <User className="w-3 h-3" />}
                                     {item.type}
                                   </span>
-                                  <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5">{item.title}</h4>
-                                  <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
+                                  <h4 className="text-body-sm font-bold text-[#141b2b] mt-2 group cursor-pointer hover:text-[#006b2c] transition-colors" onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}>{item.title}</h4>
+                                  <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1" title={item.detail}>{item.detail}</p>
                                 </div>
                               </td>
                               <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
-                              <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
-                              <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
+                              <td className="px-4 py-4 text-body-sm font-bold text-amber-700">
+                                <span className="bg-amber-50 px-2 py-1 rounded text-xs border border-amber-100">{item.reason}</span>
+                              </td>
                               <td className="px-4 py-4">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-[#3e4a3d]">{formatTimeRelative(item.subDate)}</span>
+                                  <span className="text-[10px] text-[#6e7b6c] mt-0.5">{item.subDate}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`px-2 py-1 rounded text-[10px] font-bold ${
                                   item.status === 'Approved' 
                                     ? 'bg-[#f7fff2] text-[#006b2c]' 
                                     : item.status === 'Rejected' 
@@ -2819,20 +2875,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               </td>
                               <td className="px-4 py-4 text-right">
                                 {item.status === 'Pending' ? (
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button 
-                                      onClick={() => {
-                                        setSelectedModerationItem(item);
-                                        setShowModerationModal(true);
-                                      }}
-                                      className="p-1.5 border border-[#bdcaba] hover:bg-[#e1e8fd] hover:text-[#141b2b] text-[#6e7b6c] rounded transition-all"
-                                      title="Xem chi tiết"
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </button>
+                                  <div className="flex items-center justify-end gap-1.5">
                                     <button 
                                       onClick={() => handleModAction(item, true)}
-                                      className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
+                                      className="p-1.5 bg-[#eaf6eb] text-[#006b2c] hover:bg-[#006b2c] hover:text-white rounded shadow-sm transition-all group relative"
                                       title="Duyệt"
                                     >
                                       <Check className="w-4 h-4" />

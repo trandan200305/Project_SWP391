@@ -135,7 +135,6 @@ public class AuthService {
                 return response;
             }
 
-
             if (existingAdmin.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Tài khoản Admin không tồn tại!");
