@@ -2298,13 +2298,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             const claimedChats = openChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
             const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date() && normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
+            const myDeletedChats = deletedChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const displayedChats = supportSubTab === 'claimed'
               ? claimedChats.filter(matchesChatSearch)
               : supportSubTab === 'unclaimed'
                 ? unclaimedChats.filter(matchesChatSearch)
                 : supportSubTab === 'blocked'
                   ? blockedChats.filter(matchesChatSearch)
-                  : deletedChats.filter(matchesChatSearch).filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
+                  : myDeletedChats.filter(matchesChatSearch);
 
             const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
 
@@ -2374,7 +2375,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
                           }`}
                         >
-                          Đã xóa
+                          Đã xóa ({myDeletedChats.length})
                         </button>
                       </div>
                     </div>
