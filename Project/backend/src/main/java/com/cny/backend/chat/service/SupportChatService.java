@@ -230,7 +230,7 @@ public class SupportChatService {
     }
 
     public List<Map<String, Object>> getDeletedTickets() {
-        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, t.deleted_at_admin, " +
+        String sql = "SELECT t.ticket_id, t.freelancer_id, t.employer_id, t.subject, t.status, t.priority, t.created_at, t.updated_at, t.blocked_until, t.deleted_at_admin, t.assigned_staff_id, " +
                      "f.display_name as freelancer_name, f.avatar_url as freelancer_avatar, f.email as freelancer_email, " +
                      "e.display_name as employer_name, e.avatar_url as employer_avatar, e.email as employer_email, " +
                      "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
@@ -258,6 +258,9 @@ public class SupportChatService {
             }
             if (row.get("deleted_at_admin") != null) {
                 ticket.put("deleted_at_admin", row.get("deleted_at_admin").toString());
+            }
+            if (row.get("assigned_staff_id") != null) {
+                ticket.put("assigned_staff_id", row.get("assigned_staff_id"));
             }
             tickets.add(ticket);
         }
