@@ -100,7 +100,7 @@ public class ProjectService {
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
                 .postingExpires(LocalDate.now().plusDays(30)) 
-                .status("PENDING_PAYMENT") 
+                .status("PENDING") 
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
