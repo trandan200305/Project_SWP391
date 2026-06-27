@@ -24,12 +24,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const isCustomerMessage = (message) =>
     ['EMPLOYER', 'FREELANCER', 'CLIENT'].includes(normalizeRole(message?.senderRole));
   const isOwnSupportMessage = (message) => {
-    if (isCustomerMessage(message)) return false;
-
-    return (
-      normalizeRole(message?.senderRole) === normalizeRole(currentRole) &&
-      normalizeId(message?.senderId) === normalizeId(user?.id)
-    );
+    return !isCustomerMessage(message);
   };
   const publishSupportReadReceipt = (ticketId) => {
     if (!ticketId || !stompClientRef.current?.connected) return;
@@ -615,6 +610,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }
       })
       .catch(err => console.error('Error fetching support chats:', err));
+  };
+
+  const handleClaimTicket = async () => {
+    try {
+      if (!user?.id || !selectedChatId) return;
+      await messengerApi.claimTicket(selectedChatId, user.id);
+      showToast("Đã tiếp nhận hội thoại thành công", "success");
+    } catch (err) {
+      console.error("Failed to claim support ticket", err);
+      showToast("Không thể tiếp nhận hội thoại", "error");
+    }
   };
 
   const fetchDeletedSupportChats = () => {
@@ -2288,9 +2294,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           {activeTab === 'Support' && (() => {
             const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
             const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
-            const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
+            const claimedChats = openChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
-            const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date());
+            const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date() && normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const displayedChats = supportSubTab === 'claimed'
               ? claimedChats.filter(matchesChatSearch)
               : supportSubTab === 'unclaimed'
