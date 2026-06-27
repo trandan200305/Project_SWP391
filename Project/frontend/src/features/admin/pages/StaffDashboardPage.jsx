@@ -735,6 +735,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     fetchModerationItems();
     fetchModerationData();
     fetchSupportChats();
+    fetchDeletedSupportChats();
     fetchTrends();
     fetchWithdrawals();
     fetchVnpayTransactions();
