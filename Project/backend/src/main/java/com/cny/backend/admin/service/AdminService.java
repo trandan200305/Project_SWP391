@@ -37,8 +37,8 @@ import com.cny.backend.admin.dto.WithdrawalDto;
 import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.Dispute;
 import com.cny.backend.admin.entity.ViolationReport;
-import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.entity.PaymentTransaction;
+import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.repository.DashboardRepository;
 import com.cny.backend.admin.repository.StaffInvitationRepository;
 import com.cny.backend.department.entity.DepartmentTaskSignoff;
@@ -373,6 +373,138 @@ public class AdminService {
         return users;
     }
 
+    public Map<String, Object> getUsersPaginated(
+            int page, int size, String role, String search, String status, String timeFilter,
+            String timeStart, String timeEnd, boolean filterEmployer, boolean filterManager,
+            boolean filterStaff, boolean activeOnlineChecked, boolean activeOfflineChecked
+    ) {
+        List<AdminUserDto> allUsers = getUsers();
+        List<AdminUserDto> filteredUsers = new ArrayList<>();
+
+        for (AdminUserDto u : allUsers) {
+            if ("FREELANCER".equalsIgnoreCase(u.getRole())) {
+                continue;
+            }
+
+            boolean matchesSearch = search == null || search.trim().isEmpty() ||
+                    (u.getEmail() != null && u.getEmail().toLowerCase().contains(search.toLowerCase().trim())) ||
+                    (u.getName() != null && u.getName().toLowerCase().contains(search.toLowerCase().trim()));
+            if (!matchesSearch) continue;
+
+            boolean matchesStatus = true;
+            if (!"ALL".equalsIgnoreCase(status)) {
+                if ("OFFLINE".equalsIgnoreCase(status)) {
+                    if (u.getLastLogin() == null) {
+                        matchesStatus = true;
+                    } else {
+                        try {
+                            String cleanStr = u.getLastLogin().split("\\.")[0].replace(" ", "T");
+                            LocalDateTime lastLoginTime = LocalDateTime.parse(cleanStr);
+                            LocalDateTime fiveMinutesAgo = LocalDateTime.now().minusMinutes(5);
+                            matchesStatus = lastLoginTime.isBefore(fiveMinutesAgo);
+                        } catch (Exception e) {
+                            matchesStatus = true;
+                        }
+                    }
+                } else if ("ACTIVE".equalsIgnoreCase(status)) {
+                    if (!"ACTIVE".equalsIgnoreCase(u.getStatus())) {
+                        matchesStatus = false;
+                    } else {
+                        boolean isUserOnline = false;
+                        if (u.getLastLogin() != null) {
+                            try {
+                                String cleanStr = u.getLastLogin().split("\\.")[0].replace(" ", "T");
+                                LocalDateTime lastLoginTime = LocalDateTime.parse(cleanStr);
+                                LocalDateTime fiveMinutesAgo = LocalDateTime.now().minusMinutes(5);
+                                isUserOnline = !lastLoginTime.isBefore(fiveMinutesAgo);
+                            } catch (Exception e) {
+                                isUserOnline = false;
+                            }
+                        }
+                        if (isUserOnline) {
+                            matchesStatus = activeOnlineChecked;
+                        } else {
+                            matchesStatus = activeOfflineChecked;
+                        }
+                    }
+                } else {
+                    matchesStatus = status.equalsIgnoreCase(u.getStatus());
+                }
+            }
+            if (!matchesStatus) continue;
+
+            boolean matchesTime = true;
+            if ("8HOURS".equalsIgnoreCase(timeFilter)) {
+                if (u.getLastLogin() == null) {
+                    matchesTime = false;
+                } else {
+                    try {
+                        String cleanStr = u.getLastLogin().split("\\.")[0].replace(" ", "T");
+                        LocalDateTime lastLoginTime = LocalDateTime.parse(cleanStr);
+                        LocalDateTime eightHoursAgo = LocalDateTime.now().minusHours(8);
+                        matchesTime = !lastLoginTime.isBefore(eightHoursAgo);
+                    } catch (Exception e) {
+                        matchesTime = false;
+                    }
+                }
+            } else if ("CUSTOM".equalsIgnoreCase(timeFilter)) {
+                if (u.getLastLogin() == null) {
+                    matchesTime = false;
+                } else {
+                    try {
+                        String cleanStr = u.getLastLogin().split("\\.")[0].replace(" ", "T");
+                        LocalDateTime lastLoginTime = LocalDateTime.parse(cleanStr);
+                        if (timeStart != null && !timeStart.trim().isEmpty()) {
+                            LocalDateTime startTime = java.time.LocalDate.parse(timeStart).atStartOfDay();
+                            if (lastLoginTime.isBefore(startTime)) {
+                                matchesTime = false;
+                            }
+                        }
+                        if (timeEnd != null && !timeEnd.trim().isEmpty()) {
+                            LocalDateTime endTime = java.time.LocalDate.parse(timeEnd).atTime(23, 59, 59);
+                            if (lastLoginTime.isAfter(endTime)) {
+                                matchesTime = false;
+                            }
+                        }
+                    } catch (Exception e) {
+                        matchesTime = false;
+                    }
+                }
+            }
+            if (!matchesTime) continue;
+
+            boolean matchesRole = false;
+            if ("ALL".equalsIgnoreCase(role)) {
+                if (filterEmployer && "EMPLOYER".equalsIgnoreCase(u.getRole())) matchesRole = true;
+                if (filterManager && "MANAGER".equalsIgnoreCase(u.getRole())) matchesRole = true;
+                if (filterStaff && "STAFF".equalsIgnoreCase(u.getRole())) matchesRole = true;
+            } else {
+                if (role.equalsIgnoreCase(u.getRole())) matchesRole = true;
+            }
+            if (!matchesRole) continue;
+
+            filteredUsers.add(u);
+        }
+
+        int totalElements = filteredUsers.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+
+        int fromIndex = (page - 1) * size;
+        int toIndex = Math.min(fromIndex + size, totalElements);
+
+        List<AdminUserDto> pageContent = new ArrayList<>();
+        if (fromIndex < totalElements && fromIndex >= 0) {
+            pageContent = filteredUsers.subList(fromIndex, toIndex);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", pageContent);
+        result.put("totalPages", totalPages);
+        result.put("totalElements", totalElements);
+        result.put("size", size);
+        return result;
+    }
+
     @Transactional
     public Map<String, Object> updateUserStatus(int id, String role, String status, String reason, int adminId) {
         Map<String, Object> response = new HashMap<>();
@@ -575,7 +707,7 @@ public class AdminService {
         return 1;
     }
 
-    private void writeAuditLog(int adminId, String action, String module, String description) {
+    public void writeAuditLog(int adminId, String action, String module, String description) {
         int validAdminId = getValidAdminId(adminId);
         dashboardRepository.logAudit(validAdminId, action, module, description);
     }
@@ -1475,6 +1607,27 @@ public class AdminService {
             return response;
         }
 
+        if (phone != null && !phone.trim().isEmpty()) {
+            if (adminRepository.countByPhone(phone) > 0 ||
+                freelancerRepository.countByPhone(phone) > 0 ||
+                employerRepository.countByPhone(phone) > 0 ||
+                managerRepository.countByPhone(phone) > 0 ||
+                staffRepository.countByPhone(phone) > 0) {
+                response.put("success", false);
+                response.put("message", "Số điện thoại đã được sử dụng bởi một tài khoản khác!");
+                return response;
+            }
+        }
+
+        if (citizenId != null && !citizenId.trim().isEmpty()) {
+            if (managerRepository.countByCitizenId(citizenId) > 0 ||
+                staffRepository.countByCitizenId(citizenId) > 0) {
+                response.put("success", false);
+                response.put("message", "Căn cước công dân đã được sử dụng bởi một tài khoản khác!");
+                return response;
+            }
+        }
+
         com.cny.backend.department.entity.Department dept = null;
         if (departmentIdStr != null && !departmentIdStr.trim().isEmpty()) {
             try {
@@ -2215,7 +2368,7 @@ public class AdminService {
     }
 
     public List<PaymentTransaction> getVnpayTransactions() {
-        return paymentTransactionRepository.findAll();
+        return paymentTransactionRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
     }
 
     @Transactional

@@ -57,6 +57,9 @@ public class AuthService {
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
+        if (email != null) {
+            email = email.trim().toLowerCase();
+        }
         String name = payload.get("name");
         String googleId = payload.get("googleId");
         String avatar = payload.get("avatar");
