@@ -26,6 +26,7 @@ public interface ManagerRepository extends JpaRepository<Manager, Integer> {
     Optional<Manager> findByEmail(String email);
     long countByEmail(String email);
     long countByPhone(String phone);
+    long countByCitizenId(String citizenId);
     long countByDisplayName(String displayName);
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) > 0 FROM Manager m WHERE m.phone = :phone AND (m.isDeleted IS NULL OR m.isDeleted = false) AND m.email <> :email")

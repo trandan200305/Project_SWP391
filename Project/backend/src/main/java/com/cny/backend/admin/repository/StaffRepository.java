@@ -27,6 +27,7 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
     Optional<Staff> findByEmail(String email);
     long countByEmail(String email);
     long countByPhone(String phone);
+    long countByCitizenId(String citizenId);
     long countByDisplayName(String displayName);
     List<Staff> findByManager_ManagerId(Integer managerId);
 
