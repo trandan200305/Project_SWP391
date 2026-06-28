@@ -80,6 +80,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [signoffForm, setSignoffForm] = useState({ status: 'APPROVED', note: '', departmentCode: 'FIN' });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [createdCredentials, setCreatedCredentials] = useState(null);
   
   
@@ -134,6 +137,22 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [isEditingVnpay, setIsEditingVnpay] = useState(false);
   const [tempVnpayConfig, setTempVnpayConfig] = useState(null);
   const [showQrZoomModal, setShowQrZoomModal] = useState(false);
+
+  // VNPay Query/Refund/VietQR States
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundTxn, setRefundTxn] = useState(null);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+  const [isRefunding, setIsRefunding] = useState(false);
+  
+  const [selectedTxnDetails, setSelectedTxnDetails] = useState(null);
+  const [testCheckoutUrl, setTestCheckoutUrl] = useState(null);
+  const [payosCheckoutUrl, setPayosCheckoutUrl] = useState(null);
+
+  const [lookupResult, setLookupResult] = useState(null);
+  const [lookupError, setLookupError] = useState(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+
   const [seoConfigs, setSeoConfigs] = useState([]);
   const [activeCmsTab, setActiveCmsTab] = useState('seo'); 
 
@@ -153,6 +172,59 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
   
   const [toast, setToast] = useState({ message: '', type: 'success', visible: false });
+
+  const handleTestVnpay = async () => {
+    const inputId = window.prompt('Nhập ID dự án để tạo thanh toán thử:', '8');
+    if (!inputId) return;
+    const projectId = parseInt(inputId, 10);
+    if (isNaN(projectId)) {
+      showToast('ID dự án không hợp lệ', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await adminApi.createTestVnpayUrl(projectId);
+      if (res && res.url) {
+        window.open(res.url, '_blank');
+      } else if (res && res.paymentUrl) {
+        window.open(res.paymentUrl, '_blank');
+      } else {
+        showToast('Không tạo được URL thanh toán VNPay', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Lỗi tạo URL. Có thể ID dự án không tồn tại.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestPayos = async () => {
+    const inputId = window.prompt('Nhập ID dự án để tạo link PayOS:', '8');
+    if (!inputId) return;
+    const projectId = parseInt(inputId, 10);
+    if (isNaN(projectId)) {
+      showToast('ID dự án không hợp lệ', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await adminApi.createPayosUrl(projectId);
+      if (res && res.paymentUrl) {
+        setPayosCheckoutUrl(res.paymentUrl);
+      } else {
+        showToast('Không tạo được URL thanh toán PayOS', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Lỗi tạo URL. Có thể ID dự án không tồn tại.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type, visible: true });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2500);
@@ -249,8 +321,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             specialization: '',
             managerId: ''
           });
-          adminApi.getUsers()
-            .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
+          refreshUsers();
         }
       })
       .catch(err => {
@@ -388,8 +459,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           showToast(res.message || 'Điều chuyển nhân sự thành công!', 'success');
           setShowTransferModal(false);
 
-          adminApi.getUsers()
-            .then(data => { if (Array.isArray(data)) setUsers(data); });
+          refreshUsers();
 
           if (selectedDepartment) {
             handleSelectDepartment(selectedDepartment);
@@ -459,6 +529,96 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       console.error("Error loading VNPay transactions:", err);
     } finally {
       setVnpayLoading(false);
+    }
+  };
+
+  const handleQueryTransaction = async (txnId, txnRef) => {
+    try {
+      showToast("Đang truy vấn...", "success");
+      let res;
+      if (!String(txnRef).includes('_')) {
+        // PayOS
+        res = await adminApi.queryPayosTransaction(txnRef);
+      } else {
+        // VNPay
+        res = await adminApi.queryVnpayTransaction(txnId);
+      }
+
+      if (res && res.success) {
+        showToast(res.message || "Trạng thái giao dịch: Thành công. Đã đồng bộ!", "success");
+      } else {
+        showToast(res?.message || "Giao dịch chưa thanh toán hoặc có lỗi xảy ra.", "error");
+      }
+      fetchVnpayTransactions();
+    } catch (err) {
+      showToast(err.message || "Lỗi truy vấn giao dịch.", "error");
+    }
+  };
+
+  const handleOpenRefundModal = (txn) => {
+    setRefundTxn(txn);
+    setRefundAmount(txn.amount);
+    setRefundReason('');
+    setShowRefundModal(true);
+  };
+
+  const handleCloseRefundModal = () => {
+    setShowRefundModal(false);
+    setRefundTxn(null);
+  };
+
+  const handleRefundSubmit = async () => {
+    if (!refundAmount || isNaN(refundAmount) || refundAmount <= 0) {
+      showToast("Số tiền hoàn không hợp lệ.", "error");
+      return;
+    }
+    if (!refundReason.trim()) {
+      showToast("Vui lòng nhập lý do hoàn tiền.", "error");
+      return;
+    }
+    setIsRefunding(true);
+    try {
+      const res = await adminApi.refundVnpayTransaction(refundTxn.id, {
+        amount: parseFloat(refundAmount),
+        reason: refundReason
+      });
+      if (res && res.success) {
+        showToast("Yêu cầu hoàn tiền đã được gửi tới VNPAY.", "success");
+        handleCloseRefundModal();
+        fetchVnpayTransactions();
+      } else {
+        showToast(res?.message || "Lỗi hoàn tiền.", "error");
+      }
+    } catch (err) {
+      showToast(err.message || "Lỗi hoàn tiền.", "error");
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
+  const handleLookupBank = async () => {
+    if (!vnpayConfig?.bankName || !vnpayConfig?.bankAccountNo) {
+      showToast("Vui lòng chọn ngân hàng và nhập số tài khoản trước khi kiểm tra.", "error");
+      return;
+    }
+    setIsLookingUp(true);
+    setLookupError(null);
+    setLookupResult(null);
+    try {
+      const res = await adminApi.lookupBankAccount(vnpayConfig.bankName, vnpayConfig.bankAccountNo);
+      if (res && res.success && res.data && res.data.accountName) {
+        setLookupResult(res.data.accountName);
+        setVnpayConfig({ ...vnpayConfig, bankAccountName: res.data.accountName });
+        showToast("Đã lấy được tên chủ tài khoản: " + res.data.accountName, "success");
+      } else {
+        setLookupError(res?.message || "Không tìm thấy thông tin tài khoản.");
+        showToast(res?.message || "Không tìm thấy thông tin tài khoản.", "error");
+      }
+    } catch (err) {
+      setLookupError(err.message || "Lỗi tra cứu tài khoản.");
+      showToast(err.message || "Lỗi tra cứu tài khoản.", "error");
+    } finally {
+      setIsLookingUp(false);
     }
   };
 
@@ -550,18 +710,86 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       });
   };
 
-  
+  const fetchUsers = () => {
+    setIsLoading(true);
+    adminApi.getUsers({
+      page: currentPage,
+      role: selectedRoleTab,
+      search: searchQuery,
+      status: userStatusFilter,
+      timeFilter: userTimeFilterType,
+      timeStart: userTimeStart,
+      timeEnd: userTimeEnd,
+      filterEmployer,
+      filterManager,
+      filterStaff,
+      activeOnlineChecked,
+      activeOfflineChecked
+    })
+      .then(res => {
+        if (res && res.content) {
+          setUsers(res.content);
+          setTotalPages(res.totalPages || 0);
+          setTotalElements(res.totalElements || 0);
+          if (res.size) setPageSize(res.size);
+        } else {
+          setUsers([]);
+          setTotalPages(0);
+          setTotalElements(0);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setIsLoading(false);
+      });
+  };
+
+  const refreshUsers = () => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    } else {
+      adminApi.getUsers()
+        .then(data => { if (Array.isArray(data)) setUsers(data); })
+        .catch(err => console.error(err));
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [
+    currentPage,
+
+    selectedRoleTab,
+    searchQuery,
+    userStatusFilter,
+    userTimeFilterType,
+    userTimeStart,
+    userTimeEnd,
+    filterEmployer,
+    filterManager,
+    filterStaff,
+    activeOnlineChecked,
+    activeOfflineChecked
+  ]);
+
   useEffect(() => {
     loadDashboardData();
     
     if (activeTab === 'users' || activeTab === 'departments') {
-      setIsLoading(true);
-      adminApi.getUsers()
-        .then(data => {
-          setUsers(Array.isArray(data) ? data : []);
-          setIsLoading(false);
-        })
-        .catch(err => console.error('Error users:', err));
+      if (activeTab === 'users') {
+        fetchUsers();
+      } else {
+        setIsLoading(true);
+        adminApi.getUsers()
+          .then(data => {
+            setUsers(Array.isArray(data) ? data : []);
+            setIsLoading(false);
+          })
+          .catch(err => console.error(err));
+      }
       adminApi.getManagers()
         .then(data => { if (Array.isArray(data)) setManagersList(data); })
         .catch(err => console.error('Error managers:', err));
@@ -658,8 +886,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           showToast(data.message || 'Hành động bị từ chối bởi hệ thống.', 'error');
         } else {
           showToast(data.message || 'Thao tác thành công!', 'success');
-          adminApi.getUsers()
-            .then(usersData => { if (Array.isArray(usersData)) setUsers(usersData); });
+          refreshUsers();
           loadDashboardData();
           setActiveUserForAction(null);
           setBanReasons([]);
@@ -2987,84 +3214,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           {}
           {activeTab === 'users' && (() => {
             
-            const filteredUsers = users.filter(user => {
-              if (user.role === 'FREELANCER') return false;
-
-              const matchesSearch = searchQuery === '' || 
-                user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-              let matchesStatus = true;
-              if (userStatusFilter !== 'ALL') {
-                if (userStatusFilter === 'OFFLINE') {
-                  if (!user.lastLogin) {
-                    matchesStatus = true;
-                  } else {
-                    const cleanStr = user.lastLogin.split('.')[0];
-                    const lastLoginTime = new Date(cleanStr).getTime();
-                    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000); 
-                    matchesStatus = lastLoginTime < fiveMinutesAgo;
-                  }
-                } else if (userStatusFilter === 'ACTIVE') {
-                  if (user.status !== 'ACTIVE') {
-                    matchesStatus = false;
-                  } else {
-                    let isUserOnline = false;
-                    if (user.lastLogin) {
-                      const cleanStr = user.lastLogin.split('.')[0];
-                      const lastLoginTime = new Date(cleanStr).getTime();
-                      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-                      isUserOnline = lastLoginTime >= fiveMinutesAgo;
-                    }
-                    if (isUserOnline) {
-                      matchesStatus = activeOnlineChecked;
-                    } else {
-                      matchesStatus = activeOfflineChecked;
-                    }
-                  }
-                } else {
-                  matchesStatus = user.status === userStatusFilter;
-                }
-              }
-
-              let matchesTime = true;
-              if (userTimeFilterType === '8HOURS') {
-                if (!user.lastLogin) {
-                  matchesTime = false;
-                } else {
-                  const cleanStr = user.lastLogin.split('.')[0];
-                  const lastLoginTime = new Date(cleanStr).getTime();
-                  const eightHoursAgo = Date.now() - (8 * 60 * 60 * 1000);
-                  matchesTime = lastLoginTime >= eightHoursAgo;
-                }
-              } else if (userTimeFilterType === 'CUSTOM') {
-                if (!user.lastLogin) {
-                  matchesTime = false;
-                } else {
-                  const cleanStr = user.lastLogin.split('.')[0];
-                  const lastLoginTime = new Date(cleanStr).getTime();
-                  if (userTimeStart) {
-                    const startTime = new Date(userTimeStart + 'T00:00:00').getTime();
-                    matchesTime = matchesTime && (lastLoginTime >= startTime);
-                  }
-                  if (userTimeEnd) {
-                    const endTime = new Date(userTimeEnd + 'T23:59:59').getTime();
-                    matchesTime = matchesTime && (lastLoginTime <= endTime);
-                  }
-                }
-              }
-
-              let matchesRole = false;
-              if (selectedRoleTab === 'ALL') {
-                if (filterEmployer && user.role === 'EMPLOYER') matchesRole = true;
-                if (filterManager && user.role === 'MANAGER') matchesRole = true;
-                if (filterStaff && user.role === 'STAFF') matchesRole = true;
-              } else {
-                if (user.role === selectedRoleTab) matchesRole = true;
-              }
-
-              return matchesSearch && matchesStatus && matchesTime && matchesRole;
-            });
+            const filteredUsers = users;
 
             
             const emailSuggestions = searchQuery.trim() !== '' ? users
@@ -3112,7 +3262,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             type="radio" 
                             name="adminRoleTab" 
                             checked={selectedRoleTab === tab.key}
-                            onChange={() => setSelectedRoleTab(tab.key)}
+                            onChange={() => { setSelectedRoleTab(tab.key); setCurrentPage(1); }}
                           />
                           <span className="name">{tab.label}</span>
                         </label>
@@ -3135,7 +3285,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             className="bg-transparent border-none text-body-sm outline-none w-full font-medium placeholder-slate-400"
                             value={searchQuery}
                             onChange={e => {
-                              setSearchQuery(e.target.value);
+                              setSearchQuery(e.target.value); setCurrentPage(1);
                               setShowSuggestions(true);
                             }}
                             onFocus={() => setShowSuggestions(true)}
@@ -3156,7 +3306,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               <button
                                 key={idx}
                                 onClick={() => {
-                                  setSearchQuery(email);
+                                  setSearchQuery(email); setCurrentPage(1);
                                   setShowSuggestions(false);
                                 }}
                                 className="w-full text-left px-4 py-2.5 hover:bg-blue-50/50 hover:text-blue-700 text-body-sm transition-all flex items-center gap-2 font-medium"
@@ -3172,7 +3322,33 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                       
                       <div className="flex items-center gap-2">
-                        <div className="fancy-download-btn excel" data-tooltip="Tải Excel" onClick={() => handleDownloadUsers('EXCEL', filteredUsers)}>
+                        <div 
+                          className="fancy-download-btn excel" 
+                          data-tooltip="Tải Excel" 
+                          onClick={async () => {
+                            setIsLoading(true);
+                            try {
+                              const fullData = await adminApi.getUsers({
+                                role: selectedRoleTab,
+                                search: searchQuery,
+                                status: userStatusFilter,
+                                timeFilter: userTimeFilterType,
+                                timeStart: userTimeStart,
+                                timeEnd: userTimeEnd,
+                                filterEmployer,
+                                filterManager,
+                                filterStaff,
+                                activeOnlineChecked,
+                                activeOfflineChecked
+                              });
+                              handleDownloadUsers('EXCEL', fullData);
+                            } catch (err) {
+                              console.error(err);
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }}
+                        >
                           <div className="button-wrapper">
                             <div className="text">Excel</div>
                             <span className="icon">
@@ -3181,7 +3357,33 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           </div>
                         </div>
 
-                        <div className="fancy-download-btn pdf" data-tooltip="Xuất PDF" onClick={() => handleDownloadUsers('PDF', filteredUsers)}>
+                        <div 
+                          className="fancy-download-btn pdf" 
+                          data-tooltip="Xuất PDF" 
+                          onClick={async () => {
+                            setIsLoading(true);
+                            try {
+                              const fullData = await adminApi.getUsers({
+                                role: selectedRoleTab,
+                                search: searchQuery,
+                                status: userStatusFilter,
+                                timeFilter: userTimeFilterType,
+                                timeStart: userTimeStart,
+                                timeEnd: userTimeEnd,
+                                filterEmployer,
+                                filterManager,
+                                filterStaff,
+                                activeOnlineChecked,
+                                activeOfflineChecked
+                              });
+                              handleDownloadUsers('PDF', fullData);
+                            } catch (err) {
+                              console.error(err);
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }}
+                        >
                           <div className="button-wrapper">
                             <div className="text">PDF</div>
                             <span className="icon">
@@ -3231,7 +3433,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     <div key={status.value} className="space-y-1">
                                       <button
                                         type="button"
-                                        onClick={() => setUserStatusFilter(status.value)}
+                                        onClick={() => { setUserStatusFilter(status.value); setCurrentPage(1); }}
                                         className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
                                           userStatusFilter === status.value
                                             ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
@@ -3254,7 +3456,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                             <input 
                                               type="checkbox"
                                               checked={activeOnlineChecked}
-                                              onChange={e => setActiveOnlineChecked(e.target.checked)}
+                                              onChange={e => { setActiveOnlineChecked(e.target.checked); setCurrentPage(1); }}
                                             />
                                             <div className="checkbox-wrapper">
                                               <div className="checkbox-bg" />
@@ -3270,7 +3472,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                             <input 
                                               type="checkbox"
                                               checked={activeOfflineChecked}
-                                              onChange={e => setActiveOfflineChecked(e.target.checked)}
+                                              onChange={e => { setActiveOfflineChecked(e.target.checked); setCurrentPage(1); }}
                                             />
                                             <div className="checkbox-wrapper">
                                               <div className="checkbox-bg" />
@@ -3299,7 +3501,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   ].map(timeOpt => (
                                     <button
                                       key={timeOpt.value}
-                                      onClick={() => setUserTimeFilterType(timeOpt.value)}
+                                      onClick={() => { setUserTimeFilterType(timeOpt.value); setCurrentPage(1); }}
                                       className={`px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex justify-between items-center ${
                                         userTimeFilterType === timeOpt.value
                                           ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
@@ -3330,7 +3532,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                         <input 
                                           type="date" 
                                           value={userTimeStart}
-                                          onChange={e => setUserTimeStart(e.target.value)}
+                                          onChange={e => { setUserTimeStart(e.target.value); setCurrentPage(1); }}
                                           className="fancy-date-input"
                                         />
                                       </div>
@@ -3339,7 +3541,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                         <input 
                                           type="date" 
                                           value={userTimeEnd}
-                                          onChange={e => setUserTimeEnd(e.target.value)}
+                                          onChange={e => { setUserTimeEnd(e.target.value); setCurrentPage(1); }}
                                           className="fancy-date-input"
                                         />
                                       </div>
@@ -3372,7 +3574,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <input 
                                     type="checkbox" 
                                     checked={filterEmployer}
-                                    onChange={e => setFilterEmployer(e.target.checked)} 
+                                    onChange={e => { setFilterEmployer(e.target.checked); setCurrentPage(1); }} 
                                   />
                                   <div className="checkbox-wrapper">
                                     <div className="checkbox-bg" />
@@ -3387,7 +3589,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <input 
                                     type="checkbox" 
                                     checked={filterManager}
-                                    onChange={e => setFilterManager(e.target.checked)} 
+                                    onChange={e => { setFilterManager(e.target.checked); setCurrentPage(1); }} 
                                   />
                                   <div className="checkbox-wrapper">
                                     <div className="checkbox-bg" />
@@ -3402,7 +3604,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <input 
                                     type="checkbox" 
                                     checked={filterStaff}
-                                    onChange={e => setFilterStaff(e.target.checked)} 
+                                    onChange={e => { setFilterStaff(e.target.checked); setCurrentPage(1); }} 
                                   />
                                   <div className="checkbox-wrapper">
                                     <div className="checkbox-bg" />
@@ -3427,6 +3629,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   setFilterStaff(true);
                                   setActiveOnlineChecked(true);
                                   setActiveOfflineChecked(true);
+                                  setCurrentPage(1);
                                 }}
                                 className="px-4 py-2 hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-body-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm hover:shadow-md"
                               >
@@ -3457,8 +3660,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {(() => {
-                          const totalPages = Math.ceil(filteredUsers.length / 20);
-                          const paginatedUsers = filteredUsers.slice((currentPage - 1) * 20, currentPage * 20);
+                          const paginatedUsers = filteredUsers;
 
                           if (paginatedUsers.length === 0) {
                             return (
@@ -3617,15 +3819,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                   {}
                   {(() => {
-                    const totalPages = Math.ceil(filteredUsers.length / 20);
                     return (
                       <div className="p-4 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <span className="text-body-sm font-semibold text-slate-500">
-                          Hiển thị từ <span className="font-mono text-primary font-bold">{filteredUsers.length === 0 ? 0 : (currentPage - 1) * 20 + 1}</span> đến{' '}
+                          Hiển thị từ <span className="font-mono text-primary font-bold">{totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> đến{' '}
                           <span className="font-mono text-primary font-bold">
-                            {Math.min(currentPage * 20, filteredUsers.length)}
+                            {Math.min(currentPage * pageSize, totalElements)}
                           </span>{' '}
-                          trong tổng số <span className="font-mono text-blue-600 font-bold">{filteredUsers.length}</span> thành viên
+                          trong tổng số <span className="font-mono text-blue-600 font-bold">{totalElements}</span> thành viên
                         </span>
 
                         {totalPages > 1 && (
@@ -3913,397 +4114,38 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <h3 className="font-bold text-primary text-lg">Quản lý Cổng Thanh toán VNPay</h3>
                     <p className="text-[12px] text-slate-400 mt-1">Quản lý cấu hình API và đối soát nhật ký giao dịch thanh toán trực tuyến.</p>
                   </div>
-                  <div className="radio-inputs">
-                    {[
-                      { key: 'config', label: 'Cấu hình tham số' },
-                      { key: 'logs', label: 'Nhật ký giao dịch' }
-                    ].map(tab => (
-                      <label key={tab.key} className="radio">
-                        <input 
-                          type="radio" 
-                          name="vnpaySubTab" 
-                          checked={vnpaySubTab === tab.key}
-                          onChange={() => setVnpaySubTab(tab.key)}
-                        />
-                        <span className="name">{tab.label}</span>
-                      </label>
-                    ))}
-                  </div>
                 </div>
               </div>
 
-              {vnpaySubTab === 'config' && (
-                <div className="space-y-8 animate-in fade-in duration-300">
-                  {/* Stat Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <BadgeDollarSign className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-[11.5px] font-bold text-slate-400 uppercase tracking-wider block">Tổng phí thu được</span>
-                    <span className="text-2xl font-extrabold text-slate-800 mt-1 block">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                        vnpayTransactions
-                          .filter(t => t.status === 'SUCCESS')
-                          .reduce((sum, t) => sum + (t.amount || 0), 0)
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Clock className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-[11.5px] font-bold text-slate-400 uppercase tracking-wider block">Giao dịch chờ xử lý</span>
-                    <span className="text-2xl font-extrabold text-slate-800 mt-1 block">
-                      {vnpayTransactions.filter(t => t.status === 'PENDING').length} giao dịch
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <Shield className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-[11.5px] font-bold text-slate-400 uppercase tracking-wider block">Trạng thái cổng kết nối</span>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <span className={`w-2 h-2 rounded-full ${vnpayConfig.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                      <span className="font-bold text-slate-700 text-body-sm">{vnpayConfig.isActive ? 'Đang hoạt động' : 'Tạm dừng'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Area */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Configuration Panel */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 h-fit space-y-6">
-                  <div>
-                    <h3 className="font-bold text-primary text-[18px]">Cấu hình Tham số VNPay</h3>
-                    <p className="text-body-sm text-slate-500 mt-1">Thiết lập thông tin kết nối và tài khoản nhận tiền thụ hưởng của hệ thống.</p>
-                  </div>
-                  <form onSubmit={handleSaveVnpayConfig} className="space-y-5 max-w-[640px] mx-auto">
-                    {/* VNPay Credentials Group */}
-                    <div className="space-y-4">
-                      <h4 className="text-[12px] font-bold text-slate-700 uppercase tracking-wider pb-1 border-b border-slate-100">
-                        1. Kết nối Cổng VNPay
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mã Website (vnp_TmnCode) <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="text" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-mono font-medium ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.tmnCode || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, tmnCode: e.target.value })}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chuỗi bí mật (vnp_HashSecret) <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="password" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-mono font-medium ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.hashSecret || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, hashSecret: e.target.value })}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Địa chỉ VNPay Sandbox/Prod <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="url" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            placeholder="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-mono font-medium ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.vnpUrl || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, vnpUrl: e.target.value })}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Return URL (Redirect) <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="url" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            placeholder="http://localhost:5173/payment-result"
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-mono font-medium ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.returnUrl || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, returnUrl: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* VietQR Bank Transfer Group */}
-                    <div className="space-y-4 pt-2">
-                      <h4 className="text-[12px] font-bold text-slate-700 uppercase tracking-wider pb-1 border-b border-slate-100">
-                        2. Nhận tiền chuyển khoản (VietQR)
-                      </h4>
-                      
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Ngân hàng thụ hưởng <span className="text-rose-500">*</span></label>
-                        <div className={isEditingVnpay ? "bank-wrapper relative w-full mb-1" : "bank-wrapper-disabled relative w-full mb-1 opacity-75 cursor-not-allowed"}>
-                          {(() => {
-                            const selectedBank = VIETQR_BANKS.find(b => String(b.code) === String(vnpayConfig.bankName));
-                            return (
-                              <>
-                                <div className={`dept-main ${selectedBank ? 'selected-active' : ''} ${!isEditingVnpay ? 'bg-slate-50 border-slate-200 cursor-not-allowed text-slate-450 select-none' : ''}`}>
-                                  <span className="text-body-sm font-semibold truncate">
-                                    {selectedBank ? `${selectedBank.name} (${selectedBank.code})` : '-- Chọn Ngân hàng --'}
-                                  </span>
-                                  {isEditingVnpay && (
-                                    <div className="dept-bar">
-                                      <span className="top dept-bar-list dept-top" />
-                                      <span className="middle dept-bar-list dept-middle" />
-                                      <span className="bottom dept-bar-list dept-bottom" />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {isEditingVnpay && (
-                                  <div className="bank-menu-container">
-                                    <div className="dept-scroll-wrapper">
-                                      {VIETQR_BANKS.length > 4 && (
-                                        <div className="dept-scroll-fade-top" id="bankScrollTop">
-                                          <svg className="dept-scroll-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                        </div>
-                                      )}
-                                      <div
-                                        className="max-h-[200px] overflow-y-auto overscroll-contain pr-1 space-y-2 no-scrollbar"
-                                        id="bankScrollList"
-                                        onScroll={(e) => {
-                                          const el = e.target;
-                                          const topIndicator = document.getElementById('bankScrollTop');
-                                          const bottomIndicator = document.getElementById('bankScrollBottom');
-                                          if (topIndicator) {
-                                            topIndicator.classList.toggle('visible', el.scrollTop > 8);
-                                          }
-                                          if (bottomIndicator) {
-                                            bottomIndicator.classList.toggle('visible', el.scrollTop + el.clientHeight < el.scrollHeight - 8);
-                                          }
-                                        }}
-                                        ref={(el) => {
-                                          if (el) {
-                                            requestAnimationFrame(() => {
-                                              const bottomIndicator = document.getElementById('bankScrollBottom');
-                                              if (bottomIndicator && el.scrollHeight > el.clientHeight) {
-                                                bottomIndicator.classList.add('visible');
-                                              }
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        {VIETQR_BANKS.map((b) => {
-                                          const isSelected = String(vnpayConfig.bankName) === String(b.code);
-                                          return (
-                                            <div key={b.code} className="dept-item-list">
-                                              <label
-                                                className={`dept-radio-label ${isSelected ? 'dept-selected' : ''}`}
-                                                onClick={() => setVnpayConfig({ ...vnpayConfig, bankName: b.code })}
-                                              >
-                                                <input type="radio" name="bankPick" className="dept-radio-input" checked={isSelected} readOnly />
-                                                <span className="dept-radio-custom" />
-                                                <span className="dept-radio-text">{b.name}</span>
-                                                <span className="dept-radio-code">{b.code}</span>
-                                              </label>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                      {VIETQR_BANKS.length > 4 && (
-                                        <div className="dept-scroll-fade-bottom" id="bankScrollBottom">
-                                          <svg className="dept-scroll-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số tài khoản nhận tiền <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="text" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            placeholder="9009002045"
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-mono font-medium ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.bankAccountNo || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, bankAccountNo: e.target.value })}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tên chủ tài khoản <span className="text-rose-500">*</span></label>
-                          <input 
-                            type="text" 
-                            required
-                            readOnly={!isEditingVnpay}
-                            placeholder="NGUYEN VAN THANH"
-                            className={`w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium uppercase ${!isEditingVnpay ? 'bg-slate-50 text-slate-450 cursor-not-allowed select-none' : ''}`}
-                            value={vnpayConfig.bankAccountName || ''}
-                            onChange={e => setVnpayConfig({ ...vnpayConfig, bankAccountName: e.target.value.toUpperCase() })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 py-2 border-t border-slate-100">
-                      <input 
-                        type="checkbox" 
-                        id="vnpayActiveCheck"
-                        disabled={!isEditingVnpay}
-                        className={`w-4.5 h-4.5 border-slate-350 text-emerald-600 rounded focus:ring-emerald-500 focus:ring-offset-0 transition-all cursor-pointer ${!isEditingVnpay ? 'cursor-not-allowed opacity-50' : ''}`}
-                        checked={vnpayConfig.isActive || false}
-                        onChange={e => setVnpayConfig({ ...vnpayConfig, isActive: e.target.checked })}
-                      />
-                      <label htmlFor="vnpayActiveCheck" className={`text-[13px] font-bold text-slate-700 cursor-pointer select-none ${!isEditingVnpay ? 'cursor-not-allowed opacity-60' : ''}`}>
-                        Kích hoạt cổng thanh toán này
-                      </label>
-                    </div>
-
-                    {isEditingVnpay ? (
-                      <div className="flex gap-3 pt-2">
-                        <button 
-                          type="submit" 
-                          disabled={vnpaySaving}
-                          className="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-body-sm py-3 rounded-xl transition-all duration-300 shadow-md shadow-emerald-600/15 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-                        >
-                          {vnpaySaving ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              Đang lưu...
-                            </>
-                          ) : 'Lưu cấu hình kết nối'}
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={handleCancelEditVnpay}
-                          className="px-6 border border-slate-200 text-slate-650 font-bold text-body-sm py-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                        >
-                          Hủy bỏ
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="pt-2">
-                        <button 
-                          type="button"
-                          onClick={handleStartEditVnpay}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm py-3 rounded-xl transition-all duration-300 shadow-md shadow-blue-600/15 flex items-center justify-center gap-2"
-                        >
-                          <Lock className="w-4 h-4" />
-                          Chỉnh sửa cấu hình kết nối
-                        </button>
-                      </div>
-                    )}
-                  </form>
-                </div>
-
-                {/* Right Panel: Live QR Preview & Sandbox Help */}
-                <div className="space-y-6">
-                  {/* VietQR Live Preview Card */}
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
-                    <h3 className="font-bold text-slate-800 text-[16px] w-full text-left pb-3 border-b border-slate-100 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Live VietQR Preview
-                    </h3>
-
-                    {vnpayConfig.bankName && vnpayConfig.bankAccountNo ? (
-                      <div className="space-y-4 py-4 w-full flex flex-col items-center">
-                        <div 
-                          onClick={() => setShowQrZoomModal(true)}
-                          className="bg-slate-50 p-5 rounded-3xl border border-slate-100 inline-block shadow-inner relative group transition-all duration-300 hover:shadow-md cursor-zoom-in"
-                          title="Nhấp để phóng to mã QR"
-                        >
-                          <img 
-                            src={`https://img.vietqr.io/image/${vnpayConfig.bankName}-${vnpayConfig.bankAccountNo}-compact2.png?amount=50000&addInfo=TEST_VERIFY&accountName=${encodeURIComponent(vnpayConfig.bankAccountName || '')}`} 
-                            alt="VietQR Live Preview" 
-                            className="w-72 h-72 object-contain mx-auto transition-transform duration-300 group-hover:scale-[1.03]"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="py-12 flex flex-col items-center justify-center text-slate-400 space-y-3">
-                        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 border border-slate-100">
-                          <QrCode className="w-8 h-8" />
-                        </div>
-                        <p className="text-body-sm font-medium text-slate-500">Chưa cấu hình tài khoản ngân hàng</p>
-                        <p className="text-[11px] text-slate-440 max-w-[240px] leading-relaxed">
-                          Vui lòng chọn ngân hàng và nhập thông tin số tài khoản ở form bên trái để xem trước mã QR.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* VNPay Sandbox Guide Card */}
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-                    <h3 className="font-bold text-slate-800 text-[16px] pb-3 border-b border-slate-100 flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-emerald-600" />
-                      Thông tin thử nghiệm Sandbox
-                    </h3>
-                    <p className="text-[12px] text-slate-500 leading-relaxed">
-                      Để thực hiện thanh toán giả lập trên cổng Sandbox của VNPay, bạn có thể sử dụng thông tin thẻ nội địa sau:
-                    </p>
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2.5 font-mono text-[12px] text-slate-700">
-                      <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
-                        <span className="font-bold text-slate-500 uppercase text-[10px]">Ngân hàng:</span>
-                        <span className="font-bold">NCB</span>
-                      </div>
-                      <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
-                        <span className="font-bold text-slate-500 uppercase text-[10px]">Số thẻ:</span>
-                        <span className="font-semibold select-all">9704198526191432185</span>
-                      </div>
-                      <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
-                        <span className="font-bold text-slate-500 uppercase text-[10px]">Tên chủ thẻ:</span>
-                        <span className="font-semibold">NGUYEN VAN A</span>
-                      </div>
-                      <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
-                        <span className="font-bold text-slate-500 uppercase text-[10px]">Ngày phát hành:</span>
-                        <span className="font-semibold">07/15</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-bold text-slate-500 uppercase text-[10px]">Mã OTP:</span>
-                        <span className="font-semibold">123456</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </div>
-              )}
-
-              {vnpaySubTab === 'logs' && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-primary text-[18px]">Nhật Ký Giao Dịch VNPay</h3>
                       <p className="text-body-sm text-slate-500 mt-1">Danh sách đối soát và duyệt hóa đơn cho Employer đăng dự án tuyển dụng.</p>
                     </div>
-                    <button 
-                      onClick={fetchVnpayTransactions}
-                      className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
-                      title="Tải lại giao dịch"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={handleTestVnpay}
+                        disabled={isLoading}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                      >
+                        Tạo thanh toán VNPay (Test)
+                      </button>
+                      <button 
+                        onClick={handleTestPayos}
+                        disabled={isLoading}
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                      >
+                        Tạo thanh toán PayOS (Test)
+                      </button>
+                      <button 
+                        onClick={fetchVnpayTransactions}
+                        className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
+                        title="Tải lại giao dịch"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {vnpayLoading ? (
@@ -4364,18 +4206,32 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   {txn.status}
                                 </span>
                               </td>
-                              <td className="p-3 text-center">
-                                {txn.status !== 'SUCCESS' ? (
+                              <td className="p-3 text-center flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setSelectedTxnDetails(txn)}
+                                  className="px-2.5 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
+                                >
+                                  Chi tiết
+                                </button>
+                                <button
+                                  onClick={() => handleQueryTransaction(txn.id, txn.txnRef || txn.vnpTxnRef)}
+                                  className="px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
+                                  title="Truy vấn VNPay"
+                                >
+                                  Truy vấn
+                                </button>
+                                
+                                {txn.status === 'SUCCESS' && (
                                   <button
-                                    onClick={() => handleReconcile(txn.id)}
-                                    className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
+                                    onClick={() => handleOpenRefundModal(txn)}
+                                    className="px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
+                                    title="Hoàn tiền giao dịch này"
                                   >
-                                    Duyệt thủ công
+                                    Hoàn tiền
                                   </button>
-                                ) : (
-                                  <span className="text-[11px] text-slate-400 font-medium">Đã kích hoạt</span>
                                 )}
-                              </td>
+
+                                </td>
                             </tr>
                           ))}
                         </tbody>
@@ -4383,7 +4239,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                   )}
                 </div>
-              )}
             </div>
           )}
 
@@ -5049,7 +4904,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="text" 
                   required
                   placeholder="Nguyễn Văn A" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  className="w-full border border-slate-300 p-2 text-sm outline-none focus:border-slate-400"
                   value={createForm.fullName}
                   onChange={e => setCreateForm({ ...createForm, fullName: e.target.value })}
                 />
@@ -5060,7 +4915,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="text" 
                   required
                   placeholder="Nguyen A" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  className="w-full border border-slate-300 p-2 text-sm outline-none focus:border-slate-400"
                   value={createForm.displayName}
                   onChange={e => setCreateForm({ ...createForm, displayName: e.target.value })}
                 />
@@ -5074,7 +4929,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="text" 
                   required
                   placeholder="0912345678" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  className="w-full border border-slate-300 p-2 text-sm outline-none focus:border-slate-400"
                   value={createForm.phone}
                   onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
                 />
@@ -5085,7 +4940,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="text" 
                   required
                   placeholder="001012345678" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                  className="w-full border border-slate-300 p-2 text-sm outline-none focus:border-slate-400"
                   value={createForm.citizenId}
                   onChange={e => setCreateForm({ ...createForm, citizenId: e.target.value })}
                 />
@@ -5629,6 +5484,160 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           </div>
         </div>
       </div>
+
+      {/* VNPay Refund Modal */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showRefundModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl transition-all duration-300 ${
+          showRefundModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center shrink-0">
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800 text-lg">Hoàn tiền Giao dịch</h3>
+              <p className="text-body-sm text-slate-500">#{refundTxn?.vnpTransactionNo}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-body-sm font-bold text-slate-700 mb-1">Số tiền hoàn (VND)</label>
+              <input
+                type="number"
+                value={refundAmount}
+                onChange={e => setRefundAmount(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50"
+              />
+            </div>
+            <div>
+              <label className="block text-body-sm font-bold text-slate-700 mb-1">Lý do hoàn tiền</label>
+              <textarea
+                value={refundReason}
+                onChange={e => setRefundReason(e.target.value)}
+                placeholder="Nhập lý do hoàn tiền..."
+                rows="3"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <button 
+              type="button"
+              onClick={handleCloseRefundModal}
+              disabled={isRefunding}
+              className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95 disabled:opacity-50"
+            >
+              Hủy
+            </button>
+            <button 
+              type="button"
+              onClick={handleRefundSubmit}
+              disabled={isRefunding}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-amber-500/20 transition-all duration-200 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+            >
+              {isRefunding && <RefreshCw className="w-4 h-4 animate-spin" />}
+              {isRefunding ? 'Đang gửi...' : 'Xác nhận'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      {/* TRANSACTION DETAILS MODAL */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedTxnDetails ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl transition-all duration-300 ${
+          selectedTxnDetails ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}>
+          <div className="flex items-center gap-4 mb-5 border-b border-slate-100 pb-4">
+            <div className="w-12 h-12 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center shrink-0">
+              <QrCode className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800 text-lg">Chi tiết giao dịch</h3>
+              <p className="text-body-sm text-slate-500">Thông tin đối soát hệ thống</p>
+            </div>
+          </div>
+
+          {selectedTxnDetails && (
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Cổng thanh toán:</span>
+                <span className="font-bold text-slate-700">{!String(selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef).includes('_') ? 'PayOS' : 'VNPAY'}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Mã tham chiếu:</span>
+                <span className="font-bold text-slate-700">{selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Mã giao dịch NH:</span>
+                <span className="font-bold text-slate-700">{selectedTxnDetails.vnpTransactionNo || 'Chưa ghi nhận'}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Dự án ID:</span>
+                <span className="font-bold text-slate-700">{selectedTxnDetails.projectId}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Nhà tuyển dụng ID:</span>
+                <span className="font-bold text-slate-700">{selectedTxnDetails.employerId}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Số tiền:</span>
+                <span className="font-bold text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTxnDetails.amount || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Thời gian tạo:</span>
+                <span className="font-bold text-slate-700">{selectedTxnDetails.createdAt ? new Date(selectedTxnDetails.createdAt).toLocaleString('vi-VN') : '-'}</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="text-body-sm text-slate-500">Trạng thái:</span>
+                <span className="font-bold">
+                  {selectedTxnDetails.status === 'SUCCESS' ? <span className="text-emerald-600">Đã thanh toán</span> :
+                   selectedTxnDetails.status === 'FAILED' ? <span className="text-rose-600">Thất bại</span> :
+                   selectedTxnDetails.status === 'REFUNDED' ? <span className="text-amber-600">Đã hoàn tiền</span> :
+                   selectedTxnDetails.status === 'CANCELLED' ? <span className="text-slate-500">Đã hủy / Hết hạn</span> :
+                   <span className="text-blue-600">Đang xử lý</span>}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <button 
+              onClick={() => setSelectedTxnDetails(null)}
+              className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 active:scale-95"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      {payosCheckoutUrl && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000
+        }}>
+          <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', textAlign: 'center', width: '900px', maxWidth: '95%', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0, color: '#1a1a1a', fontSize: '20px', fontWeight: 'bold' }}>Thanh toán thử nghiệm PayOS</h3>
+              <button onClick={() => setPayosCheckoutUrl(null)} style={{ padding: '8px 15px', cursor: 'pointer', background: '#e2e8f0', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+                Đóng
+              </button>
+            </div>
+            
+            <div style={{ flex: 1, background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden' }}>
+              <iframe 
+                src={payosCheckoutUrl} 
+                style={{ width: '100%', height: '100%', border: 'none' }} 
+                title="PayOS Checkout"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={`fixed top-6 right-6 z-[99999] max-w-sm w-full bg-white px-5 py-4 rounded-xl shadow-2xl border border-slate-100 flex items-center gap-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         toast.visible 

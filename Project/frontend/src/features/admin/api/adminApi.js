@@ -14,7 +14,18 @@ export const adminApi = {
   getManagerProfile: (id) => api.get(`/managers/${id}`),
   getDepartmentTransfers: (deptId) => api.get(`/admin/departments/${deptId}/transfers`),
   getDepartmentMemberCounts: (deptId) => api.get(`/admin/departments/${deptId}/member-counts`),
-  getUsers: () => api.get('/admin/users'),
+  getUsers: (params) => {
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) {
+          searchParams.append(key, params[key]);
+        }
+      });
+      return api.get(`/admin/users?${searchParams.toString()}`);
+    }
+    return api.get('/admin/users');
+  },
   getUserCredentials: (role, userId) => api.get(`/admin/users/${role}/${userId}/credentials`),
   regenerateUserPassword: (role, userId) => api.post(`/admin/users/${role}/${userId}/regenerate-password`),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
@@ -100,5 +111,11 @@ export const adminApi = {
       method: 'PUT',
       headers
     }).then(res => res.json());
-  }
+  },
+  queryVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/query`),
+  refundVnpayTransaction: (id, payload) => api.post(`/admin/vnpay-transactions/${id}/refund`, payload),
+  lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
+  createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
+  createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
+  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`)
 };
