@@ -127,10 +127,13 @@ export default function App() {
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setSuspended(null);
-    const redirectTo = localStorage.getItem("redirect_after_login");
-    localStorage.removeItem("redirect_after_login");
-    if (redirectTo === "post_job" && userData.role === "EMPLOYER") {
-      setCurrentPage("post_job");
+    const redirectTo = localStorage.getItem('redirect_after_login');
+    localStorage.removeItem('redirect_after_login');
+    
+    if (userData.role === 'ADMIN' || userData.role === 'MANAGER' || userData.role === 'STAFF') {
+      setCurrentPage('admin');
+    } else if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
+      setCurrentPage('post_job');
     } else {
       setCurrentPage("home");
     }
