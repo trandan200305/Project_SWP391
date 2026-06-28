@@ -1,28 +1,46 @@
 package com.cny.backend.admin.controller;
 
-import com.cny.backend.auth.entity.*;
-import com.cny.backend.admin.entity.*;
-import com.cny.backend.project.entity.*;
-import com.cny.backend.user.entity.*;
-import com.cny.backend.auth.repository.*;
-import com.cny.backend.admin.repository.*;
-import com.cny.backend.project.repository.*;
-import com.cny.backend.user.repository.*;
-import com.cny.backend.admin.dto.*;
-import com.cny.backend.chat.dto.*;
-import com.cny.backend.project.dto.*;
-import com.cny.backend.user.dto.*;
-import com.cny.backend.auth.service.*;
-import com.cny.backend.admin.service.*;
-import com.cny.backend.chat.service.*;
-
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import com.cny.backend.admin.dto.AdminAuditLogDto;
+import com.cny.backend.admin.dto.AdminStatsDto;
+import com.cny.backend.admin.dto.DisputeDto;
+import com.cny.backend.admin.dto.KycRequestDto;
+import com.cny.backend.admin.dto.ManagerCreateDto;
+import com.cny.backend.admin.dto.ManagerDto;
+import com.cny.backend.admin.dto.PendingProjectDto;
+import com.cny.backend.admin.dto.PlatformFeeDto;
+import com.cny.backend.admin.dto.ReportDto;
+import com.cny.backend.admin.dto.RevenueTrendDto;
+import com.cny.backend.admin.dto.SeoConfigDto;
+import com.cny.backend.admin.dto.StaffCreateDto;
+import com.cny.backend.admin.dto.StaffDto;
+import com.cny.backend.admin.dto.SupportTicketDto;
+import com.cny.backend.admin.dto.UserGrowthTrendDto;
+import com.cny.backend.admin.dto.WarningTemplateDto;
+import com.cny.backend.admin.dto.WithdrawalDto;
+import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.PaymentTransaction;
+import com.cny.backend.admin.entity.VnpayConfig;
+import com.cny.backend.admin.service.AdminService;
+import com.cny.backend.admin.service.VNPayService;
+import com.cny.backend.project.dto.ArticleDto;
+import com.cny.backend.project.dto.JobCategoryDto;
+import com.cny.backend.user.entity.EmployerProfileRequest;
 
 @RestController
 @RequestMapping("/admin")
@@ -31,6 +49,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private VNPayService vnpayService;
 
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsDto> getStats(@RequestParam(value = "period", defaultValue = "30days") String period) {
@@ -60,7 +81,28 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<AdminUserDto>> getUsers() {
+    public ResponseEntity<Object> getUsers(
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            //@RequestParam(value = "size", required = false) Integer size
+            @RequestParam(value = "size", required = false, defaultValue = "2") Integer size,
+            @RequestParam(value = "role", defaultValue = "ALL") String role,
+            @RequestParam(value = "search", defaultValue = "") String search,
+            @RequestParam(value = "status", defaultValue = "ALL") String status,
+            @RequestParam(value = "timeFilter", defaultValue = "ALL") String timeFilter,
+            @RequestParam(value = "timeStart", required = false) String timeStart,
+            @RequestParam(value = "timeEnd", required = false) String timeEnd,
+            @RequestParam(value = "filterEmployer", defaultValue = "true") boolean filterEmployer,
+            @RequestParam(value = "filterManager", defaultValue = "true") boolean filterManager,
+            @RequestParam(value = "filterStaff", defaultValue = "true") boolean filterStaff,
+            @RequestParam(value = "activeOnlineChecked", defaultValue = "true") boolean activeOnlineChecked,
+            @RequestParam(value = "activeOfflineChecked", defaultValue = "true") boolean activeOfflineChecked
+    ) {
+        if (page != null && size != null) {
+            return ResponseEntity.ok(adminService.getUsersPaginated(
+                    page, size, role, search, status, timeFilter, timeStart, timeEnd,
+                    filterEmployer, filterManager, filterStaff, activeOnlineChecked, activeOfflineChecked
+            ));
+        }
         return ResponseEntity.ok(adminService.getUsers());
     }
 
@@ -364,5 +406,66 @@ public class AdminController {
             @PathVariable("id") int id,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
+    }
+
+    @PostMapping("/vnpay-transactions/{id}/query")
+    public ResponseEntity<Map<String, Object>> queryVnpayTransaction(
+            @PathVariable("id") int transactionId,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+        
+        Map<String, Object> response = vnpayService.queryTransactionStatus(transactionId, ipAddress);
+        adminService.writeAuditLog(adminId, "QUERY_VNPAY_TRANSACTION", "FINANCE", 
+            "Truy vấn giao dịch VNPay ID: " + transactionId + ", kết quả: " + response.get("message"));
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/vnpay-transactions/{id}/refund")
+    public ResponseEntity<Map<String, Object>> refundVnpayTransaction(
+            @PathVariable("id") int transactionId,
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        
+        java.math.BigDecimal amount = null;
+        if (payload.get("amount") != null) {
+            amount = new java.math.BigDecimal(payload.get("amount").toString());
+        }
+        String reason = (String) payload.get("reason");
+        String createBy = "admin_" + adminId;
+        
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        Map<String, Object> response = vnpayService.refundTransaction(transactionId, amount, reason, createBy, ipAddress);
+        adminService.writeAuditLog(adminId, "REFUND_VNPAY_TRANSACTION", "FINANCE", 
+            "Hoàn tiền giao dịch VNPay ID: " + transactionId + ", Lý do: " + reason + ", kết quả: " + response.get("message"));
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/payment/lookup-account")
+    public ResponseEntity<Map<String, Object>> lookupBankAccount(
+            @RequestBody Map<String, Object> body) {
+        String bankCode = (String) body.get("bankCode");
+        String accountNumber = (String) body.get("accountNumber");
+
+        if (bankCode == null || bankCode.isBlank() || accountNumber == null || accountNumber.isBlank()) {
+            Map<String, Object> err = new java.util.HashMap<>();
+            err.put("success", false);
+            err.put("message", "Thiếu mã ngân hàng hoặc số tài khoản");
+            return ResponseEntity.badRequest().body(err);
+        }
+
+        Map<String, Object> result = vnpayService.lookupBankAccount(bankCode.trim(), accountNumber.trim());
+        return ResponseEntity.ok(result);
     }
 }
