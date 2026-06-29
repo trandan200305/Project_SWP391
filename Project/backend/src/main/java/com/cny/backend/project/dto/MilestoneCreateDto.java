@@ -5,14 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProposalCreateDto {
-    private BigDecimal bidAmount;
-    private Integer estimatedDays;
-    private String coverLetter;
-
+public class MilestoneCreateDto {
+    private String title;
+    private BigDecimal amount;
+    private LocalDate dueDate;
+    private String description;
 }

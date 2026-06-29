@@ -33,6 +33,9 @@ public class ProposalService {
     @Autowired
     private ContractRepository contractRepository;
 
+    @Autowired
+    private MilestoneService milestoneService;
+
     @Transactional
     public ProposalDto submitProposal(Integer projectId, Integer freelancerId, ProposalCreateDto dto) {
         Project project = projectRepository.findById(projectId)
@@ -133,7 +136,10 @@ public class ProposalService {
                 .status("ACTIVE")
                 .terms(proposal.getCoverLetter())
                 .build();
-        contractRepository.save(contract);
+        Contract savedContract = contractRepository.save(contract);
+
+        // Tạo mốc công việc mặc định cho hợp đồng
+        milestoneService.createDefaultMilestone(savedContract);
 
         // 4. Cập nhật trạng thái dự án sang IN_PROGRESS
         project.setStatus("IN_PROGRESS");

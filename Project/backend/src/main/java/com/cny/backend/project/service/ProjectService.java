@@ -96,6 +96,7 @@ public class ProjectService {
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
+                .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(30)) // Hạn đăng tin mặc định 30 ngày
                 .status("PUBLISHED") // Published directly
                 .proposalCount(0)
@@ -122,7 +123,7 @@ public class ProjectService {
 
         if (dto.getTitle() != null) project.setTitle(dto.getTitle());
         if (dto.getDescription() != null) project.setDescription(dto.getDescription());
-        
+        if (dto.getWorkForm() != null) project.setWorkForm(dto.getWorkForm());
         String type = dto.getProjectType() != null ? dto.getProjectType() : project.getProjectType();
         if (dto.getProjectType() != null) project.setProjectType(type);
 
@@ -259,7 +260,7 @@ public class ProjectService {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm");
         String formattedCreatedAt = project.getCreatedAt() != null ? project.getCreatedAt().format(dtf) : "Không rõ";
 
-        String workForm = "-";
+        String workForm = project.getWorkForm() != null ? project.getWorkForm() : "ONLINE";
         String paymentType = project.getBudgetFixed() != null ? "Trả theo dự án" : "Thỏa thuận";
 
         String employerLoc = "Chưa cập nhật";
