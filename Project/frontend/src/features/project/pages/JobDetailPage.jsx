@@ -116,8 +116,8 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }
     const amount = parseFloat(applyForm.bidAmount);
     const days = parseInt(applyForm.estimatedDays);
-    if (isNaN(amount) || amount <= 0) {
-      setApplyError('Giá chào thầu phải là số dương lớn hơn 0.');
+    if (isNaN(amount) || amount < 100000) {
+      setApplyError('Giá chào thầu tối thiểu phải từ 100.000 VNĐ.');
       return;
     }
     if (isNaN(days) || days <= 0) {
@@ -431,7 +431,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                   <input 
                     type="number"
                     required
-                    min="1"
+                    min="100000"
                     placeholder="VD: 5000000"
                     value={applyForm.bidAmount}
                     onChange={(e) => setApplyForm(prev => ({ ...prev, bidAmount: e.target.value }))}

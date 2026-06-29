@@ -55,6 +55,10 @@ public class ProposalService {
                     throw new IllegalArgumentException("Bạn đã gửi báo giá cho dự án này rồi.");
                 });
 
+        if (dto.getBidAmount() == null || dto.getBidAmount().compareTo(new java.math.BigDecimal("100000")) < 0) {
+            throw new IllegalArgumentException("Giá chào thầu tối thiểu phải từ 100,000 VNĐ.");
+        }
+
         Proposal proposal = Proposal.builder()
                 .project(project)
                 .freelancer(freelancer)
@@ -122,6 +126,8 @@ public class ProposalService {
             }
 
             java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
+            java.time.LocalDate maxDueDate = java.time.LocalDate.now().plusDays(proposal.getEstimatedDays());
+
             for (int i = 0; i < customMilestones.size(); i++) {
                 MilestoneCreateDto m = customMilestones.get(i);
                 if (m.getTitle() == null || m.getTitle().trim().isEmpty()) {
@@ -132,6 +138,12 @@ public class ProposalService {
                 }
                 if (m.getDueDate() == null) {
                     throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " không được bỏ trống.");
+                }
+                if (m.getDueDate().isBefore(java.time.LocalDate.now())) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " không được trước ngày hôm nay.");
+                }
+                if (m.getDueDate().isAfter(maxDueDate)) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " (" + m.getDueDate() + ") không được vượt quá ngày hoàn thành dự kiến (" + maxDueDate + ").");
                 }
                 totalAmount = totalAmount.add(m.getAmount());
             }
