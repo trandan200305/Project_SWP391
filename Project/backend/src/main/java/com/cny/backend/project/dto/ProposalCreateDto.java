@@ -14,5 +14,5 @@ public class ProposalCreateDto {
     private BigDecimal bidAmount;
     private Integer estimatedDays;
     private String coverLetter;
-
+    private String cvUrl;
 }

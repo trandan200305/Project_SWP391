@@ -21,6 +21,7 @@ public class ProposalDto {
     private BigDecimal bidAmount;
     private Integer estimatedDays;
     private String coverLetter;
+    private String cvUrl;
     private String status;
     private LocalDateTime createdAt;
 }

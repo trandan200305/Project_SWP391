@@ -61,6 +61,7 @@ public class ProposalService {
                 .bidAmount(dto.getBidAmount())
                 .estimatedDays(dto.getEstimatedDays())
                 .coverLetter(dto.getCoverLetter())
+                .cvUrl(dto.getCvUrl())
                 .status("SUBMITTED")
                 .build();
 
@@ -193,6 +194,7 @@ public class ProposalService {
                 .bidAmount(proposal.getBidAmount())
                 .estimatedDays(proposal.getEstimatedDays())
                 .coverLetter(proposal.getCoverLetter())
+                .cvUrl(proposal.getCvUrl())
                 .status(proposal.getStatus())
                 .createdAt(proposal.getCreatedAt())
                 .build();

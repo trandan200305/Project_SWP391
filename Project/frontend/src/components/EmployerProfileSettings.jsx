@@ -23,7 +23,8 @@ import {
     ChevronRight,
     X,
     Check,
-    AlertCircle
+    AlertCircle,
+    FileText
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
 
@@ -1043,6 +1044,19 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                         className="text-xs text-slate-650 bg-white border border-slate-100 rounded-lg p-3 leading-relaxed whitespace-pre-line">
                                         {prop.coverLetter}
                                     </div>
+                                     {prop.cvUrl && (
+                                         <div className="mt-2.5 flex justify-start">
+                                             <a 
+                                                 href={prop.cvUrl} 
+                                                 target="_blank" 
+                                                 rel="noopener noreferrer"
+                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 transition-colors"
+                                             >
+                                                 <FileText className="w-3.5 h-3.5" />
+                                                 <span>Đọc CV của ứng viên (PDF)</span>
+                                             </a>
+                                         </div>
+                                     )}
                                     {prop.status === 'SUBMITTED' ? (
                                         <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-100">
                                             <button
