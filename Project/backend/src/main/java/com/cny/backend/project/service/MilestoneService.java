@@ -31,6 +31,22 @@ public class MilestoneService {
         return milestoneRepository.save(milestone);
     }
 
+    @Transactional
+    public void createCustomMilestones(Contract contract, List<MilestoneCreateDto> customMilestones) {
+        for (int i = 0; i < customMilestones.size(); i++) {
+            MilestoneCreateDto dto = customMilestones.get(i);
+            Milestone milestone = Milestone.builder()
+                    .contract(contract)
+                    .title("Mốc " + (i + 1) + ": " + dto.getTitle())
+                    .amount(dto.getAmount())
+                    .dueDate(dto.getDueDate())
+                    .status("PENDING")
+                    .description(dto.getDescription())
+                    .build();
+            milestoneRepository.save(milestone);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<Milestone> getMilestonesByContract(Integer contractId) {
         return milestoneRepository.findByContractContractIdOrderByMilestoneIdAsc(contractId);
