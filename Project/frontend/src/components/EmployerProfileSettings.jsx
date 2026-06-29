@@ -20,6 +20,7 @@ import {
     Sparkles,
     Coins,
     ArrowLeftRight,
+    ChevronLeft,
     ChevronRight,
     X,
     Check,
@@ -58,6 +59,32 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
+
+    // Pagination states for projects
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 5;
+
+    // Adjust currentPage if it goes out of range due to project count changes
+    useEffect(() => {
+        const maxPage = Math.ceil(projects.length / PAGE_SIZE);
+        if (maxPage > 0 && currentPage > maxPage) {
+            setCurrentPage(maxPage);
+        } else if (projects.length === 0) {
+            setCurrentPage(1);
+        }
+    }, [projects.length, currentPage]);
+
+    // Reset page to 1 when changing activeTab
+    useEffect(() => {
+        if (activeTab === 'projects') {
+            setCurrentPage(1);
+        }
+    }, [activeTab]);
+
+    const totalPages = Math.ceil(projects.length / PAGE_SIZE);
+    const paginatedProjects = useMemo(() => {
+        return projects.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    }, [projects, currentPage]);
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -694,133 +721,183 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                         bạn tại đây.
                                     </p>
                                 </div>) : (/* Project Cards Grid */
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {projects.map((proj) => {
-                                            const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
-                                            const statusColors = {
-                                                DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
-                                                PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                REJECTED: 'bg-rose-50 text-rose-700 border-rose-200'
-                                            };
-                                            const statusLabels = {
-                                                DRAFT: 'Bản nháp',
-                                                PENDING: 'Chờ duyệt',
-                                                PENDING_REVIEW: 'Chờ duyệt',
-                                                PUBLISHED: 'Đang tuyển',
-                                                REJECTED: 'Từ chối'
-                                            };
+                                    <>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {paginatedProjects.map((proj) => {
+                                                const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
+                                                const statusColors = {
+                                                    DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
+                                                    PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                    PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                    PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                    REJECTED: 'bg-rose-50 text-rose-700 border-rose-200'
+                                                };
+                                                const statusLabels = {
+                                                    DRAFT: 'Bản nháp',
+                                                    PENDING: 'Chờ duyệt',
+                                                    PENDING_REVIEW: 'Chờ duyệt',
+                                                    PUBLISHED: 'Đang tuyển',
+                                                    REJECTED: 'Từ chối'
+                                                };
 
-                                            return (<div key={proj.projectId}
-                                                         className="border border-slate-100 bg-white rounded-2xl p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 group">
-                                                <div
-                                                    className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                                                    <div>
-                                                        <div
-                                                            className="flex items-center gap-2 flex-wrap mb-1.5">
-                                  <span
-                                      className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                    {proj.category?.categoryName || 'General'}
-                                  </span>
-                                                            <span
-                                                                className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                    {statusLabels[proj.status] || proj.status}
-                                  </span>
-                                                        </div>
-                                                        <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
-                                                            {proj.title}
-                                                        </h4>
-                                                    </div>
+                                                return (<div key={proj.projectId}
+                                                             className="border border-slate-100 bg-white rounded-2xl p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 group">
                                                     <div
-                                                        className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
-                                                        <span
-                                                            className="text-xs text-slate-400 font-medium">Ngân sách</span>
-                                                        <span
-                                                            className="font-extrabold text-emerald-600 text-sm">
-                                  {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
-                                      style: 'currency', currency: 'VND'
-                                  }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
-                                      style: 'currency', currency: 'VND'
-                                  }).format(proj.budgetMax)}` : 'Thỏa thuận')}
-                                </span>
+                                                        className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                                                        <div>
+                                                            <div
+                                                                className="flex items-center gap-2 flex-wrap mb-1.5">
+                                      <span
+                                          className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                                        {proj.category?.categoryName || 'General'}
+                                      </span>
+                                                                <span
+                                                                    className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                        {statusLabels[proj.status] || proj.status}
+                                      </span>
+                                                            </div>
+                                                            <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
+                                                                {proj.title}
+                                                            </h4>
+                                                        </div>
+                                                        <div
+                                                            className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
+                                                            <span
+                                                                className="text-xs text-slate-400 font-medium">Ngân sách</span>
+                                                            <span
+                                                                className="font-extrabold text-emerald-600 text-sm">
+                                      {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
+                                          style: 'currency', currency: 'VND'
+                                      }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
+                                          style: 'currency', currency: 'VND'
+                                      }).format(proj.budgetMax)}` : 'Thỏa thuận')}
+                                    </span>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                                                    {proj.description}
-                                                </p>
+                                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                                                        {proj.description}
+                                                    </p>
 
-                                                <div
-                                                    className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
-                                                    <div className="flex items-center gap-4">
-                                <span className="flex items-center gap-1.5">
-                                  <Calendar className="w-3.5 h-3.5 text-slate-400"/>
-                                  Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
-                                </span>
-                                                        <span className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-slate-400"/>
-                                  Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
-                                </span>
+                                                    <div
+                                                        className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
+                                                        <div className="flex items-center gap-4">
+                                    <span className="flex items-center gap-1.5">
+                                      <Calendar className="w-3.5 h-3.5 text-slate-400"/>
+                                      Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                    </span>
+                                                            <span className="flex items-center gap-1.5">
+                                      <Clock className="w-3.5 h-3.5 text-slate-400"/>
+                                      Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
+                                    </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                    <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
+                                      {proj.proposalCount || 0} Báo giá
+                                    </span>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-2">
-                                <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
-                                  {proj.proposalCount || 0} Báo giá
-                                </span>
+                                                    {/* Management Actions */}
+                                                    <div
+                                                        className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
+                                                        {proj.status !== 'CLOSED' && (<button
+                                                            type="button"
+                                                            onClick={() => handleCloseProject(proj.projectId)}
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
+                                                        >
+                                                            Dừng tuyển
+                                                        </button>)}
+                                                        {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleViewProposals(proj.projectId)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
+                                                            >
+                                                                Xem báo giá ({proj.proposalCount})
+                                                            </button>
+                                                        )}
+                                                        {proj.status === 'IN_PROGRESS' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleManageProgress(proj.projectId)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-700 transition-all text-[11px] font-bold shadow-sm"
+                                                            >
+                                                                Quản lý tiến độ
+                                                            </button>
+                                                        )}
+                                                        {proj.status !== 'IN_PROGRESS' && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditingProject(proj)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
+                                                                >
+                                                                    Sửa
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteProject(proj.projectId)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
+                                                                >
+                                                                    Xóa
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
-                                                </div>
+                                                </div>);
+                                            })}
+                                        </div>
 
-                                                {/* Management Actions */}
-                                                <div
-                                                    className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
-                                                    {proj.status !== 'CLOSED' && (<button
+                                        {/* Pagination Controls */}
+                                        {totalPages > 1 && (
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6 flex-wrap gap-4">
+                                                <span className="text-xs text-slate-500 font-medium">
+                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{(currentPage - 1) * PAGE_SIZE + 1}</span> đến{' '}
+                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, projects.length)}</span> trong tổng số{' '}
+                                                    <span className="font-extrabold text-slate-800">{projects.length}</span> tin tuyển dụng
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
                                                         type="button"
-                                                        onClick={() => handleCloseProject(proj.projectId)}
-                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
+                                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                        disabled={currentPage === 1}
+                                                        className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+                                                        title="Trang trước"
                                                     >
-                                                        Dừng tuyển
-                                                    </button>)}
-                                                    {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
+                                                        <ChevronLeft className="w-4 h-4" />
+                                                    </button>
+                                                    
+                                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                                                         <button
+                                                            key={p}
                                                             type="button"
-                                                            onClick={() => handleViewProposals(proj.projectId)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
+                                                            onClick={() => setCurrentPage(p)}
+                                                            className={`w-9 h-9 inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all duration-200 ${
+                                                                currentPage === p
+                                                                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/10 border border-cyan-600'
+                                                                    : 'border border-slate-200 text-slate-650 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30'
+                                                            }`}
                                                         >
-                                                            Xem báo giá ({proj.proposalCount})
+                                                            {p}
                                                         </button>
-                                                    )}
-                                                    {proj.status === 'IN_PROGRESS' && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleManageProgress(proj.projectId)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-700 transition-all text-[11px] font-bold shadow-sm"
-                                                        >
-                                                            Quản lý tiến độ
-                                                        </button>
-                                                    )}
-                                                    {proj.status !== 'IN_PROGRESS' && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setEditingProject(proj)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Sửa
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteProject(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Xóa
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                    ))}
+                                                    
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                        disabled={currentPage === totalPages}
+                                                        className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+                                                        title="Trang sau"
+                                                    >
+                                                        <ChevronRight className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            </div>);
-                                        })}
-                                    </div>)}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>)}
                 </section>
