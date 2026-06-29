@@ -52,6 +52,21 @@ public class ContractManagementController {
         }
     }
 
+    // Lấy chi tiết hợp đồng theo Project ID
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<?> getContractByProjectId(
+            @PathVariable Integer projectId,
+            @RequestParam Integer userId) {
+        try {
+            ContractDetailDto detail = contractManagementService.getContractByProjectId(projectId, userId);
+            return ResponseEntity.ok(detail);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     // Nhà tuyển dụng hoàn thành hợp đồng
     @PostMapping("/{contractId}/complete")
     public ResponseEntity<?> completeContract(

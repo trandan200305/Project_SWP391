@@ -51,6 +51,13 @@ public class ContractManagementService {
     }
 
     @Transactional(readOnly = true)
+    public ContractDetailDto getContractByProjectId(Integer projectId, Integer userId) {
+        Contract contract = contractRepository.findByProjectProjectId(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng cho dự án ID: " + projectId));
+        return getContractDetails(contract.getContractId(), userId);
+    }
+
+    @Transactional(readOnly = true)
     public ContractDetailDto getContractDetails(Integer contractId, Integer userId) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng ID: " + contractId));

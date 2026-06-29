@@ -22,6 +22,7 @@ import {
     ArrowLeftRight,
     ChevronRight
 } from 'lucide-react';
+import { contractApi } from '../api/contractApi';
 
 const emptyForm = {
     displayName: '',
@@ -206,6 +207,19 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             setNotice({type: 'success', message: 'Đã xóa tin tuyển dụng thành công.'});
         } catch (err) {
             setNotice({type: 'error', message: err.message || 'Lỗi khi xóa dự án.'});
+        }
+    };
+
+    const handleManageProgress = async (projectId) => {
+        try {
+            const contractDetails = await contractApi.getContractByProjectId(projectId, user.id);
+            if (contractDetails && contractDetails.contractId) {
+                onNavigate('contract_details', { contractId: contractDetails.contractId });
+            } else {
+                setNotice({type: 'error', message: 'Không tìm thấy thông tin hợp đồng cho dự án này.'});
+            }
+        } catch (err) {
+            setNotice({type: 'error', message: err.message || 'Lỗi khi lấy thông tin hợp đồng.'});
         }
     };
 
@@ -769,6 +783,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
                                                         >
                                                             Xem báo giá ({proj.proposalCount})
+                                                        </button>
+                                                    )}
+                                                    {proj.status === 'IN_PROGRESS' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleManageProgress(proj.projectId)}
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-700 transition-all text-[11px] font-bold shadow-sm"
+                                                        >
+                                                            Quản lý tiến độ
                                                         </button>
                                                     )}
                                                     {proj.status !== 'IN_PROGRESS' && (

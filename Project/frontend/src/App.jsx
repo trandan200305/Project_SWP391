@@ -199,7 +199,7 @@ export default function App() {
     };
     const handleNavigate = (page, params = null) => {
         // 1. Kiểm tra trang yêu cầu đăng nhập (đã loại bỏ 'coming_soon' nếu đây là trang công khai)
-        const protectedPages = ['admin', 'messenger', 'post_job', 'employer_profile', 'profile'];
+        const protectedPages = ['admin', 'messenger', 'post_job', 'employer_profile', 'profile', 'contract_details'];
 
         if (protectedPages.includes(page) && !user) {
             setCurrentPage('login');
