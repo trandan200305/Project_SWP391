@@ -49,7 +49,9 @@ public class Project {
 
     @Column(nullable = false, length = 300)
     private String title;
-
+    @Column(name = "work_form",nullable = false)
+    @Builder.Default
+    private String workForm = "ONLINE";
     @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
