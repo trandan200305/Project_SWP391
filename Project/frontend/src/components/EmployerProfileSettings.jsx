@@ -20,7 +20,10 @@ import {
     Sparkles,
     Coins,
     ArrowLeftRight,
-    ChevronRight
+    ChevronRight,
+    X,
+    Check,
+    AlertCircle
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
 
@@ -48,6 +51,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState(null);
+    const [proposalForAccept, setProposalForAccept] = useState(null);
 
     // Added states for projects
     const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
@@ -1058,7 +1062,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => handleAcceptProposal(prop.proposalId)}
+                                                onClick={() => setProposalForAccept(prop)}
                                                 className="px-4 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-xs font-bold shadow-sm transition-all"
                                             >
                                                 Chấp nhận giao việc
@@ -1079,6 +1083,19 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     )}
                 </div>
             </div>
+        )}
+        {proposalForAccept && (
+            <MilestoneSetupModal
+                proposal={proposalForAccept}
+                employerId={user.id}
+                onClose={() => setProposalForAccept(null)}
+                onSuccess={() => {
+                    setProposalForAccept(null);
+                    setSelectedProjectForProposals(null);
+                    fetchProjects();
+                    alert('Tuyển dụng Freelancer thành công! Hợp đồng đã được ký kết và bắt đầu thực hiện.');
+                }}
+            />
         )}
     </div>);
 }
@@ -1126,4 +1143,303 @@ function TextArea({label, value, onChange}) {
             placeholder="Mô tả ngắn về lĩnh vực hoạt động, đội ngũ, văn hóa và nhu cầu tuyển freelancer..."
         />
     </label>);
+}
+
+function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
+    const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
+    const [milestones, setMilestones] = useState([
+        { title: 'Giai đoạn 1: Bản vẽ thiết kế & Giao diện', amount: '', dueDate: '', description: 'Freelancer hoàn thiện thiết kế giao diện chi tiết' },
+        { title: 'Giai đoạn 2: Lập trình frontend & Tích hợp', amount: '', dueDate: '', description: 'Freelancer lập trình giao diện và kết nối dữ liệu' },
+        { title: 'Giai đoạn 3: Bàn giao sản phẩm & Hướng dẫn', amount: '', dueDate: '', description: 'Freelancer hoàn thiện kiểm thử và bàn giao sản phẩm hoàn chỉnh' },
+    ]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const bidAmount = proposal ? Number(proposal.bidAmount) : 0;
+
+    const handleAddMilestone = () => {
+        if (milestones.length >= 5) return;
+        setMilestones([...milestones, { title: `Giai đoạn ${milestones.length + 1}: `, amount: '', dueDate: '', description: '' }]);
+    };
+
+    const handleRemoveMilestone = (index) => {
+        if (milestones.length <= 3) return;
+        setMilestones(milestones.filter((_, idx) => idx !== index));
+    };
+
+    const handleMilestoneChange = (index, field, value) => {
+        const updated = milestones.map((m, idx) => {
+            if (idx === index) {
+                return { ...m, [field]: value };
+            }
+            return m;
+        });
+        setMilestones(updated);
+    };
+
+    // Calculate sum of milestones
+    const sumAmounts = milestones.reduce((sum, m) => sum + (Number(m.amount) || 0), 0);
+    const isSumMatch = sumAmounts === bidAmount;
+    const diffAmount = bidAmount - sumAmounts;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+
+        let customMilestones = null;
+        if (payOption === 'split') {
+            if (milestones.length < 3 || milestones.length > 5) {
+                setError('Số lượng mốc thanh toán phải từ 3 đến 5.');
+                return;
+            }
+            if (!isSumMatch) {
+                setError(`Tổng số tiền các mốc chưa khớp với ngân sách thầu. Lệch: ${diffAmount.toLocaleString('vi-VN')} VNĐ`);
+                return;
+            }
+            for (let i = 0; i < milestones.length; i++) {
+                const m = milestones[i];
+                if (!m.title.trim()) {
+                    setError(`Tiêu đề mốc thứ ${i + 1} không được bỏ trống.`);
+                    return;
+                }
+                if (!m.amount || Number(m.amount) <= 0) {
+                    setError(`Số tiền mốc thứ ${i + 1} phải lớn hơn 0.`);
+                    return;
+                }
+                if (!m.dueDate) {
+                    setError(`Hạn hoàn thành mốc thứ ${i + 1} không được bỏ trống.`);
+                    return;
+                }
+            }
+            customMilestones = milestones.map(m => ({
+                title: m.title.trim(),
+                amount: Number(m.amount),
+                dueDate: m.dueDate,
+                description: m.description.trim()
+            }));
+        }
+
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8080/api/proposals/${proposal.proposalId}/accept?employerId=${employerId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: customMilestones ? JSON.stringify(customMilestones) : null
+            });
+
+            if (!response.ok) {
+                const msg = await response.text();
+                throw new Error(msg || 'Chấp nhận báo giá thất bại.');
+            }
+
+            onSuccess();
+        } catch (err) {
+            setError(err.message || 'Lỗi khi chấp nhận báo giá.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!proposal) return null;
+
+    return (
+        <div className="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col my-8 animate-in zoom-in-95 duration-200 text-left">
+                
+                {/* Header */}
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+                    <div>
+                        <h3 className="text-lg font-extrabold text-slate-800">Thiết lập Tiến độ & Mốc thanh toán</h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                            Tuyển dụng freelancer <strong className="text-slate-700">{proposal.freelancerName}</strong> cho dự án.
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
+                    {error && (
+                        <div className="p-4 bg-rose-50 border border-rose-100 text-rose-800 rounded-xl flex items-start gap-2.5">
+                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                            <span className="font-semibold text-xs leading-normal">{error}</span>
+                        </div>
+                    )}
+
+                    {/* Total Budget Alert */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex justify-between items-center mb-0">
+                        <span className="text-slate-650 font-bold text-xs">Tổng ngân sách gói thầu:</span>
+                        <span className="text-lg font-black text-blue-700">
+                            {Number(proposal.bidAmount).toLocaleString('vi-VN')} VNĐ
+                        </span>
+                    </div>
+
+                    {/* Payment Options */}
+                    <div>
+                        <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block mb-3">Phương thức thanh toán</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label className={`border-2 rounded-xl p-4 flex flex-col cursor-pointer transition-all ${
+                                payOption === 'single' ? 'border-blue-600 bg-blue-50/20' : 'border-slate-200 hover:border-slate-350'
+                            }`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <input 
+                                        type="radio" 
+                                        name="payOption" 
+                                        value="single" 
+                                        checked={payOption === 'single'} 
+                                        onChange={() => setPayOption('single')}
+                                        className="text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="font-extrabold text-slate-800 text-xs">Thanh toán 1 lần</span>
+                                </div>
+                                <span className="text-slate-500 text-xs pl-5 leading-normal">
+                                    Thanh toán 100% khi dự án hoàn thành bàn giao đầy đủ.
+                                </span>
+                            </label>
+
+                            <label className={`border-2 rounded-xl p-4 flex flex-col cursor-pointer transition-all ${
+                                payOption === 'split' ? 'border-blue-600 bg-blue-50/20' : 'border-slate-200 hover:border-slate-355'
+                            }`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <input 
+                                        type="radio" 
+                                        name="payOption" 
+                                        value="split" 
+                                        checked={payOption === 'split'} 
+                                        onChange={() => setPayOption('split')}
+                                        className="text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (3 - 5 mốc)</span>
+                                </div>
+                                <span className="text-slate-500 text-xs pl-5 leading-normal">
+                                    Giải ngân tiền theo từng giai đoạn hoàn thành công việc.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Split Milestones Form */}
+                    {payOption === 'split' && (
+                        <div className="space-y-4 pt-2 border-t border-slate-100">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-450 uppercase tracking-wider">Danh sách các mốc tiến độ</span>
+                                <button 
+                                    type="button" 
+                                    onClick={handleAddMilestone}
+                                    disabled={milestones.length >= 5}
+                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                    + Thêm mốc
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {milestones.map((milestone, idx) => (
+                                    <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 relative space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-extrabold text-slate-700 text-xs">Mốc số {idx + 1}</span>
+                                            {milestones.length > 3 && (
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleRemoveMilestone(idx)}
+                                                    className="text-rose-500 hover:text-rose-700 text-xs font-bold transition-colors"
+                                                >
+                                                    Xóa
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="md:col-span-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={milestone.title}
+                                                    onChange={(e) => handleMilestoneChange(idx, 'title', e.target.value)}
+                                                    placeholder="Tên mốc (ví dụ: Bàn giao thiết kế Figma)"
+                                                    className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <input 
+                                                    type="number" 
+                                                    value={milestone.amount}
+                                                    onChange={(e) => handleMilestoneChange(idx, 'amount', e.target.value)}
+                                                    placeholder="Số tiền (VNĐ)"
+                                                    className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="md:col-span-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={milestone.description}
+                                                    onChange={(e) => handleMilestoneChange(idx, 'description', e.target.value)}
+                                                    placeholder="Mô tả công việc cần làm ở mốc này"
+                                                    className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <input 
+                                                    type="date" 
+                                                    value={milestone.dueDate}
+                                                    onChange={(e) => handleMilestoneChange(idx, 'dueDate', e.target.value)}
+                                                    className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Live Budget Counter */}
+                            <div className={`p-4 rounded-xl border flex justify-between items-center text-xs font-bold ${
+                                isSumMatch ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+                            }`}>
+                                <span>Đã phân chia: {sumAmounts.toLocaleString('vi-VN')} VNĐ / {bidAmount.toLocaleString('vi-VN')} VNĐ</span>
+                                {isSumMatch ? (
+                                    <span className="flex items-center gap-1">
+                                        <Check className="w-4.5 h-4.5 text-emerald-600" /> Ngân sách hợp lệ
+                                    </span>
+                                ) : (
+                                    <span>
+                                        {diffAmount > 0 
+                                            ? `Còn thiếu: ${diffAmount.toLocaleString('vi-VN')} VNĐ` 
+                                            : `Dư: ${Math.abs(diffAmount).toLocaleString('vi-VN')} VNĐ`}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 border border-slate-250 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-all text-xs"
+                    >
+                        Hủy bỏ
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={loading || (payOption === 'split' && !isSumMatch)}
+                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 text-xs shadow-sm"
+                    >
+                        {loading ? 'Đang giao việc...' : 'Xác nhận & Giao việc'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
