@@ -47,6 +47,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
+
     // Validate budget range
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
