@@ -1160,8 +1160,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const openDisputeCount = escalationCases.filter(item => item.status !== 'Resolved').length;
 
   const commonSidebarItems = [
-    { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
-    { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: myTasks.filter(t => t.status !== 'Completed').length }
+    { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard }
   ];
 
   const departmentSidebarGroups = {
@@ -2212,82 +2211,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             </div>
           )}
 
-          {/* ---------------- TAB: TASKS ---------------- */}
-          {activeTab === 'Tasks' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
-              <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Danh mục công việc</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Toàn bộ danh sách công việc quản trị được giao cho nhân viên.</p>
-              </div>
 
-              {/* Tasks Filters Card */}
-              <div className="card-level-1 p-5 bg-white space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
-                    {['ALL', 'Pending', 'In Progress', 'Completed'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setTaskFilter(tab)}
-                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-                          taskFilter === tab 
-                            ? 'bg-white text-[#006b2c] shadow-sm' 
-                            : 'text-[#6e7b6c] hover:text-[#141b2b]'
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Grid of Tasks */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredTasks.map((t) => (
-                  <div key={t.id} className="card-level-1 p-5 bg-white flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-start justify-between">
-                        <span className="text-xs font-bold text-[#006b2c]">{t.id} - {t.type}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          t.priority === 'High' 
-                            ? 'bg-[#ffdad6] text-[#ba1a1a]' 
-                            : t.priority === 'Medium' 
-                              ? 'bg-amber-100 text-amber-800' 
-                              : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {t.priority}
-                        </span>
-                      </div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.title}</h3>
-                      <p className="text-body-sm text-[#3e4a3d] line-clamp-2 mt-1.5">{t.description}</p>
-                    </div>
-
-                    <div className="border-t border-[#e9edff] pt-4 mt-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img src={t.avatar} alt={t.user} className="w-6 h-6 rounded-full object-cover" />
-                        <span className="text-xs font-semibold text-[#141b2b]">{t.user}</span>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          if (t.assignedToEmail && t.assignedToEmail !== (user?.email || 'staff@gmail.com')) {
-                            showToast(`Tác vụ này đang được xử lý bởi nhân viên ${t.assignedToEmail}. Bạn không thể can thiệp!`, 'error');
-                            return;
-                          }
-                          setSelectedTask(t);
-                          setShowManageModal(true);
-                        }}
-                        className="text-xs font-extrabold text-[#006b2c] hover:text-[#00873a] flex items-center gap-1"
-                      >
-                        <span>Manage</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* ---------------- TAB: SUPPORT (Messenger Chat) ---------------- */}
           {/* ---------------- TAB: SUPPORT (Messenger Chat) ---------------- */}

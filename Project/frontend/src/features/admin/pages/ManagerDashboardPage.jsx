@@ -1556,7 +1556,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 {sectionsOpen.taskManagement && (
                   <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
-                      { name: 'Tasks', label: 'Công việc', icon: CheckSquare },
                       { name: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
                       { name: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
                     ].map((item) => {
@@ -2327,12 +2326,9 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </button>
               </div>
 
-            </div>
-          )}
+              {/* --- Tasks Directory moved to Dashboard --- */}
+              <div className="h-px w-full bg-[#e1e8fd] my-8" />
 
-          
-          {activeTab === 'Tasks' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Tasks Directory</h1>
