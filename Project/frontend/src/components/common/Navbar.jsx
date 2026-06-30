@@ -93,7 +93,7 @@ export default function Navbar({
   // 3. SUBMIT PIN (VERIFY CURRENT OR SET NEW)
   const handlePinSubmit = async () => {
     if (isSubmitting) return;
-    //đã từng tạo
+    // credential pin
     if (user?.hasMessengerPin && !isResettingTempPin) {
       const pin = pinValues.join("");
       if (pin.length !== 4) {
@@ -124,7 +124,7 @@ export default function Navbar({
           //pin chính
           else {
             setShowPinModal(false);
-            if (onNavigate) onNavigate("messenger"); //chuyển trang
+            if (onNavigate) onNavigate("messenger"); 
           }
         } else {
           setPinError(data.message || "Mã PIN không đúng.");
@@ -139,7 +139,7 @@ export default function Navbar({
       }
       return;
     }
-    //nhap pin moi lan dau hoac reset temp pin
+    //nhap pin moi lan dau hoac reset pin
     if (!isConfirmingPin) {
       const pin = pinValues.join("");
       if (pin.length !== 4) {

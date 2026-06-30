@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import com.cny.backend.admin.dto.AdminAuditLogDto;
+import com.cny.backend.admin.dto.AdminDto;
 import com.cny.backend.admin.dto.AdminStatsDto;
 import com.cny.backend.admin.dto.DisputeDto;
 import com.cny.backend.admin.dto.KycRequestDto;
@@ -36,6 +38,7 @@ import com.cny.backend.admin.dto.WithdrawalDto;
 import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.PaymentTransaction;
 import com.cny.backend.admin.entity.VnpayConfig;
+import com.cny.backend.admin.repository.AdminRepository;
 import com.cny.backend.admin.service.AdminService;
 import com.cny.backend.admin.service.VNPayService;
 import com.cny.backend.project.dto.ArticleDto;
