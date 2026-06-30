@@ -17,7 +17,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 
 export default function UserProfile({
   setActiveTab, onNavigate, role, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
-  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness, taxCode
+  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness, taxCode, hideEmail, hidePhone, hideLocation
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -30,7 +30,7 @@ export default function UserProfile({
           </button>
         </div>
 
-        {/* Bio */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
@@ -56,7 +56,7 @@ export default function UserProfile({
           </div>
         )}
 
-        {/* Work History Placeholder */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
             <h3 className="font-extrabold text-gray-900 text-xl mb-6">Lịch sử làm việc</h3>
@@ -68,9 +68,9 @@ export default function UserProfile({
         )}
       </div>
 
-      {/* Right Column for Profile */}
+      
       <div className="flex flex-col gap-6">
-        {/* Contact & Basic Info */}
+        
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="font-extrabold text-gray-900 text-lg mb-6 flex items-center gap-2">
             Thông tin cơ bản
@@ -82,7 +82,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Vị trí / Địa chỉ</p>
-                <p className="text-[15px] font-bold text-gray-900">{[address, city, country].filter(Boolean).join(', ') || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold ${hideLocation ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hideLocation ? 'Đã ẩn bởi người dùng' : ([city, country].filter(c => c && c !== 'Chờ cập nhật').join(', ') || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -91,7 +93,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Số điện thoại</p>
-                <p className="text-[15px] font-bold text-gray-900">{phone || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold ${hidePhone ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hidePhone ? 'Đã ẩn bởi người dùng' : (phone || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -100,7 +104,9 @@ export default function UserProfile({
               </div>
               <div className="pt-0.5 overflow-hidden">
                 <p className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Email</p>
-                <p className="text-[15px] font-bold text-gray-900 truncate">{email || 'Chưa cập nhật'}</p>
+                <p className={`text-[15px] font-bold truncate ${hideEmail ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                  {hideEmail ? 'Đã ẩn bởi người dùng' : (email || 'Chưa cập nhật')}
+                </p>
               </div>
             </div>
             {role === 'freelancer' && (
@@ -139,7 +145,7 @@ export default function UserProfile({
           </div>
         </div>
 
-        {/* Stats Blocks (2x2 Grid) */}
+        
         {(role === 'freelancer' || role === 'employer') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">

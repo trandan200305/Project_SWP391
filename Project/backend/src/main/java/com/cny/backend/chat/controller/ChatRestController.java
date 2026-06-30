@@ -94,7 +94,7 @@ public class ChatRestController {
     public ResponseEntity<Void> blockUser(@PathVariable("ticketId") Integer ticketId, @RequestParam("days") Integer days) {
         chatService.blockUser(ticketId, days);
         
-        // Notify clients immediately
+        
         ChatMessageDto sysMsg = new ChatMessageDto();
         sysMsg.setTicketId(ticketId);
         sysMsg.setSenderRole("SYSTEM");

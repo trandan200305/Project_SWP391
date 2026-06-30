@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class DepartmentService {
+    private static final Set<String> ACTIVE_DEPARTMENT_CODES = Set.of("FIN", "MOD", "DIS", "CS", "IT");
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -43,15 +45,15 @@ public class DepartmentService {
     @Autowired
     private StaffRepository staffRepository;
 
-    // ========== QUERY ==========
+    
 
     public List<Department> getAllDepartments() {
-        return departmentRepository.findAll();
+        return departmentRepository.findAll().stream()
+                .filter(department -> ACTIVE_DEPARTMENT_CODES.contains(department.getCode()))
+                .toList();
     }
 
-    /**
-     * Count managers and staff in a given department.
-     */
+    
     public Map<String, Object> getDepartmentMemberCounts(Integer departmentId) {
         Department dept = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Department not found: " + departmentId));
@@ -88,16 +90,9 @@ public class DepartmentService {
                 .findByUserTypeAndUserIdOrderByTransferredAtDesc(userType, userId);
     }
 
-    // ========== TRANSFER ==========
+    
 
-    /**
-     * Transfer a Manager or Staff to another department.
-     * Business rules enforced:
-     *   1. Source department must retain at least 1 manager (if transferring manager)
-     *   2. Source department must retain at least 1 staff (if transferring staff)
-     *   3. Target department must not exceed max_managers (if transferring manager)
-     *   4. Cannot transfer to the same department
-     */
+    
     @Transactional
     public DepartmentTransferHistory transferUser(
             String userType, Integer userId, Integer toDepartmentId, Integer adminId, String reason) {
@@ -126,7 +121,7 @@ public class DepartmentService {
             throw new IllegalArgumentException("Manager đã thuộc phòng ban này.");
         }
 
-        // Rule: source must retain at least 1 manager
+        
         long fromManagerCount = managerRepository.findAll().stream()
                 .filter(m -> m.getDepartmentEntity() != null
                         && m.getDepartmentEntity().getDepartmentId().equals(fromDept.getDepartmentId())
@@ -137,7 +132,7 @@ public class DepartmentService {
                     "Phòng ban '" + fromDept.getName() + "' phải giữ tối thiểu 1 Manager. Không thể điều chuyển.");
         }
 
-        // Rule: target must not exceed max_managers
+        
         long toManagerCount = managerRepository.findAll().stream()
                 .filter(m -> m.getDepartmentEntity() != null
                         && m.getDepartmentEntity().getDepartmentId().equals(toDept.getDepartmentId())
@@ -148,13 +143,13 @@ public class DepartmentService {
                     "Phòng ban '" + toDept.getName() + "' đã đạt giới hạn " + toDept.getMaxManagers() + " Manager.");
         }
 
-        // Perform transfer
+        
         manager.setDepartmentEntity(toDept);
         manager.setDepartment(toDept.getName());
         manager.setUpdatedAt(LocalDateTime.now());
         managerRepository.save(manager);
 
-        // Log transfer history
+        
         DepartmentTransferHistory history = DepartmentTransferHistory.builder()
                 .userType("MANAGER")
                 .userId(managerId)
@@ -180,7 +175,7 @@ public class DepartmentService {
             throw new IllegalArgumentException("Staff đã thuộc phòng ban này.");
         }
 
-        // Rule: source must retain at least 1 staff
+        
         long fromStaffCount = staffRepository.findAll().stream()
                 .filter(s -> s.getDepartmentEntity() != null
                         && s.getDepartmentEntity().getDepartmentId().equals(fromDept.getDepartmentId())
@@ -191,12 +186,12 @@ public class DepartmentService {
                     "Phòng ban '" + fromDept.getName() + "' phải giữ tối thiểu 1 Staff. Không thể điều chuyển.");
         }
 
-        // Perform transfer
+        
         staff.setDepartmentEntity(toDept);
         staff.setUpdatedAt(LocalDateTime.now());
         staffRepository.save(staff);
 
-        // Log transfer history
+        
         DepartmentTransferHistory history = DepartmentTransferHistory.builder()
                 .userType("STAFF")
                 .userId(staffId)
@@ -210,7 +205,7 @@ public class DepartmentService {
         return transferHistoryRepository.save(history);
     }
 
-    // ========== SESSION MANAGEMENT ==========
+    
 
     @Transactional
     public DepartmentSession startSession(Integer departmentId, Integer userId, String userRole, String ipAddress) {

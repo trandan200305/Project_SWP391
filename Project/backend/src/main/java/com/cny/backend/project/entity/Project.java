@@ -47,7 +47,7 @@ public class Project {
     @JoinColumn(name = "category_id", nullable = false)
     private JobCategory category;
 
-    @Column(nullable = false, length = 300)
+    @Column(nullable = false, length = 300, columnDefinition = "NVARCHAR(300)")
     private String title;
     @Column(name = "work_form",nullable = false)
     @Builder.Default

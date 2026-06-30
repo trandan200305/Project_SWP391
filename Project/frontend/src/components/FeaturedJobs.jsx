@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Code, Palette, Megaphone, Languages, PenTool, Video, Bookmark, Calendar, DollarSign, ExternalLink, Folder } from 'lucide-react';
 
-export default function FeaturedJobs({ searchQuery }) {
+export default function FeaturedJobs({ searchQuery, onNavigate }) {
   
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -145,7 +145,7 @@ export default function FeaturedJobs({ searchQuery }) {
               <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Khám phá theo nhóm ngành</span>
               <h2 className="font-display text-3xl font-extrabold text-primary">Danh mục phổ biến</h2>
             </div>
-            <a href="#all-categories" className="text-secondary font-bold text-body-sm hover:underline flex items-center gap-1">
+            <a href="#all-categories" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('find_jobs'); }} className="text-secondary font-bold text-body-sm hover:underline flex items-center gap-1 cursor-pointer">
               Tất cả danh mục →
             </a>
           </div>
@@ -169,6 +169,7 @@ export default function FeaturedJobs({ searchQuery }) {
                 return (
                   <div 
                     key={cat.categoryId} 
+                    onClick={() => { if(onNavigate) onNavigate('find_jobs', { category: cat.categoryId }); }}
                     className="bg-surface p-5 rounded-2xl border border-muted-light/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center"
                   >
                     <div className={`w-12 h-12 ${dynamicColor} rounded-xl flex items-center justify-center mb-4`}>
@@ -190,7 +191,7 @@ export default function FeaturedJobs({ searchQuery }) {
               <span className="text-secondary font-bold text-label-md uppercase tracking-wider block mb-2">Cơ hội việc làm mới</span>
               <h2 className="font-display text-3xl font-extrabold text-primary">Dự án mới nhất</h2>
             </div>
-            <a href="#all-projects" className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-sm transition-all shadow-sm">
+            <a href="#all-projects" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('find_jobs'); }} className="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-large font-bold text-body-sm transition-all shadow-sm cursor-pointer">
               Xem tất cả dự án
             </a>
           </div>
@@ -227,7 +228,7 @@ export default function FeaturedJobs({ searchQuery }) {
                 
                 return (
                   <div 
-                    key={project.id} 
+                    key={project.projectId} 
                     className={`bg-surface p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between group hover:shadow-lg ${
                       isEnterprise 
                         ? 'border-secondary/40 shadow-sm shadow-secondary/5 bg-gradient-to-b from-white to-secondary-light/10' 
@@ -235,7 +236,7 @@ export default function FeaturedJobs({ searchQuery }) {
                     }`}
                   >
                     <div>
-                      {/* Job Header */}
+                      {}
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-3 py-1 rounded-full text-body-sm font-bold ${
@@ -254,14 +255,14 @@ export default function FeaturedJobs({ searchQuery }) {
                           )}
                         </div>
                         <button 
-                          onClick={() => toggleBookmark(project.id)}
+                          onClick={() => toggleBookmark(project.projectId)}
                           className={`p-1.5 rounded-lg border transition-colors ${
-                            savedJobs[project.id] 
+                            savedJobs[project.projectId] 
                               ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100' 
                               : 'bg-muted-light/20 border-muted-light/60 text-muted hover:bg-muted-light/50'
                           }`}
                         >
-                          <Bookmark className="w-4 h-4" fill={savedJobs[project.id] ? "currentColor" : "none"} />
+                          <Bookmark className="w-4 h-4" fill={savedJobs[project.projectId] ? "currentColor" : "none"} />
                         </button>
                       </div>
 

@@ -53,23 +53,42 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     );
   };
 
-  // 1. KHAI BÁO CÁC STATE & REFS (QUẢN LÝ TRẠNG THÁI)
-
   const [activeTab, setActiveTab] = useState("active");
-  const [activeDirectTab, setActiveDirectTab] = useState("active"); // 'active' | 'blocked' | 'deleted'
+  const [activeDirectTab, setActiveDirectTab] = useState("active");
+  const [navSection, setNavSection] = useState("chat");
+
   const [tickets, setTickets] = useState([]);
   const [deletedTickets, setDeletedTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
+  const ticketSubscriptionRef = useRef(null);
+  const activeTicketIdRef = useRef(null);
 
   const [directChats, setDirectChats] = useState([]);
   const [activeDirectChat, setActiveDirectChat] = useState(null);
   const directChatSubscriptionRef = useRef(null);
+  const activeDirectChatIdRef = useRef(null);
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  const [systemUsers, setSystemUsers] = useState([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
+
+  const stompClientRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({
     message: "",
@@ -80,24 +99,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     onConfirm: null,
   });
 
-  const stompClientRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const ticketSubscriptionRef = useRef(null);
-  const activeTicketIdRef = useRef(null);
-  const activeDirectChatIdRef = useRef(null);
-  const [attachedFiles, setAttachedFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-  const imageInputRef = useRef(null);
-  const [navSection, setNavSection] = useState("chat"); // 'chat' | 'freelancer' | 'employer'
-  const [systemUsers, setSystemUsers] = useState([]);
-  const [isUsersLoading, setIsUsersLoading] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [selectedProfile, setSelectedProfile] = useState(null);
-  const [profileDetails, setProfileDetails] = useState(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
-
-  // --- Resizable Sidebar Logic ---
   const [sidebarWidth, setSidebarWidth] = useState(360);
   const isResizingRef = useRef(false);
   const textOpacity = Math.max(0, Math.min(1, (sidebarWidth - 140) / 120));
@@ -143,7 +144,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     document.body.style.userSelect = "none";
   };
 
-  // 2. KHAI BÁO CÁC EFFECTS (WEBSOCKET, KẾT NỐI, SCROLL)
   useEffect(() => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     activeTicketIdRef.current = ticketId;
@@ -159,6 +159,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       subscribeToDirectChat(chatId);
     }
   }, [activeDirectChat, isConnected]);
+
+  // 1. 1. Kết nối, subscribe và xử lý realtime WebSocket
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/api/ws");
     const client = new Client({
@@ -174,12 +176,11 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     client.onConnect = (frame) => {
       console.log("STOMP connected", frame);
       setIsConnected(true);
-
+      // subscribe kênh chat theo role
       if (isAgent) {
         client.subscribe("/topic/admin", (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log("Received on /topic/admin", receivedMessage);
-
           if (receivedMessage.senderRole === "SYSTEM") {
             if (
               receivedMessage.messageText &&
@@ -282,7 +283,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           }
         });
 
-        // Subscribe to direct message channel
         client.subscribe(`/topic/user.${user?.id}.direct`, (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log("Received on user direct channel", receivedMessage);
@@ -296,7 +296,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               return [...prev, receivedMessage];
             });
           }
-          fetchDirectChats(); // Always refresh list to update last message/unread count
+          fetchDirectChats();
         });
       }
     };
@@ -324,9 +324,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  // ------------------------------------------
-  // 3. CÁC HÀM REST API - HỖ TRỢ KỸ THUẬT (SUPPORT TICKETS)
-  // ------------------------------------------
+
+  // 2. Load danh sách
   const fetchTickets = async () => {
     try {
       const data = await messengerApi.getTickets();
@@ -355,6 +354,9 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
+  // 3. Chọn hội thoại và load lịch sử
+
+  // 3.1 mở hoặc tạo ticket support cho user
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
@@ -379,7 +381,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       await fetchMessages(ticketId);
       subscribeToTicket(ticketId);
 
-      // Emit read receipt immediately on load
       if (stompClientRef.current && stompClientRef.current.connected) {
         stompClientRef.current.publish({
           destination: `/app/chat.read`,
@@ -395,6 +396,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       setIsLoading(false);
     }
   };
+
+  // 3.2 load lịch sử chat của ticket đã chọn
   const fetchMessages = async (ticketId) => {
     try {
       const data = await messengerApi.getMessages(ticketId);
@@ -404,20 +407,20 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 4. LẮNG NGHE REAL-TIME QUA WEBSOCKET (SUPPORT CHAT)
-  // ------------------------------------------
+  // 3.3 subscribe REALTIME cho support đã chọn
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
     if (ticketSubscriptionRef.current) {
       ticketSubscriptionRef.current.unsubscribe();
     }
 
+    // nhận tin nhắn tới
     ticketSubscriptionRef.current = stompClientRef.current.subscribe(
       `/topic/ticket.${ticketId}`,
+
       (message) => {
         const receivedMessage = JSON.parse(message.body);
-
+        // cập nhật trạng thái đã đọc của tin nhắn
         if (receivedMessage.readerRole) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -429,7 +432,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           );
           return;
         }
-
+        // xử lý khi có thông báo khóa tài khoản
         if (receivedMessage.senderRole === "SYSTEM") {
           if (
             receivedMessage.messageText &&
@@ -502,10 +505,10 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               return prev;
             });
           }
-          return; // Do not add SYSTEM messages to the chat view
+          return;
         }
 
-        // If active ticket, emit read receipt for new incoming message
+        // đánh dấu đã đọc tin nhắn
         const isMyMessage = isOwnSupportMessage(receivedMessage);
         if (activeTicketIdRef.current === ticketId && !isMyMessage) {
           if (stompClientRef.current && stompClientRef.current.connected) {
@@ -518,7 +521,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
             });
           }
         }
-
+        // thêm tin nhắn mới vào danh sách
         setMessages((prev) => {
           if (prev.some((msg) => msg.messageId === receivedMessage.messageId))
             return prev;
@@ -528,6 +531,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     );
   };
 
+  // 3.4 khi admin/staff chọn ticket thì load lịch sử và subscribe realtime
   const handleSelectTicket = async (ticket) => {
     setIsLoading(true);
     setActiveTicket(ticket);
@@ -538,7 +542,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     await fetchMessages(ticketId);
     subscribeToTicket(ticketId);
 
-    // Mark as read immediately when opening
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
         destination: `/app/chat.read`,
@@ -552,9 +555,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setIsLoading(false);
   };
 
-  // ------------------------------------------
-  // 5. CÁC HÀM XỬ LÝ CHAT TRỰC TIẾP 1-1 (DIRECT CHAT)
-  // ------------------------------------------
   const fetchDirectMessages = async (chatId) => {
     try {
       const data = await messengerApi.getDirectMessages(chatId);
@@ -587,7 +587,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           return;
         }
 
-        // Emit read receipt if active chat
         const isMyMessage =
           receivedMessage.senderId === user?.id &&
           receivedMessage.senderRole?.toUpperCase() ===
@@ -623,7 +622,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     activeTicketIdRef.current = null;
     await fetchDirectMessages(chat.chatId);
 
-    // Mark as read immediately when opening
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
         destination: `/app/direct.chat.read`,
@@ -635,7 +633,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
 
     subscribeToDirectChat(chat.chatId);
-    // Refresh chats to reset unread count
     fetchDirectChats();
     setIsLoading(false);
   };
@@ -664,7 +661,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       };
 
       await handleSelectDirectChat(chatObj);
-      await fetchDirectChats(); // Refresh list to include new chat
+      await fetchDirectChats();
     } catch (err) {
       console.error("Failed to get/create direct chat", err);
       alert("Không thể tạo phiên chat ngay lúc này.");
@@ -673,9 +670,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 6. XỬ LÝ ĐÍNH KÈM FILE & HÌNH ẢNH (FILE ATTACHMENT)
-  // ------------------------------------------
+  // 4. Upload file/ảnh
   const handleFileChange = async (e, isImageOnly = false) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -688,7 +683,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       formData.append("file", file);
 
       try {
-        const data = await messengerApi.uploadFile(formData);
+        const data = await messengerApi.uploadFile(formData); //upload file/ảnh
         if (data.success) {
           newAttachments.push({
             fileUrl: data.fileUrl,
@@ -715,9 +710,8 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setAttachedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // ------------------------------------------
-  // 7. CÁC TÍNH NĂNG ĐIỀU HÀNH (CHẶN, XÓA, KHÔI PHỤC)
-  // ------------------------------------------
+  // 5. Quản lý support ticket ChatRestController
+  // 5.1 chan nguoi dung
   const handleBlockUser = async (days) => {
     if (!activeTicket) return;
 
@@ -751,6 +745,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       type: typeBtn,
       onConfirm: async () => {
         try {
+          //gọi API
           await messengerApi.blockUser(activeTicket.ticket_id, days);
           setTickets((prev) =>
             prev.map((t) =>
@@ -788,6 +783,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setShowConfirmModal(true);
   };
 
+  // 5.2 xóa cuộc trò chuyện
   const handleDeleteTicket = async () => {
     if (!activeTicket) return;
     setConfirmConfig({
@@ -799,6 +795,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       type: "danger",
       onConfirm: async () => {
         try {
+          //gọi API
           await messengerApi.deleteTicket(activeTicket.ticket_id);
           setTickets((prev) =>
             prev.filter((t) => t.ticket_id !== activeTicket.ticket_id),
@@ -816,6 +813,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setShowConfirmModal(true);
   };
 
+  // 5.3 khoi phuc tro chuyen
   const handleRestoreTicket = async () => {
     if (!activeTicket) return;
     setConfirmConfig({
@@ -826,6 +824,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       type: "success",
       onConfirm: async () => {
         try {
+          //gọi API
           await messengerApi.restoreTicket(activeTicket.ticket_id);
           setDeletedTickets((prev) =>
             prev.filter((t) => t.ticket_id !== activeTicket.ticket_id),
@@ -843,11 +842,13 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setShowConfirmModal(true);
   };
 
+  // 5.4 danh dau đã tiếp nhận
   const handleClaimTicket = async () => {
     const ticketId = activeTicket?.ticket_id || activeTicket?.ticketId;
     if (!ticketId || !user?.id) return;
     try {
       setIsLoading(true);
+      //gọi API
       await messengerApi.claimTicket(ticketId, user.id);
 
       setTickets((prev) =>
@@ -885,9 +886,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // ------------------------------------------
-  // 8. HÀM GỬI TIN NHẮN (REAL-TIME SEND MESSAGE)
-  // ------------------------------------------
+  // 6. Gửi tin nhắn đi support/direct
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() && attachedFiles.length === 0) return;
@@ -920,6 +919,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
     }
 
+    // Chuẩn bị payload và gửi qua backend
     const payload = {
       ticketId: ticketId,
       senderId: user.id,
@@ -929,7 +929,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       messageText: msgText,
       attachments: attachedFiles,
     };
-
     stompClientRef.current.publish({
       destination: "/app/chat.send",
       body: JSON.stringify(payload),
@@ -939,6 +938,40 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setAttachedFiles([]);
   };
 
+  const handleSendDirectMessage = (e) => {
+    if (e) e.preventDefault();
+    if (!inputText.trim() && attachedFiles.length === 0) return;
+
+    let msgText = inputText.trim();
+    if (!msgText && attachedFiles.length > 0) {
+      const allImages = attachedFiles.every((att) =>
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl),
+      );
+      msgText = allImages ? "[Hình ảnh]" : "[Tệp đính kèm]";
+    }
+
+    // Chuẩn bị payload và gửi qua backend
+    const payload = {
+      chatId: activeDirectChat.chatId,
+      senderId: user.id,
+      senderRole: user.role,
+      messageText: msgText,
+      attachments: attachedFiles,
+    };
+
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: "/app/direct.chat.send",
+        body: JSON.stringify(payload),
+      });
+      setInputText("");
+      setAttachedFiles([]);
+    } else {
+      alert("Mất kết nối server, vui lòng thử lại sau.");
+    }
+  };
+
+  // 7. Quản lý direct chat (giong khoi so 5)
   const handleDeleteDirectChat = async (chatId) => {
     setConfirmConfig({
       title: "Xóa cuộc trò chuyện",
@@ -1083,9 +1116,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setShowConfirmModal(true);
   };
 
-  // ------------------------------------------
-  // 9. TRA CỨU DANH BẠ HỆ THỐNG & XEM TRANG CÁ NHÂN
-  // ------------------------------------------
   const fetchSystemUsers = async () => {
     setIsUsersLoading(true);
     try {
@@ -1128,14 +1158,13 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
       let data;
       if (userProfile.role === "EMPLOYER") {
         data = await messengerApi.getEmployerProfile(userProfile.id);
-        setProfileDetails(data.data || data); // handle standard response
+        setProfileDetails(data.data || data);
       } else if (userProfile.role === "FREELANCER") {
         data = await messengerApi.getFreelancerProfile(userProfile.id);
         setProfileDetails(data.data || data);
       }
     } catch (err) {
       console.error("Failed to fetch profile details", err);
-      // Fallback details if API fails or doesn't exist
       setProfileDetails({
         ...userProfile,
         bio: "Chưa có thông tin giới thiệu.",
@@ -1213,9 +1242,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     );
   });
 
-  // ------------------------------------------
-  // 10. BỘ LỌC TÌM KIẾM & PHÂN LOẠI DANH SÁCH CHAT
-  // ------------------------------------------
   const matchesSearch = (ticket) =>
     (ticket.sender_name || "")
       .toLowerCase()
@@ -1274,7 +1300,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
   return (
     <div className="flex h-screen bg-slate-50/50 text-slate-800 font-sans overflow-hidden">
-      {/* DYNAMIC SIDEBAR CSS */}
       <style>{`
         #messenger-sidebar-container .flex-1.min-w-0,
         #messenger-sidebar-container .flex-1.min-w-0.opacity-80 {
@@ -1296,7 +1321,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
       <div className="w-[260px] border-r border-slate-200 bg-gradient-to-b from-[#253c6e] to-[#162548] text-slate-300 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
-          {/* Logo / Branding */}
           <div
             className="p-6 flex items-center gap-3 cursor-pointer border-b border-white/10"
             onClick={onNavigateHome}
@@ -2430,7 +2454,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
             </div>
           </div>
 
-          {/* RESIZER BAR */}
           <div
             onMouseDown={startResizing}
             className="hidden md:block w-1 hover:w-1.5 active:w-1.5 bg-slate-200 hover:bg-blue-500 active:bg-blue-600 cursor-col-resize transition-all shrink-0 z-20"
@@ -2843,7 +2866,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       const isUnassigned = !activeTicket?.assigned_staff_id;
                       let showBanner = false;
                       let bannerText = "";
-                      let bannerType = ""; // 'claim' | 'view_only' | 'info'
+                      let bannerType = "";
                       let lockInput = false;
 
                       if (isAgent) {
@@ -3081,19 +3104,86 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                             <div
                               className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-full`}
                             >
-                              <div
-                                className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
-                                  isMine
-                                    ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
-                                    : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
-                                } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
-                              >
-                                <p className="whitespace-pre-wrap">
-                                  {activeDirectChat.isDeleted
-                                    ? "Tin nhắn đã bị ẩn"
-                                    : msg.messageText}
-                                </p>
-                              </div>
+                              {msg.messageText &&
+                                msg.messageText.trim() !== "" &&
+                                !(
+                                  msg.attachments &&
+                                  msg.attachments.length > 0 &&
+                                  (msg.messageText === "[Hình ảnh]" ||
+                                    msg.messageText === "[Tệp đính kèm]")
+                                ) && (
+                                  <div
+                                    className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm font-medium transition-all duration-300 ${
+                                      isMine
+                                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none border border-blue-500/20 shadow-md shadow-blue-500/10"
+                                        : "bg-white text-slate-800 border border-slate-200/60 rounded-bl-none shadow-sm"
+                                    } ${activeDirectChat.isDeleted ? "blur-md opacity-50 select-none pointer-events-none" : ""}`}
+                                  >
+                                    <p className="whitespace-pre-wrap">
+                                      {activeDirectChat.isDeleted
+                                        ? "Tin nhắn đã bị ẩn"
+                                        : msg.messageText}
+                                    </p>
+                                  </div>
+                                )}
+                              {msg.attachments &&
+                                msg.attachments.length > 0 && (
+                                  <div
+                                    className={`mt-2 flex flex-col gap-2 ${isMine ? "items-end" : "items-start"}`}
+                                  >
+                                    {msg.attachments.map((att, attIdx) => {
+                                      const isImg =
+                                        /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                                          att.fileUrl,
+                                        );
+                                      if (isImg) {
+                                        return (
+                                          <a
+                                            key={attIdx}
+                                            href={att.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block max-w-sm rounded-xl overflow-hidden border border-slate-200 hover:opacity-95 transition-all shadow-sm bg-slate-50"
+                                          >
+                                            <img
+                                              src={att.fileUrl}
+                                              alt={att.fileName || "Image"}
+                                              className="max-h-60 object-contain w-full"
+                                            />
+                                          </a>
+                                        );
+                                      } else {
+                                        return (
+                                          <a
+                                            key={attIdx}
+                                            href={att.fileUrl}
+                                            download={att.fileName}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex items-center gap-3 p-3 rounded-2xl border text-sm font-semibold transition-all shadow-sm ${
+                                              isMine
+                                                ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                          >
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                              <FileText className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="font-bold truncate max-w-[160px]">
+                                                {att.fileName}
+                                              </p>
+                                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                                Tải về tệp tin
+                                              </p>
+                                            </div>
+                                            <Download className="w-4 h-4 text-slate-400 ml-2" />
+                                          </a>
+                                        );
+                                      }
+                                    })}
+                                  </div>
+                                )}
                               <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold mt-1.5 px-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 {new Date(msg.sentAt).toLocaleTimeString([], {
@@ -3137,52 +3227,120 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       </span>
                     </div>
                   ) : (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (inputText.trim() === "") return;
-
-                        const messageDto = {
-                          chatId: activeDirectChat.chatId,
-                          senderId: user.id,
-                          senderRole: user.role,
-                          messageText: inputText,
-                        };
-
-                        if (
-                          stompClientRef.current &&
-                          stompClientRef.current.connected
-                        ) {
-                          stompClientRef.current.publish({
-                            destination: `/app/direct.chat.send`,
-                            body: JSON.stringify(messageDto),
-                          });
-                          setInputText("");
-                        } else {
-                          alert("Mất kết nối server, vui lòng thử lại sau.");
-                        }
-                      }}
-                      className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
-                    >
-                      <input
-                        type="text"
-                        placeholder="Nhập tin nhắn..."
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
-                      />
-                      <button
-                        type="submit"
-                        disabled={inputText.trim() === ""}
-                        className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
-                          inputText.trim() === ""
-                            ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
-                            : ""
-                        }`}
+                    <>
+                      {(attachedFiles.length > 0 || uploading) && (
+                        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-2.5 items-center shrink-0">
+                          {attachedFiles.map((file, idx) => {
+                            const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              file.fileUrl,
+                            );
+                            return (
+                              <div
+                                key={idx}
+                                className="relative flex items-center gap-2 bg-white pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 shadow-sm max-w-xs group"
+                              >
+                                {isImg ? (
+                                  <img
+                                    src={file.fileUrl}
+                                    alt="Preview"
+                                    className="w-8 h-8 rounded-lg object-cover border border-slate-100"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                    <FileText className="w-4 h-4" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[11px] font-bold text-slate-700 truncate max-w-[120px]">
+                                    {file.fileName}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAttachment(idx)}
+                                  className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {uploading && (
+                            <div className="flex items-center gap-2 text-[11px] font-extrabold text-blue-600 bg-blue-50/50 pl-2 pr-3 py-1.5 rounded-xl border border-blue-100">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Đang tải tệp lên...</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <form
+                        onSubmit={handleSendDirectMessage}
+                        className="p-4 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0"
                       >
-                        <Send className="w-5 h-5 shrink-0" />
-                      </button>
-                    </form>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={(e) => handleFileChange(e, false)}
+                          className="hidden"
+                          multiple
+                        />
+                        <input
+                          type="file"
+                          ref={imageInputRef}
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, true)}
+                          className="hidden"
+                          multiple
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={uploading}
+                          className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                          title="Đính kèm hình ảnh"
+                        >
+                          <Image className="w-5 h-5 shrink-0" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-50"
+                          title="Đính kèm tệp tin"
+                        >
+                          <Paperclip className="w-5 h-5 shrink-0" />
+                        </button>
+
+                        <input
+                          type="text"
+                          placeholder="Nhập tin nhắn..."
+                          value={inputText}
+                          onChange={(e) => setInputText(e.target.value)}
+                          className="flex-1 px-4.5 py-3 border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-xl text-sm font-medium outline-none transition-all focus:ring-4 focus:ring-blue-100 bg-slate-50 focus:bg-white"
+                        />
+
+                        {(() => {
+                          const canSend =
+                            (inputText.trim() !== "" ||
+                              attachedFiles.length > 0) &&
+                            !uploading;
+                          return (
+                            <button
+                              type="submit"
+                              disabled={!canSend}
+                              className={`p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center transition-all ${
+                                !canSend
+                                  ? "opacity-50 cursor-not-allowed bg-slate-300 shadow-none"
+                                  : ""
+                              }`}
+                            >
+                              <Send className="w-5 h-5 shrink-0" />
+                            </button>
+                          );
+                        })()}
+                      </form>
+                    </>
                   )}
                 </>
               ) : (
@@ -3233,7 +3391,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                 </div>
 
                 <div className="p-6 flex flex-col gap-6">
-                  {/* Status Section */}
                   <div>
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                       Thông tin tài khoản
@@ -3277,14 +3434,12 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                     </div>
                   </div>
 
-                  {/* Moderation Actions */}
                   {isAgent && (
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Quản lý phiên bản
                       </h4>
 
-                      {/* Blocking features */}
                       <div className="flex flex-col gap-2 mb-4">
                         {activeTicket.blocked_until &&
                         new Date(activeTicket.blocked_until) > new Date() ? (
@@ -3296,7 +3451,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                               ).toLocaleString("vi-VN")}
                             </p>
                             <button
-                              onClick={() => handleBlockUser(0)} // Pass 0 days to unblock
+                              onClick={() => handleBlockUser(0)}
                               className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
                             >
                               Gỡ chặn ngay
@@ -3337,7 +3492,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                         )}
                       </div>
 
-                      {/* Delete / Restore features */}
                       {activeTab === "deleted" ? (
                         <button
                           onClick={handleRestoreTicket}
@@ -3396,7 +3550,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                   </div>
 
                   <div className="p-6 flex flex-col gap-6">
-                    {/* Status Section */}
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Trạng thái
@@ -3423,13 +3576,11 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         Hành động
                       </h4>
                       <div className="flex flex-col gap-3">
-                        {/* Block / Unblock */}
                         {activeDirectChat.isBlockedByMe ? (
                           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <p className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
@@ -3507,7 +3658,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                           </div>
                         )}
 
-                        {/* Delete / Restore */}
                         {activeDirectChat.isDeleted ? (
                           <button
                             onClick={() =>
@@ -3536,7 +3686,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
               )}
           </div>
         </div>
-        {/* CONFIRM MODAL */}
         {showConfirmModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-fade-in text-center">

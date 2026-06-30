@@ -54,7 +54,6 @@ public class EmployerProfileRequest {
     @Column(name = "tax_code", length = 50)
     private String taxCode;
 
-
     // Bank Account details
     @Column(name = "bank_name")
     private String bankName;
@@ -68,7 +67,7 @@ public class EmployerProfileRequest {
     private String branch;
 
     @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED
+    private String status; 
 
     @Column(name = "reject_reason")
     private String rejectReason;

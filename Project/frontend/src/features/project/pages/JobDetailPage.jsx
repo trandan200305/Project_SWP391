@@ -184,7 +184,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     return `${diffHours} giờ ${diffMinutes} phút`;
   };
 
-  // Mocked data for fields not present in job object
+  
   const createdAt = job.createdAt || '07/06/2026, 16:33';
   const location = job.location || 'TP. Hồ Chí Minh';
   const workForm = job.workForm || 'Làm online';
@@ -199,7 +199,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     <div className="pt-24 pb-12 bg-white min-h-screen">
       <div className="max-w-6xl mx-auto px-6">
         
-        {/* Breadcrumb */}
+        
         <div className="text-sm mb-6 flex items-center gap-2 text-slate-500">
           <button onClick={() => onNavigate('find_jobs')} className="text-blue-500 hover:underline">
             Việc làm
@@ -215,7 +215,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
-          {/* Main Content (Left) */}
+          
           <div className="lg:col-span-2">
             <div className="flex justify-between items-start gap-4 mb-6">
               <h1 className="text-3xl font-bold text-slate-800 leading-tight">
@@ -249,7 +249,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
             </button>
           </div>
 
-          {/* Sidebar (Right) */}
+          
           <div className="space-y-6">
 
             {/* Bidding Actions Card */}
@@ -320,7 +320,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
               )}
             </div>
             
-            {/* Project Info */}
+            
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-lg text-slate-800 mb-5">Thông tin dự án</h3>
               <div className="space-y-3 text-sm">
@@ -355,7 +355,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
               </div>
             </div>
 
-            {/* Customer Info */}
+            
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-lg text-slate-800 mb-6">Thông tin khách hàng</h3>
               

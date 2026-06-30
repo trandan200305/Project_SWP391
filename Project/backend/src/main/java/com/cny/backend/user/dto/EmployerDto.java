@@ -43,6 +43,9 @@ public class EmployerDto {
     private String address;
     private String city;
     private String country;
+    private Boolean hideEmail;
+    private Boolean hidePhone;
+    private Boolean hideLocation;
     private String companySize;
     private String industry;
     private Integer profileCompleteness;
@@ -51,12 +54,16 @@ public class EmployerDto {
     private BigDecimal averageRating;
     private String createdAt;
     private String updatedAt;
+    private String lastLoginAt;
 
-    // --- KYC FIELDS ---
+    
     private String kycStatus;
     private String idCardFrontUrl;
     private String idCardBackUrl;
     private String portraitUrl;
+    private String taxCode;
+    private String businessLicenseUrl;
+    private String representativeIdCardUrl;
     private String kycSubmittedAt;
     private String kycReviewedAt;
     private Integer kycReviewedByStaffId;

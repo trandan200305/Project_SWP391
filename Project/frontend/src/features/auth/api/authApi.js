@@ -14,4 +14,5 @@ export const authApi = {
   sendInvitationCode: (token) => api.post(`${ENDPOINTS.AUTH.SEND_INVITATION_CODE}?token=${token}`),
   acceptInvitation: (onboardData) => api.post(ENDPOINTS.AUTH.ACCEPT_INVITATION, onboardData),
   resetPassword: (resetData) => api.post(ENDPOINTS.AUTH.RESET_PASSWORD, resetData),
+  changePassword: (payload) => api.post('/auth/change-password', payload),
 };

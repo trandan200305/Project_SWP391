@@ -41,19 +41,19 @@ public class StaffInvitation {
     private String email;
 
     @Column(nullable = false)
-    private String role; // 'MANAGER' or 'STAFF'
-
-    @Column(nullable = false, unique = true)
-    private String token;
+    private String role; 
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
-    private String status; // 'PENDING', 'ACCEPTED', 'EXPIRED'
+    private String status; 
 
     @Column(name = "verification_code")
     private String verificationCode;
+
+    @Column(name = "temp_password")
+    private String tempPassword;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

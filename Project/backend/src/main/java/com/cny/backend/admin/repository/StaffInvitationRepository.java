@@ -23,6 +23,6 @@ import java.util.Optional;
 
 @Repository
 public interface StaffInvitationRepository extends JpaRepository<StaffInvitation, Integer> {
-    Optional<StaffInvitation> findByToken(String token);
+
     Optional<StaffInvitation> findByEmail(String email);
 }

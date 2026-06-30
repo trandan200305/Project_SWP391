@@ -47,7 +47,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
-
     // Validate budget range
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
@@ -106,6 +105,56 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         const errMsg = await response.text();
         throw new Error(errMsg || 'Đăng dự án thất bại.');
       }
+      const savedProject = await response.json();
+
+      if (savedProject.status === 'PENDING_PAYMENT') {
+        setNotice({ 
+          type: 'success', 
+          message: 'Dự án đã được tạo thành công! Đang chuyển hướng đến trang chọn phương thức thanh toán...' 
+        });
+
+        // Request payment checkout URL
+        try {
+          const payResponse = await fetch(`http://localhost:8080/payment/create-url?projectId=${savedProject.projectId}`, {
+            method: 'POST'
+          });
+          if (!payResponse.ok) {
+            const payErr = await payResponse.text();
+            throw new Error(payErr || 'Không thể tạo cổng thanh toán.');
+          }
+          const payData = await payResponse.json();
+          if (payData.paymentUrl) {
+            setTimeout(() => {
+              if (onNavigate) {
+                onNavigate('checkout', { 
+                  projectId: savedProject.projectId, 
+                  paymentUrl: payData.paymentUrl, 
+                  amount: payData.amount, 
+                  txnRef: payData.txnRef,
+                  bankName: payData.bankName,
+                  bankAccountNo: payData.bankAccountNo,
+                  bankAccountName: payData.bankAccountName,
+                  projectTitle: savedProject.title
+                });
+              } else {
+                window.location.href = payData.paymentUrl;
+              }
+            }, 1500);
+            return;
+          } else {
+            throw new Error('Không nhận được URL thanh toán từ máy chủ.');
+          }
+        } catch (payErr) {
+          setNotice({ 
+            type: 'error', 
+            message: `Dự án đã được lưu ở trạng thái chờ thanh toán, nhưng lỗi khởi tạo VNPay: ${payErr.message}. Vui lòng thanh toán sau trong quản lý dự án.` 
+          });
+          setTimeout(() => {
+            if (onNavigate) onNavigate('your_jobs');
+          }, 4000);
+          return;
+        }
+      }
 
       setNotice({ 
         type: 'success', 
@@ -141,7 +190,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
   return (
     <div className="min-h-screen bg-slate-50/50 pt-28 pb-16 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-        {/* Navigation Header */}
+        
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={onNavigateHome}
@@ -157,7 +206,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           </div>
         </div>
 
-        {/* Notice Message */}
+        
         {notice && (
           <div className={`mb-6 p-4 rounded-2xl border text-sm font-semibold transition-all shadow-sm flex items-center gap-2 animate-fade-in ${
             notice.type === 'success'
@@ -169,7 +218,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           </div>
         )}
 
-        {/* Form Container */}
+        
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-xl shadow-slate-100">
           <div className="border-b border-slate-100 pb-6 mb-8">
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
@@ -182,7 +231,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           </div>
 
           <form onSubmit={handlePostProject} className="space-y-6">
-            {/* Title */}
+            
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
               <input
@@ -195,7 +244,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               />
             </label>
 
-            {/* Category */}
+            
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần tuyển *</span>
               {loadingCategories ? (
@@ -215,7 +264,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               )}
             </label>
 
-            {/* Project Type */}
+            
             <div>
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-2">Hình thức ngân sách</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -253,7 +302,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               </div>
             </div>
 
-            {/* Budget Values */}
+            
             {newProject.projectType === 'FIXED' ? (
               <label className="block">
                 <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
@@ -340,7 +389,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               </div>
             </label>
 
-            {/* Description */}
+            
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả công việc & Yêu cầu chi tiết *</span>
               <textarea
@@ -352,7 +401,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10 resize-none leading-relaxed"
               />
             </label>
-            {/* Buttons */}
+            
             <div className="flex justify-end gap-3 border-t border-slate-100 pt-6 mt-8">
               <button
                 type="button"

@@ -6,6 +6,7 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import ManagerDashboardPage from '../features/admin/pages/ManagerDashboardPage.jsx';
 import StaffDashboardPage from '../features/admin/pages/StaffDashboardPage.jsx';
+import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
@@ -13,8 +14,9 @@ import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
-import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
+import PaymentResultPage from '../pages/PaymentResultPage.jsx';
+import CheckoutPage from '../pages/CheckoutPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -30,16 +32,22 @@ export default function AppRoutes({
 }) {
   if (currentPage === 'admin') {
     if (user?.role === 'ADMIN') {
-      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
     if (user?.role === 'MANAGER') {
-      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+      return <ManagerDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
-    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} />;
+    return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
   if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {
-    return <UserProfilePage user={user} defaultTab={currentPage} onNavigate={handleNavigate} onLogout={onLogout} />;
+    let initialTab = currentPage;
+    if (currentPage === 'profile' && pageParams?.tab === 'portfolio') {
+        initialTab = 'Hồ sơ năng lực';
+    } else if (currentPage === 'profile') {
+        initialTab = 'Thông tin cá nhân';
+    }
+    return <UserProfilePage user={user} defaultTab={currentPage} initialTab={initialTab} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
   if (currentPage === 'coming_soon') {
@@ -47,7 +55,7 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'find_jobs') {
-    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} user={user} />;
+    return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
   }
 
   if (currentPage === 'job_details') {
@@ -86,6 +94,25 @@ export default function AppRoutes({
       />
     );
   }
+
+  if (currentPage === 'payment_result') {
+    return (
+      <PaymentResultPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
+  if (currentPage === 'checkout') {
+    return (
+      <CheckoutPage
+        pageParams={pageParams}
+        onNavigate={handleNavigate}
+      />
+    );
+  }
+
 
   if (currentPage === 'onboard') {
     return (

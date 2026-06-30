@@ -27,15 +27,16 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    // Cấu hình message broker
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
-        config.setApplicationDestinationPrefixes("/app");
+        config.enableSimpleBroker("/topic"); 
+        config.setApplicationDestinationPrefixes("/app"); // địa chỉ
     }
-
+    // kết nối WebSocket endpoint gọi url
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-
+        
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();

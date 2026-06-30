@@ -16,7 +16,6 @@ import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -37,7 +36,9 @@ public class ChatController {
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
         boolean shouldSendAutoReply = false;
-        boolean isSupportAgent = "ADMIN".equals(chatMessage.getSenderRole()) || "STAFF".equals(chatMessage.getSenderRole());
+        // auto reply
+        boolean isSupportAgent = "ADMIN".equals(chatMessage.getSenderRole())
+                || "STAFF".equals(chatMessage.getSenderRole());
         if (!isSupportAgent) {
             Integer ticketId = chatMessage.getTicketId();
             if (ticketId == null || ticketId == 0) {
@@ -50,15 +51,17 @@ public class ChatController {
         ChatMessageDto savedMessage = chatService.saveMessage(chatMessage);
 
         messagingTemplate.convertAndSend("/topic/ticket." + savedMessage.getTicketId(), savedMessage);
-
         messagingTemplate.convertAndSend("/topic/admin", savedMessage);
+
         if (shouldSendAutoReply) {
             ChatMessageDto autoReply = new ChatMessageDto();
             autoReply.setTicketId(savedMessage.getTicketId());
             autoReply.setSenderRole("ADMIN");
             autoReply.setSenderName("Hỗ Trợ Kỹ Thuật LancerPro");
-            autoReply.setSenderAvatar("https://ui-avatars.com/api/?name=Technical+Support&background=eff6ff&color=3b82f6");
-            autoReply.setMessageText("👋 Xin chào! Cảm ơn bạn đã liên hệ với bộ phận hỗ trợ.\n\nTrạng thái yêu cầu:\n✅ Đã nhận\n⏳ Đang xử lý\n\nNhân viên hỗ trợ sẽ phản hồi trong ít phút.\nTrong thời gian chờ, bạn có thể:\n• Mô tả chi tiết vấn đề\n• Gửi hình ảnh/video lỗi\n• Đính kèm file liên quan\n\n⏱️ Thời gian phản hồi trung bình: 5-15 phút.");
+            autoReply.setSenderAvatar(
+                    "https://ui-avatars.com/api/?name=Technical+Support&background=eff6ff&color=3b82f6");
+            autoReply.setMessageText(
+                    "👋 Xin chào! Cảm ơn bạn đã liên hệ với bộ phận hỗ trợ.\n\nTrạng thái yêu cầu:\n✅ Đã nhận\n⏳ Đang xử lý\n\nNhân viên hỗ trợ sẽ phản hồi trong ít phút.\nTrong thời gian chờ, bạn có thể:\n• Mô tả chi tiết vấn đề\n• Gửi hình ảnh/video lỗi\n• Đính kèm file liên quan\n\n⏱️ Thời gian phản hồi trung bình: 5-15 phút.");
 
             ChatMessageDto savedAutoReply = chatService.saveAutoReply(autoReply);
 
@@ -66,6 +69,7 @@ public class ChatController {
 
             messagingTemplate.convertAndSend("/topic/user." + savedMessage.getSenderId(), savedAutoReply);
         }
+
         if ("ADMIN".equals(savedMessage.getSenderRole()) || "STAFF".equals(savedMessage.getSenderRole())) {
             Map<String, Object> recipient = chatService.getTicketRecipient(savedMessage.getTicketId());
             if (recipient != null && recipient.containsKey("userId")) {

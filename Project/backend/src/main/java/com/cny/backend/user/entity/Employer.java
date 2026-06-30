@@ -85,6 +85,15 @@ public class Employer {
     private String city;
     private String country;
 
+    @Column(name = "hide_email")
+    private Boolean hideEmail = false;
+
+    @Column(name = "hide_phone")
+    private Boolean hidePhone = false;
+
+    @Column(name = "hide_location")
+    private Boolean hideLocation = false;
+
     @Column(name = "company_size")
     private String companySize;
 
@@ -118,7 +127,7 @@ public class Employer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
-    // --- BẮT ĐẦU PHẦN KYC ---
+    
     
     @Column(name = "kyc_status", length = 20)
     private String kycStatus = "UNVERIFIED";
@@ -131,6 +140,12 @@ public class Employer {
 
     @Column(name = "portrait_url", length = 500)
     private String portraitUrl;
+
+    @Column(name = "business_license_url", length = 500)
+    private String businessLicenseUrl;
+
+    @Column(name = "representative_id_card_url", length = 500)
+    private String representativeIdCardUrl;
 
     @Column(name = "kyc_submitted_at")
     private LocalDateTime kycSubmittedAt;
@@ -147,7 +162,7 @@ public class Employer {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
-    // --- KẾT THÚC PHẦN KYC ---
+    
 
     @Transient
     private TransientUser user;

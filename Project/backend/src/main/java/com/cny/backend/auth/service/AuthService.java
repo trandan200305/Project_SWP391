@@ -1,30 +1,25 @@
 package com.cny.backend.auth.service;
 
-import com.cny.backend.auth.entity.*;
-import com.cny.backend.admin.entity.*;
-import com.cny.backend.project.entity.*;
-import com.cny.backend.user.entity.*;
-import com.cny.backend.auth.repository.*;
-import com.cny.backend.admin.repository.*;
-import com.cny.backend.project.repository.*;
-import com.cny.backend.user.repository.*;
-import com.cny.backend.admin.dto.*;
-import com.cny.backend.chat.dto.*;
-import com.cny.backend.project.dto.*;
-import com.cny.backend.user.dto.*;
-import com.cny.backend.auth.service.*;
-import com.cny.backend.admin.service.*;
-import com.cny.backend.chat.service.*;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.cny.backend.admin.entity.Admin;
+import com.cny.backend.admin.entity.StaffInvitation;
+import com.cny.backend.admin.repository.AdminRepository;
+import com.cny.backend.admin.repository.StaffInvitationRepository;
+import com.cny.backend.auth.entity.LoginHistory;
+import com.cny.backend.auth.repository.LoginHistoryRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 
 @Service
 public class AuthService {
@@ -62,6 +57,9 @@ public class AuthService {
     @Transactional
     public Map<String, Object> login(Map<String, String> payload) {
         String email = payload.get("email");
+        if (email != null) {
+            email = email.trim().toLowerCase();
+        }
         String name = payload.get("name");
         String googleId = payload.get("googleId");
         String avatar = payload.get("avatar");
@@ -95,6 +93,10 @@ public class AuthService {
         Optional<com.cny.backend.admin.entity.Staff> existingStaff = staffRepository.findByEmail(email);
         if (isSpecialAdmin || existingAdmin.isPresent()) {
             requestedRole = "ADMIN";
+        } else if (existingManager.isPresent() && !Boolean.TRUE.equals(existingManager.get().getIsDeleted())) {
+            requestedRole = "MANAGER";
+        } else if (existingStaff.isPresent() && !Boolean.TRUE.equals(existingStaff.get().getIsDeleted())) {
+            requestedRole = "STAFF";
         } else if (existingManager.isPresent()) {
             requestedRole = "MANAGER";
         } else if (existingStaff.isPresent()) {
@@ -126,6 +128,7 @@ public class AuthService {
         String userStatus = "ACTIVE";
         boolean hasMessengerPin = false;
         boolean isVerified = false;
+        boolean isFirstLogin = false;
 
         if ("ADMIN".equals(assignedRole)) {
             if (totalRoles > 0 && emailInAdmins == 0) {
@@ -135,7 +138,6 @@ public class AuthService {
                 return response;
             }
 
-            // LOGIN FOR ADMIN
             if (existingAdmin.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Tài khoản Admin không tồn tại!");
@@ -167,9 +169,9 @@ public class AuthService {
                 return response;
             }
 
-            // REGISTER FOR EMPLOYER
+
             if (existingEmployer.isEmpty()) {
-                // login google + register
+
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
                     response.put("message", "Tài khoản không tồn tại!");
@@ -198,7 +200,7 @@ public class AuthService {
                 employer = employerRepository.save(employer);
                 userId = employer.getEmployerId();
             } else {
-                // LOGIN FOR EMPLOYER
+
                 Employer dbEmployer = existingEmployer.get();
                 if (Boolean.TRUE.equals(dbEmployer.getIsDeleted())) {
                     response.put("success", false);
@@ -248,20 +250,39 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Manager dbManager = existingManager.get();
-                if (Boolean.TRUE.equals(dbManager.getIsDeleted())) {
+                if (Boolean.TRUE.equals(dbManager.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbManager.getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    response.put("message", "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.");
+                    return response;
+                }
+                if ("SUSPENDED".equalsIgnoreCase(dbManager.getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.");
                     return response;
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
                         .findByEmail(email);
-                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
-                    response.put("success", false);
-                    response.put("message",
-                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
-                    return response;
+                
+                boolean isTempPassword = false;
+                if (!isOAuthLogin && invOpt.isPresent() && password != null && password.equals(invOpt.get().getTempPassword())) {
+                    isTempPassword = true;
                 }
-                if (!isOAuthLogin) {
+
+                if (!isTempPassword && invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    if (!isOAuthLogin) {
+                        if (dbManager.getPasswordHash() != null && passwordEncoder.matches(passwordHash, dbManager.getPasswordHash())) {
+                            isFirstLogin = true;
+                        } else {
+                            response.put("success", false);
+                            response.put("message", "Sai mật khẩu hoặc tài khoản chưa được kích hoạt!");
+                            return response;
+                        }
+                    } else {
+                        isFirstLogin = true;
+                    }
+                }
+                
+                if (!isOAuthLogin && !isTempPassword && !isFirstLogin) {
                     if (dbManager.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbManager.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
@@ -296,20 +317,39 @@ public class AuthService {
                 return response;
             } else {
                 com.cny.backend.admin.entity.Staff dbStaff = existingStaff.get();
-                if (Boolean.TRUE.equals(dbStaff.getIsDeleted())) {
+                if (Boolean.TRUE.equals(dbStaff.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbStaff.getStatus())) {
                     response.put("success", false);
-                    response.put("message", "Tài khoản của bạn đã bị xóa quyền truy cập hệ thống.");
+                    response.put("message", "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.");
+                    return response;
+                }
+                if ("SUSPENDED".equalsIgnoreCase(dbStaff.getStatus())) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.");
                     return response;
                 }
                 Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository
                         .findByEmail(email);
-                if (invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
-                    response.put("success", false);
-                    response.put("message",
-                            "Tài khoản chưa được kích hoạt. Vui lòng xác thực bằng liên kết mời trong email!");
-                    return response;
+                
+                boolean isTempPassword = false;
+                if (!isOAuthLogin && invOpt.isPresent() && password != null && password.equals(invOpt.get().getTempPassword())) {
+                    isTempPassword = true;
                 }
-                if (!isOAuthLogin) {
+
+                if (!isTempPassword && invOpt.isPresent() && !"ACCEPTED".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    if (!isOAuthLogin) {
+                        if (dbStaff.getPasswordHash() != null && passwordEncoder.matches(passwordHash, dbStaff.getPasswordHash())) {
+                            isFirstLogin = true;
+                        } else {
+                            response.put("success", false);
+                            response.put("message", "Sai mật khẩu hoặc tài khoản chưa được kích hoạt!");
+                            return response;
+                        }
+                    } else {
+                        isFirstLogin = true;
+                    }
+                }
+                
+                if (!isOAuthLogin && !isTempPassword && !isFirstLogin) {
                     if (dbStaff.getPasswordHash() == null || !passwordEncoder.matches(passwordHash, dbStaff.getPasswordHash())) {
                         response.put("success", false);
                         response.put("message", "Sai mật khẩu!");
@@ -338,7 +378,7 @@ public class AuthService {
                 return response;
             }
 
-            // REGISTER FOR FREELANCER
+
             if (existingFreelancer.isEmpty()) {
                 if (!isOAuthLogin && !"true".equals(payload.get("isRegistration"))) {
                     response.put("success", false);
@@ -370,7 +410,7 @@ public class AuthService {
                 freelancer = freelancerRepository.save(freelancer);
                 userId = freelancer.getProfileId();
             } else {
-                // LOGIN FOR FREELANCER
+
                 Freelancer dbFreelancer = existingFreelancer.get();
                 if (Boolean.TRUE.equals(dbFreelancer.getIsDeleted())) {
                     response.put("success", false);
@@ -408,7 +448,7 @@ public class AuthService {
             }
         }
 
-        // RECORD LOGIN HISTORY AND UPDATE LAST LOGIN TIME
+
         LoginHistory history = LoginHistory.builder()
                 .loginAt(LocalDateTime.now())
                 .success(true)
@@ -461,11 +501,16 @@ public class AuthService {
 
         loginHistoryRepository.save(history);
 
-        // CHECK USER ACCOUNT STATUS (LOCKED/BANNED)
-        if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus)) {
-            String notifMessage = "LOCKED".equals(userStatus)
-                    ? "Tài khoản của bạn đã bị tạm khóa. Liên hệ support@vlance.vn để được hỗ trợ."
-                    : "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
+
+        if ("LOCKED".equals(userStatus) || "BANNED".equals(userStatus) || "SUSPENDED".equals(userStatus) || "DELETED".equals(userStatus)) {
+            String notifMessage = "Tài khoản của bạn đang bị khóa hoặc đình chỉ hoạt động.";
+            if ("BANNED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm chính sách.";
+            } else if ("DELETED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đã bị xóa khỏi hệ thống bởi Quản trị viên.";
+            } else if ("SUSPENDED".equals(userStatus) || "LOCKED".equals(userStatus)) {
+                notifMessage = "Tài khoản của bạn đang bị đình chỉ hoạt động. Vui lòng liên hệ với Quản trị viên để biết thêm chi tiết.";
+            }
 
             response.put("success", false);
             response.put("accountStatus", userStatus);
@@ -473,7 +518,7 @@ public class AuthService {
             return response;
         }
 
-        // PREPARE SUCCESSFUL LOGIN RESPONSE FOR FRONTEND
+
         response.put("success", true);
 
         Map<String, Object> userObj = new HashMap<>();
@@ -486,10 +531,15 @@ public class AuthService {
         userObj.put("isVerified", isVerified);
 
         response.put("user", userObj);
+        
+        if (isFirstLogin) {
+            response.put("mustChangePassword", true);
+        }
+        
         return response;
     }
 
-    // check login status by role
+
     public Integer countBy(String table, String column, String value) {
         if ("admins".equalsIgnoreCase(table)) {
             if ("email".equalsIgnoreCase(column))
@@ -530,7 +580,7 @@ public class AuthService {
         return 0;
     }
 
-    // set messenger pin
+
     public boolean setMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId).map(u -> {
@@ -566,7 +616,6 @@ public class AuthService {
         return false;
     }
 
-    // verify messenger pin
     public boolean verifyMessengerPin(Integer userId, String role, String pin) {
         if ("ADMIN".equalsIgnoreCase(role)) {
             return adminRepository.findById(userId)
@@ -597,7 +646,7 @@ public class AuthService {
         return false;
     }
 
-    // reset and email messenger pin
+
     @Transactional
     public String resetAndEmailMessengerPin(Integer userId, String role,
             org.springframework.mail.javamail.JavaMailSender mailSender) {
@@ -668,7 +717,7 @@ public class AuthService {
         return email;
     }
 
-    // reset password
+
     @Transactional
     public boolean resetPassword(String email, String newPassword) {
         boolean updated = false;
@@ -697,240 +746,33 @@ public class AuthService {
         return updated;
     }
 
-    private boolean isUserSuspendedOrDeleted(String email, String role) {
-        if ("MANAGER".equalsIgnoreCase(role)) {
+        private boolean isUserSuspendedOrDeleted(String email, String role) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Admin> admOpt = adminRepository.findByEmail(email);
+            if (admOpt.isPresent()) {
+                com.cny.backend.admin.entity.Admin adm = admOpt.get();
+                return Boolean.TRUE.equals(adm.getIsDeleted()) || "LOCKED".equalsIgnoreCase(adm.getStatus()) || "DELETED".equalsIgnoreCase(adm.getStatus()) || "BANNED".equalsIgnoreCase(adm.getStatus()) || "SUSPENDED".equalsIgnoreCase(adm.getStatus());
+            }
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
             Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
             if (mgrOpt.isPresent()) {
                 com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                return Boolean.TRUE.equals(mgr.getIsDeleted()) || "LOCKED".equalsIgnoreCase(mgr.getStatus())
-                        || "DELETED".equalsIgnoreCase(mgr.getStatus()) || "BANNED".equalsIgnoreCase(mgr.getStatus());
+                return Boolean.TRUE.equals(mgr.getIsDeleted()) || "LOCKED".equalsIgnoreCase(mgr.getStatus()) || "DELETED".equalsIgnoreCase(mgr.getStatus()) || "BANNED".equalsIgnoreCase(mgr.getStatus()) || "SUSPENDED".equalsIgnoreCase(mgr.getStatus());
             }
         } else if ("STAFF".equalsIgnoreCase(role)) {
             Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
             if (stfOpt.isPresent()) {
                 com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                return Boolean.TRUE.equals(stf.getIsDeleted()) || "LOCKED".equalsIgnoreCase(stf.getStatus())
-                        || "DELETED".equalsIgnoreCase(stf.getStatus()) || "BANNED".equalsIgnoreCase(stf.getStatus());
+                return Boolean.TRUE.equals(stf.getIsDeleted()) || "LOCKED".equalsIgnoreCase(stf.getStatus()) || "DELETED".equalsIgnoreCase(stf.getStatus()) || "BANNED".equalsIgnoreCase(stf.getStatus()) || "SUSPENDED".equalsIgnoreCase(stf.getStatus());
             }
         }
         return false;
     }
 
-    public Map<String, Object> verifyInvitationToken(String token) {
-        Map<String, Object> response = new HashMap<>();
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ hoặc đã hết hạn!");
-            return response;
-        }
-        StaffInvitation invitation = opt.get();
-        if (!"PENDING".equals(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
-            return response;
-        }
-        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            invitation.setStatus("REVOKED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
-            return response;
-        }
-        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            invitation.setStatus("EXPIRED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn (chỉ có hiệu lực trong 24 giờ)!");
-            return response;
-        }
-        response.put("success", true);
-        response.put("email", invitation.getEmail());
-        response.put("role", invitation.getRole());
-        return response;
-    }
 
-    @Transactional
-    public Map<String, Object> acceptInvitation(Map<String, String> payload) {
-        Map<String, Object> response = new HashMap<>();
-        String token = payload.get("token");
-        String fullName = payload.get("fullName");
-        String displayName = payload.get("displayName");
-        String verificationCode = payload.get("verificationCode");
-        String phone = payload.get("phone");
 
-        if (token == null || token.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Token không được để trống!");
-            return response;
-        }
-        if (fullName == null || fullName.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Họ tên không được để trống!");
-            return response;
-        }
-        if (verificationCode == null || verificationCode.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Mã xác nhận không được để trống!");
-            return response;
-        }
 
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ!");
-            return response;
-        }
-        StaffInvitation invitation = opt.get();
-        if (!"PENDING".equals(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời đã được sử dụng hoặc hết hạn!");
-            return response;
-        }
-        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            invitation.setStatus("REVOKED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
-            return response;
-        }
-        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            invitation.setStatus("EXPIRED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn!");
-            return response;
-        }
 
-        // Verify code
-        String savedCode = invitation.getVerificationCode();
-        if (savedCode == null || !savedCode.equals(verificationCode.trim())) {
-            response.put("success", false);
-            response.put("message", "Mã xác nhận không chính xác!");
-            return response;
-        }
-
-        String email = invitation.getEmail();
-        String role = invitation.getRole();
-
-        // Complete Onboarding based on role
-        if ("MANAGER".equals(role)) {
-            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findByEmail(email);
-            if (mgrOpt.isPresent()) {
-                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                mgr.setPasswordHash("OAUTH_GOOGLE_LOGGED");
-                mgr.setFullName(fullName);
-                mgr.setPhone(phone);
-                mgr.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
-                        : (fullName != null ? fullName : email.split("@")[0]));
-                mgr.setStatus("ACTIVE");
-                mgr.setIsDeleted(false);
-                mgr.setUpdatedAt(LocalDateTime.now());
-                managerRepository.save(mgr);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không tìm thấy tài khoản Manager tương ứng!");
-                return response;
-            }
-        } else {
-            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findByEmail(email);
-            if (stfOpt.isPresent()) {
-                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                stf.setPasswordHash("OAUTH_GOOGLE_LOGGED");
-                stf.setFullName(fullName);
-                stf.setPhone(phone);
-                stf.setDisplayName(displayName != null && !displayName.trim().isEmpty() ? displayName
-                        : (fullName != null ? fullName : email.split("@")[0]));
-                stf.setStatus("ACTIVE");
-                stf.setIsDeleted(false);
-                stf.setUpdatedAt(LocalDateTime.now());
-                staffRepository.save(stf);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không tìm thấy tài khoản Staff tương ứng!");
-                return response;
-            }
-        }
-
-        // Update invitation status
-        invitation.setStatus("ACCEPTED");
-        invitation.setUpdatedAt(LocalDateTime.now());
-        staffInvitationRepository.save(invitation);
-
-        response.put("success", true);
-        response.put("message", "Thiết lập tài khoản thành công! Bạn hiện đã có thể đăng nhập vào hệ thống.");
-        return response;
-    }
-
-    @Transactional
-    public Map<String, Object> sendInvitationVerificationCode(String token) {
-        Map<String, Object> response = new HashMap<>();
-        if (token == null || token.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Token không được để trống!");
-            return response;
-        }
-
-        Optional<StaffInvitation> opt = staffInvitationRepository.findByToken(token);
-        if (opt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Liên kết mời không hợp lệ!");
-            return response;
-        }
-
-        StaffInvitation invitation = opt.get();
-        if (!"PENDING".equals(invitation.getStatus())) {
-            response.put("success", false);
-            response.put("message", "Lời mời này đã được sử dụng hoặc đã hết hạn!");
-            return response;
-        }
-        if (isUserSuspendedOrDeleted(invitation.getEmail(), invitation.getRole())) {
-            invitation.setStatus("REVOKED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời này đã bị hủy bỏ bởi Quản trị viên!");
-            return response;
-        }
-
-        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-            invitation.setStatus("EXPIRED");
-            staffInvitationRepository.save(invitation);
-            response.put("success", false);
-            response.put("message", "Liên kết mời đã hết hạn!");
-            return response;
-        }
-
-        // Generate 6-digit verification code
-        String code = String.format("%06d", (int) (Math.random() * 1000000));
-        invitation.setVerificationCode(code);
-        staffInvitationRepository.save(invitation);
-
-        // Send Email with Verification Code
-        try {
-            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
-            message.setTo(invitation.getEmail());
-            message.setSubject("[LancerPro] Mã xác nhận kích hoạt tài khoản của bạn");
-
-            String emailContent = "Chào bạn,\n\n"
-                    + "Bạn đang thiết lập tài khoản quản trị hệ thống tại LancerPro.\n\n"
-                    + "Mã xác nhận của bạn là: " + code + "\n\n"
-                    + "Vui lòng nhập mã này vào form để hoàn tất thiết lập tài khoản.\n\n"
-                    + "Trân trọng,\n"
-                    + "Đội ngũ LancerPro";
-
-            message.setText(emailContent);
-            mailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.put("success", false);
-            response.put("message", "Không thể gửi email chứa mã xác nhận. Chi tiết: " + e.getMessage());
-            return response;
-        }
-
-        response.put("success", true);
-        response.put("message", "Mã xác nhận đã được gửi về email của bạn!");
-        return response;
-    }
 
     public boolean changePassword(Integer userId, String role, String currentPassword, String newPassword) {
         if ("ADMIN".equalsIgnoreCase(role)) {
@@ -959,6 +801,11 @@ public class AuthService {
             if (manager != null && passwordEncoder.matches(currentPassword, manager.getPasswordHash())) {
                 manager.setPasswordHash(passwordEncoder.encode(newPassword));
                 managerRepository.save(manager);
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(manager.getEmail());
+                if (invOpt.isPresent() && "PENDING".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    invOpt.get().setStatus("ACCEPTED");
+                    staffInvitationRepository.save(invOpt.get());
+                }
                 return true;
             }
         } else if ("STAFF".equalsIgnoreCase(role)) {
@@ -966,6 +813,11 @@ public class AuthService {
             if (staff != null && passwordEncoder.matches(currentPassword, staff.getPasswordHash())) {
                 staff.setPasswordHash(passwordEncoder.encode(newPassword));
                 staffRepository.save(staff);
+                Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(staff.getEmail());
+                if (invOpt.isPresent() && "PENDING".equalsIgnoreCase(invOpt.get().getStatus())) {
+                    invOpt.get().setStatus("ACCEPTED");
+                    staffInvitationRepository.save(invOpt.get());
+                }
                 return true;
             }
         }

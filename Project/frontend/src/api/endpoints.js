@@ -9,8 +9,8 @@ export const ENDPOINTS = {
     VERIFY_PIN: '/auth/verify-messenger-pin',
     FORGOT_PIN: '/auth/forgot-messenger-pin',
     VERIFY_INVITATION: '/auth/invitation/verify',
-    ACCEPT_INVITATION: '/auth/invitation/accept',
     SEND_INVITATION_CODE: '/auth/invitation/send-code',
+    ACCEPT_INVITATION: '/auth/invitation/accept',
   },
   ADMIN: {
     STATS: '/admin/stats',

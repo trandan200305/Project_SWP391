@@ -18,7 +18,7 @@ public class DepartmentVerificationTask {
     private Integer taskId;
 
     @Column(name = "task_type", nullable = false)
-    private String taskType; // WITHDRAWAL, DISPUTE_REFUND, KYC_VERIFICATION
+    private String taskType; 
 
     @Column(name = "reference_id", nullable = false)
     private Integer referenceId;
@@ -29,10 +29,13 @@ public class DepartmentVerificationTask {
     private String description;
 
     @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED
+    private String status; 
 
     @Column(name = "required_departments", nullable = false)
-    private String requiredDepartments; // e.g., "DIS,FIN"
+    private String requiredDepartments; 
+
+    @Column(name = "assigned_to_email")
+    private String assignedToEmail;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

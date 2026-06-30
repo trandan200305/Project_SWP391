@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from "../api/authApi.js";
 
 export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
-  const [role, setRole] = useState("freelancer"); // 'freelancer' or 'employer'
+  const [role, setRole] = useState("freelancer");
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -18,7 +18,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
 
-  const [step, setStep] = useState(1); // 1: form, 2: OTP verification
+  const [step, setStep] = useState(1);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const otp = otpValues.join("");
   const otpRefs = React.useRef([]);
@@ -77,7 +77,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
-  // Handle Google OAuth signup/login success
+
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError("");
@@ -105,7 +105,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
-  // Handle standard registration form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -157,7 +157,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
-  // otp
+
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!otp) {
@@ -173,7 +173,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     setOtpError("");
 
     try {
-      //verify-registration
+
       const data = await authApi.verifyRegistration({
         email,
         code: otp,
@@ -194,7 +194,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
     }
   };
 
-  //register again (resend otp)
+
   const handleResendOtp = async () => {
     setLoading(true);
     setOtpError("");
@@ -228,12 +228,12 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
       onClick={onClose}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md transition-all duration-300 animate-fade-in"
     >
-      {/* Centered Modal Card Container */}
+
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[580px] animate-scale-up border border-slate-100"
+        className="relative bg-white rounded-3xl shadow-2xl flex flex-row items-stretch overflow-hidden w-full max-w-4xl max-h-[calc(100vh-2rem)] animate-scale-up border border-slate-100"
       >
-        {/* Floating Close Button */}
+
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -242,21 +242,21 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL: Branding & Visuals */}
-        <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
-          {/* Background decorative glow elements */}
+
+        <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden self-stretch">
+
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:2.5rem_2.5rem]" />
 
-          {/* Logo / Branding */}
+
           <div className="relative z-10">
             <span className="font-display text-2xl font-extrabold tracking-tight text-white block">
               Lancer<span className="text-secondary">Pro</span>
             </span>
           </div>
 
-          {/* Promotional Heading */}
+
           <div className="relative z-10 my-2 max-w-sm">
             <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-[1.2]">
               Join the world's finest digital workforce.
@@ -318,7 +318,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
         </div>
 
         {/* RIGHT PANEL: Registration Form */}
-        <div className="w-full md:w-[52%] p-6 flex flex-col justify-between bg-white relative overflow-y-auto no-scrollbar h-full">
+        <div className="w-full md:w-[52%] p-6 flex flex-col justify-between bg-white relative overflow-y-auto no-scrollbar self-stretch min-h-0">
           {/* Main Content Area */}
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
             {step === 1 ? (
@@ -344,39 +344,46 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => setRole("freelancer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "freelancer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "freelancer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Freelancer
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("employer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "employer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "employer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Employer
                   </button>
                 </div>
 
                 {/* Social Google Registration */}
-                <div className="mb-2 flex justify-center w-full">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setError("Đăng ký bằng Google thất bại")}
-                    useOneTap
-                    theme="outline"
-                    size="large"
-                    shape="rectangular"
-                    width="320"
-                    text="signup_with"
-                  />
+                <div className="mb-2 flex flex-col items-center justify-center w-full">
+                  {!import.meta.env.VITE_GOOGLE_CLIENT_ID || !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes("googleusercontent.com") ? (
+                    <div className="w-[320px] p-2.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] font-medium leading-relaxed mb-1 text-center shadow-sm">
+                      ⚠️ <strong>Google Sign-up chưa cấu hình:</strong> Đổi <strong className="font-semibold">VITE_GOOGLE_CLIENT_ID</strong> trong <strong className="font-bold">.env</strong>.
+                      <div className="mt-1 font-semibold text-[10px] text-amber-700">
+                        Hoặc đăng ký nhanh bằng form bên dưới
+                      </div>
+                    </div>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError("Đăng ký bằng Google thất bại")}
+                      useOneTap
+                      theme="outline"
+                      size="large"
+                      shape="rectangular"
+                      width="320"
+                      text="signup_with"
+                    />
+                  )}
                 </div>
 
                 {/* Divider */}
@@ -421,11 +428,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                           if (errorField === "displayName") setErrorField("");
                         }}
                         required
-                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                          errorField === "displayName"
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${errorField === "displayName"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
                             : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                        }`}
+                          }`}
                       />
                       {errorField === "displayName" && (
                         <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
@@ -453,11 +459,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                         }}
                         required
                         autoComplete="one-time-code"
-                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                          errorField === "email"
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${errorField === "email"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
                             : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                        }`}
+                          }`}
                       />
                       {errorField === "email" && (
                         <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
@@ -481,11 +486,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                         }}
                         required
                         autoComplete="off"
-                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${
-                          errorField === "phone"
+                        className={`w-full bg-[#F8FAFC] border focus:ring-1 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none transition-all placeholder-muted text-primary font-medium ${errorField === "phone"
                             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400 bg-rose-50"
                             : "border-muted-light/60 focus:border-secondary focus:ring-secondary"
-                        }`}
+                          }`}
                       />
                       {errorField === "phone" && (
                         <p className="mt-0.5 text-[10px] font-semibold text-rose-600 flex items-center gap-1">
@@ -562,11 +566,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <button
                     type="submit"
                     disabled={loading || success}
-                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                      success
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
                         ? "bg-emerald-600 text-white shadow-lg animate-pulse"
                         : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
-                    }`}
+                      }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -640,11 +643,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <button
                     type="submit"
                     disabled={loading || success}
-                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                      success
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
                         ? "bg-emerald-600 text-white shadow-lg animate-pulse"
                         : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01] cursor-pointer"
-                    }`}
+                      }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

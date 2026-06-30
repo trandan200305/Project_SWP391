@@ -114,6 +114,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
         Integer getId();
         Double getAmount();
         String getStatus();
+        String getReason();
         java.util.Date getCreatedAt();
         String getBankName();
         String getAccountNumber();
@@ -148,12 +149,12 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     }
 
     
-    @Query(value = "SELECT w.withdrawal_id as id, w.amount, w.status, w.created_at as createdAt, b.bank_name as bankName, b.account_number as accountNumber, f.email as freelancerEmail, f.display_name as freelancerName FROM withdrawal_requests w JOIN freelancers f ON w.freelancer_id = f.freelancer_id JOIN bank_accounts b ON w.bank_account_id = b.bank_account_id ORDER BY w.created_at DESC", nativeQuery = true)
+    @Query(value = "SELECT w.withdrawal_id as id, w.amount, w.status, w.reason, w.created_at as createdAt, b.bank_name as bankName, b.account_number as accountNumber, f.email as freelancerEmail, f.display_name as freelancerName FROM withdrawal_requests w JOIN freelancers f ON w.freelancer_id = f.freelancer_id JOIN bank_accounts b ON w.bank_account_id = b.bank_account_id ORDER BY w.created_at DESC", nativeQuery = true)
     List<WithdrawalProjection> getAllWithdrawalRequests();
 
     @Modifying
-    @Query(value = "UPDATE withdrawal_requests SET status = :status, processed_at = GETDATE(), processed_by = :adminId WHERE withdrawal_id = :withdrawalId", nativeQuery = true)
-    void processWithdrawalRequest(@Param("withdrawalId") int withdrawalId, @Param("status") String status, @Param("adminId") int adminId);
+    @Query(value = "UPDATE withdrawal_requests SET status = :status, reason = :reason, processed_at = GETDATE(), processed_by = :adminId WHERE withdrawal_id = :withdrawalId", nativeQuery = true)
+    void processWithdrawalRequest(@Param("withdrawalId") int withdrawalId, @Param("status") String status, @Param("reason") String reason, @Param("adminId") int adminId);
 
     @Modifying
     @Query(value = "UPDATE freelancers SET balance = balance - :amount WHERE freelancer_id = (SELECT freelancer_id FROM withdrawal_requests WHERE withdrawal_id = :withdrawalId)", nativeQuery = true)
@@ -168,7 +169,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     List<AuditLogProjection> getAuditLogs();
 
     
-    @Query(value = "SELECT category_id as id, category_name as name, description, is_active as isActive FROM job_categories ORDER BY category_name ASC", nativeQuery = true)
+    @Query(value = "SELECT category_id as id, name, description, is_active as isActive FROM job_categories ORDER BY name ASC", nativeQuery = true)
     List<JobCategoryProjection> getJobCategories();
     
     

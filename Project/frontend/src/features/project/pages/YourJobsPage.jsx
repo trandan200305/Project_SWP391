@@ -16,6 +16,7 @@ export default function YourJobsPage({ onNavigate, user }) {
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function YourJobsPage({ onNavigate, user }) {
     <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
       <div className="max-w-6xl mx-auto px-6">
         
-        {/* Horizontal Filter Tabs */}
+        
         <div className="flex border-b border-slate-200 mb-6">
           <button
             onClick={() => handleTabClick('saved')}
@@ -138,10 +139,10 @@ export default function YourJobsPage({ onNavigate, user }) {
           </button>
         </div>
 
-        {/* Content Area */}
+        
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           
-          {/* Table Header */}
+          
           <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-sm font-bold text-slate-700 hidden md:grid">
             <div className="col-span-5">Tên công việc / Hợp đồng</div>
             <div className="col-span-2 text-center">
@@ -154,7 +155,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             <div className="col-span-1 text-center"></div>
           </div>
 
-          {/* Table Body */}
+          
           <div className="divide-y divide-slate-100">
             {/* SAVED JOBS TAB */}
             {activeTab === 'saved' && savedJobs.length === 0 && (
@@ -284,7 +285,7 @@ export default function YourJobsPage({ onNavigate, user }) {
         </div>
       </div>
       
-      {/* Toast Notification */}
+      
       {toastMessage && (
         <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <Bookmark className="w-5 h-5 text-amber-400 fill-amber-400" />

@@ -52,6 +52,9 @@ public class Manager {
 
     private String phone;
 
+    @Column(name = "citizen_id")
+    private String citizenId;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 

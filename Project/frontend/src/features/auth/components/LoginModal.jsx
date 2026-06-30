@@ -5,17 +5,18 @@ import { jwtDecode } from "jwt-decode";
 import { authApi } from "../api/authApi.js";
 
 export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
-  // State for regular login
+
   const [role, setRole] = useState("freelancer");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [accountLocked, setAccountLocked] = useState(null);
 
-  // State for forgot password and OTP handling
+
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -26,14 +27,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Countdown timer for resending OTP code
+  const [isForceChangePassword, setIsForceChangePassword] = useState(false);
+  const [firstLoginUser, setFirstLoginUser] = useState(null);
+  const [firstLoginPassword, setFirstLoginPassword] = useState("");
+
+
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer((t) => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Process backend login API call
+
   const processBackendLogin = async (payload) => {
     setLoading(true);
     setErrorMsg("");
@@ -42,10 +47,16 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
       const data = await authApi.login(payload);
       if (data.success) {
         setLoading(false);
-        setSuccess(true);
-        setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user);
-        }, 1200);
+        if (data.mustChangePassword) {
+          setFirstLoginUser(data.user);
+          setFirstLoginPassword(payload.password);
+          setIsForceChangePassword(true);
+        } else {
+          setSuccess(true);
+          setTimeout(() => {
+            if (onLoginSuccess) onLoginSuccess(data.user);
+          }, 1200);
+        }
       } else if (
         data.accountStatus === "LOCKED" ||
         data.accountStatus === "BANNED"
@@ -64,7 +75,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Log in using Email and Password
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -77,7 +88,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Log in using Google account
+
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
     processBackendLogin({
@@ -89,7 +100,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     });
   };
 
-  // Send verification OTP code to email
+
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
@@ -113,7 +124,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Verify OTP code
+
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     const code = otp.join("");
@@ -140,7 +151,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
-  // Reset with new password
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -180,6 +191,43 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
     }
   };
 
+  const handleFirstLoginChangePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setErrorMsg("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg("Mật khẩu phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const data = await authApi.changePassword({
+        userId: firstLoginUser.id,
+        role: firstLoginUser.role,
+        currentPassword: firstLoginPassword,
+        newPassword,
+      });
+      if (data.success) {
+        setSuccessMsg("✅ Đổi mật khẩu thành công! Đang đăng nhập...");
+        setSuccess(true);
+        setTimeout(() => {
+          if (onLoginSuccess) onLoginSuccess(firstLoginUser);
+        }, 1500);
+      } else {
+        setErrorMsg(data.message || "Có lỗi xảy ra!");
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Lỗi kết nối đến máy chủ!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       onClick={onClose}
@@ -189,7 +237,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative bg-white rounded-3xl shadow-2xl flex flex-row overflow-hidden w-full max-w-4xl h-[560px] animate-scale-up border border-slate-100"
       >
-        {/* Floating Close Button */}
+
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-[100] p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-400 hover:text-slate-700 transition-all shadow-sm"
@@ -198,7 +246,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT PANEL: Branding & Testimonials */}
+
         <div className="hidden md:flex w-[48%] bg-gradient-to-br from-[#0B1528] via-[#0F172A] to-[#1E293B] p-8 flex-col justify-between relative overflow-hidden h-full">
           <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-secondary/15 rounded-full filter blur-[100px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-accent/10 rounded-full filter blur-[80px]" />
@@ -245,8 +293,72 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
         {/* RIGHT PANEL */}
         <div className="w-full md:w-[52%] p-8 flex flex-col justify-between bg-white relative overflow-y-auto h-full">
           <div className="max-w-[320px] w-full mx-auto my-auto pr-1">
-            {/* ===================== FORGOT PASSWORD FLOW ===================== */}
-            {isForgotPassword ? (
+            {isForceChangePassword ? (
+              <>
+                <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
+                  Đổi mật khẩu lần đầu
+                </h2>
+                <p className="font-sans text-muted text-[13px] mb-4">
+                  Vì lý do bảo mật, vui lòng tạo mật khẩu mới cho tài khoản của bạn trước khi tiếp tục.
+                </p>
+
+                {errorMsg && (
+                  <div className="mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-semibold text-center">
+                    {errorMsg}
+                  </div>
+                )}
+                {successMsg && (
+                  <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-[11px] font-semibold text-center">
+                    {successMsg}
+                  </div>
+                )}
+
+                <form onSubmit={handleFirstLoginChangePassword} className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-primary mb-1">
+                      Xác nhận mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-[#F8FAFC] border border-muted-light/60 focus:border-secondary focus:ring-1 focus:ring-secondary rounded-lg px-3 py-2 text-[13px] focus:outline-none transition-all placeholder-muted text-primary font-medium"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
+                        ? "bg-emerald-600 text-white shadow-lg animate-pulse"
+                        : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
+                      }`}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : success ? (
+                      "Đăng nhập thành công!"
+                    ) : (
+                      "Đổi mật khẩu & Đăng nhập"
+                    )}
+                  </button>
+                </form>
+              </>
+            ) : isForgotPassword ? (
               <>
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
                   {isResettingPassword
@@ -473,22 +585,20 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 {/* Display lock warning when account is blocked */}
                 {accountLocked && (
                   <div
-                    className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${
-                      accountLocked.status === "BANNED"
+                    className={`mb-4 p-4 rounded-2xl border-2 text-left space-y-2 animate-fade-in ${accountLocked.status === "BANNED"
                         ? "bg-rose-50 border-rose-300"
                         : "bg-amber-50 border-amber-300"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
                         {accountLocked.status === "BANNED" ? "🚫" : "⚠️"}
                       </span>
                       <h3
-                        className={`font-bold text-[13px] ${
-                          accountLocked.status === "BANNED"
+                        className={`font-bold text-[13px] ${accountLocked.status === "BANNED"
                             ? "text-rose-800"
                             : "text-amber-800"
-                        }`}
+                          }`}
                       >
                         {accountLocked.status === "BANNED"
                           ? "Tài khoản đã bị cấm vĩnh viễn"
@@ -496,20 +606,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                       </h3>
                     </div>
                     <p
-                      className={`text-[11px] leading-relaxed ${
-                        accountLocked.status === "BANNED"
+                      className={`text-[11px] leading-relaxed ${accountLocked.status === "BANNED"
                           ? "text-rose-700"
                           : "text-amber-700"
-                      }`}
+                        }`}
                     >
                       {accountLocked.message}
                     </p>
                     <div
-                      className={`text-[10px] font-bold pt-1 border-t ${
-                        accountLocked.status === "BANNED"
+                      className={`text-[10px] font-bold pt-1 border-t ${accountLocked.status === "BANNED"
                           ? "border-rose-200 text-rose-500"
                           : "border-amber-200 text-amber-500"
-                      }`}
+                        }`}
                     >
                       Mã trạng thái: {accountLocked.status} • Liên hệ:
                       support@vlance.vn
@@ -529,39 +637,53 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => setRole("freelancer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "freelancer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "freelancer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Freelancer
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("employer")}
-                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${
-                      role === "employer"
+                    className={`flex-1 py-1.5 text-center rounded-lg font-bold text-[12px] transition-all ${role === "employer"
                         ? "bg-white text-primary shadow-sm"
                         : "text-muted hover:text-primary"
-                    }`}
+                      }`}
                   >
                     Employer
                   </button>
                 </div>
 
                 {/* Social Login with Google */}
-                <div className="mb-3.5 flex justify-center w-full">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setErrorMsg("Đăng nhập Google thất bại")}
-                    useOneTap
-                    theme="outline"
-                    size="large"
-                    shape="rectangular"
-                    width="320"
-                    text="continue_with"
-                  />
+                <div className="mb-3.5 flex flex-col items-center justify-center w-full">
+                  {!import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+                    !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes(
+                      "googleusercontent.com",
+                    ) ? (
+                    <div className="w-[320px] p-3 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] font-medium leading-relaxed mb-1 text-center shadow-sm">
+                      ⚠️ <strong>Google Login chưa cấu hình:</strong> Đổi{" "}
+                      <strong className="font-semibold">
+                        VITE_GOOGLE_CLIENT_ID
+                      </strong>{" "}
+                      trong file <strong className="font-bold">.env</strong>.
+                      <div className="mt-1.5 font-bold text-[10px] text-amber-700 bg-amber-100/50 py-1 px-2 rounded-lg">
+                        Tài khoản test: client@lancerpro.vn / 123456
+                      </div>
+                    </div>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setErrorMsg("Đăng nhập Google thất bại")}
+                      useOneTap
+                      theme="outline"
+                      size="large"
+                      shape="rectangular"
+                      width="320"
+                      text="continue_with"
+                    />
+                  )}
                 </div>
 
                 {/* Form separator */}
@@ -640,11 +762,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <button
                     type="submit"
                     disabled={loading || success}
-                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${
-                      success
+                    className={`w-full py-2.5 rounded-lg font-bold text-[13px] transition-all duration-200 flex items-center justify-center gap-2 ${success
                         ? "bg-emerald-600 text-white shadow-lg animate-pulse"
                         : "bg-primary hover:bg-primary-light text-white shadow-md shadow-primary/10 hover:scale-[1.01]"
-                    }`}
+                      }`}
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -674,7 +795,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
             )}
           </div>
 
-          {/* Footer Copy & policy links */}
+
           <div className="max-w-[320px] w-full mx-auto pt-3 border-t border-muted-light/40 flex flex-row justify-between items-center text-muted text-[9px] font-semibold mt-4">
             <span>© 2026 LancerPro.</span>
             <div className="flex gap-2">

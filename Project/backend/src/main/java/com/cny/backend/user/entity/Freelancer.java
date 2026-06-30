@@ -83,6 +83,15 @@ public class Freelancer {
     private String city;
     private String country;
 
+    @Column(name = "hide_email")
+    private Boolean hideEmail = false;
+
+    @Column(name = "hide_phone")
+    private Boolean hidePhone = false;
+
+    @Column(name = "hide_location")
+    private Boolean hideLocation = false;
+
     @Column(name = "profile_completeness")
     private Integer profileCompleteness;
 
@@ -110,7 +119,7 @@ public class Freelancer {
     @Column(name = "messenger_pin")
     private String messengerPin;
 
-    // --- BẮT ĐẦU PHẦN KYC ---
+    
     
     @Column(name = "kyc_status", length = 20)
     private String kycStatus = "UNVERIFIED";
@@ -139,7 +148,7 @@ public class Freelancer {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
-    // --- KẾT THÚC PHẦN KYC ---
+    
 
     @Transient
     private TransientUser user;

@@ -22,7 +22,7 @@ public class ViolationReport {
     private Integer reportId;
 
     @Column(name = "target_type")
-    private String targetType; // e.g. "USER", "PROJECT", "MESSAGE"
+    private String targetType; 
 
     @Column(name = "target_id")
     private String targetId;
@@ -34,10 +34,10 @@ public class ViolationReport {
     private String accusedName;
 
     @Column(name = "severity")
-    private String severity; // "LOW", "MEDIUM", "HIGH"
+    private String severity; 
 
     @Column(name = "status")
-    private String status; // "PENDING", "RESOLVED", "DISMISSED"
+    private String status; 
 
     @Column(name = "reason", columnDefinition = "NVARCHAR(MAX)")
     private String reason;

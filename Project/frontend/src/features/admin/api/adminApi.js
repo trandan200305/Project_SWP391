@@ -5,14 +5,29 @@ export const adminApi = {
   getFeeConfig: () => api.get('/admin/fee-config'),
   updateFeeConfig: (newFee) => api.post(`/admin/fee-config?fee=${newFee}`),
   getAuditLogs: () => api.get('/admin/audit-logs'),
-  inviteStaffOrManager: (email, role, departmentId, managerId) => api.post('/admin/invite', { email, role, departmentId, managerId }),
+  inviteStaffOrManager: (email, role, departmentId, managerId, fullName, phone, citizenId, displayName) => api.post('/admin/invite', { email, role, departmentId, managerId, fullName, phone, citizenId, displayName }),
   getDepartments: () => api.get('/admin/departments'),
   getDepartmentSessions: (deptId) => api.get(`/admin/departments/${deptId}/sessions`),
   getDepartmentLogs: (deptId) => api.get(`/admin/departments/${deptId}/logs`),
   transferDepartmentMember: (payload) => api.post('/admin/departments/transfer', payload),
+  getStaffProfile: (id) => api.get(`/staff/${id}`),
+  getManagerProfile: (id) => api.get(`/managers/${id}`),
   getDepartmentTransfers: (deptId) => api.get(`/admin/departments/${deptId}/transfers`),
   getDepartmentMemberCounts: (deptId) => api.get(`/admin/departments/${deptId}/member-counts`),
-  getUsers: () => api.get('/admin/users'),
+  getUsers: (params) => {
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) {
+          searchParams.append(key, params[key]);
+        }
+      });
+      return api.get(`/admin/users?${searchParams.toString()}`);
+    }
+    return api.get('/admin/users');
+  },
+  getUserCredentials: (role, userId) => api.get(`/admin/users/${role}/${userId}/credentials`),
+  regenerateUserPassword: (role, userId) => api.post(`/admin/users/${role}/${userId}/regenerate-password`),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
   getManagers: () => api.get('/admin/managers'),
@@ -22,7 +37,23 @@ export const adminApi = {
   getJobCategories: () => api.get('/admin/job-categories'),
   getKycRequests: () => api.get('/admin/kyc-requests'),
   getDisputes: () => api.get('/admin/disputes'),
+  resolveDispute: (id, status, note, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/disputes/${id}/resolve?status=${status}&note=${note || ''}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   getReports: () => api.get('/admin/reports'),
+  resolveReport: (id, status, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/reports/${id}/resolve?status=${status}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   getWarningTemplates: () => api.get('/admin/warning-templates'),
   getArticles: () => api.get('/admin/articles'),
   getTickets: () => api.get('/admin/tickets'),
@@ -52,28 +83,39 @@ export const adminApi = {
       headers
     }).then(res => res.json());
   },
-  processWithdrawal: (withdrawalId, status, adminId) => {
+  processWithdrawal: (withdrawalId, status, adminId, reason) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`, {
+    let url = `http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`;
+    if (reason) url += `&reason=${encodeURIComponent(reason)}`;
+    return fetch(url, {
       method: 'PUT',
       headers
     }).then(res => res.json());
   },
   getVerificationTasks: () => api.get('/admin/verification-tasks'),
-  submitTaskSignoff: (taskId, payload, verifierEmail) => {
+  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
+  moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
+  claimVerificationTask: (taskId) => api.post(`/admin/verification-tasks/${taskId}/claim`),
+  submitTaskSignoff: (taskId, data) => api.post(`/admin/verification-tasks/${taskId}/signoff`, data),
+  escalateVerificationTask: (taskId, reason) => api.post(`/admin/verification-tasks/${taskId}/escalate`, { reason }),
+  getVnpayConfig: () => api.get('/admin/vnpay-config'),
+  saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
+  getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
+  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`),
+  getPendingGigs: () => api.get('/admin/gigs/pending'),
+  moderateGig: (gigId, approve, reasonParam, adminId) => {
     const headers = {};
-    if (verifierEmail) headers['X-Verifier-Email'] = verifierEmail;
-    return fetch(`http://localhost:8080/api/admin/verification-tasks/${taskId}/signoff`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
-      body: JSON.stringify(payload)
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+      method: 'PUT',
+      headers
     }).then(res => res.json());
   },
-  moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
-  createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload)
+  queryVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/query`),
+  refundVnpayTransaction: (id, payload) => api.post(`/admin/vnpay-transactions/${id}/refund`, payload),
+  lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
+  createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
+  createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
+  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`)
 };
-

@@ -2,32 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, CheckSquare, MessageSquare, ShieldAlert, UserCheck, 
   BadgeDollarSign, Gavel, FileText, Bell, Settings, Search, HelpCircle, 
-  Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
+  Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter,
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  XCircle
+  XCircle, ShieldBan, ChevronDown, Edit3, Shield, ArrowLeftRight
 } from 'lucide-react';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-export default function StaffDashboardPage({ user, onNavigateToHome }) {
+export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   // Styles & Brand Settings
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
   const currentRole = user?.role || "STAFF";
+  const activeDepartmentCodes = ['FIN', 'MOD', 'DIS', 'CS', 'IT'];
+  const isActiveDepartment = (department) => activeDepartmentCodes.includes(department?.code);
   const normalizeRole = (role) => String(role || '').toUpperCase();
   const normalizeId = (id) => String(id ?? '');
   const isCustomerMessage = (message) =>
     ['EMPLOYER', 'FREELANCER', 'CLIENT'].includes(normalizeRole(message?.senderRole));
   const isOwnSupportMessage = (message) => {
-    if (isCustomerMessage(message)) return false;
-
-    return (
-      normalizeRole(message?.senderRole) === normalizeRole(currentRole) &&
-      normalizeId(message?.senderId) === normalizeId(user?.id)
-    );
+    return !isCustomerMessage(message);
   };
   const publishSupportReadReceipt = (ticketId) => {
     if (!ticketId || !stompClientRef.current?.connected) return;
@@ -44,6 +41,16 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   
   // Tab states
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [sectionsOpen, setSectionsOpen] = useState({
+    finance: true,
+    moderation: true,
+    disputeResolution: true,
+    customerSupport: true,
+    itDevelopment: true
+  });
+  const toggleSection = (section) => {
+    setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
+  };
   
   // Dashboard & Task filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +62,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   
   // Notification Toast
   const [toast, setToast] = useState({ message: '', type: 'success', show: false });
@@ -62,6 +71,35 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     setToast({ message, type, show: true });
     setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
+
+  // Department Transfer States
+  const [showTransferRequestModal, setShowTransferRequestModal] = useState(false);
+  const [transferRequestTargetDeptId, setTransferRequestTargetDeptId] = useState('');
+  const [transferRequestReason, setTransferRequestReason] = useState('');
+  const [transferRequestDetails, setTransferRequestDetails] = useState({
+    desiredPosition: '',
+    desiredStartDate: '',
+    transferType: 'Yêu cầu cá nhân',
+    skills: '',
+    achievements: '',
+    attachmentName: '',
+    confirmed: false
+  });
+  const [myProfile, setMyProfile] = useState(null);
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [isSubmittingTransferRequest, setIsSubmittingTransferRequest] = useState(false);
+
+  // Report filters
+  const [reportFilter, setReportFilter] = useState('ALL');
+  const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
+  const [reportSearch, setReportSearch] = useState('');
+
+  // Finance states
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [withdrawalFilter, setWithdrawalFilter] = useState('ALL');
+  const [vnpayTxns, setVnpayTxns] = useState([]);
+  const [vnpayFilter, setVnpayFilter] = useState('ALL');
+  const [financeSearch, setFinanceSearch] = useState('');
 
   // ---------------- REAL DATABASE DATA STATES ----------------
   const [stats, setStats] = useState({
@@ -81,12 +119,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
+  const [showModerationModal, setShowModerationModal] = useState(false);
+  const [selectedModerationItem, setSelectedModerationItem] = useState(null);
   const [violationReports, setViolationReports] = useState([]);
   const [escalationCases, setEscalationCases] = useState([]);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [selectedDispute, setSelectedDispute] = useState(null);
+  const [disputeNote, setDisputeNote] = useState('');
   const [warningTemplates, setWarningTemplates] = useState([]);
   const [moderationHistory, setModerationHistory] = useState([]);
   const [moderationView, setModerationView] = useState('queue');
   const [queueTab, setQueueTab] = useState('ALL');
+  const [queueSearch, setQueueSearch] = useState('');
+  const [selectedQueueItems, setSelectedQueueItems] = useState([]);
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,6 +173,107 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   });
   const [supportSubTab, setSupportSubTab] = useState('unclaimed'); // 'claimed' | 'unclaimed' | 'blocked' | 'deleted'
   const [deletedChats, setDeletedChats] = useState([]);
+  const [confirmCountdown, setConfirmCountdown] = useState(null);
+  const [showEscalateReasons, setShowEscalateReasons] = useState(false);
+  const [selectedEscalateReason, setSelectedEscalateReason] = useState('');
+
+  const fetchMyProfile = () => {
+    if (!user?.id) return;
+    adminApi.getStaffProfile(user.id)
+      .then(data => {
+        if (data) {
+          setMyProfile(data);
+        }
+      })
+      .catch(err => console.error("Error fetching staff profile:", err));
+  };
+
+  useEffect(() => {
+    fetchMyProfile();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (showTransferRequestModal) {
+      fetchMyProfile();
+      adminApi.getDepartments()
+        .then(data => {
+          if (Array.isArray(data)) {
+            setDepartmentsList(data);
+          }
+        })
+        .catch(err => console.error("Error fetching departments:", err));
+    }
+  }, [showTransferRequestModal]);
+
+  const resetTransferRequestForm = () => {
+    setTransferRequestReason('');
+    setTransferRequestTargetDeptId('');
+    setTransferRequestDetails({
+      desiredPosition: '',
+      desiredStartDate: '',
+      transferType: 'Yêu cầu cá nhân',
+      skills: '',
+      achievements: '',
+      attachmentName: '',
+      confirmed: false
+    });
+  };
+
+  const closeTransferRequestModal = () => {
+    setShowTransferRequestModal(false);
+  };
+
+  const handleTransferRequestSubmit = (e) => {
+    e.preventDefault();
+    if (!transferRequestTargetDeptId || !user?.id || !transferRequestDetails.confirmed) return;
+
+    setIsSubmittingTransferRequest(true);
+    const selectedDepartment = departmentsList.find(d => String(d.departmentId) === String(transferRequestTargetDeptId));
+    const structuredReason = [
+      `Lý do điều chuyển: ${transferRequestReason}`,
+      `Phòng ban mong muốn: ${selectedDepartment?.name || 'Chưa xác định'}${selectedDepartment?.code ? ` (${selectedDepartment.code})` : ''}`,
+      `Vị trí mong muốn: ${transferRequestDetails.desiredPosition || 'Chưa cung cấp'}`,
+      `Ngày mong muốn bắt đầu: ${transferRequestDetails.desiredStartDate || 'Chưa cung cấp'}`,
+      `Loại điều chuyển: ${transferRequestDetails.transferType}`,
+      `Kỹ năng liên quan & kinh nghiệm trước đây: ${transferRequestDetails.skills || 'Chưa cung cấp'}`,
+      `Thành tích nổi bật & lý do phù hợp: ${transferRequestDetails.achievements || 'Chưa cung cấp'}`,
+      `Tệp đính kèm: ${transferRequestDetails.attachmentName || 'Không có'}`
+    ].join('\n');
+
+    const payload = {
+      userType: 'STAFF',
+      userId: user.id,
+      toDepartmentId: parseInt(transferRequestTargetDeptId, 10),
+      reason: structuredReason
+    };
+
+    adminApi.transferDepartmentMember(payload)
+      .then(res => {
+        setIsSubmittingTransferRequest(false);
+        if (res.success !== false) {
+          showToast('Điều chuyển phòng ban thành công!', 'success');
+          setShowTransferRequestModal(false);
+          resetTransferRequestForm();
+          fetchMyProfile();
+        } else {
+          showToast(res.message || 'Điều chuyển thất bại.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsSubmittingTransferRequest(false);
+        showToast(err.response?.data?.message || 'Có lỗi xảy ra khi thực hiện điều chuyển.', 'error');
+      });
+  };
+
+  useEffect(() => {
+    if (showConfirmModal && confirmCountdown !== null && confirmCountdown > 0) {
+      const timer = setTimeout(() => setConfirmCountdown(confirmCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (showConfirmModal && confirmCountdown === 0) {
+      setShowConfirmModal(false);
+      setConfirmCountdown(null);
+    }
+  }, [showConfirmModal, confirmCountdown]);
 
   const supportSubTabRef = useRef(supportSubTab);
   useEffect(() => {
@@ -226,6 +372,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             if (t.status === 'APPROVED') displayStatus = 'Completed';
             else if (t.status === 'REJECTED') displayStatus = 'Rejected';
             else if (t.status === 'IN_PROGRESS') displayStatus = 'In Progress';
+            else if (t.status === 'ESCALATED') displayStatus = 'Escalated';
 
             return {
               id: `#TSK-${t.taskId}`,
@@ -239,7 +386,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               deadline: t.status === 'APPROVED' ? 'Completed' : 'Pending Review',
               description: t.description || 'No description provided.',
               requiredDepartments: t.requiredDepartments,
-              signoffs: t.signoffs
+              signoffs: t.signoffs,
+              assignedToEmail: t.assignedToEmail || null
             };
           });
           setTasks(mapped);
@@ -253,16 +401,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       .then(data => {
         if (Array.isArray(data)) {
           const mapped = data.map(r => ({
-            id: `KYC-00${r.id}`,
+            id: `KYC-${r.userRole === 'EMPLOYER' ? 'EMP' : 'FL'}-${r.id}`,
             idRaw: r.id,
             name: r.userName,
             email: r.userEmail,
-            role: 'FREELANCER',
-            docType: 'CCCD/ID Card',
+            role: r.userRole || 'FREELANCER',
+            docType: r.userRole === 'EMPLOYER' ? 'Giấy phép KD & CCCD Đại diện' : 'CCCD/ID Card',
             subDate: r.submittedAt ? r.submittedAt.substring(0, 10) : '',
-            docUrl: r.idCard || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&fit=crop',
+            subDateFull: r.submittedAt || '',
+            docUrls: r.documentUrls && r.documentUrls.length > 0 ? r.documentUrls.filter(url => url !== "") : (r.idCard ? [r.idCard] : []),
             status: r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : 'Pending'
           }));
+          
+          mapped.sort((a, b) => new Date(b.subDateFull) - new Date(a.subDateFull));
           setKycRequests(mapped);
         }
       })
@@ -273,8 +424,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     Promise.all([
       adminApi.getPendingProjects().catch(() => []),
       adminApi.getProfileRequests().catch(() => []),
-      adminApi.getWithdrawals().catch(() => [])
-    ]).then(([projectsData, profilesData, withdrawalsData]) => {
+      adminApi.getPendingGigs().catch(() => []),
+      adminApi.getReports().catch(() => [])
+    ]).then(([projectsData, profilesData, gigsData, reportsData]) => {
       let mapped = [];
 
       if (Array.isArray(projectsData)) {
@@ -286,66 +438,79 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           author: p.clientName || 'Employer',
           detail: p.description,
           reason: 'Dự án mới cần duyệt',
-          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
+          subDate: p.createdAt ? String(p.createdAt) : '',
           status: 'Pending'
         }))];
       }
 
       if (Array.isArray(profilesData)) {
         mapped = [...mapped, ...profilesData.map(pr => ({
-          id: `PROF-${pr.id}`,
-          idRaw: pr.id,
+          id: `PROF-${pr.id || pr.requestId}`,
+          idRaw: pr.id || pr.requestId,
           title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
           type: 'PROFILE',
           author: pr.displayName || 'Employer',
           detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
           reason: 'Cập nhật hồ sơ',
-          subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          subDate: pr.createdAt ? String(pr.createdAt) : new Date().toISOString(),
           status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
         }))];
       }
 
-      if (Array.isArray(withdrawalsData)) {
-        mapped = [...mapped, ...withdrawalsData.filter(w => w.status === 'PENDING').map(w => ({
-          id: `WTH-${w.id}`,
-          idRaw: w.id,
-          title: `Yêu cầu rút tiền: ${w.amount?.toLocaleString('vi-VN')} VND`,
-          type: 'WITHDRAWAL',
-          author: `Freelancer #${w.freelancerId}`,
-          detail: `Rút tiền về ${w.bankName} - ${w.accountNumber}`,
-          reason: 'Rút tiền',
-          subDate: w.createdAt ? String(w.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+      if (Array.isArray(gigsData)) {
+        mapped = [...mapped, ...gigsData.map(g => ({
+          id: `GIG-${g.id}`,
+          idRaw: g.id,
+          title: g.title,
+          type: 'GIG',
+          author: g.freelancerName || 'Freelancer',
+          detail: g.description,
+          reason: 'Dịch vụ mới',
+          subDate: g.createdAt ? String(g.createdAt) : new Date().toISOString(),
           status: 'Pending'
         }))];
       }
 
-      // Add Mock data for Gigs and Reviews to satisfy user requirement
-      mapped.push({
-        id: 'GIG-MOCK-1',
-        idRaw: 9991,
-        title: 'Thiết kế Logo Doanh nghiệp trọn gói',
-        type: 'GIG',
-        author: 'Freelancer Alex',
-        detail: 'Gói dịch vụ mới tạo, giá 2.000.000 VND',
-        reason: 'Dịch vụ mới',
-        subDate: new Date().toISOString().substring(0, 10),
-        status: 'Pending'
-      });
-
-      mapped.push({
-        id: 'REV-MOCK-1',
-        idRaw: 9992,
-        title: 'Đánh giá bị báo cáo: Dự án Web App',
-        type: 'REVIEW',
-        author: 'Client John',
-        detail: 'Đánh giá chứa từ ngữ không phù hợp.',
-        reason: 'Bị cắm cờ (Flagged)',
-        subDate: new Date().toISOString().substring(0, 10),
-        status: 'Pending'
-      });
+      if (Array.isArray(reportsData)) {
+        const reviewReports = reportsData.filter(r => r.targetType === 'REVIEW' && r.status === 'PENDING');
+        mapped = [...mapped, ...reviewReports.map(r => ({
+          id: `REV-${r.id}`,
+          idRaw: r.id,
+          title: `Đánh giá bị báo cáo: ID #${r.id}`,
+          type: 'REVIEW',
+          author: r.reporterName || 'User',
+          detail: r.reason,
+          reason: 'Báo cáo vi phạm',
+          subDate: r.createdAt ? String(r.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending'
+        }))];
+      }
 
       setModerationItems(mapped);
     }).catch(err => console.error('Error fetching moderation items:', err));
+  };
+
+  const handleResolveDispute = (status) => {
+    if (!selectedDispute) return;
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const adminId = user?.adminId || 1;
+
+    adminApi.resolveDispute(selectedDispute.raw.id, status, disputeNote, adminId)
+      .then(res => {
+        if (res.success) {
+          setToast({ message: res.message, type: 'success', show: true });
+          setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+          setShowDisputeModal(false);
+          setSelectedDispute(null);
+          setDisputeNote('');
+          fetchModerationData(); // Refresh list
+        } else {
+          setToast({ message: res.message, type: 'error', show: true });
+          setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+        }
+      })
+      .catch(err => console.error('Error resolving dispute:', err));
   };
 
   const fetchModerationData = () => {
@@ -370,7 +535,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           id: `ESC-${d.id}`,
           title: d.reason || 'Tranh chấp dự án',
           owner: d.clientName,
-          priority: d.priority === 'HIGH' ? 'Khẩn cấp' : 'Cao'
+          priority: d.priority === 'HIGH' ? 'Khẩn cấp' : 'Cao',
+          raw: d
         })));
       }
     }).catch(console.error);
@@ -451,6 +617,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       .catch(err => console.error('Error fetching support chats:', err));
   };
 
+  const handleClaimTicket = async () => {
+    try {
+      if (!user?.id || !selectedChatId) return;
+      await messengerApi.claimTicket(selectedChatId, user.id);
+      showToast("Đã tiếp nhận hội thoại thành công", "success");
+    } catch (err) {
+      console.error("Failed to claim support ticket", err);
+      showToast("Không thể tiếp nhận hội thoại", "error");
+    }
+  };
+
   const fetchDeletedSupportChats = () => {
     messengerApi.getDeletedTickets()
       .then(data => {
@@ -484,6 +661,77 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       .catch(err => console.error('Error revenue growth:', err));
   };
 
+  const fetchWithdrawals = () => {
+    adminApi.getWithdrawals().then(data => {
+      if (Array.isArray(data)) {
+        setWithdrawals(data.map(w => ({
+          id: w.id,
+          amount: w.amount,
+          status: w.status === 'PENDING' ? 'Chờ xử lý' : w.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối',
+          statusRaw: w.status,
+          reason: w.reason || '',
+          date: w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN') : '',
+          user: w.userName || 'Không rõ',
+          email: w.userEmail || '',
+          bank: w.bankName || 'N/A',
+          account: w.accountNumber || 'N/A'
+        })));
+      }
+    }).catch(console.error);
+  };
+
+  const handleWithdrawalAction = (id, status, reason = null) => {
+    const adminId = user?.id || 1;
+    let confirmMsg = `Bạn có chắc chắn muốn DUYỆT yêu cầu rút tiền này?`;
+    
+    if (status === 'REJECTED') {
+      confirmMsg = `Bạn có chắc chắn muốn TỪ CHỐI yêu cầu rút tiền này?`;
+      if (!reason) {
+        reason = window.prompt("Nhập lý do từ chối yêu cầu rút tiền này (bắt buộc):");
+        if (reason === null) return; // user cancelled
+        if (!reason.trim()) {
+          showToast("Vui lòng nhập lý do từ chối.", "error");
+          return;
+        }
+      }
+    }
+
+    if (window.confirm(confirmMsg)) {
+      adminApi.processWithdrawal(id, status, adminId, reason)
+        .then(res => {
+          if (res.success) {
+            showToast(res.message, 'success');
+            fetchWithdrawals();
+            fetchStats(); // Update stats count
+            setShowWithdrawalModal(false);
+            setSelectedWithdrawal(null);
+          } else {
+            showToast(res.message, 'error');
+          }
+        }).catch(err => {
+          console.error(err);
+          showToast('Có lỗi xảy ra khi xử lý rút tiền.', 'error');
+        });
+    }
+  };
+
+  const fetchVnpayTransactions = () => {
+    adminApi.getVnpayTransactions().then(data => {
+      if (Array.isArray(data)) {
+        setVnpayTxns(data.map(t => ({
+          id: t.id,
+          txnRef: t.txnRef,
+          amount: t.amount,
+          status: t.status, // SUCCESS, FAILED, PENDING
+          vnpTxnNo: t.vnpTransactionNo || 'N/A',
+          date: t.createdAt ? new Date(t.createdAt).toLocaleString('vi-VN') : '',
+          employerId: t.employerId,
+          projectId: t.projectId
+        })));
+      }
+    }).catch(console.error);
+  };
+
   // Mount logic
   useEffect(() => {
     fetchStats();
@@ -492,7 +740,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     fetchModerationItems();
     fetchModerationData();
     fetchSupportChats();
+    fetchDeletedSupportChats();
     fetchTrends();
+    fetchWithdrawals();
+    fetchVnpayTransactions();
   }, [chartPeriod]);
 
   // Messages fetch on selection
@@ -565,10 +816,31 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const handleUpdateTaskStatus = (id, newStatus) => {
     if (!selectedTask) return;
     
+    setIsLoading(true);
+    if (newStatus === 'In Progress') {
+      adminApi.claimVerificationTask(selectedTask.taskId, user?.email || 'staff@gmail.com')
+        .then(res => {
+          setIsLoading(false);
+          if (res.success === false) {
+            showToast(res.message || 'Lỗi khi nhận tác vụ.', 'error');
+          } else {
+            showToast('Nhận tác vụ thành công!', 'success');
+            fetchTasks();
+            setShowManageModal(false);
+            setSelectedTask(null);
+          }
+        })
+        .catch(err => {
+          setIsLoading(false);
+          console.error(err);
+          showToast('Lỗi hệ thống khi nhận tác vụ.', 'error');
+        });
+      return;
+    }
+
     const reqDepts = selectedTask.requiredDepartments?.split(',') || ['CS'];
     const deptCode = reqDepts[0] || 'CS';
 
-    setIsLoading(true);
     adminApi.submitTaskSignoff(selectedTask.taskId, {
       status: newStatus === 'Completed' ? 'APPROVED' : 'PENDING',
       note: `Ký duyệt trạng thái ${newStatus} bởi CS Staff`,
@@ -786,8 +1058,27 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       });
   };
 
-  // Moderation action supporting multiple types
+  // Confirmation prompt for moderation action
   const handleModAction = (item, approve) => {
+    setConfirmConfig({
+      title: approve ? 'Xác nhận phê duyệt' : 'Xác nhận từ chối',
+      message: approve 
+        ? `Bạn có chắc chắn muốn PHÊ DUYỆT nội dung: "${item.title}"?`
+        : `Bạn có chắc chắn muốn TỪ CHỐI nội dung: "${item.title}"?`,
+      type: approve ? 'success' : 'danger',
+      confirmText: approve ? 'Phê duyệt' : 'Từ chối',
+      onConfirm: () => {
+        setShowConfirmModal(false);
+        setConfirmCountdown(null);
+        executeModAction(item, approve);
+      }
+    });
+    setConfirmCountdown(15);
+    setShowConfirmModal(true);
+  };
+
+  // Moderation action supporting multiple types
+  const executeModAction = (item, approve) => {
     const adminId = user?.id || 1;
     let apiCall;
     const reason = approve ? 'Phê duyệt hợp lệ' : 'Không đáp ứng tiêu chuẩn kiểm duyệt';
@@ -799,8 +1090,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
     } else if (item.type === 'WITHDRAWAL') {
       const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
       apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
+    } else if (item.type === 'GIG') {
+      apiCall = adminApi.moderateGig(item.idRaw, approve, reason, adminId);
+    } else if (item.type === 'REVIEW') {
+      const status = approve ? 'RESOLVED' : 'DISMISSED';
+      apiCall = adminApi.resolveReport(item.idRaw, status, adminId);
     } else {
-      // Mock APIs for GIG and REVIEW
       apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
     }
 
@@ -819,8 +1114,126 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
       });
   };
 
+  const normalizeDepartmentCode = (value) => {
+    const normalized = String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+
+    if (!normalized) return '';
+    if (normalized.includes('FIN') || normalized.includes('TAI CHINH') || normalized.includes('FINANCE')) return 'FIN';
+    if (normalized.includes('MOD') || normalized.includes('KIEM DUYET') || normalized.includes('MODERATION')) return 'MOD';
+    if (normalized.includes('DIS') || normalized.includes('TRANH CHAP') || normalized.includes('DISPUTE')) return 'DIS';
+    if (normalized.includes('CS') || normalized.includes('HO TRO') || normalized.includes('CUSTOMER SUPPORT') || normalized.includes('SUPPORT')) return 'CS';
+    if (normalized.includes('IT') || normalized.includes('KY THUAT') || normalized.includes('DEVELOPMENT')) return 'IT';
+    return '';
+  };
+
+  const staffDepartmentCode =
+    normalizeDepartmentCode(myProfile?.departmentCode) ||
+    normalizeDepartmentCode(user?.departmentCode) ||
+    normalizeDepartmentCode(user?.department) ||
+    normalizeDepartmentCode(myProfile?.departmentName) ||
+    normalizeDepartmentCode(user?.departmentName) ||
+    normalizeDepartmentCode(myProfile?.specialization) ||
+    normalizeDepartmentCode(user?.specialization) ||
+    'CS';
+
+  const taskBelongsToCurrentStaff = (task) => {
+    if (normalizeRole(currentRole) === 'ADMIN' || normalizeRole(currentRole) === 'MANAGER') return true;
+    if (task.assignedToEmail && user?.email && task.assignedToEmail === user.email) return true;
+
+    const requiredDepartments = String(task.requiredDepartments || '')
+      .split(',')
+      .map(dept => normalizeDepartmentCode(dept.trim()))
+      .filter(Boolean);
+
+    return requiredDepartments.length === 0 || requiredDepartments.includes(staffDepartmentCode);
+  };
+
+  const myTasks = tasks.filter(taskBelongsToCurrentStaff);
+  const pendingModerationCount = moderationItems.filter(i => i.status === 'Pending').length;
+  const pendingKycCount = kycRequests.filter(r => r.status === 'Pending').length;
+  const unreadSupportCount = supportChats.reduce((sum, c) => sum + (c.unread || 0), 0);
+  const pendingWithdrawalCount = withdrawals.filter(w => w.status === 'PENDING' || w.status === 'Pending').length;
+  const failedTransactionCount = vnpayTxns.filter(tx => tx.status === 'FAILED' || tx.status === 'Failed' || tx.status === 'ERROR').length;
+  const openDisputeCount = escalationCases.filter(item => item.status !== 'Resolved').length;
+
+  const commonSidebarItems = [
+    { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
+    { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: myTasks.filter(t => t.status !== 'Completed').length }
+  ];
+
+  const departmentSidebarGroups = {
+    FIN: {
+      key: 'finance',
+      title: 'FINANCE',
+      icon: BadgeDollarSign,
+      items: [
+        { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign, badge: pendingWithdrawalCount },
+        { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
+        { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle, badge: failedTransactionCount }
+      ]
+    },
+    MOD: {
+      key: 'moderation',
+      title: 'MODERATION',
+      icon: Gavel,
+      items: [
+        { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
+        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount }
+      ]
+    },
+    DIS: {
+      key: 'disputeResolution',
+      title: 'DISPUTE RESOLUTION',
+      icon: ShieldAlert,
+      items: [
+        { id: 'Disputes', label: 'Tranh chấp Freelancer - Employer', icon: ShieldAlert, badge: openDisputeCount },
+        { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
+        { id: 'DisputeHistory', label: 'Lịch sử xử lý tranh chấp', icon: FileText }
+      ]
+    },
+    CS: {
+      key: 'customerSupport',
+      title: 'CUSTOMER SUPPORT',
+      icon: MessageSquare,
+      items: [
+        { id: 'Support', label: 'Ticket hỗ trợ', icon: MessageSquare, badge: unreadSupportCount },
+        { id: 'SupportChat', label: 'Chat hỗ trợ', icon: MessageSquare },
+        { id: 'CustomerRequests', label: 'Yêu cầu khách hàng', icon: HelpCircle }
+      ]
+    },
+    IT: {
+      key: 'itDevelopment',
+      title: 'IT & DEVELOPMENT',
+      icon: Activity,
+      items: [
+        { id: 'SystemBugs', label: 'Báo cáo lỗi hệ thống', icon: AlertTriangle },
+        { id: 'SystemMonitoring', label: 'Giám sát hệ thống', icon: Activity },
+        { id: 'Maintenance', label: 'Quản lý bảo trì', icon: Settings },
+        { id: 'InternalTechSupport', label: 'Hỗ trợ kỹ thuật nội bộ', icon: HelpCircle }
+      ]
+    }
+  };
+
+  const activeDepartmentSidebarGroup = departmentSidebarGroups[staffDepartmentCode] || departmentSidebarGroups.CS;
+  const visibleSidebarTabIds = [
+    ...commonSidebarItems.filter(item => item.id).map(item => item.id),
+    ...activeDepartmentSidebarGroup.items.map(item => item.id)
+  ];
+  const visibleSidebarTabKey = visibleSidebarTabIds.join('|');
+
+  useEffect(() => {
+    if (!visibleSidebarTabIds.includes(activeTab)) {
+      setActiveTab('Dashboard');
+    }
+  }, [activeTab, staffDepartmentCode, visibleSidebarTabKey]);
+
   // Filter tasks based on search query and status filter
   const filteredTasks = tasks.filter(t => {
+    if (!taskBelongsToCurrentStaff(t)) return false;
+
     const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.type.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.user.toLowerCase().includes(searchQuery.toLowerCase());
@@ -830,10 +1243,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   });
 
   // Calculate stats count
-  const countAssigned = tasks.length;
-  const countPending = tasks.filter(t => t.status === 'Pending').length;
-  const countCompleted = tasks.filter(t => t.status === 'Completed').length;
-  const countOverdue = tasks.filter(t => t.status === 'In Progress' && t.deadline.includes('Today')).length;
+  const countAssigned = myTasks.length;
+  const countPending = myTasks.filter(t => t.status === 'Pending').length;
+  const countCompleted = myTasks.filter(t => t.status === 'Completed').length;
+  const countOverdue = myTasks.filter(t => t.status === 'In Progress' && t.deadline.includes('Today')).length;
 
   // Chart coordinates calculator
   const activeChartData = userGrowthTrend.length > 0 
@@ -914,6 +1327,67 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
   const displayPendingPercent = supportStats.total > 0 ? supportStats.pendingPercent : 28;
   const displayWaitingUserPercent = supportStats.total > 0 ? supportStats.waitingUserPercent : 18;
 
+  const renderSidebarItem = (item, compact = false) => {
+    const IconComp = item.icon;
+    const isActive = item.id && activeTab === item.id;
+    const handleClick = () => {
+      if (item.onClick) {
+        item.onClick();
+        return;
+      }
+      if (item.id) {
+        setActiveTab(item.id);
+      }
+    };
+
+    return (
+      <button
+        key={item.id || item.label}
+        onClick={handleClick}
+        className={`w-full flex items-center justify-between px-3 ${compact ? 'py-1.5' : 'py-2'} rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+          isActive
+            ? 'bg-[#f7fff2] text-[#006b2c]'
+            : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+        }`}
+      >
+        {isActive && (
+          <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+        )}
+        <div className={`flex items-center ${compact ? 'gap-2.5' : 'gap-3'} min-w-0`}>
+          <IconComp className={`${compact ? 'w-[16px] h-[16px]' : 'w-[18px] h-[18px]'} stroke-[2.2] shrink-0 transition-colors ${
+            isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+          }`} />
+          <span className="truncate">{item.label}</span>
+        </div>
+      </button>
+    );
+  };
+
+  const renderSidebarGroup = (group) => {
+    const GroupIcon = group.icon;
+    const isOpen = sectionsOpen[group.key];
+
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={() => toggleSection(group.key)}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <GroupIcon className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-colors" />
+            <span className="truncate">{group.title}</span>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+        </button>
+        {isOpen && (
+          <div className="pl-6 space-y-1 animate-in fade-in duration-200">
+            {group.items.map(item => renderSidebarItem(item, true))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
       
@@ -985,6 +1459,147 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+
+        /* PROFILE CUSTOM HOVER DROPDOWN STYLE */
+        .profile-menu-wrapper {
+          position: relative;
+        }
+
+        .profile-menu-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          height: 20px;
+          z-index: 98;
+        }
+
+        .profile-menu-dropdown {
+          background-color: #ffffff; /* White background */
+          border: 1px solid #e1e8fd; /* Light border matching dashboard */
+          border-radius: 16px;
+          position: absolute;
+          width: 280px;
+          right: 0;
+          top: calc(100% + 6px);
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+          z-index: 9999 !important;
+          padding: 8px;
+          cursor: default;
+          clip-path: inset(0% 0% 100% 0% round 16px);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-dropdown {
+          clip-path: inset(0% 0% 0% 0% round 16px);
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .profile-menu-item {
+          --delay: 0.1s;
+          --trdelay: 0.05s;
+          transform: translateY(-15px);
+          opacity: 0;
+          transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(1) { transition-delay: var(--delay); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(2) { transition-delay: calc(var(--delay) + var(--trdelay)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(3) { transition-delay: calc(var(--delay) + (var(--trdelay) * 2)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(4) { transition-delay: calc(var(--delay) + (var(--trdelay) * 3)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(5) { transition-delay: calc(var(--delay) + (var(--trdelay) * 4)); }
+        .profile-menu-wrapper:hover .profile-menu-item:nth-child(6) { transition-delay: calc(var(--delay) + (var(--trdelay) * 5)); }
+
+        /* Light theme typography and border overrides */
+        .profile-menu-dropdown .border-b {
+          border-color: #e9edff !important;
+        }
+
+        .profile-menu-dropdown .bg-slate-100 {
+          background-color: #e9edff !important;
+        }
+
+        .profile-menu-dropdown p.text-slate-400 {
+          color: #6e7b6c !important; /* Muted slate green */
+        }
+
+        .profile-menu-dropdown p.text-slate-800 {
+          color: #141b2b !important; /* Dark text matching theme */
+        }
+
+        .profile-menu-btn {
+          color: #3e4a3d !important; /* Dark slate green */
+          background-color: transparent !important;
+          white-space: nowrap !important;
+        }
+
+        .profile-menu-btn:hover {
+          color: #006b2c !important; /* Brand green */
+          background-color: #f7fff2 !important; /* Light green hover background */
+        }
+
+        .profile-menu-btn.profile-menu-active {
+          color: #006b2c !important;
+          background-color: #f7fff2 !important;
+        }
+
+        .profile-menu-btn.text-rose-600 {
+          color: #ba1a1a !important; /* Red */
+        }
+
+        .profile-menu-btn.text-rose-600:hover {
+          color: #ba1a1a !important;
+          background-color: #ffdad6 !important; /* Light red hover */
+        }
+
+        /* ORBITAL SELECTOR INDICATOR FOR PROFILE MENU ITEMS */
+        .profile-menu-circle {
+          width: 12px;
+          height: 12px;
+          background-color: transparent;
+          border: 1.5px solid #bdcaba; /* Light green/slate border */
+          border-radius: 50%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+        }
+
+        .profile-menu-circle::before {
+          content: "";
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: #006b2c; /* Brand green */
+          border-radius: 50%;
+          transform: scale(0);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .profile-menu-circle::after {
+          content: "";
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          border: 1.5px solid transparent;
+          border-radius: 50%;
+          border-top-color: #006b2c; /* Brand green */
+          opacity: 0;
+          transform: scale(0.8);
+          transition: all 0.3s ease;
+        }
       `}</style>
 
       {/* Global Toast Alert */}
@@ -1022,88 +1637,28 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hidden">
-            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-2">Workspace</p>
-            <nav className="space-y-1">
-              {[
-                { name: 'Dashboard', icon: LayoutDashboard },
-                { name: 'Tasks', icon: CheckSquare },
-                { name: 'Support', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
-                { name: 'Moderation', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
-                { name: 'KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
-                { name: 'Finance', icon: BadgeDollarSign },
-                { name: 'Disputes', icon: ShieldAlert },
-                { name: 'CMS', icon: FileText },
-                { name: 'Audit Logs', icon: Clock },
-                { name: 'Notifications', icon: Bell },
-                { name: 'Settings', icon: Settings },
-              ].map((item) => {
-                const IconComp = item.icon;
-                const isActive = activeTab === item.name;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => setActiveTab(item.name)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                      isActive 
-                        ? 'bg-[#f7fff2] text-[#006b2c]' 
-                        : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                    }`}
-                  >
-                    {/* Left Active border bar */}
-                    {isActive && (
-                      <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                    )}
-                    <div className="flex items-center gap-3">
-                      <IconComp className={`w-[20px] h-[20px] stroke-[2.2] transition-colors ${
-                        isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                      }`} />
-                      <span>{item.name}</span>
-                    </div>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hidden">
+            <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-1">Không gian làm việc</p>
+            <nav className="space-y-4">
+              <div className="space-y-1">
+                {commonSidebarItems.map(item => renderSidebarItem(item))}
+              </div>
+
+              {renderSidebarGroup(activeDepartmentSidebarGroup)}
+
             </nav>
           </div>
         </div>
 
-        {/* Sidebar Footer (Create Task Button) */}
-        <div className="p-4 border-t border-[#e1e8fd] bg-[#f9f9ff]">
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#006b2c] hover:bg-[#00873a] text-white py-2.5 rounded-lg font-bold text-body-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create New Task</span>
-          </button>
-        </div>
+
       </aside>
 
       {/* ---------------- MAIN CONTAINER ---------------- */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         
         {/* HEADER (64px Height) */}
-        <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-between shrink-0 z-10">
+        <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-end shrink-0 z-10">
           
-          {/* Search bar */}
-          <div className="w-80 relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
-              <Search className="w-4 h-4" />
-            </span>
-            <input
-              type="text"
-              placeholder="Search tasks, users, or reports..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border border-transparent transition-all"
-            />
-          </div>
-
           {/* User profile & Actions */}
           <div className="flex items-center gap-5">
             {/* Top Toolbar Icons */}
@@ -1112,12 +1667,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#ba1a1a] rounded-full border border-white" />
               </button>
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
-                <HelpCircle className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
-                <Grid className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Vertical Divider */}
@@ -1125,26 +1674,98 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
             {/* Profile widget */}
             <div className="flex items-center gap-3">
-              <div className="flex flex-col text-right">
-                <span className="text-body-sm font-bold text-[#141b2b] leading-tight">
-                  {user?.name || 'Staff Member'}
-                </span>
-                <span className="text-[10px] font-bold text-[#006b2c] tracking-wide uppercase">
-                  {currentRole === 'MANAGER' ? 'Manager / CS Dept' : 'Staff / CS Dept'}
-                </span>
+              <div className="profile-menu-wrapper">
+                <div 
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-full border border-[#bdcaba]/60 bg-slate-50/40 hover:bg-slate-50 hover:border-emerald-600/40 hover:shadow-sm transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="flex flex-col text-right sm:block hidden">
+                    <span className="text-[13px] font-bold text-[#141b2b] leading-tight truncate max-w-[150px] block" title={user?.displayName || user?.name || user?.email}>
+                      {user?.displayName || user?.name || user?.email || "Nhân viên"}
+                    </span>
+                    <div className="flex justify-end mt-0.5">
+                      <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-50 text-[#006b2c] border border-emerald-100/60 leading-none">
+                        {currentRole === 'MANAGER' ? `Manager / ${myProfile?.departmentName || 'CS'}` : `Staff / ${myProfile?.departmentName || 'CS'}`}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="relative">
+                    {user?.avatar || user?.avatarUrl ? (
+                      <img
+                        src={user?.avatar || user?.avatarUrl}
+                        alt="Avatar"
+                        className="w-9 h-9 rounded-full border-2 border-emerald-500/85 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-sm border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                      </div>
+                    )}
+                    
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                  </div>
+                  
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-300 group-hover:rotate-180" />
+                </div>
+
+                <div className="profile-menu-dropdown">
+                  <div className="profile-menu-item px-3 py-2 border-b border-slate-50 mb-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
+                      Tài khoản
+                    </p>
+                    <p
+                      className="text-sm font-bold text-slate-800 truncate text-left"
+                      title={user?.email}
+                    >
+                      {user?.email || user?.name}
+                    </p>
+                  </div>
+
+
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onNavigate) onNavigate("preferences");
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-blue-600 hover:bg-blue-50"
+                    >
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+                  </div>
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        setShowTransferRequestModal(true);
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-emerald-600 hover:bg-emerald-50"
+                    >
+                      <ArrowLeftRight className="w-4 h-4" /> Yêu cầu điều chuyển
+                    </button>
+                  </div>
+
+
+
+                  <div className="h-[1px] bg-slate-100 my-1 mx-2" />
+
+                  <div className="profile-menu-item">
+                    <button
+                      onClick={() => {
+                        if (onLogout) {
+                          onLogout();
+                        } else {
+                          localStorage.clear();
+                          window.location.reload();
+                        }
+                      }}
+                      className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                      <LogOut className="w-4 h-4" /> Đăng xuất
+                    </button>
+                  </div>
+                </div>
               </div>
-              <img
-                src={user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&fit=crop&auto=format&q=60"}
-                alt="Avatar"
-                className="w-10 h-10 rounded-full border border-[#bdcaba] object-cover"
-              />
-              <button 
-                onClick={onNavigateToHome}
-                title="Exit Console"
-                className="p-2 text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </header>
@@ -1159,17 +1780,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Sub-header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Dashboard Overview</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Welcome back. Here is what's happening with your tasks today.</p>
+                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Tổng quan hệ thống</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Chào mừng trở lại. Dưới đây là tình hình công việc của bạn hôm nay.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2">
                     <ArrowDownRight className="w-4 h-4" />
-                    <span>Export Data</span>
+                    <span>Xuất dữ liệu</span>
                   </button>
                   <button className="px-4 py-2 bg-[#006b2c] text-white rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#00873a] transition-all flex items-center gap-2">
                     <Filter className="w-4 h-4" />
-                    <span>Task Filters</span>
+                    <span>Lọc công việc</span>
                   </button>
                 </div>
               </div>
@@ -1190,7 +1811,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Assigned Tasks</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Công việc được giao</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countAssigned}</h2>
                     </div>
                     {/* Tiny sparkline */}
@@ -1210,12 +1831,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <Clock className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#0058be] bg-blue-50 px-2 py-0.5 rounded-full">
-                      <span>Stable</span>
+                      <span>Ổn định</span>
                     </span>
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Pending Approval</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Chờ phê duyệt</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countPending}</h2>
                     </div>
                     {/* Stable sparkline */}
@@ -1241,7 +1862,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Completed Today</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Hoàn thành hôm nay</p>
                       <h2 className="text-display-lg text-[#141b2b] mt-1">{countCompleted}</h2>
                     </div>
                     {/* Up sparkline */}
@@ -1261,12 +1882,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <AlertTriangle className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#ba1a1a] bg-[#ffdad6] px-2 py-0.5 rounded-full">
-                      <span>! Critical</span>
+                      <span>Khẩn cấp</span>
                     </span>
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Overdue Tasks</p>
+                      <p className="text-label-md text-[#6e7b6c] uppercase tracking-wider">Quá hạn</p>
                       <h2 className="text-display-lg text-[#ba1a1a] mt-1">{countOverdue}</h2>
                     </div>
                     {/* Alert sparkline */}
@@ -1288,8 +1909,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 <div className="lg:col-span-2 card-level-1 p-6 bg-white flex flex-col justify-between min-h-[320px]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b]">Task Completion by Day</h3>
-                      <p className="text-xs text-[#3e4a3d]">Performance review based on finished admin requests.</p>
+                      <h3 className="text-body-lg font-bold text-[#141b2b]">Công việc hoàn thành theo ngày</h3>
+                      <p className="text-xs text-[#3e4a3d]">Đánh giá hiệu suất dựa trên các yêu cầu đã xử lý.</p>
                     </div>
                     <select
                       value={chartPeriod}
@@ -1299,8 +1920,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       }}
                       className="bg-[#f1f3ff] border-none text-[#141b2b] text-xs font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30"
                     >
-                      <option value="7days">Last 7 Days</option>
-                      <option value="30days">Last 30 Days</option>
+                      <option value="7days">7 ngày qua</option>
+                      <option value="30days">30 ngày qua</option>
                     </select>
                   </div>
 
@@ -1392,8 +2013,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 {/* Column 3: Doughnut Support Status Overview */}
                 <div className="card-level-1 p-6 bg-white flex flex-col justify-between min-h-[320px]">
                   <div>
-                    <h3 className="text-body-lg font-bold text-[#141b2b]">Ticket Status Overview</h3>
-                    <p className="text-xs text-[#3e4a3d]">Current support request distribution.</p>
+                    <h3 className="text-body-lg font-bold text-[#141b2b]">Tổng quan Ticket Hỗ trợ</h3>
+                    <p className="text-xs text-[#3e4a3d]">Phân bổ trạng thái các yêu cầu hỗ trợ hiện tại.</p>
                   </div>
 
                   {/* Doughnut SVG */}
@@ -1437,7 +2058,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                         className="hover:stroke-[#4ae176] transition-all duration-200 cursor-pointer"
                       />
                       <g className="text-center">
-                        <text x="75" y="70" textAnchor="middle" className="text-[10px] font-bold text-[#6e7b6c] fill-current">TOTAL</text>
+                        <text x="75" y="70" textAnchor="middle" className="text-[10px] font-bold text-[#6e7b6c] fill-current">TỔNG</text>
                         <text x="75" y="90" textAnchor="middle" className="text-title-md font-extrabold text-[#141b2b] fill-current">{displayTotal}</text>
                       </g>
                     </svg>
@@ -1448,21 +2069,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#006b2c] rounded-full" />
-                        <span>In Progress</span>
+                        <span>Đang xử lý</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayInProgressPercent}%</span>
                     </div>
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#0058be] rounded-full" />
-                        <span>Pending</span>
+                        <span>Chờ xử lý</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayPendingPercent}%</span>
                     </div>
                     <div className="flex items-center justify-between text-body-sm">
                       <div className="flex items-center gap-2 font-semibold text-[#141b2b]">
                         <span className="w-3 h-3 bg-[#6bff8f] rounded-full" />
-                        <span>Waiting User</span>
+                        <span>Chờ phản hồi</span>
                       </div>
                       <span className="font-bold text-[#3e4a3d]">{displayWaitingUserPercent}%</span>
                     </div>
@@ -1474,7 +2095,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Data Table: My Assigned Work */}
               <div className="card-level-1 p-6 bg-white">
                 <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-[#e1e8fd] gap-4">
-                  <h3 className="text-title-md font-extrabold text-[#141b2b]">My Assigned Work</h3>
+                  <h3 className="text-title-md font-extrabold text-[#141b2b]">Công việc của tôi</h3>
                   
                   {/* Filters & Actions */}
                   <div className="flex flex-wrap items-center gap-3">
@@ -1490,7 +2111,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               : 'text-[#6e7b6c] hover:text-[#141b2b]'
                           }`}
                         >
-                          {tab}
+                          {tab === 'ALL' ? 'Tất cả' : tab === 'Pending' ? 'Chờ xử lý' : tab === 'In Progress' ? 'Đang xử lý' : 'Hoàn thành'}
                         </button>
                       ))}
                     </div>
@@ -1510,13 +2131,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                     <table className="min-w-full divide-y divide-[#e9edff] text-left">
                       <thead>
                         <tr className="bg-[#f9f9ff]">
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Task ID</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Type</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">User</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Priority</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Deadline</th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right sticky right-0 bg-[#f9f9ff]">Action</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã CV</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Loại</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Người dùng</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mức độ</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Hạn chót</th>
+                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right sticky right-0 bg-[#f9f9ff]">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#e9edff] bg-white">
@@ -1524,7 +2145,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           filteredTasks.map((t) => (
                             <tr key={t.id} className="hover:bg-[#f7fff2]/30 transition-colors group">
                               <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">{t.id}</td>
-                              <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">{t.type}</td>
+                              <td className="px-4 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">
+                                <div>{t.type}</div>
+                                <div className="text-[11px] text-slate-400 font-normal mt-0.5">{t.title}</div>
+                              </td>
                               <td className="px-4 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2.5">
                                   <img src={t.avatar} alt={t.user} className="w-6 h-6 rounded-full object-cover border border-[#bdcaba]" />
@@ -1558,12 +2182,16 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               <td className="px-4 py-4 whitespace-nowrap text-right sticky right-0 bg-white group-hover:bg-[#f7fff2]/30 transition-colors">
                                 <button
                                   onClick={() => {
+                                    if (t.assignedToEmail && t.assignedToEmail !== (user?.email || 'staff@gmail.com')) {
+                                      showToast(`Tác vụ này đang được xử lý bởi nhân viên ${t.assignedToEmail}. Bạn không thể can thiệp!`, 'error');
+                                      return;
+                                    }
                                     setSelectedTask(t);
                                     setShowManageModal(true);
                                   }}
                                   className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
                                 >
-                                  Manage
+                                  Quản lý
                                 </button>
                               </td>
                             </tr>
@@ -1588,8 +2216,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           {activeTab === 'Tasks' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Tasks Directory</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Full registry of administrative tasks assignable to staff agents.</p>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Danh mục công việc</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Toàn bộ danh sách công việc quản trị được giao cho nhân viên.</p>
               </div>
 
               {/* Tasks Filters Card */}
@@ -1610,13 +2238,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </button>
                     ))}
                   </div>
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create New Task</span>
-                  </button>
+
                 </div>
               </div>
 
@@ -1626,7 +2248,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   <div key={t.id} className="card-level-1 p-5 bg-white flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between">
-                        <span className="text-xs font-bold text-[#006b2c]">{t.id}</span>
+                        <span className="text-xs font-bold text-[#006b2c]">{t.id} - {t.type}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           t.priority === 'High' 
                             ? 'bg-[#ffdad6] text-[#ba1a1a]' 
@@ -1637,7 +2259,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           {t.priority}
                         </span>
                       </div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.type}</h3>
+                      <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.title}</h3>
                       <p className="text-body-sm text-[#3e4a3d] line-clamp-2 mt-1.5">{t.description}</p>
                     </div>
 
@@ -1648,6 +2270,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </div>
                       <button 
                         onClick={() => {
+                          if (t.assignedToEmail && t.assignedToEmail !== (user?.email || 'staff@gmail.com')) {
+                            showToast(`Tác vụ này đang được xử lý bởi nhân viên ${t.assignedToEmail}. Bạn không thể can thiệp!`, 'error');
+                            return;
+                          }
                           setSelectedTask(t);
                           setShowManageModal(true);
                         }}
@@ -1668,16 +2294,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           {activeTab === 'Support' && (() => {
             const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
             const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
-            const claimedChats = openChats.filter(c => c.assigned_staff_id || c.assignedStaffId);
+            const claimedChats = openChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const unclaimedChats = openChats.filter(c => !(c.assigned_staff_id || c.assignedStaffId));
-            const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date());
+            const blockedChats = supportChats.filter(c => c.blocked_until && new Date(c.blocked_until) > new Date() && normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
+            const myDeletedChats = deletedChats.filter(c => normalizeId(c.assigned_staff_id || c.assignedStaffId) === normalizeId(user?.id));
             const displayedChats = supportSubTab === 'claimed'
               ? claimedChats.filter(matchesChatSearch)
               : supportSubTab === 'unclaimed'
                 ? unclaimedChats.filter(matchesChatSearch)
                 : supportSubTab === 'blocked'
                   ? blockedChats.filter(matchesChatSearch)
-                  : deletedChats.filter(matchesChatSearch);
+                  : myDeletedChats.filter(matchesChatSearch);
 
             const activeChat = (supportSubTab === 'deleted' ? deletedChats : supportChats).find(c => c.id === selectedChatId);
 
@@ -1747,7 +2374,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
                           }`}
                         >
-                          Đã xóa
+                          Đã xóa ({myDeletedChats.length})
                         </button>
                       </div>
                     </div>
@@ -1794,7 +2421,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       </div>
                       <h4 className="text-body-lg font-bold text-[#141b2b] mb-1">Chọn một hội thoại</h4>
                       <p className="text-body-sm text-[#6e7b6c] max-w-xs leading-relaxed">
-                        Choose a chat from the contact list on the left to start live support messaging and user moderation.
+                        Chọn một hội thoại từ danh sách bên trái để bắt đầu nhắn tin hỗ trợ và kiểm duyệt người dùng.
                       </p>
                     </div>
                   ) : (
@@ -1840,69 +2467,93 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
                       {/* Messages Bubble Container */}
                       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                        {Array.isArray(chatMessages) && chatMessages.map((m, idx) => {
-                          const isMe = isOwnSupportMessage(m);
-                          const msgTime = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
-                          return (
-                            <div key={m.messageId || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                {m.messageText &&
-                                  m.messageText.trim() !== "" &&
-                                  !(
-                                    m.attachments &&
-                                    m.attachments.length > 0 &&
-                                    (m.messageText === "[Hình ảnh]" || m.messageText === "[Tệp đính kèm]")
-                                  ) && (
-                                  <div className={`px-4 py-2.5 rounded-2xl text-body-sm leading-relaxed ${
-                                    isMe 
-                                      ? 'bg-[#006b2c] text-white rounded-tr-none' 
-                                      : 'bg-white border border-[#e1e8fd] text-[#141b2b] rounded-tl-none shadow-sm'
-                                  }`}>
-                                    {m.messageText}
+                        {supportSubTab === 'deleted' ? (
+                          <div className="flex flex-col items-center justify-center h-full text-slate-400 mt-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-50"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            <p className="text-sm font-medium">Nội dung hội thoại đã bị ẩn vì đã bị xóa.</p>
+                          </div>
+                        ) : (
+                          <>
+                            {Array.isArray(chatMessages) && chatMessages.map((m, idx) => {
+                              const isMe = isOwnSupportMessage(m);
+                              const msgTime = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+                              return (
+                                <div key={m.messageId || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                  <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                    {m.messageText &&
+                                      m.messageText.trim() !== "" &&
+                                      !(
+                                        m.attachments &&
+                                        m.attachments.length > 0 &&
+                                        (m.messageText === "[Hình ảnh]" || m.messageText === "[Tệp đính kèm]")
+                                      ) && (
+                                      <div className={`px-4 py-2.5 rounded-2xl text-body-sm leading-relaxed ${
+                                        isMe 
+                                          ? 'bg-[#006b2c] text-white rounded-tr-none' 
+                                          : 'bg-white border border-[#e1e8fd] text-[#141b2b] rounded-tl-none shadow-sm'
+                                      }`}>
+                                        {m.messageText}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Attachments rendering */}
+                                    {m.attachments && m.attachments.length > 0 && (
+                                      <div className={`mt-2 flex flex-col gap-2 ${isMe ? "items-end" : "items-start"}`}>
+                                        {m.attachments.map((att, attIdx) => {
+                                          const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl || "");
+                                          if (isImg) {
+                                            return (
+                                              <a key={attIdx} href={att.fileUrl} target="_blank" rel="noopener noreferrer" className="block max-w-xs md:max-w-md overflow-hidden rounded-xl border border-slate-200">
+                                                <img src={att.fileUrl} alt={att.fileName || "Image"} className="w-full h-auto object-cover max-h-60" />
+                                              </a>
+                                            );
+                                          }
+                                          return (
+                                            <a key={attIdx} href={att.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"} transition-all`}>
+                                              <div className={`p-2 rounded-lg ${isMe ? "bg-white/20" : "bg-slate-100"}`}>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold truncate max-w-[150px]">{att.fileName}</p>
+                                                <p className={`text-[10px] ${isMe ? "text-emerald-100" : "text-slate-500"}`}>{(att.fileSize / 1024).toFixed(1)} KB</p>
+                                              </div>
+                                            </a>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    
+                                    <span className="text-[10px] text-[#6e7b6c] font-bold mt-1 px-1">{msgTime}</span>
                                   </div>
-                                )}
-                                
-                                {/* Attachments rendering */}
-                                {m.attachments && m.attachments.length > 0 && (
-                                  <div className={`mt-2 flex flex-col gap-2 ${isMe ? "items-end" : "items-start"}`}>
-                                    {m.attachments.map((att, attIdx) => {
-                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileUrl || "");
-                                      if (isImg) {
-                                        return (
-                                          <a key={attIdx} href={att.fileUrl} target="_blank" rel="noopener noreferrer" className="block max-w-xs md:max-w-md overflow-hidden rounded-xl border border-slate-200">
-                                            <img src={att.fileUrl} alt={att.fileName || "Image"} className="w-full h-auto object-cover max-h-60" />
-                                          </a>
-                                        );
-                                      }
-                                      return (
-                                        <a key={attIdx} href={att.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"} transition-all`}>
-                                          <div className={`p-2 rounded-lg ${isMe ? "bg-white/20" : "bg-slate-100"}`}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold truncate max-w-[150px]">{att.fileName}</p>
-                                            <p className={`text-[10px] ${isMe ? "text-emerald-100" : "text-slate-500"}`}>{(att.fileSize / 1024).toFixed(1)} KB</p>
-                                          </div>
-                                        </a>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                                
-                                <span className="text-[10px] text-[#6e7b6c] font-bold mt-1 px-1">{msgTime}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        <div ref={messagesEndRef} />
+                                </div>
+                              );
+                            })}
+                            <div ref={messagesEndRef} />
+                          </>
+                        )}
                       </div>
 
                       {/* Input panel / block banner */}
-                      {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
+                      {supportSubTab === 'deleted' ? (
+                        <div className="flex items-center justify-between p-4 bg-slate-100 border-t border-[#e1e8fd] shrink-0">
+                          <div className="flex items-center">
+                            <AlertCircle className="w-5 h-5 text-slate-500 mr-2 shrink-0" />
+                            <span className="text-xs font-bold text-slate-600">
+                              Hội thoại này đã bị xóa. Bạn không thể nhắn tin thêm.
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleRestoreTicket}
+                            className="px-4 py-2 bg-emerald-50 hover:bg-[#f7fff2] text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+                          >
+                            Khôi phục hội thoại
+                          </button>
+                        </div>
+                      ) : activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                         <div className="flex items-center justify-center p-4 bg-slate-100 border-t border-[#e1e8fd] h-[76px] shrink-0">
                           <AlertCircle className="w-5 h-5 text-rose-500 mr-2 shrink-0" />
                           <span className="text-xs font-bold text-slate-600">
-                            This user is currently suspended from chat.
+                            Người dùng này hiện đang bị đình chỉ chat.
                           </span>
                         </div>
                       ) : (
@@ -1941,7 +2592,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           />
                         </div>
                         <h3 className="font-bold text-title-md text-[#141b2b] mb-1">{activeChat.name}</h3>
-                        <p className="text-xs text-[#6e7b6c] font-semibold mb-3">{activeChat.sender_email || activeChat.senderEmail || 'No email provided'}</p>
+                        <p className="text-xs text-[#6e7b6c] font-semibold mb-3">{activeChat.sender_email || activeChat.senderEmail || 'Không có email'}</p>
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider ${
                           activeChat.sender_role === 'EMPLOYER' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'
                         }`}>
@@ -1952,19 +2603,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                       <div className="p-6 flex flex-col gap-6">
                         {/* Account Details */}
                         <div>
-                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Account Information</h4>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Thông tin tài khoản</h4>
                           <div className="space-y-3">
                             <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
-                              <span className="text-xs font-semibold text-[#3e4a3d]">Status</span>
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Trạng thái</span>
                               {(() => {
                                 const status = activeChat.sender_status;
-                                if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Locked</span>;
-                                if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Banned</span>;
-                                return <span className="text-xs font-bold text-emerald-600">Active</span>;
+                                if (status === 'LOCKED' || status === 'locked') return <span className="text-xs font-bold text-amber-600">Bị khóa</span>;
+                                if (status === 'BANNED' || status === 'banned') return <span className="text-xs font-bold text-rose-600">Bị cấm</span>;
+                                return <span className="text-xs font-bold text-emerald-600">Hoạt động</span>;
                               })()}
                             </div>
                             <div className="flex justify-between items-center bg-[#f9f9ff] p-3 rounded-xl border border-[#e1e8fd]">
-                              <span className="text-xs font-semibold text-[#3e4a3d]">Member Since</span>
+                              <span className="text-xs font-semibold text-[#3e4a3d]">Thành viên từ</span>
                               <span className="text-xs font-bold text-[#141b2b]">
                                 {activeChat.sender_created_at ? new Date(activeChat.sender_created_at).toLocaleDateString('vi-VN') : 'N/A'}
                               </span>
@@ -1974,31 +2625,31 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
                         {/* Moderation Actions */}
                         <div>
-                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Moderation Actions</h4>
+                          <h4 className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider mb-3">Thao tác kiểm duyệt</h4>
                           
                           {/* Block Status / Options */}
                           <div className="flex flex-col gap-2 mb-4">
                             {activeChat.blocked_until && new Date(activeChat.blocked_until) > new Date() ? (
                               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                                 <p className="text-xs font-semibold text-amber-800 mb-2">
-                                  Suspended until: <br />
+                                  Bị đình chỉ đến: <br />
                                   {new Date(activeChat.blocked_until).toLocaleString('vi-VN')}
                                 </p>
                                 <button
                                   onClick={() => handleBlockUser(0)}
                                   className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all"
                                 >
-                                  Unblock Now
+                                  Mở khóa ngay
                                 </button>
                               </div>
                             ) : (
                               <div className="bg-[#f9f9ff] border border-[#e1e8fd] rounded-xl p-3">
-                                <p className="text-xs font-semibold text-[#3e4a3d] mb-2">Suspend User Chat</p>
+                                <p className="text-xs font-semibold text-[#3e4a3d] mb-2">Đình chỉ chat người dùng</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <button onClick={() => handleBlockUser(1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 Day</button>
-                                  <button onClick={() => handleBlockUser(3)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-[#bdcaba] text-slate-700 rounded-lg text-xs font-bold transition-all">3 Days</button>
-                                  <button onClick={() => handleBlockUser(7)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 Days</button>
-                                  <button onClick={() => handleBlockUser(-1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Permanent</button>
+                                  <button onClick={() => handleBlockUser(1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">1 Ngày</button>
+                                  <button onClick={() => handleBlockUser(3)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-[#bdcaba] text-slate-700 rounded-lg text-xs font-bold transition-all">3 Ngày</button>
+                                  <button onClick={() => handleBlockUser(7)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-amber-400 hover:bg-amber-50 text-slate-700 rounded-lg text-xs font-bold transition-all">7 Ngày</button>
+                                  <button onClick={() => handleBlockUser(-1)} className="py-1.5 bg-white border border-[#e1e8fd] hover:border-rose-400 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all">Vĩnh viễn</button>
                                 </div>
                               </div>
                             )}
@@ -2091,47 +2742,94 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 </div>
 
                 {moderationView === 'queue' && (() => {
-                  const filteredPendingItems = queueTab === 'ALL' 
-                    ? pendingItems 
-                    : pendingItems.filter(item => item.type === queueTab);
-                  
+                  const filteredPendingItems = pendingItems.filter(item => {
+                    if (queueTab !== 'ALL' && item.type !== queueTab) return false;
+                    if (queueSearch) {
+                      const lowerSearch = queueSearch.toLowerCase();
+                      return (item.title?.toLowerCase().includes(lowerSearch) || 
+                              item.author?.toLowerCase().includes(lowerSearch) ||
+                              item.reason?.toLowerCase().includes(lowerSearch));
+                    }
+                    return true;
+                  });
+
+                  const formatTimeRelative = (dateString) => {
+                    if (!dateString) return 'Vừa xong';
+                    const diff = new Date() - new Date(dateString);
+                    if (isNaN(diff)) return dateString;
+                    const minutes = Math.floor(diff / 60000);
+                    if (minutes < 60) return `${minutes} phút trước`;
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return `${hours} giờ trước`;
+                    return new Date(dateString).toLocaleString('vi-VN');
+                  };
+
+                  const handleSelectAll = (e) => {
+                    if (e.target.checked) {
+                      setSelectedQueueItems(filteredPendingItems.map(i => i.id));
+                    } else {
+                      setSelectedQueueItems([]);
+                    }
+                  };
+
+                  const handleSelectItem = (id) => {
+                    setSelectedQueueItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+                  };
+
                   return (
-                  <div className="bg-white border border-[#e1e8fd] rounded-xl overflow-hidden">
+                  <div className="bg-white border border-[#e1e8fd] rounded-xl overflow-hidden shadow-sm">
                     <div className="px-5 py-4 flex flex-col gap-4 border-b border-[#e9edff]">
                       <div className="flex items-center justify-between">
                         <div>
                           <h2 className="text-title-md font-extrabold text-[#141b2b]">Hàng đợi kiểm duyệt</h2>
                           <p className="text-xs text-[#6e7b6c] mt-0.5">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
                         </div>
+                        {selectedQueueItems.length > 0 && (
+                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                            <span className="text-xs font-bold text-[#006b2c] mr-2">Đã chọn {selectedQueueItems.length} mục</span>
+                            <button onClick={() => { setSelectedQueueItems([]); /* execute action */ }} className="px-3 py-1.5 bg-[#ba1a1a] text-white hover:bg-[#93000a] text-xs font-bold rounded shadow-sm flex items-center gap-1 transition-colors"><X className="w-3.5 h-3.5" /> Từ chối</button>
+                            <button onClick={() => { setSelectedQueueItems([]); /* execute action */ }} className="px-3 py-1.5 bg-[#006b2c] text-white hover:bg-[#00873a] text-xs font-bold rounded shadow-sm flex items-center gap-1 transition-colors"><Check className="w-3.5 h-3.5" /> Duyệt hàng loạt</button>
+                          </div>
+                        )}
                       </div>
-                      {/* Sub-tabs for queue items */}
-                      <div className="flex gap-2 border-b border-[#e9edff] pb-2 overflow-x-auto">
-                        {[
-                          { id: 'ALL', label: 'Tất cả' },
-                          { id: 'PROJECT', label: 'Dự án' },
-                          { id: 'PROFILE', label: 'Hồ sơ' },
-                          { id: 'GIG', label: 'Gói dịch vụ' },
-                          { id: 'REVIEW', label: 'Đánh giá' },
-                          { id: 'WITHDRAWAL', label: 'Rút tiền' }
-                        ].map(qTab => (
-                          <button
-                            key={qTab.id}
-                            onClick={() => setQueueTab(qTab.id)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
-                              queueTab === qTab.id
-                                ? 'bg-[#141b2b] text-white border-[#141b2b]'
-                                : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
-                            }`}
-                          >
-                            {qTab.label}
-                          </button>
-                        ))}
+                      
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e9edff] pb-2">
+                        <div className="flex gap-2 overflow-x-auto">
+                          {[
+                            { id: 'ALL', label: 'Tất cả' },
+                            { id: 'PROJECT', label: 'Dự án' },
+                            { id: 'PROFILE', label: 'Hồ sơ' },
+                            { id: 'GIG', label: 'Gói dịch vụ' },
+                            { id: 'REVIEW', label: 'Đánh giá' }
+                          ].map(qTab => (
+                            <button
+                              key={qTab.id}
+                              onClick={() => setQueueTab(qTab.id)}
+                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                                queueTab === qTab.id
+                                  ? 'bg-[#141b2b] text-white border-[#141b2b] shadow-sm'
+                                  : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                              }`}
+                            >
+                              {qTab.label}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <div className="w-full md:w-64 relative">
+                          <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]"><Search className="w-4 h-4" /></span>
+                          <input type="text" placeholder="Tìm tên, người đăng..." value={queueSearch} onChange={(e) => setQueueSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-[#f9f9ff] border border-[#e1e8fd] rounded-full text-xs font-medium text-[#141b2b] focus:outline-none focus:border-[#006b2c] focus:ring-1 focus:ring-[#006b2c]/20 transition-all" />
+                        </div>
                       </div>
                     </div>
+                    
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <table className="min-w-full text-left">
                         <thead>
-                          <tr className="bg-[#f9f9ff]">
+                          <tr className="bg-[#f9f9ff] border-b border-[#e9edff]">
+                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider w-10">
+                              <input type="checkbox" className="w-4 h-4 text-[#006b2c] border-[#bdcaba] rounded focus:ring-[#006b2c]" checked={selectedQueueItems.length > 0 && selectedQueueItems.length === filteredPendingItems.length} onChange={handleSelectAll} />
+                            </th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Nội dung</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Người đăng</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Lý do</th>
@@ -2140,23 +2838,35 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#e9edff] bg-white">
+                        <tbody className="divide-y divide-[#e1e8fd] bg-white">
                           {filteredPendingItems.map((item) => (
-                            <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                            <tr key={item.id} className={`hover:bg-[#f7fff2]/30 transition-colors ${selectedQueueItems.includes(item.id) ? 'bg-[#f7fff2]' : ''}`}>
+                              <td className="px-4 py-4">
+                                <input type="checkbox" className="w-4 h-4 text-[#006b2c] border-[#bdcaba] rounded focus:ring-[#006b2c]" checked={selectedQueueItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} />
+                              </td>
                               <td className="px-4 py-4">
                                 <div className="min-w-[240px]">
-                                  <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${item.type === 'PROJECT' ? 'bg-[#e9edff] text-[#141b2b] border-[#bdcaba]' : item.type === 'PROFILE' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-purple-50 text-purple-800 border-purple-200'}`}>
+                                    {item.type === 'PROJECT' && <FileText className="w-3 h-3" />}
+                                    {item.type === 'PROFILE' && <User className="w-3 h-3" />}
                                     {item.type}
                                   </span>
-                                  <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5">{item.title}</h4>
-                                  <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
+                                  <h4 className="text-body-sm font-bold text-[#141b2b] mt-2 group cursor-pointer hover:text-[#006b2c] transition-colors" onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}>{item.title}</h4>
+                                  <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1" title={item.detail}>{item.detail}</p>
                                 </div>
                               </td>
                               <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
-                              <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
-                              <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
+                              <td className="px-4 py-4 text-body-sm font-bold text-amber-700">
+                                <span className="bg-amber-50 px-2 py-1 rounded text-xs border border-amber-100">{item.reason}</span>
+                              </td>
                               <td className="px-4 py-4">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-[#3e4a3d]">{formatTimeRelative(item.subDate)}</span>
+                                  <span className="text-[10px] text-[#6e7b6c] mt-0.5">{item.subDate}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`px-2 py-1 rounded text-[10px] font-bold ${
                                   item.status === 'Approved' 
                                     ? 'bg-[#f7fff2] text-[#006b2c]' 
                                     : item.status === 'Rejected' 
@@ -2168,10 +2878,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                               </td>
                               <td className="px-4 py-4 text-right">
                                 {item.status === 'Pending' ? (
-                                  <div className="flex items-center justify-end gap-2">
+                                  <div className="flex items-center justify-end gap-1.5">
                                     <button 
                                       onClick={() => handleModAction(item, true)}
-                                      className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
+                                      className="p-1.5 bg-[#eaf6eb] text-[#006b2c] hover:bg-[#006b2c] hover:text-white rounded shadow-sm transition-all group relative"
                                       title="Duyệt"
                                     >
                                       <Check className="w-4 h-4" />
@@ -2303,7 +3013,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                           </div>
                           <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{esc.title}</h3>
                           <p className="text-sm text-[#3e4a3d] mb-4">Người yêu cầu chuyển: <strong>{esc.owner}</strong></p>
-                          <button className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors">
+                          <button 
+                            className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors"
+                            onClick={() => {
+                              setSelectedDispute(esc);
+                              setShowDisputeModal(true);
+                            }}
+                          >
                             Xem chi tiết & Xử lý
                           </button>
                         </div>
@@ -2320,8 +3036,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
           {activeTab === 'KYC' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Identity KYC Approvals</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Review legal identity verifications for freelancers and employers to maintain a secure ecosystem.</p>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xét duyệt danh tính KYC</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Kiểm tra thông tin định danh hợp pháp của freelancer và nhà tuyển dụng để duy trì hệ sinh thái an toàn.</p>
               </div>
 
               {/* KYC Request List Grid */}
@@ -2343,26 +3059,32 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
 
                       <div className="py-4 space-y-2.5">
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Document Type:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Loại giấy tờ:</span>
                           <span className="font-bold text-[#141b2b]">{req.docType}</span>
                         </div>
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Submit Date:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Ngày gửi:</span>
                           <span className="font-bold text-[#3e4a3d]">{req.subDate}</span>
                         </div>
                         <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Email Address:</span>
+                          <span className="font-semibold text-[#6e7b6c]">Địa chỉ Email:</span>
                           <span className="font-bold text-[#141b2b]">{req.email}</span>
                         </div>
                         <div className="mt-3">
-                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Attached Document Preview:</span>
-                          <div className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 bg-slate-50 flex items-center justify-center group">
-                            <img src={req.docUrl} alt="KYC Document" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <a href={req.docUrl} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
-                                <Eye className="w-4 h-4" />
-                              </a>
-                            </div>
+                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm ({req.docUrls?.length || 0}):</span>
+                          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                             {req.docUrls && req.docUrls.length > 0 ? req.docUrls.map((url, i) => (
+                                <div key={i} className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 w-48 flex-shrink-0 bg-slate-50 flex items-center justify-center group">
+                                  <img src={url} alt={`KYC Document ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <a href={url} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
+                                      <Eye className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                             )) : (
+                                <div className="text-xs text-gray-500 italic py-2">Không có tài liệu nào</div>
+                             )}
                           </div>
                         </div>
                       </div>
@@ -2385,17 +3107,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                             onClick={() => handleKycAction(req.idRaw, false, req.role)}
                             className="px-3 py-1.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-bold transition-all"
                           >
-                            Reject
+                            Từ chối
                           </button>
                           <button 
                             onClick={() => handleKycAction(req.idRaw, true, req.role)}
                             className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all"
                           >
-                            Approve Verify
+                            Duyệt xác thực
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#6e7b6c] font-bold">Processed</span>
+                        <span className="text-xs text-[#6e7b6c] font-bold">Đã xử lý</span>
                       )}
                     </div>
                   </div>
@@ -2404,13 +3126,594 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             </div>
           )}
 
+          {/* ---------------- TAB: DISPUTES ---------------- */}
+          {activeTab === 'Disputes' && (() => {
+            const pendingDisputes = escalationCases.filter(esc => esc.raw?.status === 'OPEN' || esc.raw?.status === 'PENDING');
+            const resolvedDisputes = escalationCases.filter(esc => esc.raw?.status !== 'OPEN' && esc.raw?.status !== 'PENDING');
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xử lý Tranh chấp / Khiếu nại</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">
+                      Phân xử số tiền ký quỹ Escrow giữa Client và Freelancer khi xảy ra mâu thuẫn dự án.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 min-w-[240px]">
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Chưa giải quyết</p>
+                      <p className="text-title-md font-extrabold text-[#ba1a1a]">{pendingDisputes.length}</p>
+                    </div>
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Đã giải quyết</p>
+                      <p className="text-title-md font-extrabold text-[#006b2c]">{resolvedDisputes.length}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Danh sách Tranh chấp ({escalationCases.length})</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {escalationCases.map(esc => {
+                      const isPending = esc.raw?.status === 'OPEN' || esc.raw?.status === 'PENDING';
+                      return (
+                        <div key={esc.id} className={`border rounded-xl p-4 transition-all hover:shadow-md ${
+                          isPending ? 'border-rose-200 bg-rose-50/50' : 'border-[#e1e8fd] bg-white'
+                        }`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              esc.priority === 'Khẩn cấp' || esc.priority === 'HIGH'
+                                ? 'bg-rose-200 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {esc.priority}
+                            </span>
+                            <span className="text-xs text-[#6e7b6c] font-semibold">{esc.id}</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-1">{esc.title}</h3>
+                          <div className="text-xs text-[#3e4a3d] space-y-1 mb-4">
+                            <p>Dự án: <strong className="text-[#141b2b]">{esc.raw?.projectTitle}</strong></p>
+                            <p>Client: <strong>{esc.raw?.clientName}</strong> | Freelancer: <strong>{esc.raw?.freelancerName}</strong></p>
+                            <p>Số tiền: <strong className="text-rose-600">{(esc.raw?.amount || 0).toLocaleString('vi-VN')} VND</strong></p>
+                            <p>Trạng thái: <strong className={isPending ? 'text-rose-600' : 'text-[#006b2c]'}>{isPending ? 'Chưa giải quyết' : 'Đã giải quyết'}</strong></p>
+                          </div>
+                          {isPending ? (
+                            <button 
+                              className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
+                              onClick={() => {
+                                setSelectedDispute(esc);
+                                setShowDisputeModal(true);
+                              }}
+                            >
+                              Xem chi tiết & Xử lý
+                            </button>
+                          ) : (
+                            <div className="w-full py-2 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs rounded-lg text-center">
+                              Kết quả: {esc.raw?.status === 'RESOLVED_CLIENT_FAVOR' ? 'Hoàn tiền Client' : 'Thanh toán Freelancer'}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {escalationCases.length === 0 && (
+                      <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                        Chưa có tranh chấp nào được ghi nhận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: REPORTS (Báo cáo vi phạm) ---------------- */}
+          {activeTab === 'Reports' && (() => {
+            const severityClass = (severity) => severity === 'Cao' || severity === 'Khẩn cấp' || severity === 'HIGH'
+              ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ffdad6]'
+              : 'bg-amber-50 text-amber-700 border-amber-200';
+
+            const filteredReports = violationReports.filter(r => {
+              // Status filter
+              if (reportFilter !== 'ALL') {
+                const isPending = r.status === 'Chờ xử lý' || r.status === 'PENDING';
+                if (reportFilter === 'PENDING' && !isPending) return false;
+                if (reportFilter === 'RESOLVED' && isPending) return false;
+              }
+              // Type filter
+              if (reportTypeFilter !== 'ALL') {
+                if (reportTypeFilter === 'PROJECT' && r.target !== 'PROJECT') return false;
+                if (reportTypeFilter === 'USER' && r.target !== 'USER') return false;
+              }
+              // Search filter
+              if (reportSearch) {
+                const searchLower = reportSearch.toLowerCase();
+                const matchesTarget = r.target?.toLowerCase().includes(searchLower);
+                const matchesReporter = r.reporter?.toLowerCase().includes(searchLower);
+                const matchesAccused = r.accused?.toLowerCase().includes(searchLower);
+                const matchesEvidence = r.evidence?.toLowerCase().includes(searchLower);
+                if (!matchesTarget && !matchesReporter && !matchesAccused && !matchesEvidence) return false;
+              }
+              return true;
+            });
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Báo cáo vi phạm</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">Xử lý các báo cáo vi phạm bài đăng, hồ sơ và người dùng từ hệ thống.</p>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filter controls */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Status filter buttons */}
+                      <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                        {[
+                          { key: 'ALL', label: 'Tất cả' },
+                          { key: 'PENDING', label: 'Chờ xử lý' },
+                          { key: 'RESOLVED', label: 'Đã xử lý' }
+                        ].map((btn) => (
+                          <button
+                            key={btn.key}
+                            onClick={() => setReportFilter(btn.key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                              reportFilter === btn.key 
+                                ? 'bg-white text-[#006b2c] shadow-sm' 
+                                : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Type filter buttons */}
+                      <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                        {[
+                          { key: 'ALL', label: 'Tất cả loại' },
+                          { key: 'PROJECT', label: 'Dự án' },
+                          { key: 'USER', label: 'Người dùng' }
+                        ].map((btn) => (
+                          <button
+                            key={btn.key}
+                            onClick={() => setReportTypeFilter(btn.key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                              reportTypeFilter === btn.key 
+                                ? 'bg-white text-[#006b2c] shadow-sm' 
+                                : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Search bar */}
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm báo cáo..."
+                        value={reportSearch}
+                        onChange={(e) => setReportSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reports list */}
+                  <div className="space-y-4">
+                    {filteredReports.map(report => (
+                      <div key={report.id} className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${severityClass(report.severity)}`}>
+                                Mức độ: {report.severity}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold border border-slate-200">
+                                {report.type}
+                              </span>
+                            </div>
+                            <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
+                          </div>
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${
+                            report.status === 'Chờ xử lý' || report.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {report.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
+                          <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
+                          <div className="flex gap-4">
+                            <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
+                            <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
+                          </div>
+                          {(report.status === 'Chờ xử lý' || report.status === 'PENDING') && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Bạn có chắc chắn muốn đánh dấu báo cáo ${report.id} là đã xử lý?`)) {
+                                  adminApi.resolveReport(report.id.replace('RPT-', ''), 'RESOLVED', user?.id || 1)
+                                    .then(res => {
+                                      if (res.success) {
+                                        showToast(res.message, 'success');
+                                        fetchModerationData();
+                                      } else {
+                                        showToast(res.message, 'error');
+                                      }
+                                    }).catch(err => {
+                                      console.error(err);
+                                      showToast('Có lỗi xảy ra khi xử lý báo cáo.', 'error');
+                                    });
+                                }
+                              }}
+                              className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
+                            >
+                              Xử lý báo cáo →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {filteredReports.length === 0 && (
+                      <div className="text-center py-12 text-[#6e7b6c]">
+                        Chưa có báo cáo vi phạm nào phù hợp với bộ lọc.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: WITHDRAWALS (Rút tiền) ---------------- */}
+          {activeTab === 'Withdrawals' && (() => {
+            const filteredWds = withdrawals.filter(w => {
+              if (withdrawalFilter !== 'ALL' && w.statusRaw !== withdrawalFilter) return false;
+              if (financeSearch) {
+                const term = financeSearch.toLowerCase();
+                return w.user.toLowerCase().includes(term) || w.email.toLowerCase().includes(term) || w.bank.toLowerCase().includes(term);
+              }
+              return true;
+            });
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Rút tiền</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Duyệt và xử lý các yêu cầu rút số dư tài khoản từ Freelancer.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filters & Actions */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'PENDING', label: 'Chờ xử lý' },
+                        { key: 'APPROVED', label: 'Đã duyệt' },
+                        { key: 'REJECTED', label: 'Đã từ chối' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setWithdrawalFilter(tab.key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                            withdrawalFilter === tab.key 
+                              ? 'bg-white text-[#006b2c] shadow-sm' 
+                              : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên, email, ngân hàng..."
+                        value={financeSearch}
+                        onChange={(e) => setFinanceSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã Yêu Cầu</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thành Viên</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thông Tin Tài Khoản</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Số Tiền (VND)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Ngày gửi</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {filteredWds.length > 0 ? (
+                          filteredWds.map(w => (
+                            <tr 
+                              key={w.id} 
+                              onClick={() => {
+                                setSelectedWithdrawal(w);
+                                setShowWithdrawalModal(true);
+                              }}
+                              className="hover:bg-[#f7fff2]/30 transition-colors cursor-pointer"
+                            >
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">#{w.id}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <div className="text-body-sm font-bold text-[#141b2b]">{w.user}</div>
+                                <div className="text-[11px] text-slate-400 font-normal">{w.email}</div>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm">
+                                <div className="font-semibold text-[#141b2b]">{w.bank}</div>
+                                <div className="text-[11px] text-[#3e4a3d]">STK: {w.account}</div>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-extrabold text-rose-600 text-right">
+                                {w.amount.toLocaleString('vi-VN')}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#3e4a3d]">{w.date}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  w.statusRaw === 'PENDING'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : w.statusRaw === 'APPROVED'
+                                      ? 'bg-[#f7fff2] text-[#006b2c]'
+                                      : 'bg-[#ffdad6] text-[#ba1a1a]'
+                                }`}>
+                                  {w.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-right text-xs font-bold space-x-2">
+                                {w.statusRaw === 'PENDING' ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWithdrawalAction(w.id, 'APPROVED');
+                                      }}
+                                      className="px-2.5 py-1 bg-[#006b2c] hover:bg-[#00873a] text-white rounded transition-colors"
+                                    >
+                                      Duyệt
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWithdrawalAction(w.id, 'REJECTED');
+                                      }}
+                                      className="px-2.5 py-1 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 rounded transition-colors"
+                                    >
+                                      Từ chối
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-[#6e7b6c] font-normal">N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-10 text-[#6e7b6c] text-sm">
+                              Không tìm thấy yêu cầu rút tiền nào.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: REFUNDS (Hoàn tiền) ---------------- */}
+          {activeTab === 'Refunds' && (() => {
+            const refundsList = escalationCases.filter(esc => esc.raw?.status === 'RESOLVED_CLIENT_FAVOR');
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Hoàn tiền</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Lịch sử hoàn trả tiền ký quỹ Escrow về tài khoản Client do tranh chấp được giải quyết.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b]">Danh sách giao dịch hoàn tiền ({refundsList.length})</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {refundsList.map(ref => (
+                      <div key={ref.id} className="border border-[#e9edff] rounded-xl p-4 bg-[#f9f9ff] flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded border border-[#bdcaba]">#{ref.id}</span>
+                            <span className="text-xs font-bold text-[#006b2c] bg-emerald-100 px-2 py-0.5 rounded">Đã hoàn tiền</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-1">{ref.title}</h3>
+                          <div className="text-xs text-[#3e4a3d] space-y-1">
+                            <p>Dự án gốc: <strong className="text-[#141b2b]">{ref.raw?.projectTitle}</strong></p>
+                            <p>Nhận hoàn tiền (Client): <strong>{ref.raw?.clientName}</strong></p>
+                            <p>Đối tác (Freelancer): <strong>{ref.raw?.freelancerName}</strong></p>
+                            <p className="mt-2 text-body-sm font-extrabold text-rose-600">Số tiền hoàn lại: {(ref.raw?.amount || 0).toLocaleString('vi-VN')} VND</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {refundsList.length === 0 && (
+                      <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                        Chưa có lịch sử hoàn tiền nào được ghi nhận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: FAILED TRANSACTIONS (Giao dịch lỗi) ---------------- */}
+          {activeTab === 'FailedTransactions' && (() => {
+            const filteredTxns = vnpayTxns.filter(t => {
+              if (vnpayFilter !== 'ALL' && t.status !== vnpayFilter) return false;
+              if (financeSearch) {
+                const term = financeSearch.toLowerCase();
+                return t.txnRef.toLowerCase().includes(term) || t.vnpTxnNo.toLowerCase().includes(term);
+              }
+              return true;
+            });
+
+            const handleReconcile = (id) => {
+              const adminId = user?.id || 1;
+              if (window.confirm(`Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${id}?`)) {
+                adminApi.reconcileVnpayTransaction(id, adminId)
+                  .then(res => {
+                    if (res.success) {
+                      showToast(res.message, 'success');
+                      fetchVnpayTransactions();
+                    } else {
+                      showToast(res.message, 'error');
+                    }
+                  }).catch(err => {
+                    console.error(err);
+                    showToast('Có lỗi xảy ra khi đối soát giao dịch.', 'error');
+                  });
+              }
+            };
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Đối soát giao dịch VNPay</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Quản lý và đối soát các giao dịch thanh toán từ ví VNPay.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'FAILED', label: 'Giao dịch lỗi (FAILED)' },
+                        { key: 'SUCCESS', label: 'Thành công (SUCCESS)' },
+                        { key: 'PENDING', label: 'Chờ xử lý (PENDING)' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setVnpayFilter(tab.key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                            vnpayFilter === tab.key 
+                              ? 'bg-white text-[#006b2c] shadow-sm' 
+                              : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo mã giao dịch..."
+                        value={financeSearch}
+                        onChange={(e) => setFinanceSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã Đối Soát (TxnRef)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Số Tiền (VND)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD VNPay</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thời gian</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {filteredTxns.length > 0 ? (
+                          filteredTxns.map(t => (
+                            <tr key={t.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">#{t.id}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">{t.txnRef}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-extrabold text-emerald-600 text-right">
+                                {t.amount.toLocaleString('vi-VN')}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm text-[#3e4a3d]">{t.vnpTxnNo}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  t.status === 'SUCCESS'
+                                    ? 'bg-[#f7fff2] text-[#006b2c]'
+                                    : t.status === 'FAILED'
+                                      ? 'bg-[#ffdad6] text-[#ba1a1a]'
+                                      : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#3e4a3d]">{t.date}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-right text-xs font-bold">
+                                {t.status === 'FAILED' ? (
+                                  <button
+                                    onClick={() => handleReconcile(t.id)}
+                                    className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg transition-colors"
+                                  >
+                                    Đối soát lại
+                                  </button>
+                                ) : (
+                                  <span className="text-[#6e7b6c] font-normal">N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-10 text-[#6e7b6c] text-sm">
+                              Không tìm thấy giao dịch nào.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
               </div>
-              <h2 className="text-headline-lg font-extrabold text-[#141b2b]">{activeTab} Section</h2>
+              <h2 className="text-headline-lg font-extrabold text-[#141b2b]">Mục {activeTab}</h2>
               <p className="text-body-sm text-[#6e7b6c] max-w-md mx-auto">
                 Mục <strong>{activeTab}</strong> đang được đồng bộ hóa thông tin tự động từ máy chủ quản trị trung tâm. Vui lòng quay lại sau.
               </p>
@@ -2418,7 +3721,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                 onClick={() => setActiveTab('Dashboard')}
                 className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow transition-all"
               >
-                Back to Dashboard
+                Quay lại Bảng điều khiển
               </button>
             </div>
           )}
@@ -2426,113 +3729,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
         </div>
       </main>
 
-      {/* ---------------- MODAL: CREATE NEW TASK ---------------- */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd] animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e9edff]">
-              <h3 className="text-title-md font-extrabold text-[#141b2b]">Create New Staff Task</h3>
-              <button 
-                onClick={() => setShowCreateModal(false)}
-                className="p-1.5 hover:bg-[#f1f3ff] rounded-lg transition-colors text-[#6e7b6c]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleCreateTask} className="mt-4 space-y-4">
-              {/* Task Type */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Task Type</label>
-                <select
-                  value={createForm.type}
-                  onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                >
-                  <option value="Account Verification">Account Verification</option>
-                  <option value="Dispute Resolution">Dispute Resolution</option>
-                  <option value="Profile Review">Profile Review</option>
-                  <option value="KYC Document Approval">KYC Document Approval</option>
-                  <option value="Payment Processing">Payment Processing</option>
-                  <option value="Spam Moderation">Spam Moderation</option>
-                </select>
-              </div>
-
-              {/* User Assignee */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Assignee User Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Alex Rivera"
-                  value={createForm.user}
-                  onChange={(e) => setCreateForm({ ...createForm, user: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                />
-              </div>
-
-              {/* Priority & Deadline Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#6e7b6c] uppercase">Priority</label>
-                  <select
-                    value={createForm.priority}
-                    onChange={(e) => setCreateForm({ ...createForm, priority: e.target.value })}
-                    className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#6e7b6c] uppercase">Deadline</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Today, 5:00 PM"
-                    value={createForm.deadline}
-                    onChange={(e) => setCreateForm({ ...createForm, deadline: e.target.value })}
-                    className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Description Details</label>
-                <textarea
-                  rows="3"
-                  placeholder="Task notes or description..."
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 pt-3 border-t border-[#e9edff]">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
-                >
-                  Create Task
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ---------------- DRAWERS/MODAL: MANAGE/VIEW TASK DETAILS ---------------- */}
       {showManageModal && selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl flex flex-col justify-between border-l border-[#e1e8fd] animate-in slide-in-from-right duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl flex flex-col border border-[#e1e8fd] animate-in zoom-in-95 duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
                 <div>
@@ -2553,38 +3755,41 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
               {/* Task Details Info */}
               <div className="py-6 space-y-4">
                 <div className="flex items-center gap-3 bg-[#f1f3ff] p-4 rounded-xl">
-                  <img src={selectedTask.avatar} alt={selectedTask.user} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
+                  <img src={selectedTask.avatar} alt={selectedTask.assignedToEmail || 'Chưa ai nhận'} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
                   <div>
-                    <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.user}</h4>
-                    <p className="text-xs text-[#6e7b6c]">Assignee User</p>
+                    <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.assignedToEmail ? selectedTask.assignedToEmail : 'Chưa có ai nhận'}</h4>
+                    <p className="text-xs text-[#6e7b6c]">Người đang xử lý</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-body-sm border-b border-[#e9edff] pb-4">
                   <div>
-                    <span className="font-semibold text-[#6e7b6c]">Priority:</span>
+                    <span className="font-semibold text-[#6e7b6c]">Mức độ:</span>
                     <span className={`block mt-1 font-bold text-sm ${
                       selectedTask.priority === 'High' ? 'text-[#ba1a1a]' : 'text-[#3e4a3d]'
                     }`}>{selectedTask.priority} Priority</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-[#6e7b6c]">Deadline:</span>
+                    <span className="font-semibold text-[#6e7b6c]">Hạn chót:</span>
                     <span className="block mt-1 font-bold text-[#141b2b]">{selectedTask.deadline}</span>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Task Description</span>
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Mô tả công việc</span>
                   <p className="text-body-sm text-[#141b2b] mt-2 leading-relaxed bg-[#f9f9ff] p-3 rounded-lg border border-[#e1e8fd]">
                     {selectedTask.description}
                   </p>
                 </div>
 
                 <div>
-                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Current State</span>
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase">Trạng thái hiện tại</span>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`w-3 h-3 rounded-full ${
-                      selectedTask.status === 'Completed' ? 'bg-emerald-500' : selectedTask.status === 'In Progress' ? 'bg-[#006b2c]' : 'bg-blue-500'
+                      selectedTask.status === 'Completed' ? 'bg-emerald-500' : 
+                      selectedTask.status === 'In Progress' ? 'bg-[#006b2c]' : 
+                      selectedTask.status === 'Escalated' ? 'bg-red-500' : 
+                      'bg-blue-500'
                     }`} />
                     <span className="text-body-sm font-bold text-[#141b2b]">{selectedTask.status}</span>
                   </div>
@@ -2593,49 +3798,114 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
             </div>
 
             {/* Bottom Actions for Task */}
-            <div className="border-t border-[#e9edff] pt-4 space-y-3">
+            <div className="border-t border-[#e9edff] pt-4 space-y-3 mt-6">
               {selectedTask.status !== 'Completed' ? (
                 <>
                   {selectedTask.status === 'Pending' && (
                     <button 
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'In Progress')}
-                      className="w-full py-2.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
+                      disabled={selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')}
+                      className={`w-full py-2.5 rounded-lg font-bold text-body-sm shadow transition-all ${
+                        selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-[#006b2c] hover:bg-[#00873a] text-white'
+                      }`}
                     >
-                      Start Task (Mark In Progress)
+                      {selectedTask.assignedToEmail && selectedTask.assignedToEmail !== (user?.email || 'staff@gmail.com')
+                        ? 'Đã được nhận bởi ' + selectedTask.assignedToEmail
+                        : 'Bắt đầu xử lý'}
                     </button>
                   )}
-                  {selectedTask.status === 'In Progress' && (
+                  {selectedTask.status === 'In Progress' && selectedTask.assignedToEmail === (user?.email || 'staff@gmail.com') && (
                     <button 
                       onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
                       className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"
                     >
-                      Complete Task
+                      Hoàn thành công việc
                     </button>
                   )}
-                  <button 
-                    onClick={() => {
-                      setShowManageModal(false);
-                      setSelectedTask(null);
-                      showToast('Đã báo cáo trì hoãn cho Task!', 'error');
-                    }}
-                    className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
-                  >
-                    Flag Delay / Report Issue
-                  </button>
+                  {!showEscalateReasons ? (
+                    <button 
+                      onClick={() => setShowEscalateReasons(true)}
+                      className="w-full py-2.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg font-bold text-body-sm transition-all"
+                    >
+                      Báo cáo sự cố / Trì hoãn
+                    </button>
+                  ) : (
+                    <div className="border border-[#ffdad6] bg-[#fff5f4] rounded-lg p-4 space-y-3">
+                      <p className="text-body-sm font-bold text-[#ba1a1a]">Chọn lý do chuyển cấp:</p>
+                      <div className="space-y-2">
+                        {['Hồ sơ có dấu hiệu giả mạo tinh vi', 'Thiếu thẩm quyền để giải quyết', 'Tranh chấp phức tạp cần Manager phân xử', 'Lỗi hệ thống / Bug phần mềm', 'Lý do khác'].map((reason, idx) => (
+                          <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="escalateReason" 
+                              value={reason} 
+                              checked={selectedEscalateReason === reason}
+                              onChange={(e) => setSelectedEscalateReason(e.target.value)}
+                              className="mt-1"
+                            />
+                            <span className="text-body-sm text-[#3e4a3d]">{reason}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button 
+                          onClick={() => {
+                            setShowEscalateReasons(false);
+                            setSelectedEscalateReason('');
+                          }}
+                          className="flex-1 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-body-sm transition-all"
+                        >
+                          Hủy
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (!selectedEscalateReason) {
+                              showToast('Vui lòng chọn lý do báo cáo sự cố', 'error');
+                              return;
+                            }
+                            try {
+                              const res = await adminApi.escalateVerificationTask(selectedTask.taskId, selectedEscalateReason);
+                              if (res.success) {
+                                showToast(res.message || 'Đã báo cáo sự cố và chuyển cấp tác vụ!', 'success');
+                                setTasks(prev => prev.map(t => 
+                                  t.taskId === selectedTask.taskId ? { ...t, status: 'Escalated', assignedToEmail: null } : t
+                                ));
+                                setShowManageModal(false);
+                                setSelectedTask(null);
+                                setShowEscalateReasons(false);
+                                setSelectedEscalateReason('');
+                              } else {
+                                showToast(res.message || 'Có lỗi xảy ra', 'error');
+                              }
+                            } catch (error) {
+                              showToast('Lỗi kết nối tới máy chủ', 'error');
+                            }
+                          }}
+                          className="flex-1 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white rounded-lg font-bold text-body-sm transition-all"
+                        >
+                          Xác nhận gửi
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="p-3 bg-[#f7fff2] border border-[#bdcaba] rounded-lg text-center text-[#006b2c] font-bold text-body-sm">
-                  ✓ Task completed successfully.
+                  ✓ Công việc đã hoàn thành thành công.
                 </div>
               )}
               <button
                 onClick={() => {
                   setShowManageModal(false);
                   setSelectedTask(null);
+                  setShowEscalateReasons(false);
+                  setSelectedEscalateReason('');
                 }}
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm rounded-lg transition-all"
               >
-                Close Drawer
+                Đóng cửa sổ
               </button>
             </div>
           </div>
@@ -2666,8 +3936,514 @@ export default function StaffDashboardPage({ user, onNavigateToHome }) {
                   confirmConfig.type === 'danger' ? 'bg-[#ba1a1a] hover:bg-[#93000a]' : 'bg-[#006b2c] hover:bg-[#00873a]'
                 }`}
               >
-                {confirmConfig.confirmText || 'Xác nhận'}
+                {confirmConfig.confirmText || 'Xác nhận'} {confirmCountdown !== null ? `(${confirmCountdown}s)` : ''}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- DISPUTE RESOLUTION MODAL ---------------- */}
+      {showDisputeModal && selectedDispute && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Xử lý Khiếu nại / Tranh chấp</h2>
+              <button 
+                onClick={() => {
+                  setShowDisputeModal(false);
+                  setSelectedDispute(null);
+                  setDisputeNote('');
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl mb-4">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs font-bold text-rose-600 uppercase">Ưu tiên: {selectedDispute.priority}</span>
+                  <span className="text-xs text-rose-500 font-medium">{selectedDispute.raw?.createdAt}</span>
+                </div>
+                <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedDispute.raw?.projectTitle}</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-[#f7fff2] border border-[#d6f2c6] p-3 rounded-lg">
+                  <p className="text-xs text-[#3e4a3d] mb-1">Bên Client (Thuê)</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.clientName}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                  <p className="text-xs text-[#3e4a3d] mb-1">Bên Freelancer</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.freelancerName}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Số tiền đang tranh chấp:</p>
+                <p className="text-title-lg text-rose-600 font-extrabold">{selectedDispute.raw?.amount?.toLocaleString('vi-VN')} VND</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung khiếu nại:</p>
+                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b]">
+                  {selectedDispute.raw?.reason || 'Không có mô tả chi tiết'}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-2">Ghi chú xử lý của bạn (nếu có):</p>
+                <textarea
+                  className="w-full h-24 border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] resize-none"
+                  placeholder="Nhập ghi chú hoặc lý do quyết định của bạn..."
+                  value={disputeNote}
+                  onChange={e => setDisputeNote(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
+              <button 
+                onClick={() => handleResolveDispute('RESOLVED_CLIENT_FAVOR')}
+                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+              >
+                Xử lý cho Client
+              </button>
+              <button 
+                onClick={() => handleResolveDispute('RESOLVED_FREELANCER_FAVOR')}
+                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+              >
+                Xử lý cho Freelancer
+              </button>
+              <button 
+                onClick={() => handleResolveDispute('CLOSED')}
+                className="w-full sm:w-auto py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+              >
+                Đóng khiếu nại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODERATION DETAIL MODAL ---------------- */}
+      {showModerationModal && selectedModerationItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết kiểm duyệt</h2>
+              <button 
+                onClick={() => {
+                  setShowModerationModal(false);
+                  setSelectedModerationItem(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              <div className="flex justify-between items-center mb-1">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#f7fff2] text-[#006b2c]">
+                  {selectedModerationItem.type}
+                </span>
+                <span className="text-xs text-[#6e7b6c] font-medium">{selectedModerationItem.subDate}</span>
+              </div>
+              <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedModerationItem.title}</h3>
+              
+              <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-sm">
+                <p className="text-[#3e4a3d] mb-1">Người đăng:</p>
+                <p className="font-bold text-[#141b2b]">{selectedModerationItem.author}</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Lý do đưa vào hàng đợi:</p>
+                <p className="text-sm font-semibold text-amber-700">{selectedModerationItem.reason}</p>
+              </div>
+
+              <div>
+                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung chi tiết:</p>
+                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b] whitespace-pre-wrap">
+                  {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
+              {selectedModerationItem.status === 'Pending' ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, true);
+                      setShowModerationModal(false);
+                    }}
+                    className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" /> Phê duyệt
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, false);
+                      setShowModerationModal(false);
+                    }}
+                    className="flex-1 py-2 px-3 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" /> Từ chối
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowModerationModal(false)}
+                  className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+                >
+                  Đóng cửa sổ
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showWithdrawalModal && selectedWithdrawal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết Yêu cầu Rút tiền</h2>
+              <button 
+                onClick={() => {
+                  setShowWithdrawalModal(false);
+                  setSelectedWithdrawal(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded border border-[#bdcaba]">
+                  Yêu cầu #{selectedWithdrawal.id}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  selectedWithdrawal.statusRaw === 'PENDING'
+                    ? 'bg-amber-100 text-amber-800'
+                    : selectedWithdrawal.statusRaw === 'APPROVED'
+                      ? 'bg-[#f7fff2] text-[#006b2c]'
+                      : 'bg-[#ffdad6] text-[#ba1a1a]'
+                }`}>
+                  {selectedWithdrawal.status}
+                </span>
+              </div>
+
+              <div className="border-t border-[#e9edff] pt-3 space-y-3">
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thành viên gửi yêu cầu</p>
+                  <p className="font-bold text-[#141b2b]">{selectedWithdrawal.user}</p>
+                  <p className="text-xs text-slate-400">{selectedWithdrawal.email}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thông tin tài khoản nhận tiền</p>
+                  <div className="bg-[#f9f9ff] border border-[#e9edff] p-3 rounded-lg">
+                    <p className="font-bold text-[#141b2b]">{selectedWithdrawal.bank}</p>
+                    <p className="text-xs text-[#3e4a3d] font-mono mt-0.5">Số tài khoản: {selectedWithdrawal.account}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Thời gian yêu cầu</p>
+                  <p className="font-medium text-[#141b2b]">{selectedWithdrawal.date}</p>
+                </div>
+                {selectedWithdrawal.statusRaw === 'REJECTED' && (
+                  <div>
+                    <p className="text-xs text-[#6e7b6c] mb-0.5 font-semibold">Lý do từ chối</p>
+                    <p className="font-semibold text-rose-600 bg-rose-50 border border-rose-100 p-2.5 rounded-lg">
+                      {selectedWithdrawal.reason || 'Không có lý do cụ thể'}
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-rose-50/50 border border-rose-100/55 p-3 rounded-lg flex justify-between items-center">
+                  <span className="text-xs text-rose-800 font-bold uppercase">Số tiền rút:</span>
+                  <span className="text-title-md font-extrabold text-rose-600">
+                    {selectedWithdrawal.amount.toLocaleString('vi-VN')} VND
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3">
+              {selectedWithdrawal.statusRaw === 'PENDING' ? (
+                <>
+                  <button 
+                    onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'APPROVED')}
+                    className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
+                  >
+                    Phê duyệt
+                  </button>
+                  <button 
+                    onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'REJECTED')}
+                    className="flex-1 py-2 px-3 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 font-bold text-sm rounded-lg shadow transition-colors text-center"
+                  >
+                    Từ chối
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setShowWithdrawalModal(false);
+                    setSelectedWithdrawal(null);
+                  }}
+                  className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
+                >
+                  Đóng
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- DEPARTMENT TRANSFER REQUEST MODAL ---------------- */}
+      {showTransferRequestModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#f7f8f7] px-4 py-8">
+          <div className="mx-auto flex min-h-full w-full max-w-[920px] flex-col">
+            <div className="mb-8 flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[17px] font-extrabold text-[#009b3a]">FelanPro</span>
+                <span className="h-4 w-px bg-[#cfd8cd]" />
+                <span className="text-[12px] font-medium text-[#3e4a3d]">HR Terminal</span>
+              </div>
+              <div className="flex items-center gap-4 text-[#141b2b]">
+                <Bell className="h-5 w-5" />
+                <HelpCircle className="h-5 w-5" />
+                <button
+                  type="button"
+                  onClick={closeTransferRequestModal}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#3e4a3d] hover:bg-[#edf4ea]"
+                  aria-label="Đóng đơn điều chuyển"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleTransferRequestSubmit} className="rounded-xl border border-[#e5ece2] bg-white p-6 shadow-[0_8px_24px_rgba(20,27,43,0.08)] sm:p-8">
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-[28px] font-extrabold leading-tight text-black sm:text-[32px]">Đơn yêu cầu điều chuyển phòng ban</h2>
+                  <p className="mt-2 text-[15px] text-[#3e4a3d]">Gửi yêu cầu chuyển sang phòng ban khác</p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#e8f5e7] px-3 py-1 text-[12px] font-bold text-[#006b2c]">
+                  <span className="h-2 w-2 rounded-full bg-[#00a63e]" />
+                  Bản nháp
+                </span>
+              </div>
+
+              <div className="space-y-8">
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <User className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Thông tin nhân viên</h3>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Mã nhân viên</label>
+                      <input readOnly value={myProfile?.staffCode || myProfile?.employeeCode || `FP-${user?.id || '----'}`} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Họ và tên</label>
+                      <input readOnly value={user?.displayName || user?.name || myProfile?.fullName || ''} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Phòng ban hiện tại</label>
+                      <input readOnly value={myProfile?.departmentName || 'Đang tải...'} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Chức vụ hiện tại</label>
+                      <input readOnly value={myProfile?.position || myProfile?.title || currentRole} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Quản lý hiện tại</label>
+                      <input readOnly value={myProfile?.managerName || 'Chưa cập nhật'} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Email</label>
+                      <input readOnly value={user?.email || ''} className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-[#f4fbf1] px-3 text-[14px] text-[#3e4a3d] outline-none" />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <ArrowLeftRight className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Thông tin điều chuyển</h3>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Phòng ban muốn chuyển đến</label>
+                      <select
+                        required
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        value={transferRequestTargetDeptId}
+                        onChange={e => setTransferRequestTargetDeptId(e.target.value)}
+                      >
+                        <option value="">Chọn phòng ban</option>
+                        {departmentsList
+                          .filter(d => isActiveDepartment(d) && d.departmentId !== myProfile?.departmentId)
+                          .map(d => (
+                            <option key={d.departmentId} value={d.departmentId}>
+                              {d.name}{d.code ? ` (${d.code})` : ''}
+                            </option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Vị trí mong muốn</label>
+                      <input
+                        value={transferRequestDetails.desiredPosition}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredPosition: e.target.value }))}
+                        placeholder="Nhập vị trí dự kiến"
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Ngày mong muốn bắt đầu</label>
+                      <input
+                        type="date"
+                        value={transferRequestDetails.desiredStartDate}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredStartDate: e.target.value }))}
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Loại điều chuyển</label>
+                      <select
+                        value={transferRequestDetails.transferType}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, transferType: e.target.value }))}
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      >
+                        <option>Yêu cầu cá nhân</option>
+                        <option>Theo nhu cầu dự án</option>
+                        <option>Phát triển nghề nghiệp</option>
+                        <option>Khác</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <FileText className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Lý do điều chuyển</h3>
+                  </div>
+                  <label className="mb-2 block text-[13px] font-bold text-black">Chi tiết lý do</label>
+                  <textarea
+                    required
+                    value={transferRequestReason}
+                    onChange={e => setTransferRequestReason(e.target.value)}
+                    placeholder="Trình bày lý do bạn muốn chuyển sang phòng ban khác"
+                    className="min-h-[110px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                  />
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <Activity className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Kỹ năng và kinh nghiệm</h3>
+                  </div>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Kỹ năng liên quan & Kinh nghiệm trước đây</label>
+                      <textarea
+                        value={transferRequestDetails.skills}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, skills: e.target.value }))}
+                        placeholder="Liệt kê các kỹ năng phù hợp với vị trí mới..."
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold text-black">Thành tích nổi bật & Lý do bạn phù hợp</label>
+                      <textarea
+                        value={transferRequestDetails.achievements}
+                        onChange={e => setTransferRequestDetails(prev => ({ ...prev, achievements: e.target.value }))}
+                        placeholder="Nêu bật những lý do bạn là ứng viên sáng giá cho vị trí này..."
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
+                    <Paperclip className="h-5 w-5" />
+                    <h3 className="text-[18px] font-extrabold">Tệp đính kèm</h3>
+                  </div>
+                  <label className="flex min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#9fbd98] bg-[#edf7ea] px-4 text-center transition-colors hover:bg-[#e4f3df]">
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      onChange={e => setTransferRequestDetails(prev => ({ ...prev, attachmentName: e.target.files?.[0]?.name || '' }))}
+                    />
+                    <Paperclip className="mb-4 h-9 w-9 text-[#00a63e]" />
+                    <span className="text-[14px] font-medium text-[#3e4a3d]">{transferRequestDetails.attachmentName || 'Kéo và thả tệp vào đây'}</span>
+                    <span className="mt-1 text-[13px] text-[#3e4a3d]">Tải lên tài liệu hỗ trợ</span>
+                    <span className="mt-4 rounded-full bg-white px-4 py-1 text-[11px] font-bold text-[#6e7b6c]">PDF, DOCX, PNG, JPG</span>
+                    <span className="mt-2 text-[11px] italic text-[#3e4a3d]">Không bắt buộc, tối đa 10MB</span>
+                  </label>
+                </section>
+
+                <label className="flex items-start gap-3 rounded-lg bg-[#edf7ea] p-4 text-[14px] leading-6 text-[#263326]">
+                  <input
+                    type="checkbox"
+                    checked={transferRequestDetails.confirmed}
+                    onChange={e => setTransferRequestDetails(prev => ({ ...prev, confirmed: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-[#b8d0b2] text-[#009b3a] focus:ring-[#009b3a]"
+                  />
+                  <span>Tôi xác nhận rằng các thông tin đã cung cấp là chính xác và hoàn toàn chịu trách nhiệm về tính trung thực của các thông tin này.</span>
+                </label>
+              </div>
+
+              <div className="mt-9 flex flex-col gap-3 border-t border-[#d7e2d4] pt-6 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeTransferRequestModal}
+                  className="h-12 rounded-lg border border-[#9aa69a] bg-white px-7 text-[14px] font-semibold text-[#6e7b6c] transition-colors hover:bg-[#f1f4f0]"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    showToast('Đã lưu bản nháp yêu cầu điều chuyển.', 'success');
+                    closeTransferRequestModal();
+                  }}
+                  className="h-12 rounded-lg border border-[#00a63e] bg-white px-7 text-[14px] font-semibold text-[#009b3a] transition-colors hover:bg-[#edf7ea]"
+                >
+                  Lưu bản nháp
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingTransferRequest || !transferRequestTargetDeptId || !transferRequestDetails.confirmed}
+                  className="h-12 rounded-lg bg-[#00a63e] px-8 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#008f36] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmittingTransferRequest ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                </button>
+              </div>
+            </form>
+
+            <div className="mt-9 flex flex-col gap-3 border-t border-[#cfd8cd] px-1 py-5 text-[11px] text-[#263326] sm:flex-row sm:items-center sm:justify-between">
+              <span>© 2024 FelanPro HR Systems. High-Efficiency Environment.</span>
+              <div className="flex gap-6">
+                <span>Privacy Policy</span>
+                <span>Terms of Service</span>
+                <span>Support</span>
+              </div>
             </div>
           </div>
         </div>

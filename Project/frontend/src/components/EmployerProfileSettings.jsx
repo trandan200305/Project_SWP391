@@ -55,8 +55,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [notice, setNotice] = useState(null);
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
-    // Added states for projects
-    const [activeTab, setActiveTab] = useState('company'); // 'company', 'billing', or 'projects'
+    
+    const [activeTab, setActiveTab] = useState('company'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -113,7 +113,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     }, [form]);
 
 
-    // Fetch active job categories for editing
+    
     useEffect(() => {
         fetch('http://localhost:8080/api/categories')
             .then((res) => {
@@ -126,7 +126,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             .catch((err) => console.error('Error fetching categories:', err));
     }, []);
 
-    // Initialize edit form when editingProject changes
+    
     useEffect(() => {
         if (editingProject) {
             setEditForm({
@@ -149,7 +149,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return;
         }
 
-        // Validate budget range
+        
         if (editForm.projectType === 'RANGE') {
             const minStr = editForm.budgetMin ? String(editForm.budgetMin).trim() : '';
             const maxStr = editForm.budgetMax ? String(editForm.budgetMax).trim() : '';
@@ -199,7 +199,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             if (!response.ok) throw new Error('Cập nhật dự án thất bại.');
             const data = await response.json();
 
-            // Update list
+            
             setProjects(prev => prev.map(p => p.projectId === data.projectId ? data : p));
             setNotice({type: 'success', message: 'Cập nhật tin tuyển dụng thành công.'});
             setEditingProject(null);
@@ -218,7 +218,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             });
             if (!response.ok) throw new Error('Đóng dự án thất bại.');
 
-            // Update in state list
+            
             setProjects(prev => prev.map(p => p.projectId === projectId ? {...p, status: 'CLOSED'} : p));
             setNotice({type: 'success', message: 'Đã đóng tuyển dụng dự án thành công.'});
         } catch (err) {
@@ -234,11 +234,45 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             });
             if (!response.ok) throw new Error('Xóa dự án thất bại.');
 
-            // Remove from state list
+            
             setProjects(prev => prev.filter(p => p.projectId !== projectId));
             setNotice({type: 'success', message: 'Đã xóa tin tuyển dụng thành công.'});
         } catch (err) {
             setNotice({type: 'error', message: err.message || 'Lỗi khi xóa dự án.'});
+        }
+    };
+    
+    const handlePayProject = async (projectId) => {
+        try {
+            const project = projects.find(p => p.projectId === projectId);
+            const response = await fetch(`http://localhost:8080/payment/create-url?projectId=${projectId}`, {
+                method: 'POST'
+            });
+            if (!response.ok) {
+                const payErr = await response.text();
+                throw new Error(payErr || 'Không thể tạo cổng thanh toán.');
+            }
+            const payData = await response.json();
+            if (payData.paymentUrl) {
+                if (onNavigate) {
+                    onNavigate('checkout', { 
+                      projectId: projectId, 
+                      paymentUrl: payData.paymentUrl, 
+                      amount: payData.amount, 
+                      txnRef: payData.txnRef,
+                      bankName: payData.bankName,
+                      bankAccountNo: payData.bankAccountNo,
+                      bankAccountName: payData.bankAccountName,
+                      projectTitle: project?.title || 'Dự án LancerPro'
+                    });
+                } else {
+                    window.location.href = payData.paymentUrl;
+                }
+            } else {
+                throw new Error('Không nhận được URL thanh toán từ máy chủ.');
+            }
+        } catch (err) {
+            alert('Lỗi khởi tạo cổng thanh toán: ' + err.message);
         }
     };
 
@@ -437,7 +471,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 return false;
             }
         }
-        return true; // Dữ liệu hoàn toàn hợp lệ
+        return true; 
     };
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -553,7 +587,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 </aside>
 
                 <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
-                    {/* Header */}
+                    
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
@@ -572,7 +606,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </div>)}
                     </div>
 
-                    {/* Navigation Tabs */}
+                    
                     <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
                         <button
                             type="button"
@@ -609,11 +643,11 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </button>
                     </div>
 
-                    {/* Tab content */}
+                    
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
-                        <Loader2 className="w-6 h-6 animate-spin mr-2"/>
-                        Đang tải dữ liệu...
-                    </div>) : activeTab === 'company' ? (/* Company info form */
+                            <Loader2 className="w-6 h-6 animate-spin mr-2"/>
+                            Đang tải dữ liệu...
+                        </div>) : activeTab === 'company' ? (/* Company info form */
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -667,7 +701,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
                                 </button>
                             </div>
-                        </form>) : activeTab === 'billing' ? (/* Billing / Payment info form */
+                        </form>) : activeTab === 'billing' ? (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -693,9 +727,9 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
                                 </button>
                             </div>
-                        </form>) : (/* Projects / Job postings section */
+                        </form>) : (
                         <div className="p-6 animate-fade-in">
-                            {/* SUB-VIEW: LIST OF POSTED PROJECTS */}
+                            
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
@@ -720,7 +754,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                         Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của
                                         bạn tại đây.
                                     </p>
-                                </div>) : (/* Project Cards Grid */
+                                </div>) : (
                                     <>
                                         <div className="grid grid-cols-1 gap-4">
                                             {paginatedProjects.map((proj) => {
@@ -729,15 +763,21 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                     DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
                                                     PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
                                                     PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                    PENDING_PAYMENT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
                                                     PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                    REJECTED: 'bg-rose-50 text-rose-700 border-rose-200'
+                                                    REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+                                                    IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
+                                                    CLOSED: 'bg-slate-100 text-slate-600 border-slate-200'
                                                 };
                                                 const statusLabels = {
                                                     DRAFT: 'Bản nháp',
                                                     PENDING: 'Chờ duyệt',
                                                     PENDING_REVIEW: 'Chờ duyệt',
+                                                    PENDING_PAYMENT: 'Chờ thanh toán',
                                                     PUBLISHED: 'Đang tuyển',
-                                                    REJECTED: 'Từ chối'
+                                                    REJECTED: 'Từ chối',
+                                                    IN_PROGRESS: 'Đang thực hiện',
+                                                    CLOSED: 'Đã đóng'
                                                 };
 
                                                 return (<div key={proj.projectId}
@@ -747,14 +787,14 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                         <div>
                                                             <div
                                                                 className="flex items-center gap-2 flex-wrap mb-1.5">
-                                      <span
-                                          className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                        {proj.category?.categoryName || 'General'}
-                                      </span>
+                                                                <span
+                                                                    className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                                                                    {proj.category?.categoryName || 'General'}
+                                                                </span>
                                                                 <span
                                                                     className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                        {statusLabels[proj.status] || proj.status}
-                                      </span>
+                                                                    {statusLabels[proj.status] || proj.status}
+                                                                </span>
                                                             </div>
                                                             <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
                                                                 {proj.title}
@@ -766,12 +806,12 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                                 className="text-xs text-slate-400 font-medium">Ngân sách</span>
                                                             <span
                                                                 className="font-extrabold text-emerald-600 text-sm">
-                                      {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
-                                          style: 'currency', currency: 'VND'
-                                      }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
-                                          style: 'currency', currency: 'VND'
-                                      }).format(proj.budgetMax)}` : 'Thỏa thuận')}
-                                    </span>
+                                                                {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
+                                                                    style: 'currency', currency: 'VND'
+                                                                }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
+                                                                    style: 'currency', currency: 'VND'
+                                                                }).format(proj.budgetMax)}` : 'Thỏa thuận')}
+                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -782,33 +822,44 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                     <div
                                                         className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
                                                         <div className="flex items-center gap-4">
-                                    <span className="flex items-center gap-1.5">
-                                      <Calendar className="w-3.5 h-3.5 text-slate-400"/>
-                                      Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
-                                    </span>
                                                             <span className="flex items-center gap-1.5">
-                                      <Clock className="w-3.5 h-3.5 text-slate-400"/>
-                                      Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
-                                    </span>
+                                                                <Calendar className="w-3.5 h-3.5 text-slate-400"/>
+                                                                Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                                            </span>
+                                                            <span className="flex items-center gap-1.5">
+                                                                <Clock className="w-3.5 h-3.5 text-slate-400"/>
+                                                                Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
+                                                            </span>
                                                         </div>
 
                                                         <div className="flex items-center gap-2">
-                                    <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
-                                      {proj.proposalCount || 0} Báo giá
-                                    </span>
+                                                            <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
+                                                                {proj.proposalCount || 0} Báo giá
+                                                            </span>
                                                         </div>
                                                     </div>
 
                                                     {/* Management Actions */}
                                                     <div
                                                         className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
-                                                        {proj.status !== 'CLOSED' && (<button
-                                                            type="button"
-                                                            onClick={() => handleCloseProject(proj.projectId)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
-                                                        >
-                                                            Dừng tuyển
-                                                        </button>)}
+                                                        {proj.status === 'PENDING_PAYMENT' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePayProject(proj.projectId)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-all text-[11px] font-extrabold shadow-sm animate-pulse"
+                                                            >
+                                                                Thanh toán phí
+                                                            </button>
+                                                        )}
+                                                        {proj.status !== 'CLOSED' && proj.status !== 'PENDING_PAYMENT' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCloseProject(proj.projectId)}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
+                                                            >
+                                                                Dừng tuyển
+                                                            </button>
+                                                        )}
                                                         {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
                                                             <button
                                                                 type="button"
@@ -827,7 +878,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                                 Quản lý tiến độ
                                                             </button>
                                                         )}
-                                                        {proj.status !== 'IN_PROGRESS' && (
+                                                        {proj.status !== 'IN_PROGRESS' && proj.status !== 'PENDING_PAYMENT' && (
                                                             <>
                                                                 <button
                                                                     type="button"
@@ -904,7 +955,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             </div>
         </main>
 
-        {/* Edit Project Modal */}
+        
         {editingProject && (<div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10">
             <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-fade-in my-auto">

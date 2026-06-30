@@ -3,19 +3,19 @@ import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function FindJobsPage({ onNavigate, initialCategory = 'all', user }) {
+export default function FindJobsPage({ onNavigate, initialCategory = 'all', initialKeyword = '', user }) {
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
   const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(initialKeyword || '');
   const [minSalary, setMinSalary] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorToast, setErrorToast] = useState(null);
   
-  // Pagination state
+  
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -31,13 +31,20 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     }
   }, [initialCategory]);
 
+  useEffect(() => {
+    if (initialKeyword !== undefined) {
+      setKeyword(initialKeyword);
+      setPage(0);
+    }
+  }, [initialKeyword]);
+
   const isValidSalary = (value) => {
-    if (!value) return true; // empty string is valid
-    // Only allow digits (1-9 followed by 0-9)
+    if (!value) return true; 
+    
     return /^[1-9]\d*$/.test(value);
   };
 
-  // Fetch data whenever filters or page changes
+  
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (!isValidSalary(minSalary)) {
@@ -111,12 +118,17 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
 
   const handleKeywordChange = (e) => {
     setKeyword(e.target.value);
-    setPage(0); // reset to first page when searching
+    setPage(0); 
   };
 
   const handleMinSalaryChange = (e) => {
     setMinSalary(e.target.value);
-    setPage(0); // reset to first page when filtering
+    setPage(0); 
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleExecuteSearch = () => {
@@ -127,12 +139,14 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     }
     setErrorToast(null);
     setPage(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     fetchJobs(keyword, activeCategory, minSalary, 0, size);
   };
 
   const handleCategoryChange = (catId) => {
     setActiveCategory(catId);
     setPage(0); // reset to first page when changing category
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatCurrency = (amount) => {
@@ -159,7 +173,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     return `${diffHours} giờ`;
   };
 
-  // Generate pagination buttons logic
+  
   const getPaginationButtons = () => {
     let startPage = Math.max(0, page - 2);
     let endPage = Math.min(totalPages - 1, startPage + 4);
@@ -181,7 +195,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
     <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        {/* Sidebar */}
+        
         <div className="md:col-span-1 bg-white border border-slate-200 rounded-xl p-4 shadow-sm h-fit">
           <h2 className="font-bold text-lg text-slate-800 mb-4 px-2">Lĩnh vực</h2>
           <ul className="space-y-1">
@@ -202,10 +216,10 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
           </ul>
         </div>
 
-        {/* Main Content */}
+        
         <div className="md:col-span-3 flex flex-col gap-6">
           
-          {/* Search Bar & Filters */}
+          
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
             <div className="flex flex-col md:flex-row items-center gap-3 w-full">
               <div className="flex-1 relative w-full">
@@ -229,7 +243,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
               </button>
             </div>
             
-            {/* Filter by Minimum Salary */}
+            
             <div className="flex justify-end items-center gap-2 w-full">
               <span className="text-sm text-slate-600 font-medium">Mức lương:</span>
               <div className="relative w-48">
@@ -250,7 +264,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
             </div>
           </div>
 
-          {/* Job List */}
+          
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100">
             {isLoading ? (
               <div className="p-8 text-center text-slate-500">Đang tải dữ liệu...</div>
@@ -319,29 +333,29 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
             )}
           </div>
           
-          {/* Custom Glassmorphism Pagination Controls */}
+          
           {!isLoading && totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4 mb-8">
-              {/* Trang X của Y */}
+              
               <div className="px-4 py-2 mr-2 rounded-xl text-sm font-semibold bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 shadow-sm flex items-center justify-center">
                 Trang {page + 1} của {totalPages}
               </div>
               
-              {/* Trang Đầu (chỉ hiện nếu nút số 1 không được hiển thị) */}
+              
               {startPage > 0 && (
                 <button 
-                  onClick={() => setPage(0)}
+                  onClick={() => handlePageChange(0)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Đầu
                 </button>
               )}
               
-              {/* Page Numbers */}
+              
               {pageButtons.map((btnIndex) => (
                 <button
                   key={btnIndex}
-                  onClick={() => setPage(btnIndex)}
+                  onClick={() => handlePageChange(btnIndex)}
                   className={`min-w-[40px] h-10 px-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
                     page === btnIndex 
                       ? 'bg-[#1e40af] text-white border-transparent hover:-translate-y-0.5 shadow-blue-500/30' 
@@ -352,10 +366,10 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
                 </button>
               ))}
 
-              {/* Trang Cuối (chỉ hiện nếu nút cuối cùng không được hiển thị) */}
+              
               {endPage < totalPages - 1 && (
                 <button 
-                  onClick={() => setPage(totalPages - 1)}
+                  onClick={() => handlePageChange(totalPages - 1)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Cuối
@@ -369,7 +383,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
       
-      {/* Success Toast for Bookmark */}
+      
       {successToast.show && (
         <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <Bookmark className={`w-5 h-5 ${successToast.type === 'save' ? 'text-yellow-400 fill-yellow-400' : 'text-amber-400 fill-amber-400'}`} />
@@ -391,7 +405,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', user
         </div>
       )}
 
-      {/* Error Toast */}
+      
       {errorToast && (
         <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
           <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
