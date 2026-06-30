@@ -14,6 +14,7 @@ import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
+import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
 import PaymentResultPage from '../pages/PaymentResultPage.jsx';
 import CheckoutPage from '../pages/CheckoutPage.jsx';
 
@@ -63,6 +64,10 @@ export default function AppRoutes({
 
   if (currentPage === 'your_jobs') {
     return <YourJobsPage onNavigate={handleNavigate} user={user} />;
+  }
+
+  if (currentPage === 'contract_details') {
+    return <ContractDetailPage contractId={pageParams?.contractId} user={user} onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'messenger') {

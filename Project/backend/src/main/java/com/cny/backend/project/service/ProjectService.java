@@ -67,6 +67,14 @@ public class ProjectService {
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
 
+        if (dto.getTitle() == null || getWordCount(dto.getTitle()) < 8) {
+            throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 từ.");
+        }
+
+        if (dto.getDescription() == null || getWordCount(dto.getDescription()) <= 50) {
+            throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 từ.");
+        }
+
         String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED";
 
         if ("RANGE".equals(type)) {
@@ -99,6 +107,7 @@ public class ProjectService {
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
+                .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(30)) 
                 .status("PENDING") 
                 .proposalCount(0)
@@ -139,9 +148,19 @@ public class ProjectService {
             project.setCategory(category);
         }
 
-        if (dto.getTitle() != null) project.setTitle(dto.getTitle());
-        if (dto.getDescription() != null) project.setDescription(dto.getDescription());
-        
+        if (dto.getTitle() != null) {
+            if (getWordCount(dto.getTitle()) < 8) {
+                throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 từ.");
+            }
+            project.setTitle(dto.getTitle());
+        }
+        if (dto.getDescription() != null) {
+            if (getWordCount(dto.getDescription()) <= 50) {
+                throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 từ.");
+            }
+            project.setDescription(dto.getDescription());
+        }
+        if (dto.getWorkForm() != null) project.setWorkForm(dto.getWorkForm());
         String type = dto.getProjectType() != null ? dto.getProjectType() : project.getProjectType();
         if (dto.getProjectType() != null) project.setProjectType(type);
 
@@ -278,7 +297,7 @@ public class ProjectService {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm");
         String formattedCreatedAt = project.getCreatedAt() != null ? project.getCreatedAt().format(dtf) : "Không rõ";
 
-        String workForm = "-";
+        String workForm = project.getWorkForm() != null ? project.getWorkForm() : "ONLINE";
         String paymentType = project.getBudgetFixed() != null ? "Trả theo dự án" : "Thỏa thuận";
 
         String employerLoc = "Chưa cập nhật";
@@ -315,5 +334,12 @@ public class ProjectService {
                 .employerJobsPosted(employerJobs)
                 .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
                 .build();
+    }
+
+    private int getWordCount(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return 0;
+        }
+        return text.trim().split("\\s+").length;
     }
 }

@@ -4,6 +4,7 @@ import com.cny.backend.project.entity.Contract;
 import com.cny.backend.project.entity.Project;
 import com.cny.backend.project.entity.Proposal;
 import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.project.dto.MilestoneCreateDto;
 import com.cny.backend.project.dto.ProposalCreateDto;
 import com.cny.backend.project.dto.ProposalDto;
 import com.cny.backend.project.repository.ContractRepository;
@@ -33,6 +34,9 @@ public class ProposalService {
     @Autowired
     private ContractRepository contractRepository;
 
+    @Autowired
+    private MilestoneService milestoneService;
+
     @Transactional
     public ProposalDto submitProposal(Integer projectId, Integer freelancerId, ProposalCreateDto dto) {
         Project project = projectRepository.findById(projectId)
@@ -51,12 +55,17 @@ public class ProposalService {
                     throw new IllegalArgumentException("Bạn đã gửi báo giá cho dự án này rồi.");
                 });
 
+        if (dto.getBidAmount() == null || dto.getBidAmount().compareTo(new java.math.BigDecimal("100000")) < 0) {
+            throw new IllegalArgumentException("Giá chào thầu tối thiểu phải từ 100,000 VNĐ.");
+        }
+
         Proposal proposal = Proposal.builder()
                 .project(project)
                 .freelancer(freelancer)
                 .bidAmount(dto.getBidAmount())
                 .estimatedDays(dto.getEstimatedDays())
                 .coverLetter(dto.getCoverLetter())
+                .cvUrl(dto.getCvUrl())
                 .status("SUBMITTED")
                 .build();
 
@@ -94,7 +103,7 @@ public class ProposalService {
     }
 
     @Transactional
-    public void acceptProposal(Integer proposalId, Integer employerId) {
+    public void acceptProposal(Integer proposalId, Integer employerId, List<MilestoneCreateDto> customMilestones) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy báo giá ID: " + proposalId));
 
@@ -107,6 +116,42 @@ public class ProposalService {
 
         if (!"PUBLISHED".equals(project.getStatus())) {
             throw new IllegalArgumentException("Dự án này hiện không còn khả dụng để chọn thầu.");
+        }
+
+        // Kiểm tra và validate các mốc thanh toán nếu nhà tuyển dụng chọn chia tiến độ
+        boolean hasCustomMilestones = customMilestones != null && !customMilestones.isEmpty();
+        if (hasCustomMilestones) {
+            if (customMilestones.size() < 3 || customMilestones.size() > 5) {
+                throw new IllegalArgumentException("Số lượng mốc thanh toán phải từ 3 đến 5.");
+            }
+
+            java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
+            java.time.LocalDate maxDueDate = java.time.LocalDate.now().plusDays(proposal.getEstimatedDays());
+
+            for (int i = 0; i < customMilestones.size(); i++) {
+                MilestoneCreateDto m = customMilestones.get(i);
+                if (m.getTitle() == null || m.getTitle().trim().isEmpty()) {
+                    throw new IllegalArgumentException("Tiêu đề mốc thứ " + (i + 1) + " không được bỏ trống.");
+                }
+                if (m.getAmount() == null || m.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Số tiền mốc thứ " + (i + 1) + " phải lớn hơn 0.");
+                }
+                if (m.getDueDate() == null) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " không được bỏ trống.");
+                }
+                if (m.getDueDate().isBefore(java.time.LocalDate.now())) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " không được trước ngày hôm nay.");
+                }
+                if (m.getDueDate().isAfter(maxDueDate)) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " (" + m.getDueDate() + ") không được vượt quá ngày hoàn thành dự kiến (" + maxDueDate + ").");
+                }
+                totalAmount = totalAmount.add(m.getAmount());
+            }
+
+            // Kiểm tra tổng số tiền các mốc có bằng đúng giá trị báo giá thầu không
+            if (totalAmount.compareTo(proposal.getBidAmount()) != 0) {
+                throw new IllegalArgumentException("Tổng ngân sách các mốc (" + totalAmount.toPlainString() + " VNĐ) phải bằng đúng ngân sách gói thầu (" + proposal.getBidAmount().toPlainString() + " VNĐ).");
+            }
         }
 
         // 1. Cập nhật trạng thái báo giá được chọn
@@ -133,7 +178,13 @@ public class ProposalService {
                 .status("ACTIVE")
                 .terms(proposal.getCoverLetter())
                 .build();
-        contractRepository.save(contract);
+        Contract savedContract = contractRepository.save(contract);
+
+        if (hasCustomMilestones) {
+            milestoneService.createCustomMilestones(savedContract, customMilestones);
+        } else {
+            milestoneService.createDefaultMilestone(savedContract);
+        }
 
         // 4. Cập nhật trạng thái dự án sang IN_PROGRESS
         project.setStatus("IN_PROGRESS");
@@ -155,6 +206,7 @@ public class ProposalService {
                 .bidAmount(proposal.getBidAmount())
                 .estimatedDays(proposal.getEstimatedDays())
                 .coverLetter(proposal.getCoverLetter())
+                .cvUrl(proposal.getCvUrl())
                 .status(proposal.getStatus())
                 .createdAt(proposal.getCreatedAt())
                 .build();

@@ -1,22 +1,41 @@
-import React, { useState } from 'react';
-import { Bookmark, AlertTriangle } from 'lucide-react';
-import ComingSoon from '../../../pages/ComingSoon.jsx';
+import React, { useState, useEffect } from 'react';
+import { Bookmark, Briefcase, Calendar, DollarSign, ArrowRight, ExternalLink } from 'lucide-react';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
+import { contractApi } from '../../../api/contractApi';
 
 export default function YourJobsPage({ onNavigate, user }) {
-  const [activeTab, setActiveTab] = useState('saved'); 
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [activeTab, setActiveTab] = useState('saved'); // 'saved', 'received', 'completed'
   const { savedJobs, unsaveJob } = useSavedJobs(user);
+  
+  // Contracts state
+  const [contracts, setContracts] = useState([]);
+  const [loadingContracts, setLoadingContracts] = useState(false);
+  const [errorContracts, setErrorContracts] = useState(null);
+  
   const [toastMessage, setToastMessage] = useState(null);
 
   const handleTabClick = (tab) => {
-    if (tab === 'received' || tab === 'completed') {
-      setShowComingSoon(true);
-    } else {
-      setActiveTab(tab);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    if (user && (activeTab === 'received' || activeTab === 'completed')) {
+      const fetchContracts = async () => {
+        try {
+          setLoadingContracts(true);
+          setErrorContracts(null);
+          const data = await contractApi.getFreelancerContracts(user.id);
+          setContracts(data);
+        } catch (err) {
+          setErrorContracts(err.message || 'Không thể tải danh sách hợp đồng.');
+        } finally {
+          setLoadingContracts(false);
+        }
+      };
+      fetchContracts();
+    }
+  }, [user, activeTab]);
 
   const handleUnsave = (jobId) => {
     unsaveJob(jobId);
@@ -35,10 +54,9 @@ export default function YourJobsPage({ onNavigate, user }) {
     onNavigate('job_details', { job });
   };
 
-  const handleEmployerClick = (e) => {
+  const handleContractClick = (e, contractId) => {
     e.preventDefault();
-    e.stopPropagation();
-    setShowComingSoon(true);
+    onNavigate('contract_details', { contractId });
   };
 
   const formatDeadline = (deadlineDate) => {
@@ -54,6 +72,34 @@ export default function YourJobsPage({ onNavigate, user }) {
     if (diffDays > 0) return `Còn ${diffDays} ngày ${diffHours} giờ`;
     return `Còn ${diffHours} giờ`;
   };
+
+  const getContractStatusText = (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'Đang thực hiện';
+      case 'COMPLETED': return 'Hoàn thành';
+      case 'CLOSED': return 'Đã đóng';
+      default: return status;
+    }
+  };
+
+  const getContractStatusClass = (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'COMPLETED': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'CLOSED': return 'bg-slate-100 text-slate-800 border-slate-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+    }
+  };
+
+  // Filter contracts based on tab
+  const filteredContracts = contracts.filter(c => {
+    if (activeTab === 'received') {
+      return c.status === 'ACTIVE';
+    } else if (activeTab === 'completed') {
+      return c.status === 'COMPLETED' || c.status === 'CLOSED';
+    }
+    return false;
+  });
 
   return (
     <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
@@ -79,7 +125,7 @@ export default function YourJobsPage({ onNavigate, user }) {
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Đã nhận
+            Đã nhận (Đang làm)
           </button>
           <button
             onClick={() => handleTabClick('completed')}
@@ -98,49 +144,46 @@ export default function YourJobsPage({ onNavigate, user }) {
           
           
           <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-sm font-bold text-slate-700 hidden md:grid">
-            <div className="col-span-5">Tên việc</div>
-            <div className="col-span-2 text-center">Tổng hồ sơ</div>
-            <div className="col-span-2 text-center">Hạn nhận hồ sơ</div>
+            <div className="col-span-5">Tên công việc / Hợp đồng</div>
+            <div className="col-span-2 text-center">
+              {activeTab === 'saved' ? 'Tổng hồ sơ' : 'Ngân sách'}
+            </div>
+            <div className="col-span-2 text-center">
+              {activeTab === 'saved' ? 'Hạn nhận hồ sơ' : 'Ngày bắt đầu'}
+            </div>
             <div className="col-span-2 text-center">Trạng thái</div>
             <div className="col-span-1 text-center"></div>
           </div>
 
           
           <div className="divide-y divide-slate-100">
-            {activeTab === 'saved' && savedJobs.length === 0 ? (
+            {/* SAVED JOBS TAB */}
+            {activeTab === 'saved' && savedJobs.length === 0 && (
               <div className="p-10 text-center text-slate-500 flex flex-col items-center">
                 <Bookmark className="w-12 h-12 text-slate-300 mb-3" />
                 <p>Bạn chưa lưu công việc nào.</p>
               </div>
-            ) : activeTab === 'saved' && savedJobs.length > 0 ? (
+            )}
+            
+            {activeTab === 'saved' && savedJobs.length > 0 && (
               savedJobs.map((job) => (
                 <div key={job.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/50 transition-colors relative group">
-                  
-                  
                   <div className="md:col-span-5">
-                    <div className="flex gap-3">
-                      <div className="flex-1">
-                        <a 
-                          href="#" 
-                          onClick={(e) => handleJobClick(e, job)}
-                          className="text-[#1e40af] hover:underline font-bold text-base leading-tight mb-1 block"
-                        >
-                          {job.title}
-                        </a>
-                        <div className="text-sm text-slate-500 flex items-center gap-1">
-                          Khách hàng: 
-                          <button onClick={handleEmployerClick} className="text-blue-500 hover:underline">
-                            {job.employerName}
-                          </button>
-                        </div>
-                      </div>
+                    <a 
+                      href="#" 
+                      onClick={(e) => handleJobClick(e, job)}
+                      className="text-[#1e40af] hover:underline font-bold text-base leading-tight mb-1 block"
+                    >
+                      {job.title}
+                    </a>
+                    <div className="text-xs text-slate-500">
+                      Khách hàng: <span className="font-semibold text-slate-600">{job.employerName}</span>
                     </div>
                   </div>
 
-                  
                   <div className="md:col-span-2 text-center text-sm text-slate-600">
                     <span className="md:hidden font-medium mr-2">Tổng hồ sơ:</span>
-                    {job.applications || 0}
+                    {job.applications || 0} hồ sơ
                   </div>
 
                   <div className="md:col-span-2 text-center text-sm text-slate-600">
@@ -150,7 +193,9 @@ export default function YourJobsPage({ onNavigate, user }) {
 
                   <div className="md:col-span-2 flex justify-center items-center text-sm text-slate-600">
                     <span className="md:hidden font-medium mr-2">Trạng thái:</span>
-                    Đang nhận hồ sơ
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                      Đang tuyển
+                    </span>
                   </div>
 
                   <div className="md:col-span-1 flex justify-center items-center">
@@ -164,12 +209,81 @@ export default function YourJobsPage({ onNavigate, user }) {
                   </div>
                 </div>
               ))
-            ) : null}
+            )}
+
+            {/* CONTRACTS TABS (RECEIVED & COMPLETED) */}
+            {(activeTab === 'received' || activeTab === 'completed') && loadingContracts && (
+              <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="text-sm font-medium">Đang tải danh sách hợp đồng...</p>
+              </div>
+            )}
+
+            {(activeTab === 'received' || activeTab === 'completed') && errorContracts && (
+              <div className="p-10 text-center text-rose-500">
+                <p className="font-bold">Đã xảy ra lỗi:</p>
+                <p className="text-sm">{errorContracts}</p>
+              </div>
+            )}
+
+            {(activeTab === 'received' || activeTab === 'completed') && !loadingContracts && !errorContracts && filteredContracts.length === 0 && (
+              <div className="p-10 text-center text-slate-500 flex flex-col items-center">
+                <Briefcase className="w-12 h-12 text-slate-300 mb-3" />
+                <p>Không tìm thấy hợp đồng nào ở trạng thái này.</p>
+              </div>
+            )}
+
+            {(activeTab === 'received' || activeTab === 'completed') && !loadingContracts && !errorContracts && filteredContracts.length > 0 && (
+              filteredContracts.map((contract) => (
+                <div 
+                  key={contract.contractId} 
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/50 transition-colors relative group"
+                >
+                  <div className="md:col-span-5">
+                    <a 
+                      href="#" 
+                      onClick={(e) => handleContractClick(e, contract.contractId)}
+                      className="text-[#1e40af] hover:underline font-bold text-base leading-tight mb-1 block"
+                    >
+                      {contract.title}
+                    </a>
+                    <div className="text-xs text-slate-500">
+                      Khách hàng: <span className="font-semibold text-slate-600">{contract.clientName}</span>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 text-center text-sm font-semibold text-slate-800">
+                    <span className="md:hidden font-medium text-slate-500 mr-2">Ngân sách:</span>
+                    {Number(contract.agreedAmount).toLocaleString('vi-VN')} VNĐ
+                  </div>
+
+                  <div className="md:col-span-2 text-center text-sm text-slate-600">
+                    <span className="md:hidden font-medium mr-2">Ngày bắt đầu:</span>
+                    {new Date(contract.startDate).toLocaleDateString('vi-VN')}
+                  </div>
+
+                  <div className="md:col-span-2 flex justify-center items-center">
+                    <span className="md:hidden font-medium mr-2">Trạng thái:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getContractStatusClass(contract.status)}`}>
+                      {getContractStatusText(contract.status)}
+                    </span>
+                  </div>
+
+                  <div className="md:col-span-1 flex justify-center items-center">
+                    <button 
+                      onClick={(e) => handleContractClick(e, contract.contractId)}
+                      className="text-slate-400 hover:text-blue-600 p-1.5 transition-all rounded-lg hover:bg-slate-100"
+                      title="Xem chi tiết"
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
-
-      {showComingSoon && <ComingSoon isPopup={true} onClose={() => setShowComingSoon(false)} />}
       
       
       {toastMessage && (

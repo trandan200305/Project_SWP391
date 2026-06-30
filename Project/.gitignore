@@ -20,3 +20,8 @@ dist/
 run.bat
 admin-invite-onboard-flow.md
 generate_md.py
+
+ai_forwarder.py
+run_ai_forwarder.bat
+
+start_hidden.vbs

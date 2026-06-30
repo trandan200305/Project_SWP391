@@ -15,6 +15,9 @@ export default function JobDetailPage({ job, onNavigate, user }) {
   const [applyForm, setApplyForm] = useState({ bidAmount: '', estimatedDays: '', coverLetter: '' });
   const [submitting, setSubmitting] = useState(false);
   const [applyError, setApplyError] = useState('');
+  const [cvUrl, setCvUrl] = useState('');
+  const [uploadingCv, setUploadingCv] = useState(false);
+  const [cvFileName, setCvFileName] = useState('');
 
   // Check if freelancer already applied
   useEffect(() => {
@@ -66,6 +69,45 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }
   };
 
+  const handleCvUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf') {
+      setApplyError('Chỉ chấp nhận file định dạng PDF.');
+      return;
+    }
+
+    try {
+      setUploadingCv(true);
+      setApplyError('');
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('http://localhost:8080/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Tải lên CV thất bại.');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setCvUrl(result.fileUrl);
+        setCvFileName(file.name);
+      } else {
+        throw new Error(result.message || 'Tải lên CV thất bại.');
+      }
+    } catch (err) {
+      setApplyError(err.message || 'Lỗi khi tải file lên.');
+    } finally {
+      setUploadingCv(false);
+    }
+  };
+
   const handleSubmitProposal = async (e) => {
     e.preventDefault();
     if (!applyForm.bidAmount || !applyForm.estimatedDays || !applyForm.coverLetter.trim()) {
@@ -74,8 +116,8 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }
     const amount = parseFloat(applyForm.bidAmount);
     const days = parseInt(applyForm.estimatedDays);
-    if (isNaN(amount) || amount <= 0) {
-      setApplyError('Giá chào thầu phải là số dương lớn hơn 0.');
+    if (isNaN(amount) || amount < 100000) {
+      setApplyError('Giá chào thầu tối thiểu phải từ 100.000 VNĐ.');
       return;
     }
     if (isNaN(days) || days <= 0) {
@@ -93,7 +135,8 @@ export default function JobDetailPage({ job, onNavigate, user }) {
         body: JSON.stringify({
           bidAmount: amount,
           estimatedDays: days,
-          coverLetter: applyForm.coverLetter.trim()
+          coverLetter: applyForm.coverLetter.trim(),
+          cvUrl: cvUrl
         })
       });
 
@@ -106,6 +149,8 @@ export default function JobDetailPage({ job, onNavigate, user }) {
       setHasApplied(true);
       setUserProposal(result);
       setShowApplyModal(false);
+      setCvUrl('');
+      setCvFileName('');
       showToastNotification('apply_success', 'Đã nộp đề xuất báo giá thầu thành công!');
     } catch (err) {
       setApplyError(err.message || 'Lỗi kết nối máy chủ.');
@@ -386,7 +431,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                   <input 
                     type="number"
                     required
-                    min="1"
+                    min="100000"
                     placeholder="VD: 5000000"
                     value={applyForm.bidAmount}
                     onChange={(e) => setApplyForm(prev => ({ ...prev, bidAmount: e.target.value }))}
@@ -419,10 +464,37 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                 />
               </label>
 
+              <div className="block">
+                <span className="block text-[11px] font-extrabold text-slate-500 uppercase mb-1.5">Tải lên hồ sơ CV (File PDF) *</span>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-750 rounded-xl cursor-pointer text-xs font-bold transition-all border border-blue-100">
+                    <Send className="w-3.5 h-3.5 rotate-45 text-blue-700" />
+                    <span>Chọn file PDF</span>
+                    <input 
+                      type="file" 
+                      accept=".pdf" 
+                      onChange={handleCvUpload} 
+                      className="hidden" 
+                      required={!cvUrl}
+                    />
+                  </label>
+                  {uploadingCv && <span className="text-xs text-slate-500 animate-pulse">Đang tải lên...</span>}
+                  {cvFileName && (
+                    <span className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">
+                      {cvFileName} (Đã tải)
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowApplyModal(false)}
+                  onClick={() => {
+                    setShowApplyModal(false);
+                    setCvUrl('');
+                    setCvFileName('');
+                  }}
                   className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50"
                 >
                   Hủy bỏ

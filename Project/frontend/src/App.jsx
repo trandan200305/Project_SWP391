@@ -97,6 +97,7 @@ export default function App() {
       "employer_profile",
       "profile",
       "checkout",
+      "contract_details",
     ];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage("login");

@@ -20,4 +20,5 @@ public class ProjectUpdateDto {
     private BigDecimal budgetMax;
     private BigDecimal budgetFixed;
     private LocalDate deadline;
+    private String workForm;
 }
