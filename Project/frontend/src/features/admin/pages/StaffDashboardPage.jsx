@@ -1213,6 +1213,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   };
 
   const myTasks = tasks.filter(taskBelongsToCurrentStaff);
+  const pendingTasksCount = myTasks.filter(t => t.status === 'Pending').length;
   const pendingModerationCount = moderationItems.filter(i => i.status === 'Pending').length;
   const pendingKycCount = kycRequests.filter(r => r.status === 'Pending').length;
   const unreadSupportCount = supportChats.reduce((sum, c) => sum + (c.unread || 0), 0);
@@ -1230,6 +1231,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       title: 'FINANCE',
       icon: BadgeDollarSign,
       items: [
+        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign, badge: pendingWithdrawalCount },
         { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
         { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle, badge: failedTransactionCount }
@@ -1240,6 +1242,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       title: 'MODERATION',
       icon: Gavel,
       items: [
+        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
         { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount }
       ]
@@ -1249,6 +1252,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       title: 'DISPUTE RESOLUTION',
       icon: ShieldAlert,
       items: [
+        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Disputes', label: 'Tranh chấp Freelancer - Employer', icon: ShieldAlert, badge: openDisputeCount },
         { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
         { id: 'DisputeHistory', label: 'Lịch sử xử lý tranh chấp', icon: FileText }
@@ -1259,6 +1263,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       title: 'CUSTOMER SUPPORT',
       icon: MessageSquare,
       items: [
+        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Support', label: 'Ticket hỗ trợ', icon: MessageSquare, badge: unreadSupportCount },
         { id: 'SupportChat', label: 'Chat hỗ trợ', icon: MessageSquare },
         { id: 'CustomerRequests', label: 'Yêu cầu khách hàng', icon: HelpCircle }
@@ -1269,6 +1274,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       title: 'IT & DEVELOPMENT',
       icon: Activity,
       items: [
+        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'SystemBugs', label: 'Báo cáo lỗi hệ thống', icon: AlertTriangle },
         { id: 'SystemMonitoring', label: 'Giám sát hệ thống', icon: Activity },
         { id: 'Maintenance', label: 'Quản lý bảo trì', icon: Settings },
@@ -2149,10 +2155,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
               </div>
 
+            </div>
+          )}
+
+          {/* ---------------- TAB: TASKS (Công việc của tôi) ---------------- */}
+          {activeTab === 'Tasks' && (
+            <div className="space-y-6 max-w-7xl mx-auto">
+              <div>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Công việc của tôi</h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">Danh sách các nhiệm vụ được Manager phân công cho bạn xử lý.</p>
+              </div>
+
               {/* Data Table: My Assigned Work */}
               <div className="card-level-1 p-6 bg-white">
                 <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-[#e1e8fd] gap-4">
-                  <h3 className="text-title-md font-extrabold text-[#141b2b]">Công việc của tôi</h3>
+                  <h3 className="text-title-md font-extrabold text-[#141b2b]">Nhiệm vụ được giao</h3>
                   
                   {/* Filters & Actions */}
                   <div className="flex flex-wrap items-center gap-3">
@@ -2265,7 +2282,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </div>
                 </div>
               </div>
-
             </div>
           )}
 
