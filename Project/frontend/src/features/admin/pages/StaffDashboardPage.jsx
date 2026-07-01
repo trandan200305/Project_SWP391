@@ -2848,7 +2848,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Lý do</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Ngày gửi</th>
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
-                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#e1e8fd] bg-white">
@@ -2889,20 +2888,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                                   {statusLabel(item.status)}
                                 </span>
                               </td>
-                              <td className="px-4 py-4 text-right">
-                                {item.status === 'Pending' ? (
-                                  <div className="flex items-center justify-end">
-                                    <button 
-                                      onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}
-                                      className="px-2.5 py-1 bg-white hover:bg-[#f1f3ff] text-slate-705 border border-[#bdcaba] rounded text-xs font-bold transition-all"
-                                    >
-                                      Xem chi tiết
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs font-bold text-[#6e7b6c]">Đã xử lý</span>
-                                )}
-                              </td>
+
                             </tr>
                           ))}
                           {moderationItems.length === 0 && (
