@@ -1101,7 +1101,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
   // KYC Approval
   const handleKycAction = (idRaw, approve, role) => {
-    adminApi.moderateKycRequest(idRaw, approve, role, userId)
+    adminApi.moderateKycRequest(idRaw, approve, role, user?.id || 1)
       .then(res => {
         if (res.success) {
           showToast(approve ? 'Đã duyệt yêu cầu KYC!' : 'Đã từ chối yêu cầu KYC!', approve ? 'success' : 'error');
