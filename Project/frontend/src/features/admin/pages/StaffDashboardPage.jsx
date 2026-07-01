@@ -3058,98 +3058,132 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           })()}
 
           {/* ---------------- TAB: KYC ---------------- */}
-          {activeTab === 'KYC' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
-              <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xét duyệt danh tính KYC</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Kiểm tra thông tin định danh hợp pháp của freelancer và nhà tuyển dụng để duy trì hệ sinh thái an toàn.</p>
-              </div>
+          {activeTab === 'KYC' && (() => {
+            const filteredKyc = kycRequests.filter(req => {
+              if (!kycSearch) return true;
+              const searchLower = kycSearch.toLowerCase();
+              return (
+                (req.name && req.name.toLowerCase().includes(searchLower)) ||
+                (req.email && req.email.toLowerCase().includes(searchLower)) ||
+                (req.id && req.id.toLowerCase().includes(searchLower))
+              );
+            });
 
-              {/* KYC Request List Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {kycRequests.map((req) => (
-                  <div key={req.id} className="card-level-1 p-6 bg-white flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xét duyệt danh tính KYC</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">Kiểm tra thông tin định danh hợp pháp của freelancer và nhà tuyển dụng để duy trì hệ sinh thái an toàn.</p>
+                  </div>
+                  {/* Search bar */}
+                  <div className="w-full md:w-72 relative">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                      <Search className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo Tên, Email, Mã..."
+                      value={kycSearch}
+                      onChange={(e) => setKycSearch(e.target.value)}
+                      className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* KYC Request List Grid */}
+                {filteredKyc.length === 0 ? (
+                  <div className="text-center py-12 bg-white border border-[#e1e8fd] rounded-xl shadow-sm">
+                    <AlertCircle className="w-10 h-10 text-[#bdcaba] mx-auto mb-2" />
+                    <p className="text-sm text-[#6e7b6c] font-bold">Không tìm thấy yêu cầu xác thực KYC nào khớp.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {filteredKyc.map((req) => (
+                      <div key={req.id} className="card-level-1 p-6 bg-white flex flex-col justify-between">
                         <div>
-                          <span className="text-xs font-bold text-[#6e7b6c]">{req.id}</span>
-                          <h3 className="text-body-lg font-bold text-[#141b2b] mt-0.5">{req.name}</h3>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          req.role === 'FREELANCER' ? 'bg-[#f7fff2] text-[#006b2c]' : 'bg-blue-50 text-[#0058be]'
-                        }`}>
-                          {req.role}
-                        </span>
-                      </div>
+                          <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
+                            <div>
+                              <span className="text-xs font-bold text-[#6e7b6c]">{req.id}</span>
+                              <h3 className="text-body-lg font-bold text-[#141b2b] mt-0.5">{req.name}</h3>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              req.role === 'FREELANCER' ? 'bg-[#f7fff2] text-[#006b2c]' : 'bg-blue-50 text-[#0058be]'
+                            }`}>
+                              {req.role}
+                            </span>
+                          </div>
 
-                      <div className="py-4 space-y-2.5">
-                        <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Loại giấy tờ:</span>
-                          <span className="font-bold text-[#141b2b]">{req.docType}</span>
-                        </div>
-                        <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Ngày gửi:</span>
-                          <span className="font-bold text-[#3e4a3d]">{req.subDate}</span>
-                        </div>
-                        <div className="flex justify-between text-body-sm">
-                          <span className="font-semibold text-[#6e7b6c]">Địa chỉ Email:</span>
-                          <span className="font-bold text-[#141b2b]">{req.email}</span>
-                        </div>
-                        <div className="mt-3">
-                          <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm ({req.docUrls?.length || 0}):</span>
-                          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                             {req.docUrls && req.docUrls.length > 0 ? req.docUrls.map((url, i) => (
-                                <div key={i} className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 w-48 flex-shrink-0 bg-slate-50 flex items-center justify-center group">
-                                  <img src={url} alt={`KYC Document ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <a href={url} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
-                                      <Eye className="w-4 h-4" />
-                                    </a>
-                                  </div>
-                                </div>
-                             )) : (
-                                <div className="text-xs text-gray-500 italic py-2">Không có tài liệu nào</div>
-                             )}
+                          <div className="py-4 space-y-2.5">
+                            <div className="flex justify-between text-body-sm">
+                              <span className="font-semibold text-[#6e7b6c]">Loại giấy tờ:</span>
+                              <span className="font-bold text-[#141b2b]">{req.docType}</span>
+                            </div>
+                            <div className="flex justify-between text-body-sm">
+                              <span className="font-semibold text-[#6e7b6c]">Ngày gửi:</span>
+                              <span className="font-bold text-[#3e4a3d]">{req.subDate}</span>
+                            </div>
+                            <div className="flex justify-between text-body-sm">
+                              <span className="font-semibold text-[#6e7b6c]">Địa chỉ Email:</span>
+                              <span className="font-bold text-[#141b2b]">{req.email}</span>
+                            </div>
+                            <div className="mt-3">
+                              <span className="block text-xs font-semibold text-[#6e7b6c] mb-1">Xem trước tài liệu đính kèm ({req.docUrls?.length || 0}):</span>
+                              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                 {req.docUrls && req.docUrls.length > 0 ? req.docUrls.map((url, i) => (
+                                    <div key={i} className="relative border border-[#e1e8fd] rounded-lg overflow-hidden h-36 w-48 flex-shrink-0 bg-slate-50 flex items-center justify-center group">
+                                      <img src={url} alt={`KYC Document ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <a href={url} target="_blank" rel="noreferrer" className="p-2 bg-white text-slate-800 rounded-full shadow-lg">
+                                          <Eye className="w-4 h-4" />
+                                        </a>
+                                      </div>
+                                    </div>
+                                 )) : (
+                                    <div className="text-xs text-gray-500 italic py-2">Không có tài liệu nào</div>
+                                 )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="border-t border-[#e9edff] pt-4 flex items-center justify-between">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        req.status === 'Approved' 
-                          ? 'bg-[#f7fff2] text-[#006b2c]' 
-                          : req.status === 'Rejected' 
-                            ? 'bg-[#ffdad6] text-[#ba1a1a]' 
-                            : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {req.status}
-                      </span>
+                        <div className="border-t border-[#e9edff] pt-4 flex items-center justify-between">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            req.status === 'Approved' 
+                              ? 'bg-[#f7fff2] text-[#006b2c]' 
+                              : req.status === 'Rejected' 
+                                ? 'bg-[#ffdad6] text-[#ba1a1a]' 
+                                : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {req.status}
+                          </span>
 
-                      {req.status === 'Pending' ? (
-                        <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => handleKycAction(req.idRaw, false, req.role)}
-                            className="px-3 py-1.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-bold transition-all"
-                          >
-                            Từ chối
-                          </button>
-                          <button 
-                            onClick={() => handleKycAction(req.idRaw, true, req.role)}
-                            className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all"
-                          >
-                            Duyệt xác thực
-                          </button>
+                          {req.status === 'Pending' ? (
+                            <div className="flex items-center gap-3">
+                              <button 
+                                onClick={() => handleKycAction(req.idRaw, false, req.role)}
+                                className="px-3 py-1.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-bold transition-all"
+                              >
+                                Từ chối
+                              </button>
+                              <button 
+                                onClick={() => handleKycAction(req.idRaw, true, req.role)}
+                                className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all"
+                              >
+                                Duyệt xác thực
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-[#6e7b6c] font-bold">Đã xử lý</span>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-xs text-[#6e7b6c] font-bold">Đã xử lý</span>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ---------------- TAB: DISPUTES ---------------- */}
           {activeTab === 'Disputes' && (() => {
