@@ -564,7 +564,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
     adminApi.getAuditLogs().then(data => {
       if (Array.isArray(data)) {
-        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS' || (log.module === 'USER_MANAGEMENT' && log.status && log.status.startsWith('KYC')));
+        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS' || (log.module === 'USER_MANAGEMENT' && log.status && log.status.startsWith('KYC')) || (log.module === 'FINANCE' && log.status === 'PROCESS_WITHDRAWAL'));
         setModerationHistory(modLogs.slice(0, 10).map(log => ({
           id: `LOG-${log.id}`,
           action: log.status || 'Hành động',
@@ -742,6 +742,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             showToast(res.message, 'success');
             fetchWithdrawals();
             fetchStats(); // Update stats count
+            fetchModerationData(); // Reload history for withdrawal
             setShowWithdrawalModal(false);
             setSelectedWithdrawal(null);
           } else {
