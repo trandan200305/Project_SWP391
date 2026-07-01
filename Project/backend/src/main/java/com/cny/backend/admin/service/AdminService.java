@@ -953,10 +953,9 @@ public class AdminService {
                 f.setKycReviewedByStaffId(adminId);
                 freelancerRepository.save(f);
                 
-                try {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MODERATE', 'USER_MANAGEMENT', ?, GETDATE())",
-                            adminId, "KYC " + status + " for Freelancer " + f.getEmail());
-                } catch (Exception ex) {}
+                String fName = f.getDisplayName() != null ? f.getDisplayName() : (f.getFullName() != null ? f.getFullName() : f.getEmail());
+                String kycLog = (approve ? "Duyệt xác thực KYC" : "Từ chối KYC") + " cho Freelancer '" + fName + "' (" + f.getEmail() + ")";
+                writeAuditLog(adminId, "KYC_MODERATE", "USER_MANAGEMENT", kycLog);
 
                 response.put("success", true);
                 response.put("message", "Đã cập nhật KYC Freelancer thành công.");
@@ -974,10 +973,9 @@ public class AdminService {
                 e.setKycReviewedByStaffId(adminId);
                 employerRepository.save(e);
 
-                try {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MODERATE', 'USER_MANAGEMENT', ?, GETDATE())",
-                            adminId, "KYC " + status + " for Employer " + e.getEmail());
-                } catch (Exception ex) {}
+                String eName = e.getDisplayName() != null ? e.getDisplayName() : (e.getFullName() != null ? e.getFullName() : e.getEmail());
+                String kycLog = (approve ? "Duyệt xác thực KYC" : "Từ chối KYC") + " cho Employer '" + eName + "' (" + e.getEmail() + ")";
+                writeAuditLog(adminId, "KYC_MODERATE", "USER_MANAGEMENT", kycLog);
 
                 response.put("success", true);
                 response.put("message", "Đã cập nhật KYC Employer thành công.");
@@ -1005,10 +1003,9 @@ public class AdminService {
                 f.setKycStatus(status);
                 freelancerRepository.save(f);
                 
-                try {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MORE_INFO', 'USER_MANAGEMENT', ?, GETDATE())",
-                            adminId, "Require more KYC info for Freelancer " + f.getEmail() + " | Reason: " + reason);
-                } catch (Exception ex) {}
+                String fName = f.getDisplayName() != null ? f.getDisplayName() : (f.getFullName() != null ? f.getFullName() : f.getEmail());
+                String kycLog = "Yêu cầu bổ sung KYC cho Freelancer '" + fName + "' (" + f.getEmail() + ") | Lý do: " + reason;
+                writeAuditLog(adminId, "KYC_MORE_INFO", "USER_MANAGEMENT", kycLog);
 
                 response.put("success", true);
                 response.put("message", "Đã yêu cầu Freelancer bổ sung thông tin KYC.");
@@ -1023,10 +1020,9 @@ public class AdminService {
                 e.setKycStatus(status);
                 employerRepository.save(e);
 
-                try {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MORE_INFO', 'USER_MANAGEMENT', ?, GETDATE())",
-                            adminId, "Require more KYC info for Employer " + e.getEmail() + " | Reason: " + reason);
-                } catch (Exception ex) {}
+                String eName = e.getDisplayName() != null ? e.getDisplayName() : (e.getFullName() != null ? e.getFullName() : e.getEmail());
+                String kycLog = "Yêu cầu bổ sung KYC cho Employer '" + eName + "' (" + e.getEmail() + ") | Lý do: " + reason;
+                writeAuditLog(adminId, "KYC_MORE_INFO", "USER_MANAGEMENT", kycLog);
 
                 response.put("success", true);
                 response.put("message", "Đã yêu cầu Employer bổ sung thông tin KYC.");
