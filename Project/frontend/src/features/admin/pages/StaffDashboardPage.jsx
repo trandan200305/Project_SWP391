@@ -94,6 +94,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [reportFilter, setReportFilter] = useState('ALL');
   const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
   const [reportSearch, setReportSearch] = useState('');
+  const [kycSearch, setKycSearch] = useState('');
 
   // Finance states
   const [withdrawals, setWithdrawals] = useState([]);
