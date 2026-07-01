@@ -416,21 +416,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     adminApi.getKycRequests()
       .then(data => {
         if (Array.isArray(data)) {
-          const mapped = data.map(r => ({
-            id: `KYC-${r.userRole === 'EMPLOYER' ? 'EMP' : 'FL'}-${r.id}`,
-            idRaw: r.id,
-            name: r.userName,
-            email: r.userEmail,
-            role: r.userRole || 'FREELANCER',
-            docType: r.userRole === 'EMPLOYER' ? 'Giấy phép KD & CCCD Đại diện' : 'CCCD/ID Card',
-            subDate: r.submittedAt ? r.submittedAt.substring(0, 10) : '',
-            subDateFull: r.submittedAt || '',
-            docUrls: r.documentUrls && r.documentUrls.length > 0 ? r.documentUrls.filter(url => url !== "") : (r.idCard ? [r.idCard] : []),
-            status: r.status === 'APPROVED' ? 'Approved' : r.status === 'REJECTED' ? 'Rejected' : 'Pending'
-          }));
-          
-          mapped.sort((a, b) => new Date(b.subDateFull) - new Date(a.subDateFull));
-          setKycRequests(mapped);
+          const pendingData = data.filter(req => req.status === 'PENDING' || req.status === 'IN_REVIEW' || !req.status || req.status === 'MORE_INFO_REQUIRED');
+          setKycRequests(pendingData.map(req => ({
+            id: `KYC-${req.userRole === 'EMPLOYER' ? 'EMP' : 'FL'}-${req.id}`,
+            idRaw: req.id,
+            name: req.userName,
+            email: req.userEmail,
+            role: req.userRole || 'FREELANCER',
+            docType: req.userRole === 'EMPLOYER' ? 'Giấy phép KD & CCCD Đại diện' : 'CCCD/ID Card',
+            subDate: req.submittedAt ? req.submittedAt.substring(0, 10) : '',
+            subDateFull: req.submittedAt || '',
+            docUrls: req.documentUrls && req.documentUrls.length > 0 ? req.documentUrls.filter(url => url !== "") : (req.idCard ? [req.idCard] : []),
+            status: req.status === 'APPROVED' ? 'Approved' : req.status === 'REJECTED' ? 'Rejected' : 'Pending'
+          })));
         }
       })
       .catch(err => console.error('Error fetching kyc:', err));
@@ -566,7 +564,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
     adminApi.getAuditLogs().then(data => {
       if (Array.isArray(data)) {
-        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS');
+        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS' || (log.module === 'USER_MANAGEMENT' && log.status && log.status.startsWith('KYC')));
         setModerationHistory(modLogs.slice(0, 10).map(log => ({
           id: `LOG-${log.id}`,
           action: log.status || 'Hành động',
@@ -1107,6 +1105,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         if (res.success) {
           showToast(approve ? 'Đã duyệt yêu cầu KYC!' : 'Đã từ chối yêu cầu KYC!', approve ? 'success' : 'error');
           fetchKycRequests();
+          fetchModerationData(); // Reload history for KYC
         } else {
           showToast(res.message || 'Thao tác thất bại.', 'error');
         }
@@ -2988,6 +2987,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                                   'MODERATE_PROJECT': 'Kiểm duyệt dự án',
                                   'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
                                   'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
+                                  'KYC_MODERATE': 'Kiểm duyệt KYC',
+                                  'KYC_REQUIRE_MORE_INFO': 'Yêu cầu bổ sung KYC',
                                   'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
                                   'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
                                   'VERIFY_KYC': 'Xác thực KYC',
