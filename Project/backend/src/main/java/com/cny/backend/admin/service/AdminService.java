@@ -817,16 +817,63 @@ public class AdminService {
     }
 
     public List<AdminAuditLogDto> getAuditLogs() {
-        return dashboardRepository.getAuditLogs().stream().map(p -> 
-            AdminAuditLogDto.builder()
+        return dashboardRepository.getAuditLogs().stream().map(p -> {
+            String detail = p.getDetail();
+            if (detail != null) {
+                if (detail.contains("Duyệt dự án #")) {
+                    try {
+                        int startIdx = detail.indexOf("Duyệt dự án #") + "Duyệt dự án #".length();
+                        int endIdx = startIdx;
+                        while (endIdx < detail.length() && Character.isDigit(detail.charAt(endIdx))) {
+                            endIdx++;
+                        }
+                        String idStr = detail.substring(startIdx, endIdx);
+                        if (!idStr.isEmpty()) {
+                            int projId = Integer.parseInt(idStr);
+                            Optional<com.cny.backend.project.entity.Project> projOpt = projectRepository.findById(projId);
+                            if (projOpt.isPresent()) {
+                                com.cny.backend.project.entity.Project proj = projOpt.get();
+                                String projectName = proj.getTitle();
+                                String clientName = proj.getClient() != null ? proj.getClient().getDisplayName() : "Người dùng";
+                                detail = detail.replace("Duyệt dự án #" + idStr, "Duyệt dự án '" + projectName + "' của '" + clientName + "'");
+                            }
+                        }
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                } else if (detail.contains("Duyệt dịch vụ #")) {
+                    try {
+                        int startIdx = detail.indexOf("Duyệt dịch vụ #") + "Duyệt dịch vụ #".length();
+                        int endIdx = startIdx;
+                        while (endIdx < detail.length() && Character.isDigit(detail.charAt(endIdx))) {
+                            endIdx++;
+                        }
+                        String idStr = detail.substring(startIdx, endIdx);
+                        if (!idStr.isEmpty()) {
+                            int gigId = Integer.parseInt(idStr);
+                            Optional<com.cny.backend.project.entity.Gig> gigOpt = gigRepository.findById(gigId);
+                            if (gigOpt.isPresent()) {
+                                com.cny.backend.project.entity.Gig gig = gigOpt.get();
+                                String gigName = gig.getTitle();
+                                String freelancerName = gig.getFreelancer() != null ? gig.getFreelancer().getDisplayName() : "Người dùng";
+                                detail = detail.replace("Duyệt dịch vụ #" + idStr, "Duyệt dịch vụ '" + gigName + "' của '" + freelancerName + "'");
+                            }
+                        }
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+            }
+
+            return AdminAuditLogDto.builder()
                 .id(p.getId())
                 .status(p.getStatus())
                 .module(p.getModule())
-                .detail(p.getDetail())
+                .detail(detail)
                 .timestamp(p.getTimestamp())
                 .source(p.getSource())
-                .build()
-        ).collect(Collectors.toList());
+                .build();
+        }).collect(Collectors.toList());
     }
 
     public List<JobCategoryDto> getJobCategories() {
