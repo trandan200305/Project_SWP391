@@ -1163,6 +1163,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         if (res.success) {
           showToast(res.message || (approve ? 'Đã phê duyệt thành công!' : 'Đã từ chối thành công!'), approve ? 'success' : 'error');
           fetchModerationItems();
+          fetchModerationData(); // Reload history
         } else {
           showToast(res.message || 'Thao tác thất bại.', 'error');
         }
@@ -2985,6 +2986,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               <h4 className="font-bold text-[13px] text-slate-800 tracking-wide">
                                 {{
                                   'MODERATE_PROJECT': 'Kiểm duyệt dự án',
+                                  'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
+                                  'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
+                                  'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
                                   'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
                                   'VERIFY_KYC': 'Xác thực KYC',
                                   'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
