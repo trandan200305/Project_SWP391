@@ -754,7 +754,16 @@ public class AdminService {
         try {
             dashboardRepository.updateProjectStatus(id, newStatus, reason);
             
-            writeAuditLog(adminId, "MODERATE_PROJECT", "PROJECTS", "Duyệt dự án #" + id + " thành " + newStatus + " | Lý do: " + reason);
+            String logDetail = "Duyệt dự án #" + id + " thành " + newStatus + " | Lý do: " + reason;
+            Optional<com.cny.backend.project.entity.Project> projectOpt = projectRepository.findById(id);
+            if (projectOpt.isPresent()) {
+                com.cny.backend.project.entity.Project proj = projectOpt.get();
+                String projectName = proj.getTitle();
+                String clientName = proj.getClient() != null ? proj.getClient().getDisplayName() : "Người dùng";
+                logDetail = "Duyệt dự án '" + projectName + "' của '" + clientName + "' thành " + newStatus + " | Lý do: " + reason;
+            }
+
+            writeAuditLog(adminId, "MODERATE_PROJECT", "PROJECTS", logDetail);
             
             response.put("success", true);
             response.put("message", "Đã duyệt dự án thành công.");
@@ -1029,7 +1038,8 @@ public class AdminService {
             report.setUpdatedAt(LocalDateTime.now());
             violationReportRepository.save(report);
             
-            writeAuditLog(adminId, "RESOLVE_REPORT", "MODERATION", "Xử lý báo cáo vi phạm #" + id + " thành " + status);
+            String reporter = report.getReporterName() != null ? report.getReporterName() : "Người dùng";
+            writeAuditLog(adminId, "RESOLVE_REPORT", "MODERATION", "Xử lý báo cáo vi phạm từ '" + reporter + "' thành " + status);
             
             response.put("success", true);
             response.put("message", "Đã xử lý báo cáo vi phạm thành công.");
@@ -2289,7 +2299,7 @@ public class AdminService {
             }
 
             writeAuditLog(validAdminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
-                "Admin #" + validAdminId + " đã phê duyệt thay đổi thông tin của Employer #" + employer.getEmployerId());
+                "Duyệt cập nhật hồ sơ của '" + employer.getDisplayName() + "' thành công.");
             
             response.put("success", true);
             response.put("message", "Đã phê duyệt và cập nhật hồ sơ Employer thành công.");
@@ -2297,7 +2307,7 @@ public class AdminService {
             req.setStatus("REJECTED");
             req.setRejectReason(reason);
             writeAuditLog(validAdminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
-                "Admin #" + validAdminId + " đã từ chối thay đổi thông tin của Employer #" + req.getEmployer().getEmployerId() + " | Lý do: " + reason);
+                "Từ chối cập nhật hồ sơ của '" + req.getEmployer().getDisplayName() + "' | Lý do: " + reason);
             
             response.put("success", true);
             response.put("message", "Đã từ chối yêu cầu thay đổi thông tin.");
@@ -2490,7 +2500,11 @@ public class AdminService {
             gig.setStatus(newStatus);
             gigRepository.save(gig);
             
-            writeAuditLog(adminId, "MODERATE_GIG", "PROJECTS", "Duyệt dịch vụ #" + id + " thành " + newStatus + " | Lý do: " + (reason != null ? reason : ""));
+            String gigName = gig.getTitle();
+            String freelancerName = gig.getFreelancer() != null ? gig.getFreelancer().getDisplayName() : "Người dùng";
+            String logDetail = "Duyệt dịch vụ '" + gigName + "' của '" + freelancerName + "' thành " + newStatus + " | Lý do: " + (reason != null ? reason : "");
+            
+            writeAuditLog(adminId, "MODERATE_GIG", "PROJECTS", logDetail);
             
             response.put("success", true);
             response.put("message", "Đã duyệt dịch vụ thành công.");
