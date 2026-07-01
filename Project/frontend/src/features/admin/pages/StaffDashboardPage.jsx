@@ -2981,9 +2981,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               {isRejected ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                             </div>
                           </div>
-                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 bg-white hover:shadow-md transition-shadow ${isRejected ? 'border-rose-100' : 'border-slate-100'}`}>
-                            <div className="flex items-center justify-between mb-1.5 border-b border-slate-50 pb-2">
-                              <h4 className="font-bold text-[13px] text-slate-800 tracking-wide">
+                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md transition-shadow ${
+                            isRejected 
+                              ? 'bg-rose-50/80 border-rose-200 text-rose-900' 
+                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                          }`}>
+                            <div className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? 'border-rose-100' : 'border-emerald-100'}`}>
+                              <h4 className={`font-bold text-[13px] tracking-wide ${isRejected ? 'text-rose-800' : 'text-emerald-800'}`}>
                                 {{
                                   'MODERATE_PROJECT': 'Kiểm duyệt dự án',
                                   'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
@@ -2998,17 +3002,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                                   'UPDATE_CONFIG': 'Cập nhật hệ thống'
                                 }[log.action] || log.action?.replace(/_/g, ' ')}
                               </h4>
-                              <time className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</time>
+                              <time className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                isRejected ? 'text-rose-600 bg-rose-100/60' : 'text-emerald-600 bg-emerald-100/60'
+                              }`}>{log.time}</time>
                             </div>
-                            <p className="text-[13px] text-slate-600 leading-relaxed mt-2">
+                            <p className={`text-[13px] leading-relaxed mt-2 ${isRejected ? 'text-rose-700' : 'text-emerald-700'}`}>
                               {log.target.split(/(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi).map((part, i) => {
                                 const upperPart = part.toUpperCase();
                                 if (upperPart === 'REJECTED' || upperPart === 'TỪ CHỐI') {
-                                  return <span key={i} className="font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                  return <span key={i} className="font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">{part}</span>;
                                 } else if (upperPart === 'PUBLISHED') {
-                                  return <span key={i} className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                  return <span key={i} className="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">{part}</span>;
                                 } else if (upperPart === 'YÊU CẦU BỔ SUNG') {
-                                  return <span key={i} className="font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                  return <span key={i} className="font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">{part}</span>;
                                 }
                                 return part;
                               })}
