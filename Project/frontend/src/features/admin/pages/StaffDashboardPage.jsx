@@ -1244,7 +1244,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       items: [
         { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
-        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount }
+        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount },
+        { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: FileText }
       ]
     },
     DIS: {
@@ -2688,7 +2689,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
               { id: 'queue', label: 'Hàng đợi', count: pendingItems.length },
               { id: 'reports', label: 'Báo cáo vi phạm', count: violationReports.length },
               { id: 'actions', label: 'Cảnh báo / Chặn', count: warningTemplates.length },
-              { id: 'history', label: 'Lịch sử', count: moderationHistory.length },
               { id: 'escalation', label: 'Chuyển cấp', count: escalationCases.length }
             ];
             const statusLabel = (status) => status === 'Approved' ? 'Đã duyệt' : status === 'Rejected' ? 'Đã từ chối' : 'Chờ xử lý';
@@ -2985,63 +2985,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </div>
                 )}
 
-                {moderationView === 'history' && (
-                  <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
-                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Lịch sử hoạt động</h2>
-                    <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
-                      {moderationHistory.map((log, idx) => {
-                        const isRejected = log.target && (log.target.includes('REJECTED') || log.target.includes('Từ chối') || log.target.toLowerCase().includes('yêu cầu bổ sung') || (log.action && log.action.includes('REJECT')));
-                        return (
-                        <div key={log.id} className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 shadow-sm z-10 bg-white">
-                            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isRejected ? 'bg-rose-100 text-rose-600 md:translate-x-1/2' : 'bg-emerald-100 text-emerald-600 md:-translate-x-1/2'}`}>
-                              {isRejected ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                            </div>
-                          </div>
-                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md transition-shadow ${
-                            isRejected 
-                              ? 'bg-rose-50/80 border-rose-200 text-rose-900' 
-                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-                          }`}>
-                            <div className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? 'border-rose-100' : 'border-emerald-100'}`}>
-                              <h4 className={`font-bold text-[13px] tracking-wide ${isRejected ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                {{
-                                  'MODERATE_PROJECT': 'Kiểm duyệt dự án',
-                                  'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
-                                  'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
-                                  'KYC_MODERATE': 'Kiểm duyệt KYC',
-                                  'KYC_REQUIRE_MORE_INFO': 'Yêu cầu bổ sung KYC',
-                                  'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
-                                  'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
-                                  'VERIFY_KYC': 'Xác thực KYC',
-                                  'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
-                                  'SUSPEND_USER': 'Khóa tài khoản',
-                                  'UPDATE_CONFIG': 'Cập nhật hệ thống'
-                                }[log.action] || log.action?.replace(/_/g, ' ')}
-                              </h4>
-                              <time className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                                isRejected ? 'text-rose-600 bg-rose-100/60' : 'text-emerald-600 bg-emerald-100/60'
-                              }`}>{log.time}</time>
-                            </div>
-                            <p className={`text-[13px] leading-relaxed mt-2 ${isRejected ? 'text-rose-700' : 'text-emerald-700'}`}>
-                              {log.target.split(/(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi).map((part, i) => {
-                                const upperPart = part.toUpperCase();
-                                if (upperPart === 'REJECTED' || upperPart === 'TỪ CHỐI') {
-                                  return <span key={i} className="font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">{part}</span>;
-                                } else if (upperPart === 'PUBLISHED') {
-                                  return <span key={i} className="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">{part}</span>;
-                                } else if (upperPart === 'YÊU CẦU BỔ SUNG') {
-                                  return <span key={i} className="font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">{part}</span>;
-                                }
-                                return part;
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                      )})}
-                    </div>
-                  </div>
-                )}
+
 
                 {moderationView === 'escalation' && (
                   <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
@@ -3198,6 +3142,76 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     ))}
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: MODERATION HISTORY (Lịch sử hoạt động) ---------------- */}
+          {activeTab === 'ModHistory' && (() => {
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Lịch sử hoạt động kiểm duyệt</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">
+                    Nhật ký chi tiết các hành động kiểm duyệt dự án, dịch vụ, tài khoản và xác thực KYC của hệ thống.
+                  </p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-6">
+                  <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
+                    {moderationHistory.map((log) => {
+                      const isRejected = log.target && (log.target.includes('REJECTED') || log.target.includes('Từ chối') || log.target.toLowerCase().includes('yêu cầu bổ sung') || (log.action && log.action.includes('REJECT')));
+                      return (
+                        <div key={log.id} className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 shadow-sm z-10 bg-white">
+                            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isRejected ? 'bg-rose-100 text-rose-600 md:translate-x-1/2' : 'bg-emerald-100 text-emerald-600 md:-translate-x-1/2'}`}>
+                              {isRejected ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                            </div>
+                          </div>
+                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md transition-shadow ${
+                            isRejected 
+                              ? 'bg-rose-50/80 border-rose-200 text-rose-900' 
+                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                          }`}>
+                            <div className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? 'border-rose-100' : 'border-emerald-100'}`}>
+                              <h4 className={`font-bold text-[13px] tracking-wide ${isRejected ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                {{
+                                  'MODERATE_PROJECT': 'Kiểm duyệt dự án',
+                                  'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
+                                  'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
+                                  'KYC_MODERATE': 'Kiểm duyệt KYC',
+                                  'KYC_REQUIRE_MORE_INFO': 'Yêu cầu bổ sung KYC',
+                                  'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
+                                  'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
+                                  'VERIFY_KYC': 'Xác thực KYC',
+                                  'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
+                                  'SUSPEND_USER': 'Khóa tài khoản',
+                                  'UPDATE_CONFIG': 'Cập nhật hệ thống'
+                                }[log.action] || log.action?.replace(/_/g, ' ')}
+                              </h4>
+                              <time className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                isRejected ? 'text-rose-600 bg-rose-100/60' : 'text-emerald-600 bg-emerald-100/60'
+                              }`}>{log.time}</time>
+                            </div>
+                            <p className={`text-[13px] leading-relaxed mt-2 ${isRejected ? 'text-rose-700' : 'text-emerald-700'}`}>
+                              {log.target.split(/(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi).map((part, i) => {
+                                const upperPart = part.toUpperCase();
+                                if (upperPart === 'REJECTED' || upperPart === 'TỪ CHỐI') {
+                                  return <span key={i} className="font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">{part}</span>;
+                                } else if (upperPart === 'PUBLISHED') {
+                                  return <span key={i} className="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">{part}</span>;
+                                } else if (upperPart === 'YÊU CẦU BỔ SUNG') {
+                                  return <span key={i} className="font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">{part}</span>;
+                                }
+                                return part;
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             );
           })()}
@@ -3857,7 +3871,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           )}
 
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions', 'SystemBugs'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions', 'SystemBugs', 'ModHistory'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
