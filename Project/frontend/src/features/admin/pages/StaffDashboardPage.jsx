@@ -3163,10 +3163,10 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       const isRejected = log.target && (log.target.includes('REJECTED') || log.target.includes('Từ chối') || log.target.toLowerCase().includes('yêu cầu bổ sung') || (log.action && log.action.includes('REJECT')));
                       return (
                         <div key={log.id} className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 shadow-sm z-10 bg-white">
-                            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isRejected ? 'bg-rose-100 text-rose-600 md:translate-x-1/2' : 'bg-emerald-100 text-emerald-600 md:-translate-x-1/2'}`}>
-                              <Check className="w-4 h-4" />
-                            </div>
+                          <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 shadow-sm z-10 bg-white ${
+                            isRejected ? 'md:translate-x-1/2' : 'md:-translate-x-1/2'
+                          }`}>
+                            <div className={`w-3.5 h-3.5 rounded-full ${isRejected ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                           </div>
                           <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md transition-shadow ${
                             isRejected 
