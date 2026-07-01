@@ -1046,6 +1046,7 @@ public class AdminService {
                 .reporterName(r.getReporterName())
                 .reportedName(r.getAccusedName())
                 .targetType(r.getTargetType())
+                .targetId(r.getTargetId())
                 .evidence(r.getEvidence())
                 .severity(r.getSeverity())
                 .reason(r.getReason())
