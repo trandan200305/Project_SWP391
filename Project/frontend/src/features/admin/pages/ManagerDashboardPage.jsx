@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, CheckSquare, MessageSquare, ShieldAlert, UserCheck, 
-  BadgeDollarSign, Gavel, FileText, Bell, Settings, Search, HelpCircle, 
+  BadgeDollarSign, Gavel, FileText, Settings, Search, HelpCircle, 
   Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
   Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown, ArrowLeftRight
 } from 'lucide-react';
+import NotificationDropdown from '../components/NotificationDropdown.jsx';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
@@ -1781,10 +1782,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3">
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ba1a1a] rounded-full border border-white" />
-              </button>
+              <NotificationDropdown userId={user?.id} role={user?.role} />
               <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
                 <HelpCircle className="w-5 h-5" />
               </button>

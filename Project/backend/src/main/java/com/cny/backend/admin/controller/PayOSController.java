@@ -153,7 +153,7 @@ public class PayOSController {
                     projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                     
                     // Lưu lịch sử (Giả sử Admin ID = 1 cho hệ thống tự động)
-                    dashboardRepository.logAudit(1, "PAYOS_WEBHOOK", "FINANCE", "Hệ thống tự động duyệt thanh toán PayOS cho dự án ID: " + txn.getProjectId() + ", Mã đơn: " + txn.getTxnRef());
+                    dashboardRepository.logAudit(1, "system@lancerpro.com", "PAYOS_WEBHOOK", "FINANCE", "Hệ thống tự động duyệt thanh toán PayOS cho dự án ID: " + txn.getProjectId() + ", Mã đơn: " + txn.getTxnRef());
                 }
             }
             
@@ -170,7 +170,9 @@ public class PayOSController {
     }
 
     @PostMapping("/query")
-    public ResponseEntity<?> queryPayosTransaction(@RequestParam String txnRef, @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+    public ResponseEntity<?> queryPayosTransaction(@RequestParam String txnRef, 
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
+            @RequestHeader(value = "X-Admin-Email", required = false, defaultValue = "admin@lancerpro.com") String adminEmail) {
         try {
             long orderCode = Long.parseLong(txnRef);
             PaymentLink link = payOS.paymentRequests().get(orderCode);
@@ -197,7 +199,7 @@ public class PayOSController {
             res.put("message", "Trạng thái trên PayOS: " + payosStatus);
             res.put("payosStatus", payosStatus);
             
-            dashboardRepository.logAudit(adminId, "QUERY_PAYOS_TRANSACTION", "FINANCE", "Truy vấn giao dịch PayOS " + txnRef + " - Trạng thái: " + payosStatus);
+            dashboardRepository.logAudit(adminId, adminEmail, "QUERY_PAYOS_TRANSACTION", "FINANCE", "Truy vấn giao dịch PayOS " + txnRef + " - Trạng thái: " + payosStatus);
 
             return ResponseEntity.ok(res);
         } catch (Exception e) {

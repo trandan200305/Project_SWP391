@@ -162,10 +162,10 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
 
     
     @Modifying
-    @Query(value = "INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (:adminId, :action, :module, :description, GETDATE())", nativeQuery = true)
-    void logAudit(@Param("adminId") int adminId, @Param("action") String action, @Param("module") String module, @Param("description") String description);
+    @Query(value = "INSERT INTO admin_audit_logs (admin_id, source_email, action, module, description, created_at) VALUES (:adminId, :sourceEmail, :action, :module, :description, GETDATE())", nativeQuery = true)
+    void logAudit(@Param("adminId") int adminId, @Param("sourceEmail") String sourceEmail, @Param("action") String action, @Param("module") String module, @Param("description") String description);
 
-    @Query(value = "SELECT l.log_id as id, l.action as status, l.module, l.description as detail, l.created_at as timestamp, a.email as source FROM admin_audit_logs l JOIN admins a ON l.admin_id = a.admin_id ORDER BY l.created_at DESC", nativeQuery = true)
+    @Query(value = "SELECT l.log_id as id, l.action as status, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source FROM admin_audit_logs l LEFT JOIN admins a ON l.admin_id = a.admin_id ORDER BY l.created_at DESC", nativeQuery = true)
     List<AuditLogProjection> getAuditLogs();
 
     

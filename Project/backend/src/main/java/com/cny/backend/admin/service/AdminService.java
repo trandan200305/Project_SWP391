@@ -131,6 +131,12 @@ public class AdminService {
     private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
+    private com.cny.backend.admin.repository.BugReportRepository bugReportRepository;
+
+    @Autowired
+    private com.cny.backend.department.repository.DepartmentTransferRequestRepository departmentTransferRequestRepository;
+
+    @Autowired
     private com.cny.backend.project.service.ProjectService projectService;
 
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
@@ -251,7 +257,7 @@ public class AdminService {
     public PlatformFeeDto updateFeeConfig(double fee, int adminId) {
         try {
             dashboardRepository.insertFeeConfig(fee);
-            dashboardRepository.logAudit(adminId, "UPDATE_FEE_RATE", "FINANCE", "Đã cấu hình lại mức phí dịch vụ của nền tảng thành " + fee + "%");
+            dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "UPDATE_FEE_RATE", "FINANCE", "Đã cấu hình lại mức phí dịch vụ của nền tảng thành " + fee + "%");
 
             return PlatformFeeDto.builder()
                     .success(true)
@@ -707,9 +713,23 @@ public class AdminService {
         return 1;
     }
 
+    private String getCurrentAdminEmail() {
+        try {
+            org.springframework.web.context.request.ServletRequestAttributes attributes = 
+                (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                String email = attributes.getRequest().getHeader("X-Admin-Email");
+                if (email != null && !email.trim().isEmpty()) {
+                    return email;
+                }
+            }
+        } catch (Exception e) {}
+        return null;
+    }
+
     public void writeAuditLog(int adminId, String action, String module, String description) {
         int validAdminId = getValidAdminId(adminId);
-        dashboardRepository.logAudit(validAdminId, action, module, description);
+        dashboardRepository.logAudit(validAdminId, getCurrentAdminEmail(), action, module, description);
     }
 
     public List<PendingProjectDto> getPendingProjects() {
@@ -914,6 +934,54 @@ public class AdminService {
             response.put("message", "Role không hợp lệ.");
         }
         
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> requireMoreInfoKycRequest(int id, String role, String reason, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        String status = "MORE_INFO_REQUIRED";
+        
+        if ("FREELANCER".equalsIgnoreCase(role)) {
+            Optional<Freelancer> opt = freelancerRepository.findById(id);
+            if (opt.isPresent()) {
+                Freelancer f = opt.get();
+                f.setKycStatus(status);
+                freelancerRepository.save(f);
+                
+                try {
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MORE_INFO', 'USER_MANAGEMENT', ?, GETDATE())",
+                            adminId, "Require more KYC info for Freelancer " + f.getEmail() + " | Reason: " + reason);
+                } catch (Exception ex) {}
+
+                response.put("success", true);
+                response.put("message", "Đã yêu cầu Freelancer bổ sung thông tin KYC.");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy Freelancer.");
+            }
+        } else if ("EMPLOYER".equalsIgnoreCase(role) || "CLIENT".equalsIgnoreCase(role)) {
+            Optional<Employer> opt = employerRepository.findById(id);
+            if (opt.isPresent()) {
+                Employer e = opt.get();
+                e.setKycStatus(status);
+                employerRepository.save(e);
+
+                try {
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'KYC_MORE_INFO', 'USER_MANAGEMENT', ?, GETDATE())",
+                            adminId, "Require more KYC info for Employer " + e.getEmail() + " | Reason: " + reason);
+                } catch (Exception ex) {}
+
+                response.put("success", true);
+                response.put("message", "Đã yêu cầu Employer bổ sung thông tin KYC.");
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy Employer.");
+            }
+        } else {
+            response.put("success", false);
+            response.put("message", "Role không hợp lệ.");
+        }
         return response;
     }
 
@@ -2361,7 +2429,7 @@ public class AdminService {
         config.setIsActive(true);
         VnpayConfig saved = vnpayConfigRepository.save(config);
         
-        dashboardRepository.logAudit(adminId, "UPDATE_VNPAY_CONFIG", "FINANCE", 
+        dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "UPDATE_VNPAY_CONFIG", "FINANCE", 
             "Đã cập nhật cấu hình cổng thanh toán VNPay: Terminal Code = " + config.getTmnCode());
         
         return saved;
@@ -2389,7 +2457,7 @@ public class AdminService {
 
         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
 
-        dashboardRepository.logAudit(adminId, "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
+        dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
             "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());
 
         result.put("success", true);
@@ -2428,6 +2496,105 @@ public class AdminService {
         } else {
             response.put("success", false);
             response.put("message", "Không tìm thấy dịch vụ.");
+        }
+        return response;
+    }
+
+    public List<Object> getBugReports() {
+        return bugReportRepository.findAll().stream().map(b -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("reportId", b.getReportId());
+            map.put("title", b.getTitle());
+            map.put("description", b.getDescription());
+            map.put("status", b.getStatus());
+            map.put("createdAt", b.getCreatedAt() != null ? b.getCreatedAt().toString() : "");
+            return map;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> updateBugReportStatus(int id, String status, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<com.cny.backend.admin.entity.BugReport> opt = bugReportRepository.findById(id);
+        if (opt.isPresent()) {
+            com.cny.backend.admin.entity.BugReport bug = opt.get();
+            bug.setStatus(status);
+            bugReportRepository.save(bug);
+
+            writeAuditLog(adminId, "UPDATE_BUG_REPORT", "SUPPORT", "Cập nhật Bug Report #" + id + " thành " + status);
+            
+            response.put("success", true);
+            response.put("message", "Đã cập nhật lỗi thành công.");
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy Bug Report.");
+        }
+        return response;
+    }
+
+    public List<Object> getTransferRequests() {
+        return departmentTransferRequestRepository.findAll().stream().map(t -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("requestId", t.getRequestId());
+            map.put("userEmail", t.getUserEmail());
+            map.put("fromDepartment", t.getFromDepartment() != null ? t.getFromDepartment().getName() : "");
+            map.put("toDepartment", t.getToDepartment() != null ? t.getToDepartment().getName() : "");
+            map.put("status", t.getStatus());
+            map.put("createdAt", t.getCreatedAt() != null ? t.getCreatedAt().toString() : "");
+            return map;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> submitTransferRequest(Map<String, Object> payload, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            com.cny.backend.department.entity.DepartmentTransferRequest req = new com.cny.backend.department.entity.DepartmentTransferRequest();
+            req.setUserType("STAFF");
+            req.setUserId(adminId);
+            req.setUserEmail((String) payload.getOrDefault("userEmail", ""));
+            req.setReason((String) payload.getOrDefault("reason", ""));
+            
+            Integer fromDeptId = payload.get("fromDepartmentId") != null ? Integer.parseInt(payload.get("fromDepartmentId").toString()) : null;
+            Integer toDeptId = payload.get("toDepartmentId") != null ? Integer.parseInt(payload.get("toDepartmentId").toString()) : null;
+
+            if (fromDeptId != null) {
+                req.setFromDepartment(departmentRepository.findById(fromDeptId).orElse(null));
+            }
+            if (toDeptId != null) {
+                req.setToDepartment(departmentRepository.findById(toDeptId).orElse(null));
+            }
+            
+            departmentTransferRequestRepository.save(req);
+            writeAuditLog(adminId, "SUBMIT_TRANSFER_REQUEST", "HR", "Gửi yêu cầu chuyển phòng ban sang phòng ban #" + toDeptId);
+            
+            response.put("success", true);
+            response.put("message", "Đã gửi yêu cầu chuyển phòng ban thành công.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi gửi yêu cầu: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> approveTransferRequest(int id, String status, String reason, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<com.cny.backend.department.entity.DepartmentTransferRequest> opt = departmentTransferRequestRepository.findById(id);
+        if (opt.isPresent()) {
+            com.cny.backend.department.entity.DepartmentTransferRequest req = opt.get();
+            req.setStatus(status);
+            req.setDecidedBy(adminId);
+            req.setDecisionNote(reason);
+            departmentTransferRequestRepository.save(req);
+
+            writeAuditLog(adminId, "APPROVE_TRANSFER_REQUEST", "HR", "Duyệt yêu cầu chuyển phòng ban #" + id + " thành " + status);
+            
+            response.put("success", true);
+            response.put("message", "Đã xử lý yêu cầu chuyển phòng ban thành công.");
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy yêu cầu chuyển phòng ban.");
         }
         return response;
     }

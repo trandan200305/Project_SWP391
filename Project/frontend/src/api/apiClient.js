@@ -11,6 +11,18 @@ export async function request(endpoint, options = {}) {
     ...customOptions,
   };
 
+  try {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const userObj = JSON.parse(userStr);
+      if (userObj && userObj.email) {
+        config.headers["X-Admin-Email"] = userObj.email;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
   if (body) {
     config.body = JSON.stringify(body);
   }

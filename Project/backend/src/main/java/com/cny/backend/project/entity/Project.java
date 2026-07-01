@@ -49,7 +49,7 @@ public class Project {
 
     @Column(nullable = false, length = 300, columnDefinition = "NVARCHAR(300)")
     private String title;
-    @Column(name = "work_form",nullable = false)
+    @Column(name = "work_form", nullable = true)
     @Builder.Default
     private String workForm = "ONLINE";
     @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")

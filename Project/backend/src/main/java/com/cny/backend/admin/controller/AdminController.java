@@ -96,47 +96,7 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/projects/pending")
-    public ResponseEntity<List<PendingProjectDto>> getPendingProjects() {
-        return ResponseEntity.ok(adminService.getPendingProjects());
-    }
 
-    @PutMapping("/projects/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateProject(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateProject(id, approve, reason, adminId));
-    }
-
-    @GetMapping("/gigs/pending")
-    public ResponseEntity<List<com.cny.backend.admin.dto.PendingGigDto>> getPendingGigs() {
-        return ResponseEntity.ok(adminService.getPendingGigs());
-    }
-
-    @PutMapping("/gigs/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateGig(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateGig(id, approve, reason, adminId));
-    }
-
-    @GetMapping("/withdrawals")
-    public ResponseEntity<List<WithdrawalDto>> getWithdrawals() {
-        return ResponseEntity.ok(adminService.getWithdrawals());
-    }
-
-    @PutMapping("/withdrawals/{id}/process")
-    public ResponseEntity<Map<String, Object>> processWithdrawal(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.processWithdrawal(id, status, reason, adminId));
-    }
 
     @GetMapping("/audit-logs")
     public ResponseEntity<List<AdminAuditLogDto>> getAuditLogs() {
@@ -148,66 +108,16 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getJobCategories());
     }
 
-    @GetMapping("/kyc-requests")
-    public ResponseEntity<List<KycRequestDto>> getKycRequests() {
-        return ResponseEntity.ok(adminService.getKycRequests());
-    }
 
-    @GetMapping("/disputes")
-    public ResponseEntity<List<DisputeDto>> getDisputes() {
-        return ResponseEntity.ok(adminService.getDisputes());
-    }
 
-    @PutMapping("/disputes/{id}/resolve")
-    public ResponseEntity<Map<String, Object>> resolveDispute(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestParam(value = "note", required = false) String note,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.resolveDispute(id, status, note, adminId));
-    }
 
-    @GetMapping("/reports")
-    public ResponseEntity<List<ReportDto>> getReports() {
-        return ResponseEntity.ok(adminService.getReports());
-    }
-
-    @PutMapping("/reports/{id}/resolve")
-    public ResponseEntity<Map<String, Object>> resolveReport(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.resolveReport(id, status, adminId));
-    }
-
-    @GetMapping("/profile-requests")
-    public ResponseEntity<List<com.cny.backend.user.entity.EmployerProfileRequest>> getProfileRequests() {
-        return ResponseEntity.ok(adminService.getPendingProfileRequests());
-    }
-
-    @PutMapping("/profile-requests/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateProfileRequest(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
-    }
 
     @GetMapping("/warning-templates")
     public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
         return ResponseEntity.ok(adminService.getWarningTemplates());
     }
 
-    @GetMapping("/articles")
-    public ResponseEntity<List<ArticleDto>> getArticles() {
-        return ResponseEntity.ok(adminService.getArticles());
-    }
 
-    @GetMapping("/tickets")
-    public ResponseEntity<List<SupportTicketDto>> getTickets() {
-        return ResponseEntity.ok(adminService.getTickets());
-    }
 
     @GetMapping("/seo-configs")
     public ResponseEntity<List<SeoConfigDto>> getSeoConfigs() {
@@ -351,14 +261,6 @@ public class AdminController {
                 .build();
     }
 
-    @PutMapping("/kyc-requests/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateKycRequest(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam("role") String role,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
-    }
 
     @GetMapping("/vnpay-config")
     public ResponseEntity<VnpayConfig> getVnpayConfig() {
@@ -372,76 +274,4 @@ public class AdminController {
         return ResponseEntity.ok(adminService.saveVnpayConfig(config, adminId));
     }
 
-    @GetMapping("/vnpay-transactions")
-    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions() {
-        return ResponseEntity.ok(adminService.getVnpayTransactions());
-    }
-
-    @PostMapping("/vnpay-transactions/{id}/reconcile")
-    public ResponseEntity<Map<String, Object>> reconcileVnpayTransaction(
-            @PathVariable("id") int id,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
-    }
-
-    @PostMapping("/vnpay-transactions/{id}/query")
-    public ResponseEntity<Map<String, Object>> queryVnpayTransaction(
-            @PathVariable("id") int transactionId,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
-            jakarta.servlet.http.HttpServletRequest request) {
-        
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null) {
-            ipAddress = request.getRemoteAddr();
-        }
-        
-        Map<String, Object> response = vnpayService.queryTransactionStatus(transactionId, ipAddress);
-        adminService.writeAuditLog(adminId, "QUERY_VNPAY_TRANSACTION", "FINANCE", 
-            "Truy vấn giao dịch VNPay ID: " + transactionId + ", kết quả: " + response.get("message"));
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/vnpay-transactions/{id}/refund")
-    public ResponseEntity<Map<String, Object>> refundVnpayTransaction(
-            @PathVariable("id") int transactionId,
-            @RequestBody Map<String, Object> payload,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
-            jakarta.servlet.http.HttpServletRequest request) {
-        
-        java.math.BigDecimal amount = null;
-        if (payload.get("amount") != null) {
-            amount = new java.math.BigDecimal(payload.get("amount").toString());
-        }
-        String reason = (String) payload.get("reason");
-        String createBy = "admin_" + adminId;
-        
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null) {
-            ipAddress = request.getRemoteAddr();
-        }
-
-        Map<String, Object> response = vnpayService.refundTransaction(transactionId, amount, reason, createBy, ipAddress);
-        adminService.writeAuditLog(adminId, "REFUND_VNPAY_TRANSACTION", "FINANCE", 
-            "Hoàn tiền giao dịch VNPay ID: " + transactionId + ", Lý do: " + reason + ", kết quả: " + response.get("message"));
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/payment/lookup-account")
-    public ResponseEntity<Map<String, Object>> lookupBankAccount(
-            @RequestBody Map<String, Object> body) {
-        String bankCode = (String) body.get("bankCode");
-        String accountNumber = (String) body.get("accountNumber");
-
-        if (bankCode == null || bankCode.isBlank() || accountNumber == null || accountNumber.isBlank()) {
-            Map<String, Object> err = new java.util.HashMap<>();
-            err.put("success", false);
-            err.put("message", "Thiếu mã ngân hàng hoặc số tài khoản");
-            return ResponseEntity.badRequest().body(err);
-        }
-
-        Map<String, Object> result = vnpayService.lookupBankAccount(bankCode.trim(), accountNumber.trim());
-        return ResponseEntity.ok(result);
-    }
 }

@@ -11,6 +11,7 @@ import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import NotificationDropdown from '../components/NotificationDropdown.jsx';
 
 export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   // Styles & Brand Settings
@@ -144,6 +145,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     pendingPercent: 0,
     waitingUserPercent: 0
   });
+  const [bugReports, setBugReports] = useState([]);
   const [socketConnected, setSocketConnected] = useState(false);
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
@@ -191,6 +193,18 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   useEffect(() => {
     fetchMyProfile();
   }, [user?.id]);
+  
+  const fetchBugReports = () => {
+    adminApi.getBugReports().then(data => {
+      setBugReports(Array.isArray(data) ? data : []);
+    }).catch(err => console.error("Error fetching bug reports:", err));
+  };
+
+  useEffect(() => {
+    if (activeTab === 'SystemBugs') {
+      fetchBugReports();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (showTransferRequestModal) {
@@ -552,9 +566,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS');
         setModerationHistory(modLogs.slice(0, 10).map(log => ({
           id: `LOG-${log.id}`,
-          action: log.action,
-          actor: log.adminName || 'Staff',
-          target: log.description,
+          action: log.status || 'Hành động',
+          actor: log.source || 'Staff',
+          target: log.detail || 'Không có chi tiết',
           time: new Date(log.timestamp).toLocaleString('vi-VN'),
           result: 'Đã lưu vết'
         })));
@@ -745,6 +759,24 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     fetchWithdrawals();
     fetchVnpayTransactions();
   }, [chartPeriod]);
+
+  // Listen to new notifications from WebSocket
+  useEffect(() => {
+    const handleNewNotification = (event) => {
+      const notif = event.detail;
+      if (notif) {
+        if (notif.type === 'TASK') {
+          fetchTasks();
+          fetchModerationItems();
+        }
+        if (notif.referenceId && notif.referenceId.startsWith('KYC-')) {
+          fetchKycRequests();
+        }
+      }
+    };
+    window.addEventListener('newNotification', handleNewNotification);
+    return () => window.removeEventListener('newNotification', handleNewNotification);
+  }, []);
 
   // Messages fetch on selection
   useEffect(() => {
@@ -1043,7 +1075,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
   // KYC Approval
   const handleKycAction = (idRaw, approve, role) => {
-    adminApi.moderateKycRequest(idRaw, approve, role)
+    adminApi.moderateKycRequest(idRaw, approve, role, userId)
       .then(res => {
         if (res.success) {
           showToast(approve ? 'Đã duyệt yêu cầu KYC!' : 'Đã từ chối yêu cầu KYC!', approve ? 'success' : 'error');
@@ -1662,10 +1694,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           <div className="flex items-center gap-5">
             {/* Top Toolbar Icons */}
             <div className="flex items-center gap-3">
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#ba1a1a] rounded-full border border-white" />
-              </button>
+              <NotificationDropdown userId={user?.id} role={user?.role} />
             </div>
 
             {/* Vertical Divider */}
@@ -2903,24 +2932,36 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
                     <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Lịch sử hoạt động</h2>
                     <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
-                      {moderationHistory.map((log, idx) => (
-                        <div key={log.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-[#e1e8fd] text-[#006b2c] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
-                            <Check className="w-5 h-5" />
+                      {moderationHistory.map((log, idx) => {
+                        const isRejected = log.target && (log.target.includes('REJECTED') || log.target.includes('Từ chối') || log.target.toLowerCase().includes('yêu cầu bổ sung') || (log.action && log.action.includes('REJECT')));
+                        return (
+                        <div key={log.id} className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 shadow-sm z-10 bg-white">
+                            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isRejected ? 'bg-rose-100 text-rose-600 md:translate-x-1/2' : 'bg-emerald-100 text-emerald-600 md:-translate-x-1/2'}`}>
+                              {isRejected ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                            </div>
                           </div>
-                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-[#e9edff] bg-white shadow-sm mb-4">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-bold text-[#141b2b] text-sm">{log.action}</h4>
-                              <time className="text-[10px] font-bold text-[#6e7b6c]">{log.time}</time>
+                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 bg-white hover:shadow-md transition-shadow ${isRejected ? 'border-rose-100' : 'border-slate-100'}`}>
+                            <div className="flex items-center justify-between mb-1.5 border-b border-slate-50 pb-2">
+                              <h4 className="font-bold text-[13px] text-slate-800 tracking-wide">{log.action}</h4>
+                              <time className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</time>
                             </div>
-                            <p className="text-xs text-[#3e4a3d] mt-1">{log.target}</p>
-                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#f1f3ff]">
-                              <span className="text-[10px] font-bold text-[#6e7b6c]">Bởi: {log.actor}</span>
-                              <span className="text-[10px] font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded">{log.result}</span>
-                            </div>
+                            <p className="text-[13px] text-slate-600 leading-relaxed mt-2">
+                              {log.target.split(/(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi).map((part, i) => {
+                                const upperPart = part.toUpperCase();
+                                if (upperPart === 'REJECTED' || upperPart === 'TỪ CHỐI') {
+                                  return <span key={i} className="font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                } else if (upperPart === 'PUBLISHED') {
+                                  return <span key={i} className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                } else if (upperPart === 'YÊU CẦU BỔ SUNG') {
+                                  return <span key={i} className="font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">{part}</span>;
+                                }
+                                return part;
+                              })}
+                            </p>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
                 )}
@@ -3631,8 +3672,81 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             );
           })()}
 
+          {/* ---------------- TAB: SYSTEM BUGS ---------------- */}
+          {activeTab === 'SystemBugs' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h2 className="text-display-sm font-extrabold text-[#141b2b]">Báo cáo lỗi hệ thống</h2>
+                  <p className="mt-2 text-body-lg text-[#6e7b6c]">Quản lý và xử lý các lỗi hệ thống được người dùng báo cáo</p>
+                </div>
+                <button className="flex items-center gap-2 rounded-xl bg-[#006b2c] px-5 py-3 text-label-lg font-bold text-white shadow hover:bg-[#00873a] hover:shadow-md transition-all">
+                  <Plus className="h-5 w-5" />
+                  Tạo báo cáo lỗi
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-[#e1e8fd] bg-white shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                    <thead>
+                      <tr className="bg-[#f9f9ff]">
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider">Mã lỗi</th>
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider">Tiêu đề</th>
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider">Mô tả</th>
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider">Ngày tạo</th>
+                        <th className="px-6 py-4 text-label-md font-extrabold text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e9edff] bg-white">
+                      {bugReports.length > 0 ? bugReports.map(bug => (
+                        <tr key={bug.reportId} className="hover:bg-[#f1f3ff]/50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">#{bug.reportId}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-body-sm text-[#3e4a3d] font-bold">{bug.title}</td>
+                          <td className="px-6 py-4 text-body-sm text-[#6e7b6c] truncate max-w-xs">{bug.description}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              bug.status === 'RESOLVED' ? 'bg-[#f7fff2] text-[#006b2c]' :
+                              bug.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {bug.status || 'OPEN'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-body-sm text-[#6e7b6c]">
+                            {bug.createdAt ? new Date(bug.createdAt).toLocaleDateString('vi-VN') : ''}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button 
+                              onClick={() => {
+                                adminApi.updateBugReportStatus(bug.reportId, 'RESOLVED', user.id).then(() => {
+                                  showToast('Đã đánh dấu lỗi thành công.', 'success');
+                                  fetchBugReports();
+                                });
+                              }}
+                              className="text-[#006b2c] hover:text-[#00873a] font-bold"
+                            >
+                              Đánh dấu Resolved
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan="6" className="text-center py-10 text-[#6e7b6c] text-sm">
+                            Chưa có báo cáo lỗi nào
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions', 'SystemBugs'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />

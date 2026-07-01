@@ -15,6 +15,9 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.notification.service.NotificationService;
+import com.cny.backend.admin.repository.StaffRepository;
+import com.cny.backend.admin.entity.Staff;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,12 @@ public class ProjectService {
     private SavedJobRepository savedJobRepository;
 
     @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private StaffRepository staffRepository;
+
+    @Autowired
     private TransactionRepository transactionRepository;
 
     public List<Project> getPublishedProjects() {
@@ -67,12 +76,12 @@ public class ProjectService {
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
 
-        if (dto.getTitle() == null || getWordCount(dto.getTitle()) < 8) {
-            throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 từ.");
+        if (dto.getTitle() == null || dto.getTitle().trim().length() < 8) {
+            throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 ký tự.");
         }
 
-        if (dto.getDescription() == null || getWordCount(dto.getDescription()) <= 50) {
-            throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 từ.");
+        if (dto.getDescription() == null || dto.getDescription().trim().length() <= 50) {
+            throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 ký tự.");
         }
 
         String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED";
@@ -113,8 +122,27 @@ public class ProjectService {
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
+        Project savedProject = projectRepository.save(project);
 
-        return projectRepository.save(project);
+        // Notify all staff
+        try {
+            List<Staff> allStaff = staffRepository.findAll();
+            for (Staff staff : allStaff) {
+                notificationService.createNotification(
+                    staff.getStaffId().longValue(),
+                    "STAFF",
+                    "Dự án mới cần duyệt",
+                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
+                    "TASK",
+                    savedProject.getProjectId().toString()
+                );
+            }
+        } catch (Exception e) {
+            // Ignore notification errors to not block project creation
+            System.err.println("Failed to send notifications: " + e.getMessage());
+        }
+
+        return savedProject;
     }
 
     @Transactional
@@ -149,14 +177,14 @@ public class ProjectService {
         }
 
         if (dto.getTitle() != null) {
-            if (getWordCount(dto.getTitle()) < 8) {
-                throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 từ.");
+            if (dto.getTitle().trim().length() < 8) {
+                throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 ký tự.");
             }
             project.setTitle(dto.getTitle());
         }
         if (dto.getDescription() != null) {
-            if (getWordCount(dto.getDescription()) <= 50) {
-                throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 từ.");
+            if (dto.getDescription().trim().length() <= 50) {
+                throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 ký tự.");
             }
             project.setDescription(dto.getDescription());
         }

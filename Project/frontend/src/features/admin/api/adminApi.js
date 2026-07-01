@@ -32,10 +32,22 @@ export const adminApi = {
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
   getManagers: () => api.get('/admin/managers'),
   getStaff: () => api.get('/admin/staff'),
-  getPendingProjects: () => api.get('/admin/projects/pending'),
-  getWithdrawals: () => api.get('/admin/withdrawals'),
+  getPendingProjects: () => api.get('/admin/moderation/projects/pending'),
+  getWithdrawals: () => api.get('/admin/finance/withdrawals'),
   getJobCategories: () => api.get('/admin/job-categories'),
-  getKycRequests: () => api.get('/admin/kyc-requests'),
+  getKycRequests: () => api.get('/admin/kyc/requests'),
+  requireMoreInfoKyc: (id, role, reason, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/kyc/requests/${id}/require-more-info?role=${role}`, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reason })
+    }).then(res => res.json());
+  },
   getDisputes: () => api.get('/admin/disputes'),
   resolveDispute: (id, status, note, adminId) => {
     const headers = {};
@@ -45,24 +57,26 @@ export const adminApi = {
       headers
     }).then(res => res.json());
   },
-  getReports: () => api.get('/admin/reports'),
+  getReports: () => api.get('/admin/moderation/reports'),
   resolveReport: (id, status, adminId) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/reports/${id}/resolve?status=${status}`, {
+    return fetch(`http://localhost:8080/api/admin/moderation/reports/${id}/resolve?status=${status}`, {
       method: 'PUT',
       headers
     }).then(res => res.json());
   },
   getWarningTemplates: () => api.get('/admin/warning-templates'),
-  getArticles: () => api.get('/admin/articles'),
-  getTickets: () => api.get('/admin/tickets'),
+  getArticles: () => api.get('/admin/moderation/articles'),
+  getTickets: () => api.get('/admin/support/tickets'),
+  getBugReports: () => api.get('/admin/support/bug-reports'),
+  updateBugReportStatus: (id, status, adminId) => api.put(`/admin/support/bug-reports/${id}/status?status=${status}`, null, { headers: { 'X-Admin-Id': adminId } }),
   getSeoConfigs: () => api.get('/admin/seo-configs'),
-  getProfileRequests: () => api.get('/admin/profile-requests'),
+  getProfileRequests: () => api.get('/admin/kyc/profile-requests'),
   moderateProfileRequest: (requestId, approve, reasonParam, adminId) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/profile-requests/${requestId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+    return fetch(`http://localhost:8080/api/admin/kyc/profile-requests/${requestId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
       headers
     }).then(res => res.json());
@@ -78,7 +92,7 @@ export const adminApi = {
   moderateProject: (projectId, approve, reasonParam, adminId) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/projects/${projectId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+    return fetch(`http://localhost:8080/api/admin/moderation/projects/${projectId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
       headers
     }).then(res => res.json());
@@ -86,7 +100,7 @@ export const adminApi = {
   processWithdrawal: (withdrawalId, status, adminId, reason) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    let url = `http://localhost:8080/api/admin/withdrawals/${withdrawalId}/process?status=${status}`;
+    let url = `http://localhost:8080/api/admin/finance/withdrawals/${withdrawalId}/process?status=${status}`;
     if (reason) url += `&reason=${encodeURIComponent(reason)}`;
     return fetch(url, {
       method: 'PUT',
@@ -95,27 +109,43 @@ export const adminApi = {
   },
   getVerificationTasks: () => api.get('/admin/verification-tasks'),
   createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
-  moderateKycRequest: (requestId, approve, role) => api.put(`/admin/kyc-requests/${requestId}/moderate?approve=${approve}&role=${role}`),
+  moderateKycRequest: (requestId, approve, role, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/kyc/requests/${requestId}/moderate?approve=${approve}&role=${role}`, {
+      method: 'PUT',
+      headers
+    }).then(res => res.json());
+  },
   claimVerificationTask: (taskId) => api.post(`/admin/verification-tasks/${taskId}/claim`),
   submitTaskSignoff: (taskId, data) => api.post(`/admin/verification-tasks/${taskId}/signoff`, data),
   escalateVerificationTask: (taskId, reason) => api.post(`/admin/verification-tasks/${taskId}/escalate`, { reason }),
   getVnpayConfig: () => api.get('/admin/vnpay-config'),
   saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
-  getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
-  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`),
-  getPendingGigs: () => api.get('/admin/gigs/pending'),
+  getVnpayTransactions: () => api.get('/admin/finance/vnpay-transactions'),
+  reconcileVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/reconcile`),
+  getPendingGigs: () => api.get('/admin/moderation/gigs/pending'),
   moderateGig: (gigId, approve, reasonParam, adminId) => {
     const headers = {};
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
-    return fetch(`http://localhost:8080/api/admin/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+    return fetch(`http://localhost:8080/api/admin/moderation/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
       headers
     }).then(res => res.json());
   },
-  queryVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/query`),
-  refundVnpayTransaction: (id, payload) => api.post(`/admin/vnpay-transactions/${id}/refund`, payload),
+  queryVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/query`),
+  refundVnpayTransaction: (id, payload) => api.post(`/admin/finance/vnpay-transactions/${id}/refund`, payload),
+  getTransferRequests: () => api.get('/admin/transfers/requests'),
+  submitTransferRequest: (payload) => api.post('/admin/transfers/requests', payload),
+  approveTransferRequest: (id, status, reason) => api.put(`/admin/transfers/requests/${id}/approve?status=${status}&reason=${reason}`),
   lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
   createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
   createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
-  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`)
+  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`),
+  
+  // Notification API
+  getNotifications: (role, userId) => api.get(`/notifications/${role}/${userId}`),
+  markNotificationAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllNotificationsAsRead: (role, userId) => api.put(`/notifications/read-all/${role}/${userId}`),
+  seedTestNotifications: (role, userId) => api.post(`/notifications/test-seed/${role}/${userId}`)
 };
