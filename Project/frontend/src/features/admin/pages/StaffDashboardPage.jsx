@@ -1120,20 +1120,35 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
   // Confirmation prompt for moderation action
   const handleModAction = (item, approve) => {
-    setConfirmConfig({
-      title: approve ? 'Xác nhận phê duyệt' : 'Xác nhận từ chối',
-      message: approve 
-        ? `Bạn có chắc chắn muốn PHÊ DUYỆT nội dung: "${item.title}"?`
-        : `Bạn có chắc chắn muốn TỪ CHỐI nội dung: "${item.title}"?`,
-      type: approve ? 'success' : 'danger',
-      confirmText: approve ? 'Phê duyệt' : 'Từ chối',
-      onConfirm: () => {
-        setShowConfirmModal(false);
-        setConfirmCountdown(null);
-        executeModAction(item, approve);
-      }
-    });
-    setConfirmCountdown(15);
+    if (approve) {
+      setConfirmConfig({
+        title: 'Tiếp nhận công việc',
+        message: 'Bạn muốn tiếp nhận công việc này?',
+        type: 'success',
+        confirmText: 'Đồng ý',
+        cancelText: 'Từ chối',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setConfirmCountdown(null);
+          executeModAction(item, true);
+        }
+      });
+      setConfirmCountdown(null);
+    } else {
+      setConfirmConfig({
+        title: 'Xác nhận từ chối',
+        message: `Bạn có chắc chắn muốn TỪ CHỐI nội dung: "${item.title}"?`,
+        type: 'danger',
+        confirmText: 'Từ chối',
+        cancelText: 'Hủy',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setConfirmCountdown(null);
+          executeModAction(item, false);
+        }
+      });
+      setConfirmCountdown(15);
+    }
     setShowConfirmModal(true);
   };
 
@@ -4232,7 +4247,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     }}
                     className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
                   >
-                    <Check className="w-4 h-4" /> Phê duyệt
+                    <Check className="w-4 h-4" /> Tiếp nhận
                   </button>
                   <button 
                     onClick={() => {
