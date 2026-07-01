@@ -2876,20 +2876,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               </td>
                               <td className="px-4 py-4 text-right">
                                 {item.status === 'Pending' ? (
-                                  <div className="flex items-center justify-end gap-1.5">
+                                  <div className="flex items-center justify-end">
                                     <button 
-                                      onClick={() => handleModAction(item, true)}
-                                      className="p-1.5 bg-[#eaf6eb] text-[#006b2c] hover:bg-[#006b2c] hover:text-white rounded shadow-sm transition-all group relative"
-                                      title="Duyệt"
+                                      onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}
+                                      className="px-2.5 py-1 bg-white hover:bg-[#f1f3ff] text-slate-705 border border-[#bdcaba] rounded text-xs font-bold transition-all"
                                     >
-                                      <Check className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                      onClick={() => handleModAction(item, false)}
-                                      className="p-1.5 border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded transition-all"
-                                      title="Từ chối / Chặn"
-                                    >
-                                      <X className="w-4 h-4" />
+                                      Xem chi tiết
                                     </button>
                                   </div>
                                 ) : (
