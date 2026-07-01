@@ -2943,7 +2943,16 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                           </div>
                           <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm mb-4 bg-white hover:shadow-md transition-shadow ${isRejected ? 'border-rose-100' : 'border-slate-100'}`}>
                             <div className="flex items-center justify-between mb-1.5 border-b border-slate-50 pb-2">
-                              <h4 className="font-bold text-[13px] text-slate-800 tracking-wide">{log.action}</h4>
+                              <h4 className="font-bold text-[13px] text-slate-800 tracking-wide">
+                                {{
+                                  'MODERATE_PROJECT': 'Kiểm duyệt dự án',
+                                  'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
+                                  'VERIFY_KYC': 'Xác thực KYC',
+                                  'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
+                                  'SUSPEND_USER': 'Khóa tài khoản',
+                                  'UPDATE_CONFIG': 'Cập nhật hệ thống'
+                                }[log.action] || log.action?.replace(/_/g, ' ')}
+                              </h4>
                               <time className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</time>
                             </div>
                             <p className="text-[13px] text-slate-600 leading-relaxed mt-2">
