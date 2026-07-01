@@ -4237,28 +4237,17 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3">
               {selectedModerationItem.status === 'Pending' ? (
-                <>
-                  <button 
-                    onClick={() => {
-                      handleModAction(selectedModerationItem, true);
-                      setShowModerationModal(false);
-                    }}
-                    className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" /> Tiếp nhận
-                  </button>
-                  <button 
-                    onClick={() => {
-                      handleModAction(selectedModerationItem, false);
-                      setShowModerationModal(false);
-                    }}
-                    className="flex-1 py-2 px-3 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
-                  >
-                    <X className="w-4 h-4" /> Từ chối
-                  </button>
-                </>
+                <button 
+                  onClick={() => {
+                    handleModAction(selectedModerationItem, true);
+                    setShowModerationModal(false);
+                  }}
+                  className="w-full py-2 px-4 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" /> Tiếp nhận
+                </button>
               ) : (
                 <button 
                   onClick={() => setShowModerationModal(false)}
