@@ -12,7 +12,7 @@ export async function request(endpoint, options = {}) {
   };
 
   try {
-    const userStr = localStorage.getItem("user");
+    const userStr = sessionStorage.getItem("user");
     if (userStr) {
       const userObj = JSON.parse(userStr);
       if (userObj && userObj.email) {

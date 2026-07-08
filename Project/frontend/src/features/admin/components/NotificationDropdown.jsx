@@ -68,14 +68,18 @@ export default function NotificationDropdown({ userId, role }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkAsRead = async (id, currentReadStatus) => {
-    if (currentReadStatus) return; // already read
-    try {
-      await adminApi.markNotificationAsRead(id);
-      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Error marking as read:', error);
+  const handleMarkAsRead = async (id, currentReadStatus, type = null, referenceId = null) => {
+    if (!currentReadStatus) {
+      try {
+        await adminApi.markNotificationAsRead(id);
+        setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error('Error marking as read:', error);
+      }
+    }
+    if (type === 'TRANSFER_REQUEST' && referenceId) {
+      window.dispatchEvent(new CustomEvent('openTransferRequestDetail', { detail: { requestId: parseInt(referenceId, 10) } }));
     }
   };
 
@@ -141,7 +145,7 @@ export default function NotificationDropdown({ userId, role }) {
                 {notifications.map((notification) => (
                   <div 
                     key={notification.id}
-                    onClick={() => handleMarkAsRead(notification.id, notification.read)}
+                    onClick={() => handleMarkAsRead(notification.id, notification.read, notification.type, notification.referenceId)}
                     className={`group flex items-start gap-3.5 p-4 cursor-pointer transition-all hover:bg-slate-50 ${!notification.read ? 'bg-blue-50/40' : 'bg-white'}`}
                   >
                     <div className="shrink-0 mt-0.5 transition-transform group-hover:scale-105">

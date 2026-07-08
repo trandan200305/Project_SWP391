@@ -24,7 +24,15 @@ public class TransferController {
     public ResponseEntity<Map<String, Object>> submitTransferRequest(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.submitTransferRequest(payload, adminId));
+        try {
+            return ResponseEntity.ok(adminService.submitTransferRequest(payload, adminId));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errMap = new java.util.HashMap<>();
+            errMap.put("success", false);
+            errMap.put("message", "Lỗi giao dịch: (" + e.getClass().getName() + ") " + e.getMessage() + (e.getCause() != null ? " | Cause: (" + e.getCause().getClass().getName() + ") " + e.getCause().getMessage() : ""));
+            return ResponseEntity.ok(errMap);
+        }
     }
 
     @PutMapping("/requests/{id}/approve")

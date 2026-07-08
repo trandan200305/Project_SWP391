@@ -13,6 +13,45 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import NotificationDropdown from '../components/NotificationDropdown.jsx';
 
+const getTargetUser = (description) => {
+  if (!description) return 'N/A';
+  const kycMatch = description.match(/cho\s+(Freelancer|Employer)\s+'([^']+)'\s*(?:\(([^)]+)\))?/i);
+  if (kycMatch) {
+    const name = kycMatch[2];
+    const email = kycMatch[3];
+    return email ? `${name} (${email})` : name;
+  }
+  const củaMatch = description.match(/của\s+'([^']+)'/i);
+  if (củaMatch) {
+    return củaMatch[1];
+  }
+  const từMatch = description.match(/từ\s+'([^']+)'/i);
+  if (từMatch) {
+    return từMatch[1];
+  }
+  const firstQuote = description.match(/'([^']+)'/);
+  if (firstQuote) {
+    return firstQuote[1];
+  }
+  return 'N/A';
+};
+
+const getActionLabel = (action) => {
+  return {
+    'MODERATE_PROJECT': 'Kiểm duyệt dự án',
+    'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
+    'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
+    'KYC_MODERATE': 'Kiểm duyệt KYC',
+    'KYC_REQUIRE_MORE_INFO': 'Yêu cầu bổ sung KYC',
+    'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
+    'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
+    'VERIFY_KYC': 'Xác thực KYC',
+    'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
+    'SUSPEND_USER': 'Khóa tài khoản',
+    'UPDATE_CONFIG': 'Cập nhật hệ thống'
+  }[action] || String(action || '').replace(/_/g, ' ') || 'Hành động khác';
+};
+
 export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
   // Styles & Brand Settings
   const brandName = "FelanPro";
@@ -55,6 +94,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   
   // Dashboard & Task filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
   const [taskFilter, setTaskFilter] = useState('ALL');
   const [chartPeriod, setChartPeriod] = useState('7days');
   const [hoveredPoint, setHoveredPoint] = useState(null);
@@ -87,6 +127,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     confirmed: false
   });
   const [myProfile, setMyProfile] = useState(null);
+  const [latestTransferRequest, setLatestTransferRequest] = useState(null);
+  const [selectedRequestDetails, setSelectedRequestDetails] = useState(null);
   const [departmentsList, setDepartmentsList] = useState([]);
   const [isSubmittingTransferRequest, setIsSubmittingTransferRequest] = useState(false);
 
@@ -126,11 +168,15 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [violationReports, setViolationReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportActionLoading, setReportActionLoading] = useState(false);
+  const [showModEscalateForm, setShowModEscalateForm] = useState(false);
+  const [modEscalateReason, setModEscalateReason] = useState('');
+  const [showReportEscalateForm, setShowReportEscalateForm] = useState(false);
+  const [reportEscalateReason, setReportEscalateReason] = useState('');
   const [escalationCases, setEscalationCases] = useState([]);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [disputeNote, setDisputeNote] = useState('');
-  const [warningTemplates, setWarningTemplates] = useState([]);
+
   const [moderationHistory, setModerationHistory] = useState([]);
   const [moderationView, setModerationView] = useState('queue');
   const [queueTab, setQueueTab] = useState('ALL');
@@ -181,6 +227,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [confirmCountdown, setConfirmCountdown] = useState(null);
   const [showEscalateReasons, setShowEscalateReasons] = useState(false);
   const [selectedEscalateReason, setSelectedEscalateReason] = useState('');
+  const [selectedHistoryLog, setSelectedHistoryLog] = useState(null);
 
   const fetchMyProfile = () => {
     if (!user?.id) return;
@@ -193,9 +240,47 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .catch(err => console.error("Error fetching staff profile:", err));
   };
 
+  const fetchMyTransferRequests = () => {
+    adminApi.getTransferRequests()
+      .then(data => {
+        if (Array.isArray(data)) {
+          const myReqs = data.filter(r => r.userEmail === user?.email);
+          if (myReqs.length > 0) {
+            myReqs.sort((a, b) => b.requestId - a.requestId);
+            setLatestTransferRequest(myReqs[0]);
+          } else {
+            setLatestTransferRequest(null);
+          }
+        }
+      })
+      .catch(err => console.error("Error fetching transfer requests:", err));
+  };
+
   useEffect(() => {
     fetchMyProfile();
   }, [user?.id]);
+
+  useEffect(() => {
+    const handleOpenTransferDetail = (e) => {
+      const { requestId } = e.detail || {};
+      setShowTransferRequestModal(true);
+      if (requestId) {
+        adminApi.getTransferRequests()
+          .then(data => {
+            if (Array.isArray(data)) {
+              const found = data.find(r => r.requestId === requestId);
+              if (found) {
+                setSelectedRequestDetails(found);
+              }
+            }
+          });
+      } else {
+        setSelectedRequestDetails(null);
+      }
+    };
+    window.addEventListener('openTransferRequestDetail', handleOpenTransferDetail);
+    return () => window.removeEventListener('openTransferRequestDetail', handleOpenTransferDetail);
+  }, []);
   
   const fetchBugReports = () => {
     adminApi.getBugReports().then(data => {
@@ -212,6 +297,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   useEffect(() => {
     if (showTransferRequestModal) {
       fetchMyProfile();
+      fetchMyTransferRequests();
       adminApi.getDepartments()
         .then(data => {
           if (Array.isArray(data)) {
@@ -242,7 +328,23 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
   const handleTransferRequestSubmit = (e) => {
     e.preventDefault();
-    if (!transferRequestTargetDeptId || !user?.id || !transferRequestDetails.confirmed) return;
+
+    if (!transferRequestTargetDeptId) {
+      showToast('Vui lòng chọn phòng ban mong muốn!', 'error');
+      return;
+    }
+    if (!transferRequestReason || !transferRequestReason.trim()) {
+      showToast('Vui lòng nhập chi tiết lý do điều chuyển!', 'error');
+      return;
+    }
+    if (!transferRequestDetails.confirmed) {
+      showToast('Vui lòng tích chọn xác nhận thông tin!', 'error');
+      return;
+    }
+    if (!user?.id) {
+      showToast('Không tìm thấy ID tài khoản. Vui lòng đăng nhập lại!', 'error');
+      return;
+    }
 
     setIsSubmittingTransferRequest(true);
     const selectedDepartment = departmentsList.find(d => String(d.departmentId) === String(transferRequestTargetDeptId));
@@ -253,32 +355,33 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       `Ngày mong muốn bắt đầu: ${transferRequestDetails.desiredStartDate || 'Chưa cung cấp'}`,
       `Loại điều chuyển: ${transferRequestDetails.transferType}`,
       `Kỹ năng liên quan & kinh nghiệm trước đây: ${transferRequestDetails.skills || 'Chưa cung cấp'}`,
-      `Thành tích nổi bật & lý do phù hợp: ${transferRequestDetails.achievements || 'Chưa cung cấp'}`,
+      `Thành tích nổi bật & lý do bạn phù hợp: ${transferRequestDetails.achievements || 'Chưa cung cấp'}`,
       `Tệp đính kèm: ${transferRequestDetails.attachmentName || 'Không có'}`
     ].join('\n');
 
     const payload = {
-      userType: 'STAFF',
-      userId: user.id,
-      toDepartmentId: parseInt(transferRequestTargetDeptId, 10),
-      reason: structuredReason
+      userEmail: user.email,
+      reason: structuredReason,
+      fromDepartmentId: myProfile?.departmentId || user.departmentEntity?.departmentId || user.departmentId || 1,
+      toDepartmentId: parseInt(transferRequestTargetDeptId, 10)
     };
 
-    adminApi.transferDepartmentMember(payload)
+    adminApi.submitTransferRequest(payload, user.id)
       .then(res => {
         setIsSubmittingTransferRequest(false);
-        if (res.success !== false) {
-          showToast('Điều chuyển phòng ban thành công!', 'success');
+        if (res && res.success !== false) {
+          showToast('Gửi yêu cầu điều chuyển phòng ban thành công!', 'success');
           setShowTransferRequestModal(false);
-          resetTransferRequestForm();
+          // Retain form content as per requirement (do not call resetTransferRequestForm)
           fetchMyProfile();
         } else {
-          showToast(res.message || 'Điều chuyển thất bại.', 'error');
+          showToast(res?.message || 'Gửi yêu cầu thất bại.', 'error');
         }
       })
       .catch(err => {
         setIsSubmittingTransferRequest(false);
-        showToast(err.response?.data?.message || 'Có lỗi xảy ra khi thực hiện điều chuyển.', 'error');
+        const errMsg = err.message || 'Có lỗi xảy ra khi thực hiện điều chuyển.';
+        showToast(errMsg, 'error');
       });
   };
 
@@ -458,19 +561,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }))];
       }
 
-      if (Array.isArray(profilesData)) {
-        mapped = [...mapped, ...profilesData.map(pr => ({
-          id: `PROF-${pr.id || pr.requestId}`,
-          idRaw: pr.id || pr.requestId,
-          title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
-          type: 'PROFILE',
-          author: pr.displayName || 'Employer',
-          detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
-          reason: 'Cập nhật hồ sơ',
-          subDate: pr.createdAt ? String(pr.createdAt) : new Date().toISOString(),
-          status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
-        }))];
-      }
+      // Profile requests are excluded as profile verification is handled by KYC
+
 
       if (Array.isArray(gigsData)) {
         mapped = [...mapped, ...gigsData.map(g => ({
@@ -505,7 +597,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     }).catch(err => console.error('Error fetching moderation items:', err));
   };
 
-  const handleResolveDispute = (status) => {
+  const executeResolveDispute = (status) => {
     if (!selectedDispute) return;
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
@@ -528,6 +620,28 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .catch(err => console.error('Error resolving dispute:', err));
   };
 
+  const handleResolveDispute = (status) => {
+    if (!selectedDispute) return;
+    const actionLabel = status === 'RESOLVED_CLIENT_FAVOR' ? 'Hoàn tiền cho Khách hàng (Client)' :
+                        status === 'RESOLVED_FREELANCER_FAVOR' ? 'Thanh toán cho Freelancer' : 'Đóng tranh chấp (Không hoàn tiền)';
+    const confirmType = status === 'CLOSED' ? 'warning' : 'danger';
+
+    setConfirmConfig({
+      title: 'Xác nhận giải quyết tranh chấp',
+      message: `Bạn có chắc chắn muốn thực hiện hành động: "${actionLabel}"? Hành động này sẽ thay đổi số dư ví của các bên và không thể hoàn tác!`,
+      type: confirmType,
+      confirmText: 'Đồng ý',
+      cancelText: 'Hủy',
+      onConfirm: () => {
+        setShowConfirmModal(false);
+        setConfirmCountdown(null);
+        executeResolveDispute(status);
+      }
+    });
+    setConfirmCountdown(null);
+    setShowConfirmModal(true);
+  };
+
   const fetchModerationData = () => {
     adminApi.getReports().then(data => {
       if (Array.isArray(data)) {
@@ -539,7 +653,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           accused: r.reportedName,
           severity: r.severity === 'HIGH' ? 'Cao' : r.severity === 'LOW' ? 'Thấp' : 'Trung bình',
           type: r.targetType === 'PROJECT' ? 'Dự án' : 'Hồ sơ',
-          status: r.status === 'PENDING' ? 'Chờ xử lý' : 'Đã xử lý',
+          status: r.status === 'PENDING' ? 'Chờ xử lý' : r.status === 'ESCALATED' ? 'Đã chuyển cấp' : 'Đã xử lý',
           evidence: r.reason + (r.evidence ? ` - Link: ${r.evidence}` : '')
         })));
       }
@@ -557,15 +671,15 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       }
     }).catch(console.error);
 
-    adminApi.getWarningTemplates().then(data => {
-      if (Array.isArray(data)) {
-        setWarningTemplates(data.map(w => w.content));
-      }
-    }).catch(console.error);
-
     adminApi.getAuditLogs().then(data => {
       if (Array.isArray(data)) {
-        const modLogs = data.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS' || (log.module === 'USER_MANAGEMENT' && log.status && log.status.startsWith('KYC')) || (log.module === 'FINANCE' && log.status === 'PROCESS_WITHDRAWAL'));
+        let filteredLogs = data;
+        if (user?.email) {
+          filteredLogs = data.filter(log => 
+            String(log.source || '').toLowerCase().trim() === String(user.email).toLowerCase().trim()
+          );
+        }
+        const modLogs = filteredLogs.filter(log => log.module === 'MODERATION' || log.module === 'PROJECTS' || (log.module === 'USER_MANAGEMENT' && log.status && log.status.startsWith('KYC')) || (log.module === 'FINANCE' && log.status === 'PROCESS_WITHDRAWAL'));
         setModerationHistory(modLogs.slice(0, 100).map(log => ({
           id: `LOG-${log.id}`,
           action: log.status || 'Hành động',
@@ -885,6 +999,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           } else {
             showToast('Nhận tác vụ thành công!', 'success');
             fetchTasks();
+            fetchModerationData();
             setShowManageModal(false);
             setSelectedTask(null);
           }
@@ -900,9 +1015,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     const reqDepts = selectedTask.requiredDepartments?.split(',') || ['CS'];
     const deptCode = reqDepts[0] || 'CS';
 
+    let signoffStatus = 'PENDING';
+    if (newStatus === 'Completed') signoffStatus = 'APPROVED';
+    else if (newStatus === 'Rejected') signoffStatus = 'REJECTED';
+
     adminApi.submitTaskSignoff(selectedTask.taskId, {
-      status: newStatus === 'Completed' ? 'APPROVED' : 'PENDING',
-      note: `Ký duyệt trạng thái ${newStatus} bởi CS Staff`,
+      status: signoffStatus,
+      note: `Ký duyệt trạng thái ${newStatus} bởi Staff`,
       departmentCode: deptCode
     }, user?.email || 'staff@gmail.com')
       .then(res => {
@@ -912,6 +1031,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         } else {
           showToast('Ký duyệt tác vụ thành công!', 'success');
           fetchTasks();
+          fetchModerationData();
           setShowManageModal(false);
           setSelectedTask(null);
         }
@@ -1101,7 +1221,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   };
 
   // KYC Approval
-  const handleKycAction = (idRaw, approve, role) => {
+  const executeKycAction = (idRaw, approve, role) => {
     adminApi.moderateKycRequest(idRaw, approve, role, user?.id || 1)
       .then(res => {
         if (res.success) {
@@ -1118,6 +1238,39 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       });
   };
 
+  const handleKycAction = (idRaw, approve, role, name = '') => {
+    if (approve) {
+      setConfirmConfig({
+        title: 'Phê duyệt KYC',
+        message: `Bạn có chắc chắn muốn PHÊ DUYỆT yêu cầu xác thực danh tính KYC của: "${name}"?`,
+        type: 'success',
+        confirmText: 'Đồng ý',
+        cancelText: 'Hủy',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setConfirmCountdown(null);
+          executeKycAction(idRaw, true, role);
+        }
+      });
+      setConfirmCountdown(null);
+    } else {
+      setConfirmConfig({
+        title: 'Từ chối KYC',
+        message: `Bạn có chắc chắn muốn TỪ CHỐI yêu cầu xác thực danh tính KYC của: "${name}"?`,
+        type: 'danger',
+        confirmText: 'Từ chối',
+        cancelText: 'Hủy',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setConfirmCountdown(null);
+          executeKycAction(idRaw, false, role);
+        }
+      });
+      setConfirmCountdown(15);
+    }
+    setShowConfirmModal(true);
+  };
+
   // Confirmation prompt for moderation action
   const handleModAction = (item, approve) => {
     if (approve) {
@@ -1131,6 +1284,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           setShowConfirmModal(false);
           setConfirmCountdown(null);
           executeModAction(item, true);
+          if (item.id && String(item.id).startsWith('RPT-')) {
+            setSelectedReport(null);
+          }
         }
       });
       setConfirmCountdown(null);
@@ -1158,26 +1314,68 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     let apiCall;
     const reason = approve ? 'Phê duyệt hợp lệ' : 'Không đáp ứng tiêu chuẩn kiểm duyệt';
 
-    if (item.type === 'PROJECT') {
-      apiCall = adminApi.moderateProject(item.idRaw, approve, reason, adminId);
-    } else if (item.type === 'PROFILE') {
-      apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
-    } else if (item.type === 'WITHDRAWAL') {
-      const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
-      apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
-    } else if (item.type === 'GIG') {
-      apiCall = adminApi.moderateGig(item.idRaw, approve, reason, adminId);
-    } else if (item.type === 'REVIEW') {
-      const status = approve ? 'RESOLVED' : 'DISMISSED';
-      apiCall = adminApi.resolveReport(item.idRaw, status, adminId);
+    const isReport = item.id && String(item.id).startsWith('RPT-');
+
+    if (approve && (item.type === 'PROJECT' || item.type === 'GIG' || isReport)) {
+      let taskType = 'PROJECT_MODERATION';
+      if (item.type === 'GIG') {
+        taskType = 'GIG_MODERATION';
+      } else if (isReport) {
+        taskType = 'REPORT_RESOLUTION';
+      }
+
+      // Check if a verification task already exists
+      const existingTask = tasks.find(t => 
+        t.taskType === taskType && 
+        Number(t.referenceId) === Number(item.idRaw)
+      );
+
+      if (existingTask) {
+        apiCall = adminApi.claimVerificationTask(existingTask.taskId, user?.email || 'staff@gmail.com');
+      } else {
+        const taskPayload = {
+          taskType: taskType,
+          referenceId: item.idRaw,
+          title: isReport 
+            ? `Báo cáo vi phạm: [${item.type}] ${item.target || 'Nội dung'}`
+            : item.title,
+          description: isReport
+            ? `Người báo cáo: ${item.reporter}. Bị báo cáo: ${item.accused}. Bằng chứng/Nội dung: ${item.evidence}`
+            : (item.detail || 'Yêu cầu kiểm duyệt nội dung'),
+          requiredDepartments: staffDepartmentCode || 'MOD',
+          status: 'IN_PROGRESS',
+          assignedToEmail: user?.email
+        };
+        apiCall = adminApi.createVerificationTask(taskPayload);
+      }
     } else {
-      apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
+      if (item.type === 'PROJECT') {
+        apiCall = adminApi.moderateProject(item.idRaw, approve, reason, adminId);
+      } else if (item.type === 'PROFILE') {
+        apiCall = adminApi.moderateProfileRequest(item.idRaw, approve, reason, adminId);
+      } else if (item.type === 'WITHDRAWAL') {
+        const status = approve ? 'COMPLETED' : 'REJECTED'; // Depending on backend enums
+        apiCall = adminApi.processWithdrawal(item.idRaw, status, adminId);
+      } else if (item.type === 'GIG') {
+        apiCall = adminApi.moderateGig(item.idRaw, approve, reason, adminId);
+      } else if (item.type === 'REVIEW') {
+        const status = approve ? 'RESOLVED' : 'DISMISSED';
+        apiCall = adminApi.resolveReport(item.idRaw, status, adminId);
+      } else {
+        apiCall = Promise.resolve({ success: true, message: approve ? 'Đã phê duyệt mục (Demo)' : 'Đã từ chối mục (Demo)' });
+      }
     }
 
     apiCall
       .then(res => {
         if (res.success) {
-          showToast(res.message || (approve ? 'Đã phê duyệt thành công!' : 'Đã từ chối thành công!'), approve ? 'success' : 'error');
+          if (approve && (item.type === 'PROJECT' || item.type === 'GIG' || isReport)) {
+            showToast('Đã tiếp nhận công việc thành công! Nhiệm vụ hiện đã được chuyển vào mục "Công việc của tôi".', 'success');
+            fetchTasks();
+            setActiveTab('Tasks');
+          } else {
+            showToast(res.message || (approve ? 'Đã phê duyệt thành công!' : 'Đã từ chối thành công!'), approve ? 'success' : 'error');
+          }
           fetchModerationItems();
           fetchModerationData(); // Reload history
         } else {
@@ -1187,6 +1385,89 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .catch(err => {
         console.error(err);
         showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleEscalateModerationItem = (item, reason) => {
+    if (!reason) {
+      showToast('Vui lòng chọn lý do chuyển cấp', 'error');
+      return;
+    }
+    setIsLoading(true);
+    const taskPayload = {
+      taskType: item.type === 'PROJECT' ? 'PROJECT_MODERATION' : 'GIG_MODERATION',
+      referenceId: item.idRaw,
+      title: `[CHUYỂN CẤP] Kiểm duyệt: ${item.title}`,
+      description: `Yêu cầu chuyển cấp kiểm duyệt nội dung. Lý do: ${reason}. Nội dung gốc: ${item.detail || ''}`,
+      requiredDepartments: staffDepartmentCode || 'MOD',
+      status: 'ESCALATED',
+      assignedToEmail: null
+    };
+
+    adminApi.createVerificationTask(taskPayload)
+      .then(res => {
+        setIsLoading(false);
+        if (res.success) {
+          showToast('Đã báo cáo sự cố và chuyển cấp tác vụ thành công.', 'success');
+          fetchTasks();
+          fetchModerationItems();
+          setShowModerationModal(false);
+          setShowModEscalateForm(false);
+          setModEscalateReason('');
+        } else {
+          showToast(res.message || 'Chuyển cấp thất bại.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleEscalateReport = (report, reason) => {
+    if (!reason) {
+      showToast('Vui lòng chọn lý do chuyển cấp', 'error');
+      return;
+    }
+    setReportActionLoading(true);
+    const adminId = user?.id || 1;
+
+    adminApi.resolveReport(report.idRaw, 'ESCALATED', adminId)
+      .then(resolveRes => {
+        if (resolveRes.success) {
+          const taskPayload = {
+            taskType: 'REPORT_RESOLUTION',
+            referenceId: report.idRaw,
+            title: `[CHUYỂN CẤP] Báo cáo vi phạm: [${report.type}] ${report.target || 'Nội dung'}`,
+            description: `Yêu cầu chuyển cấp xử lý báo cáo. Lý do: ${reason}. Người báo cáo: ${report.reporter}. Bị báo cáo: ${report.accused}. Bằng chứng: ${report.evidence}`,
+            requiredDepartments: staffDepartmentCode || 'MOD',
+            status: 'ESCALATED',
+            assignedToEmail: null
+          };
+          return adminApi.createVerificationTask(taskPayload);
+        } else {
+          throw new Error(resolveRes.message || 'Cập nhật trạng thái báo cáo thất bại.');
+        }
+      })
+      .then(res => {
+        setReportActionLoading(false);
+        if (res.success) {
+          showToast('Đã báo cáo sự cố và chuyển cấp tác vụ thành công.', 'success');
+          fetchTasks();
+          fetchModerationItems();
+          fetchModerationData();
+          setSelectedReport(null);
+          setShowReportEscalateForm(false);
+          setReportEscalateReason('');
+        } else {
+          showToast(res.message || 'Chuyển cấp thất bại.', 'error');
+        }
+      })
+      .catch(err => {
+        setReportActionLoading(false);
+        console.error(err);
+        showToast(err.message || 'Lỗi kết nối máy chủ.', 'error');
       });
   };
 
@@ -1213,12 +1494,25 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     normalizeDepartmentCode(user?.departmentName) ||
     normalizeDepartmentCode(myProfile?.specialization) ||
     normalizeDepartmentCode(user?.specialization) ||
-    'CS';
+    (() => {
+      const email = String(user?.email || '').toLowerCase();
+      if (email.includes('moderation') || email.includes('mod')) return 'MOD';
+      if (email.includes('finance') || email.includes('fin')) return 'FIN';
+      if (email.includes('dispute') || email.includes('dis')) return 'DIS';
+      if (email.includes('support') || email.includes('cs')) return 'CS';
+      if (email.includes('it') || email.includes('tech')) return 'IT';
+      return 'CS';
+    })();
 
   const taskBelongsToCurrentStaff = (task) => {
     if (normalizeRole(currentRole) === 'ADMIN' || normalizeRole(currentRole) === 'MANAGER') return true;
-    if (task.assignedToEmail && user?.email && task.assignedToEmail === user.email) return true;
+    
+    // If the task has been assigned to someone, only show it to the assignee
+    if (task.assignedToEmail) {
+      return user?.email && String(task.assignedToEmail).toLowerCase().trim() === String(user.email).toLowerCase().trim();
+    }
 
+    // If the task is not assigned yet, show it to anyone in the required department
     const requiredDepartments = String(task.requiredDepartments || '')
       .split(',')
       .map(dept => normalizeDepartmentCode(dept.trim()))
@@ -1259,6 +1553,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       items: [
         { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
         { id: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: pendingModerationCount },
+        { id: 'Reports', label: 'Báo cáo vi phạm', icon: ShieldAlert, badge: violationReports.filter(r => r.status === 'Chờ xử lý' || r.status === 'PENDING' || r.status === 'Pending').length },
         { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: pendingKycCount },
         { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: FileText }
       ]
@@ -1426,21 +1721,28 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       <button
         key={item.id || item.label}
         onClick={handleClick}
-        className={`w-full flex items-center justify-between px-3 ${compact ? 'py-1.5' : 'py-2'} rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+        className={`w-full flex items-center justify-between px-3.5 ${compact ? 'py-2' : 'py-2.5'} rounded-xl text-body-sm font-semibold transition-all duration-200 group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 ${
           isActive
-            ? 'bg-[#f7fff2] text-[#006b2c]'
-            : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+            ? 'bg-emerald-50/80 text-emerald-800 border border-emerald-100 shadow-sm shadow-emerald-600/5'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
         }`}
       >
         {isActive && (
-          <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+          <span className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-emerald-600 rounded-r-full" />
         )}
         <div className={`flex items-center ${compact ? 'gap-2.5' : 'gap-3'} min-w-0`}>
-          <IconComp className={`${compact ? 'w-[16px] h-[16px]' : 'w-[18px] h-[18px]'} stroke-[2.2] shrink-0 transition-colors ${
-            isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+          <IconComp className={`${compact ? 'w-[16px] h-[16px]' : 'w-[18px] h-[18px]'} stroke-[2] shrink-0 transition-colors ${
+            isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'
           }`} />
-          <span className="truncate">{item.label}</span>
+          <span className="truncate group-hover:translate-x-[2px] transition-transform duration-200">{item.label}</span>
         </div>
+        {item.badge > 0 && (
+          <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 transition-colors ${
+            isActive ? 'bg-emerald-200/55 text-emerald-950' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {item.badge}
+          </span>
+        )}
       </button>
     );
   };
@@ -1453,22 +1755,24 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       <div className="space-y-1">
         <button
           onClick={() => toggleSection(group.key)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-body-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group relative focus:outline-none"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <GroupIcon className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-colors" />
-            <span className="truncate">{group.title}</span>
+            <GroupIcon className="w-[18px] h-[18px] stroke-[2] text-slate-400 group-hover:text-slate-700 shrink-0 transition-colors" />
+            <span className="truncate uppercase tracking-wider text-[11px] font-extrabold text-slate-400 group-hover:text-slate-600">{group.title}</span>
           </div>
-          <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+          <ChevronDown className={`w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
         </button>
         {isOpen && (
-          <div className="pl-6 space-y-1 animate-in fade-in duration-200">
+          <div className="pl-3.5 space-y-1 border-l border-slate-100 ml-[23px] mt-1.5 animate-in fade-in duration-200">
             {group.items.map(item => renderSidebarItem(item, true))}
           </div>
         )}
       </div>
     );
   };
+
+  const isTransferPending = latestTransferRequest?.status === 'PENDING';
 
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
@@ -1816,6 +2120,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   <div className="profile-menu-item">
                     <button
                       onClick={() => {
+                        setSelectedRequestDetails(null);
                         setShowTransferRequestModal(true);
                       }}
                       className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all mt-1 text-slate-650 hover:text-emerald-600 hover:bg-emerald-50"
@@ -2205,13 +2510,19 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                         </button>
                       ))}
                     </div>
-                    
-                    <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors border border-[#e1e8fd]">
-                      <Filter className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors border border-[#e1e8fd]">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                    {/* Search bar */}
+                    <div className="w-48 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-3.5 h-3.5" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-9 pr-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -2699,12 +3010,14 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           {activeTab === 'Moderation' && (() => {
             const pendingItems = moderationItems.filter(item => item.status === 'Pending');
             const processedItems = moderationItems.filter(item => item.status !== 'Pending');
+            const escalatedModerationTasks = tasks.filter(t => 
+              t.status === 'Escalated' && 
+              (t.type === 'PROJECT_MODERATION' || t.type === 'GIG_MODERATION')
+            );
 
             const moderationTabs = [
               { id: 'queue', label: 'Hàng đợi', count: pendingItems.length },
-              { id: 'reports', label: 'Báo cáo vi phạm', count: violationReports.length },
-              { id: 'actions', label: 'Cảnh báo / Chặn', count: warningTemplates.length },
-              { id: 'escalation', label: 'Chuyển cấp', count: escalationCases.length }
+              { id: 'escalation', label: 'Chuyển cấp', count: escalatedModerationTasks.length }
             ];
             const statusLabel = (status) => status === 'Approved' ? 'Đã duyệt' : status === 'Rejected' ? 'Đã từ chối' : 'Chờ xử lý';
             const severityClass = (severity) => severity === 'Cao' || severity === 'Khẩn cấp'
@@ -2717,17 +3030,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   <div>
                     <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Kiểm duyệt</h1>
                     <p className="text-body-sm text-[#3e4a3d] mt-1">
-                      Xử lý bài đăng, hồ sơ, báo cáo vi phạm và các trường hợp cần chuyển cấp.
+                      Xử lý bài đăng, hồ sơ và các trường hợp cần chuyển cấp.
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 min-w-[360px]">
+                  <div className="grid grid-cols-2 gap-2 min-w-[240px]">
                     <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
                       <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Chờ xử lý</p>
                       <p className="text-title-md font-extrabold text-[#141b2b]">{pendingItems.length}</p>
-                    </div>
-                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
-                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Báo cáo</p>
-                      <p className="text-title-md font-extrabold text-[#ba1a1a]">{violationReports.length}</p>
                     </div>
                     <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
                       <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Đã xử lý</p>
@@ -2811,7 +3120,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                           {[
                             { id: 'ALL', label: 'Tất cả' },
                             { id: 'PROJECT', label: 'Dự án' },
-                            { id: 'PROFILE', label: 'Hồ sơ' },
                             { id: 'GIG', label: 'Gói dịch vụ' },
                             { id: 'REVIEW', label: 'Đánh giá' }
                           ].map(qTab => (
@@ -2904,105 +3212,38 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </div>
                 );})()}
 
-                {moderationView === 'reports' && (
-                  <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
-                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Báo cáo vi phạm ({violationReports.length})</h2>
-                    <div className="space-y-4">
-                      {violationReports.map(report => (
-                        <div 
-                          key={report.id} 
-                          className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-all cursor-pointer hover:border-[#bdcaba] bg-white relative"
-                          onClick={() => setSelectedReport(report)}
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${severityClass(report.severity)}`}>
-                                  Mức độ: {report.severity}
-                                </span>
-                                <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold">
-                                  {report.type}
-                                </span>
-                              </div>
-                              <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
-                            </div>
-                            <span className="text-xs font-bold px-2 py-1 bg-amber-100 text-amber-800 rounded">{report.status}</span>
-                          </div>
-                          <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
-                            <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
-                          </p>
-                          <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
-                            <div className="flex gap-4">
-                              <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
-                              <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
-                            </div>
-                            <button 
-                              className="text-[#006b2c] font-bold hover:underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedReport(report);
-                              }}
-                            >
-                              Xử lý báo cáo →
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {moderationView === 'actions' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
-                      <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Mẫu Cảnh Báo</h2>
-                      <ul className="space-y-3">
-                        {warningTemplates.map((template, idx) => (
-                          <li key={idx} className="flex items-start gap-3 p-3 bg-[#f9f9ff] rounded-lg border border-[#e9edff]">
-                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                            <span className="text-sm text-[#3e4a3d]">{template}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <button className="mt-4 w-full py-2 border-2 border-dashed border-[#bdcaba] text-[#3e4a3d] rounded-xl font-bold hover:bg-[#f9f9ff]">
-                        + Thêm mẫu cảnh báo mới
-                      </button>
-                    </div>
-                    <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
-                      <h2 className="text-title-md font-extrabold text-[#ba1a1a] mb-4">Tài Khoản Bị Chặn Gần Đây</h2>
-                      <div className="text-center py-10 bg-[#f9f9ff] rounded-lg border border-[#e9edff]">
-                        <ShieldBan className="w-10 h-10 text-[#bdcaba] mx-auto mb-2" />
-                        <p className="text-sm text-[#6e7b6c]">Không có tài khoản nào bị chặn trong 7 ngày qua.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
 
 
                 {moderationView === 'escalation' && (
                   <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
                     <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Trường hợp chờ cấp trên quyết định</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {escalationCases.map(esc => (
-                        <div key={esc.id} className="border border-rose-200 bg-rose-50 rounded-xl p-4">
+                      {escalatedModerationTasks.map(task => (
+                        <div key={task.taskId} className="border border-rose-200 bg-rose-50 rounded-xl p-4">
                           <div className="flex justify-between items-start mb-2">
-                            <span className="px-2 py-0.5 bg-rose-200 text-rose-800 rounded text-[10px] font-bold uppercase">{esc.priority}</span>
-                            <span className="text-xs text-rose-600 font-semibold">{esc.id}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              task.priority === 'High' ? 'bg-rose-200 text-rose-800' : 'bg-amber-100 text-amber-800'
+                            }`}>{task.priority} Priority</span>
+                            <span className="text-xs text-rose-600 font-semibold">{task.id}</span>
                           </div>
-                          <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{esc.title}</h3>
-                          <p className="text-sm text-[#3e4a3d] mb-4">Người yêu cầu chuyển: <strong>{esc.owner}</strong></p>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{task.title}</h3>
+                          <p className="text-xs text-[#3e4a3d] mb-4 line-clamp-3">{task.description}</p>
                           <button 
                             className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors"
                             onClick={() => {
-                              setSelectedDispute(esc);
-                              setShowDisputeModal(true);
+                              setSelectedTask(task);
+                              setShowManageModal(true);
                             }}
                           >
                             Xem chi tiết & Xử lý
                           </button>
                         </div>
                       ))}
+                      {escalatedModerationTasks.length === 0 && (
+                        <div className="col-span-2 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-[#bdcaba]">
+                          <p className="text-sm text-[#6e7b6c]">Không có trường hợp kiểm duyệt nào đang chuyển cấp.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3115,13 +3356,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                           {req.status === 'Pending' ? (
                             <div className="flex items-center gap-3">
                               <button 
-                                onClick={() => handleKycAction(req.idRaw, false, req.role)}
+                                onClick={() => handleKycAction(req.idRaw, false, req.role, req.name)}
                                 className="px-3 py-1.5 bg-white border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-bold transition-all"
                               >
                                 Từ chối
                               </button>
                               <button 
-                                onClick={() => handleKycAction(req.idRaw, true, req.role)}
+                                onClick={() => handleKycAction(req.idRaw, true, req.role, req.name)}
                                 className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all"
                               >
                                 Duyệt xác thực
@@ -3141,42 +3382,63 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
           {/* ---------------- TAB: MODERATION HISTORY (Lịch sử hoạt động) ---------------- */}
           {activeTab === 'ModHistory' && (() => {
+            const filteredHistory = moderationHistory.filter(log => {
+              if (!historySearch) return true;
+              const searchLower = historySearch.toLowerCase();
+              return (
+                (log.action && log.action.toLowerCase().includes(searchLower)) ||
+                (log.target && log.target.toLowerCase().includes(searchLower)) ||
+                (log.actor && log.actor.toLowerCase().includes(searchLower)) ||
+                (log.time && log.time.toLowerCase().includes(searchLower))
+              );
+            });
+
             return (
               <div className="space-y-6 max-w-7xl mx-auto">
-                <div>
-                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Lịch sử hoạt động kiểm duyệt</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">
-                    Nhật ký chi tiết các hành động kiểm duyệt dự án, dịch vụ, tài khoản và xác thực KYC của hệ thống.
-                  </p>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-[#e1e8fd]">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Lịch sử hoạt động kiểm duyệt</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">
+                      Nhật ký chi tiết các hành động kiểm duyệt dự án, dịch vụ, tài khoản và xác thực KYC của hệ thống.
+                    </p>
+                  </div>
+                  {/* Search bar */}
+                  <div className="w-full md:w-72 relative">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                      <Search className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm lịch sử..."
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div className="bg-white border border-[#e1e8fd] rounded-xl p-6">
                   <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
-                    {moderationHistory.map((log) => {
+                    {filteredHistory.map((log) => {
                       const isRejected = log.target && (log.target.includes('REJECTED') || log.target.includes('Từ chối') || log.target.toLowerCase().includes('yêu cầu bổ sung') || (log.action && log.action.includes('REJECT')));
                       return (
                         <div key={log.id} className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                          <div className={`w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md transition-shadow ${
+                          <div 
+                            onClick={() => setSelectedHistoryLog(log)}
+                            className={`w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
                             isRejected 
-                              ? 'bg-rose-50/80 border-rose-200 text-rose-900' 
-                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                              ? 'bg-rose-50/80 border-rose-200 text-rose-900 hover:border-rose-300' 
+                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-900 hover:border-emerald-300'
                           }`}>
                             <div className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? 'border-rose-100' : 'border-emerald-100'}`}>
-                              <h4 className={`font-bold text-[13px] tracking-wide ${isRejected ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                {{
-                                  'MODERATE_PROJECT': 'Kiểm duyệt dự án',
-                                  'MODERATE_GIG': 'Kiểm duyệt dịch vụ',
-                                  'MODERATE_PROFILE': 'Kiểm duyệt hồ sơ',
-                                  'KYC_MODERATE': 'Kiểm duyệt KYC',
-                                  'KYC_REQUIRE_MORE_INFO': 'Yêu cầu bổ sung KYC',
-                                  'PROCESS_WITHDRAWAL': 'Xử lý lệnh rút tiền',
-                                  'RESOLVE_DISPUTE': 'Xử lý khiếu nại',
-                                  'VERIFY_KYC': 'Xác thực KYC',
-                                  'APPROVE_WITHDRAWAL': 'Duyệt lệnh rút tiền',
-                                  'SUSPEND_USER': 'Khóa tài khoản',
-                                  'UPDATE_CONFIG': 'Cập nhật hệ thống'
-                                }[log.action] || log.action?.replace(/_/g, ' ')}
-                              </h4>
+                              <div className="flex flex-col">
+                                <h4 className={`font-bold text-[13px] tracking-wide ${isRejected ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                  {getActionLabel(log.action)}
+                                </h4>
+                                <span className={`text-[10px] ${isRejected ? 'text-rose-500' : 'text-[#6e7b6c]'} mt-0.5 font-medium`}>
+                                  Người đăng/gửi: {getTargetUser(log.target)}
+                                </span>
+                              </div>
                               <time className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                                 isRejected ? 'text-rose-600 bg-rose-100/60' : 'text-emerald-600 bg-emerald-100/60'
                               }`}>{log.time}</time>
@@ -3294,9 +3556,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             const filteredReports = violationReports.filter(r => {
               // Status filter
               if (reportFilter !== 'ALL') {
-                const isPending = r.status === 'Chờ xử lý' || r.status === 'PENDING';
-                if (reportFilter === 'PENDING' && !isPending) return false;
-                if (reportFilter === 'RESOLVED' && isPending) return false;
+                if (reportFilter === 'PENDING' && r.status !== 'Chờ xử lý') return false;
+                if (reportFilter === 'RESOLVED' && r.status !== 'Đã xử lý') return false;
+                if (reportFilter === 'ESCALATED' && r.status !== 'Đã chuyển cấp') return false;
               }
               // Type filter
               if (reportTypeFilter !== 'ALL') {
@@ -3322,6 +3584,12 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Báo cáo vi phạm</h1>
                     <p className="text-body-sm text-[#3e4a3d] mt-1">Xử lý các báo cáo vi phạm bài đăng, hồ sơ và người dùng từ hệ thống.</p>
                   </div>
+                  <div className="grid grid-cols-1 gap-2 min-w-[120px]">
+                    <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                      <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Báo cáo</p>
+                      <p className="text-title-md font-extrabold text-[#ba1a1a]">{violationReports.length}</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
@@ -3332,7 +3600,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                       <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
                         {[
                           { key: 'ALL', label: 'Tất cả' },
-                          { key: 'PENDING', label: 'Chờ xử lý' },
+                          { key: 'ESCALATED', label: 'Đã chuyển cấp' },
                           { key: 'RESOLVED', label: 'Đã xử lý' }
                         ].map((btn) => (
                           <button
@@ -3387,64 +3655,94 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </div>
 
                   {/* Reports list */}
-                  <div className="space-y-4">
-                    {filteredReports.map(report => (
-                      <div key={report.id} className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${severityClass(report.severity)}`}>
-                                Mức độ: {report.severity}
-                              </span>
-                              <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold border border-slate-200">
-                                {report.type}
-                              </span>
+                  <div className={reportFilter === 'ESCALATED' ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-4"}>
+                    {reportFilter === 'ESCALATED' ? (
+                      (() => {
+                        const escalatedReportTasks = tasks.filter(t => 
+                          t.status === 'Escalated' && 
+                          (t.type === 'REPORT_RESOLUTION' || t.title?.includes('Báo cáo vi phạm'))
+                        );
+                        return (
+                          <>
+                            {escalatedReportTasks.map(task => (
+                              <div key={task.taskId} className="border border-rose-200 bg-rose-50 rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                    task.priority === 'High' ? 'bg-rose-200 text-rose-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>{task.priority} Priority</span>
+                                  <span className="text-xs text-rose-600 font-semibold">{task.id}</span>
+                                </div>
+                                <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{task.title}</h3>
+                                <p className="text-xs text-[#3e4a3d] mb-4 line-clamp-3">{task.description}</p>
+                                <button 
+                                  className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setShowManageModal(true);
+                                  }}
+                                >
+                                  Xem chi tiết & Xử lý
+                                </button>
+                              </div>
+                            ))}
+                            {escalatedReportTasks.length === 0 && (
+                              <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                                Không có báo cáo vi phạm nào đang chuyển cấp.
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      filteredReports.map(report => (
+                        <div key={report.id} className="border border-[#e9edff] rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${severityClass(report.severity)}`}>
+                                  Mức độ: {report.severity}
+                                </span>
+                                <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold border border-slate-200">
+                                  {report.type}
+                                </span>
+                              </div>
+                              <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
                             </div>
-                            <h3 className="text-body-lg font-bold text-[#141b2b]">{report.target}</h3>
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${
+                              report.status === 'Chờ xử lý' || report.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-800'
+                                : report.status === 'Đã chuyển cấp'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {report.status}
+                            </span>
                           </div>
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${
-                            report.status === 'Chờ xử lý' || report.status === 'PENDING'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {report.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
-                          <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
-                          <div className="flex gap-4">
-                            <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
-                            <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
+                          <p className="text-sm text-[#3e4a3d] bg-[#f9f9ff] p-3 rounded-lg mb-3">
+                            <span className="font-semibold">Bằng chứng / Nội dung:</span> {report.evidence}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-[#6e7b6c]">
+                            <div className="flex gap-4">
+                              <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
+                              <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
+                            </div>
+                            {(report.status === 'Chờ xử lý' || report.status === 'PENDING') && (
+                              <button
+                                onClick={() => {
+                                  setShowReportEscalateForm(false);
+                                  setReportEscalateReason('');
+                                  setSelectedReport(report);
+                                }}
+                                className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
+                              >
+                                Xử lý báo cáo →
+                              </button>
+                            )}
                           </div>
-                          {(report.status === 'Chờ xử lý' || report.status === 'PENDING') && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Bạn có chắc chắn muốn đánh dấu báo cáo ${report.id} là đã xử lý?`)) {
-                                  adminApi.resolveReport(report.id.replace('RPT-', ''), 'RESOLVED', user?.id || 1)
-                                    .then(res => {
-                                      if (res.success) {
-                                        showToast(res.message, 'success');
-                                        fetchModerationData();
-                                      } else {
-                                        showToast(res.message, 'error');
-                                      }
-                                    }).catch(err => {
-                                      console.error(err);
-                                      showToast('Có lỗi xảy ra khi xử lý báo cáo.', 'error');
-                                    });
-                                }
-                              }}
-                              className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
-                            >
-                              Xử lý báo cáo →
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    ))}
-                    {filteredReports.length === 0 && (
+                      ))
+                    )}
+                    {reportFilter !== 'ESCALATED' && filteredReports.length === 0 && (
                       <div className="text-center py-12 text-[#6e7b6c]">
                         Chưa có báo cáo vi phạm nào phù hợp với bộ lọc.
                       </div>
@@ -3885,7 +4183,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       {/* ---------------- DRAWERS/MODAL: MANAGE/VIEW TASK DETAILS ---------------- */}
       {showManageModal && selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl flex flex-col border border-[#e1e8fd] animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl flex flex-col border border-[#e1e8fd] animate-in zoom-in-95 duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
                 <div>
@@ -3968,12 +4266,20 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     </button>
                   )}
                   {selectedTask.status === 'In Progress' && selectedTask.assignedToEmail === (user?.email || 'staff@gmail.com') && (
-                    <button 
-                      onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
-                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"
-                    >
-                      Hoàn thành công việc
-                    </button>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Rejected')}
+                        className="flex-1 py-2.5 bg-[#ba1a1a] hover:bg-[#93000a] text-white rounded-lg font-bold text-body-sm shadow transition-all"
+                      >
+                        Từ chối (Không duyệt)
+                      </button>
+                      <button 
+                        onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
+                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"
+                      >
+                        Duyệt & Hoàn thành
+                      </button>
+                    </div>
                   )}
                   {!showEscalateReasons ? (
                     <button 
@@ -4017,12 +4323,11 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                               return;
                             }
                             try {
-                              const res = await adminApi.escalateVerificationTask(selectedTask.taskId, selectedEscalateReason);
+                              const res = await adminApi.escalateVerificationTask(selectedTask.taskId, selectedEscalateReason, user?.email || 'staff@gmail.com');
                               if (res.success) {
                                 showToast(res.message || 'Đã báo cáo sự cố và chuyển cấp tác vụ!', 'success');
-                                setTasks(prev => prev.map(t => 
-                                  t.taskId === selectedTask.taskId ? { ...t, status: 'Escalated', assignedToEmail: null } : t
-                                ));
+                                fetchTasks();
+                                fetchModerationData();
                                 setShowManageModal(false);
                                 setSelectedTask(null);
                                 setShowEscalateReasons(false);
@@ -4182,7 +4487,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       {/* ---------------- MODERATION DETAIL MODAL ---------------- */}
       {showModerationModal && selectedModerationItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
               <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết kiểm duyệt</h2>
               <button 
@@ -4196,47 +4501,120 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
               <div className="flex justify-between items-center mb-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#f7fff2] text-[#006b2c]">
+                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                  selectedModerationItem.type === 'PROJECT' ? 'bg-emerald-50 text-[#006b2c] border-emerald-100' :
+                  selectedModerationItem.type === 'GIG' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                  'bg-indigo-50 text-indigo-700 border-indigo-100'
+                }`}>
                   {selectedModerationItem.type}
                 </span>
-                <span className="text-xs text-[#6e7b6c] font-medium">{selectedModerationItem.subDate}</span>
+                <span className="text-xs text-[#6e7b6c] font-bold flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  {selectedModerationItem.subDate}
+                </span>
               </div>
-              <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedModerationItem.title}</h3>
+              <h3 className="text-lg sm:text-xl font-extrabold text-[#141b2b] leading-snug">{selectedModerationItem.title}</h3>
               
-              <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-sm">
-                <p className="text-[#3e4a3d] mb-1">Người đăng:</p>
-                <p className="font-bold text-[#141b2b]">{selectedModerationItem.author}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                    {selectedModerationItem.author ? selectedModerationItem.author.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Người đăng</span>
+                    <span className="text-sm font-extrabold text-slate-800 block truncate">{selectedModerationItem.author}</span>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/50 border border-amber-200/60 p-4 rounded-xl flex items-start gap-2.5 text-amber-850">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-amber-700 uppercase font-bold block">Lý do kiểm duyệt</span>
+                    <span className="text-xs font-bold text-amber-800">{selectedModerationItem.reason}</span>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Lý do đưa vào hàng đợi:</p>
-                <p className="text-sm font-semibold text-amber-700">{selectedModerationItem.reason}</p>
-              </div>
-
-              <div>
-                <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung chi tiết:</p>
-                <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b] whitespace-pre-wrap">
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-[#6e7b6c] uppercase block">Nội dung chi tiết</span>
+                <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-sm text-slate-850 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
                   {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
                 </div>
               </div>
+
+              {showModEscalateForm && (
+                <div className="border border-[#ffdad6] bg-[#fff5f4] rounded-lg p-4 space-y-3">
+                  <p className="text-body-sm font-bold text-[#ba1a1a]">Chọn lý do chuyển cấp:</p>
+                  <div className="space-y-2">
+                    {['Nội dung chứa thông tin nhạy cảm/chính trị', 'Nghi ngờ lừa đảo/scam dự án', 'Thiếu thông tin xác thực từ chủ dự án', 'Cần ý kiến đánh giá từ Manager', 'Lý do khác'].map((reason, idx) => (
+                      <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          name="modEscalateReason" 
+                          value={reason} 
+                          checked={modEscalateReason === reason}
+                          onChange={(e) => setModEscalateReason(e.target.value)}
+                          className="mt-1"
+                        />
+                        <span className="text-body-sm text-[#3e4a3d]">{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3">
-              {selectedModerationItem.status === 'Pending' ? (
-                <button 
-                  onClick={() => {
-                    handleModAction(selectedModerationItem, true);
-                    setShowModerationModal(false);
-                  }}
-                  className="w-full py-2 px-4 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" /> Tiếp nhận
-                </button>
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-col sm:flex-row">
+              {(selectedModerationItem.status === 'Pending' || selectedModerationItem.status === 'ESCALATED' || selectedModerationItem.status === 'Đã chuyển cấp') ? (
+                showModEscalateForm ? (
+                  <div className="flex gap-2 w-full">
+                    <button 
+                      onClick={() => {
+                        setShowModEscalateForm(false);
+                        setModEscalateReason('');
+                      }}
+                      className="flex-1 py-2 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-lg transition-colors"
+                    >
+                      Hủy
+                    </button>
+                    <button 
+                      onClick={() => handleEscalateModerationItem(selectedModerationItem, modEscalateReason)}
+                      className="flex-1 py-2 px-4 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                    >
+                      Xác nhận gửi
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    {(selectedModerationItem.status !== 'ESCALATED' && selectedModerationItem.status !== 'Đã chuyển cấp') && (
+                      <button 
+                        onClick={() => setShowModEscalateForm(true)}
+                        className="flex-1 py-2 px-4 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-sm rounded-lg transition-colors"
+                      >
+                        Chuyển cấp
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => {
+                        handleModAction(selectedModerationItem, true);
+                        setShowModerationModal(false);
+                      }}
+                      className="flex-1 py-2 px-4 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Tiếp nhận
+                    </button>
+                  </div>
+                )
               ) : (
                 <button 
-                  onClick={() => setShowModerationModal(false)}
+                  onClick={() => {
+                    setShowModerationModal(false);
+                    setSelectedModerationItem(null);
+                    setShowModEscalateForm(false);
+                    setModEscalateReason('');
+                  }}
                   className="w-full py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
                 >
                   Đóng cửa sổ
@@ -4383,6 +4761,61 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 </span>
               </div>
 
+              {(() => {
+                const targetRequest = selectedRequestDetails || latestTransferRequest;
+                if (!targetRequest) return null;
+
+                if (targetRequest.status === 'PENDING') {
+                  return (
+                    <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-body-sm font-semibold flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold block text-left">Yêu cầu điều chuyển đang chờ phê duyệt</span>
+                        <span className="text-[12px] text-amber-800 font-medium block text-left">Bạn đã gửi đơn chuyển sang phòng ban {targetRequest.toDepartment}. Vui lòng chờ phản hồi từ Manager.</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (targetRequest.status === 'APPROVED') {
+                  return (
+                    <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-body-sm font-semibold flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold block text-emerald-800 text-left">Yêu cầu điều chuyển đã được phê duyệt!</span>
+                        <span className="text-[12px] text-emerald-700 font-medium block text-left">Quyết định chuyển sang phòng ban {targetRequest.toDepartment} đã được chấp thuận.</span>
+                        {targetRequest.decisionNote && (
+                          <p className="text-[12px] text-emerald-700 mt-1 italic text-left">Phản hồi: "{targetRequest.decisionNote}"</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (targetRequest.status === 'REJECTED') {
+                  return (
+                    <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-body-sm font-semibold flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-[#ba1a1a] shrink-0">
+                        <AlertCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold block text-[#ba1a1a] text-left">Yêu cầu điều chuyển đã bị từ chối!</span>
+                        <span className="text-[12px] text-rose-800 font-medium block text-left">Đơn xin chuyển sang phòng ban {targetRequest.toDepartment} không được chấp thuận.</span>
+                        {targetRequest.decisionNote && (
+                          <p className="text-[12px] text-[#ba1a1a] mt-1 font-bold text-left">Lý do từ chối: "{targetRequest.decisionNote}"</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
+
               <div className="space-y-8">
                 <section>
                   <div className="mb-5 flex items-center gap-2 border-b border-[#b9cbb5] pb-3 text-[#009b3a]">
@@ -4426,8 +4859,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Phòng ban muốn chuyển đến</label>
                       <select
-                        required
-                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        disabled={isTransferPending}
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                         value={transferRequestTargetDeptId}
                         onChange={e => setTransferRequestTargetDeptId(e.target.value)}
                       >
@@ -4445,27 +4878,30 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Vị trí mong muốn</label>
                       <input
+                        disabled={isTransferPending}
                         value={transferRequestDetails.desiredPosition}
                         onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredPosition: e.target.value }))}
                         placeholder="Nhập vị trí dự kiến"
-                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Ngày mong muốn bắt đầu</label>
                       <input
+                        disabled={isTransferPending}
                         type="date"
                         value={transferRequestDetails.desiredStartDate}
                         onChange={e => setTransferRequestDetails(prev => ({ ...prev, desiredStartDate: e.target.value }))}
-                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Loại điều chuyển</label>
                       <select
+                        disabled={isTransferPending}
                         value={transferRequestDetails.transferType}
                         onChange={e => setTransferRequestDetails(prev => ({ ...prev, transferType: e.target.value }))}
-                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        className="h-12 w-full rounded-lg border border-[#b8d0b2] bg-white px-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                       >
                         <option>Yêu cầu cá nhân</option>
                         <option>Theo nhu cầu dự án</option>
@@ -4483,11 +4919,11 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </div>
                   <label className="mb-2 block text-[13px] font-bold text-black">Chi tiết lý do</label>
                   <textarea
-                    required
+                    disabled={isTransferPending}
                     value={transferRequestReason}
                     onChange={e => setTransferRequestReason(e.target.value)}
                     placeholder="Trình bày lý do bạn muốn chuyển sang phòng ban khác"
-                    className="min-h-[110px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                    className="min-h-[110px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                   />
                 </section>
 
@@ -4500,19 +4936,21 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Kỹ năng liên quan & Kinh nghiệm trước đây</label>
                       <textarea
+                        disabled={isTransferPending}
                         value={transferRequestDetails.skills}
                         onChange={e => setTransferRequestDetails(prev => ({ ...prev, skills: e.target.value }))}
                         placeholder="Liệt kê các kỹ năng phù hợp với vị trí mới..."
-                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
                       <label className="mb-2 block text-[13px] font-bold text-black">Thành tích nổi bật & Lý do bạn phù hợp</label>
                       <textarea
+                        disabled={isTransferPending}
                         value={transferRequestDetails.achievements}
                         onChange={e => setTransferRequestDetails(prev => ({ ...prev, achievements: e.target.value }))}
                         placeholder="Nêu bật những lý do bạn là ứng viên sáng giá cho vị trí này..."
-                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15"
+                        className="min-h-[92px] w-full rounded-lg border border-[#b8d0b2] bg-white p-3 text-[14px] text-[#3e4a3d] outline-none focus:border-[#009b3a] focus:ring-2 focus:ring-[#009b3a]/15 disabled:bg-slate-50 disabled:text-[#7f8f7c] disabled:border-[#d0dcd0] disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -4523,8 +4961,9 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                     <Paperclip className="h-5 w-5" />
                     <h3 className="text-[18px] font-extrabold">Tệp đính kèm</h3>
                   </div>
-                  <label className="flex min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#9fbd98] bg-[#edf7ea] px-4 text-center transition-colors hover:bg-[#e4f3df]">
+                  <label className={`flex min-h-[170px] flex-col items-center justify-center rounded-xl border border-dashed border-[#9fbd98] bg-[#edf7ea] px-4 text-center transition-colors ${isTransferPending ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-[#e4f3df]'}`}>
                     <input
+                      disabled={isTransferPending}
                       type="file"
                       className="hidden"
                       accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
@@ -4538,12 +4977,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                   </label>
                 </section>
 
-                <label className="flex items-start gap-3 rounded-lg bg-[#edf7ea] p-4 text-[14px] leading-6 text-[#263326]">
+                <label className={`flex items-start gap-3 rounded-lg bg-[#edf7ea] p-4 text-[14px] leading-6 text-[#263326] ${isTransferPending ? 'opacity-60 cursor-not-allowed' : ''}`}>
                   <input
+                    disabled={isTransferPending}
                     type="checkbox"
                     checked={transferRequestDetails.confirmed}
                     onChange={e => setTransferRequestDetails(prev => ({ ...prev, confirmed: e.target.checked }))}
-                    className="mt-1 h-4 w-4 rounded border-[#b8d0b2] text-[#009b3a] focus:ring-[#009b3a]"
+                    className="mt-1 h-4 w-4 rounded border-[#b8d0b2] text-[#009b3a] focus:ring-[#009b3a] disabled:cursor-not-allowed"
                   />
                   <span>Tôi xác nhận rằng các thông tin đã cung cấp là chính xác và hoàn toàn chịu trách nhiệm về tính trung thực của các thông tin này.</span>
                 </label>
@@ -4559,17 +4999,18 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 </button>
                 <button
                   type="button"
+                  disabled={isTransferPending}
                   onClick={() => {
                     showToast('Đã lưu bản nháp yêu cầu điều chuyển.', 'success');
                     closeTransferRequestModal();
                   }}
-                  className="h-12 rounded-lg border border-[#00a63e] bg-white px-7 text-[14px] font-semibold text-[#009b3a] transition-colors hover:bg-[#edf7ea]"
+                  className="h-12 rounded-lg border border-[#00a63e] bg-white px-7 text-[14px] font-semibold text-[#009b3a] transition-colors hover:bg-[#edf7ea] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Lưu bản nháp
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingTransferRequest || !transferRequestTargetDeptId || !transferRequestDetails.confirmed}
+                  disabled={isSubmittingTransferRequest || isTransferPending}
                   className="h-12 rounded-lg bg-[#00a63e] px-8 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#008f36] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSubmittingTransferRequest ? 'Đang gửi...' : 'Gửi yêu cầu'}
@@ -4595,9 +5036,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h3 className="text-xl font-bold text-slate-800">Chi tiết Báo cáo vi phạm</h3>
+              <h3 className="text-xl font-extrabold text-slate-800">Chi tiết Báo cáo vi phạm</h3>
               <button 
-                onClick={() => setSelectedReport(null)}
+                onClick={() => {
+                  setSelectedReport(null);
+                  setShowReportEscalateForm(false);
+                  setReportEscalateReason('');
+                }}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -4605,44 +5050,42 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             </div>
             
             {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-6">
+            <div className="p-6 overflow-y-auto space-y-5">
               {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-3">
-                <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  selectedReport.severity === 'Cao' ? 'bg-rose-100 text-rose-700' :
-                  selectedReport.severity === 'Trung bình' ? 'bg-amber-100 text-amber-700' :
-                  'bg-blue-100 text-blue-700'
+                <span className={`px-3 py-1 rounded-md text-xs font-bold border ${
+                  selectedReport.severity === 'Cao' || selectedReport.severity === 'HIGH' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                  selectedReport.severity === 'Trung bình' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                  'bg-blue-50 text-blue-700 border-blue-100'
                 }`}>
                   Mức độ: {selectedReport.severity || 'Trung bình'}
                 </span>
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-bold">
+                <span className="px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-xs font-bold">
                   Đối tượng: {selectedReport.type || selectedReport.targetType}
                 </span>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${
-                  selectedReport.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                <span className={`px-3 py-1 text-xs font-bold border rounded-md ${
+                  selectedReport.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
                 }`}>
                   Trạng thái: {selectedReport.status || 'Pending'}
                 </span>
               </div>
 
               {/* Target Name */}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-500 mb-1">Nội dung bị báo cáo</h4>
-                <p className="text-lg font-bold text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-[#6e7b6c] uppercase block mb-1">Nội dung bị báo cáo</h4>
+                <p className="text-base font-extrabold text-[#141b2b]">
                   {selectedReport.target || selectedReport.reportedName}
                   {selectedReport.targetId && (
-                    <span className="text-sm font-normal text-slate-500 ml-2">(ID: {selectedReport.targetId})</span>
+                    <span className="text-xs font-normal text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0">(ID: {selectedReport.targetId})</span>
                   )}
                 </p>
                 {selectedReport.targetId && (
                   <button 
-                    className="mt-2 text-sm text-[#006b2c] font-semibold hover:underline flex items-center gap-1"
+                    className="mt-2 text-xs text-[#006b2c] font-bold hover:underline flex items-center gap-1"
                     onClick={() => {
                       if (selectedReport.type === 'Hồ sơ' || selectedReport.targetType === 'USER') {
-                        // Normally navigate to profile, assuming frontend routes support it
                         alert("Chức năng đang được cập nhật (ID: " + selectedReport.targetId + ")");
                       } else {
-                        // Project
                         onNavigate('job_details', { job: { id: selectedReport.targetId } });
                       }
                     }}
@@ -4653,55 +5096,183 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
               </div>
 
               {/* Evidence */}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-500 mb-2">Bằng chứng / Nội dung báo cáo</h4>
-                <div className="bg-rose-50 text-rose-900 p-4 rounded-xl border border-rose-100 whitespace-pre-wrap text-sm leading-relaxed">
-                  {selectedReport.evidence || selectedReport.reason || 'Không có nội dung'}
+              <div className="bg-rose-50/60 border border-rose-200 p-4 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-rose-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Lý do & Bằng chứng báo cáo</span>
                 </div>
+                <p className="text-sm text-rose-950 whitespace-pre-wrap leading-relaxed">
+                  {selectedReport.evidence || selectedReport.reason || 'Không có bằng chứng cụ thể'}
+                </p>
               </div>
 
               {/* Users Involved */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <h4 className="text-xs font-semibold text-slate-500 mb-1">Người báo cáo</h4>
-                  <p className="font-bold text-slate-800">{selectedReport.reporter || selectedReport.reporterName}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                    {selectedReport.reporter ? selectedReport.reporter.charAt(0).toUpperCase() : 'R'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Người báo cáo</span>
+                    <span className="text-sm font-extrabold text-slate-800 block truncate">{selectedReport.reporter || selectedReport.reporterName}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <h4 className="text-xs font-semibold text-slate-500 mb-1">Bị báo cáo</h4>
-                  <p className="font-bold text-slate-800">{selectedReport.accused || selectedReport.reportedName}</p>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 font-bold shrink-0">
+                    {selectedReport.accused ? selectedReport.accused.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Người bị báo cáo</span>
+                    <span className="text-sm font-extrabold text-rose-900 block truncate">{selectedReport.accused || selectedReport.reportedName}</span>
+                  </div>
                 </div>
               </div>
+
+              {showReportEscalateForm && (
+                <div className="border border-[#ffdad6] bg-[#fff5f4] rounded-lg p-4 space-y-3">
+                  <p className="text-body-sm font-bold text-[#ba1a1a]">Chọn lý do chuyển cấp:</p>
+                  <div className="space-y-2">
+                    {['Tranh chấp phức tạp cần Manager phân xử', 'Nghi ngờ báo cáo khống/vu khống', 'Mức độ vi phạm nghiêm trọng cần khóa tài khoản vĩnh viễn', 'Cần phối hợp với bộ phận Pháp chế/Tài chính', 'Lý do khác'].map((reason, idx) => (
+                      <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          name="reportEscalateReason" 
+                          value={reason} 
+                          checked={reportEscalateReason === reason}
+                          onChange={(e) => setReportEscalateReason(e.target.value)}
+                          className="mt-1"
+                        />
+                        <span className="text-body-sm text-[#3e4a3d]">{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer Actions */}
             <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex items-center justify-end gap-3">
+              {(!selectedReport.status || selectedReport.status === 'Pending' || selectedReport.status === 'Chờ xử lý' || selectedReport.status === 'Đã chuyển cấp' || selectedReport.status === 'ESCALATED') ? (
+                showReportEscalateForm ? (
+                  <div className="flex gap-2 w-full">
+                    <button 
+                      onClick={() => {
+                        setShowReportEscalateForm(false);
+                        setReportEscalateReason('');
+                      }}
+                      className="flex-1 py-2 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-lg transition-colors"
+                    >
+                      Hủy
+                    </button>
+                    <button 
+                      onClick={() => handleEscalateReport(selectedReport, reportEscalateReason)}
+                      className="flex-1 py-2 px-4 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                    >
+                      Xác nhận gửi
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    {(selectedReport.status !== 'Đã chuyển cấp' && selectedReport.status !== 'ESCALATED') && (
+                      <button 
+                        onClick={() => setShowReportEscalateForm(true)}
+                        className="flex-1 py-2 px-4 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-sm rounded-lg transition-colors"
+                        disabled={reportActionLoading}
+                      >
+                        Chuyển cấp
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => handleModAction(selectedReport, true)}
+                      className="flex-1 py-2 px-4 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                      disabled={reportActionLoading}
+                    >
+                      {reportActionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <Check className="w-4 h-4" /> Tiếp nhận
+                    </button>
+                  </div>
+                )
+              ) : (
+                <button 
+                  onClick={() => {
+                    setSelectedReport(null);
+                    setShowReportEscalateForm(false);
+                    setReportEscalateReason('');
+                  }}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
+                >
+                  Đóng
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- HISTORIC LOG DETAIL MODAL ---------------- */}
+      {selectedHistoryLog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết xử lý</h2>
               <button 
-                onClick={() => setSelectedReport(null)}
-                className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
-                disabled={reportActionLoading}
+                onClick={() => setSelectedHistoryLog(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5 text-sm">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2.5 py-0.5 rounded border border-[#bdcaba]">
+                  {selectedHistoryLog.id}
+                </span>
+                <span className="text-xs text-[#6e7b6c] font-bold flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  {selectedHistoryLog.time}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                    {selectedHistoryLog.actor ? selectedHistoryLog.actor.charAt(0).toUpperCase() : 'S'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Người thực hiện</span>
+                    <span className="text-sm font-extrabold text-slate-800 block truncate">{selectedHistoryLog.actor}</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-[#006b2c] font-bold shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Thao tác</span>
+                    <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded mt-0.5">
+                      {getActionLabel(selectedHistoryLog.action)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-[#6e7b6c] uppercase block">Nội dung chi tiết xử lý</span>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm text-[#141b2b] leading-relaxed whitespace-pre-wrap">
+                  {selectedHistoryLog.target || 'Không có mô tả chi tiết'}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-2xl flex justify-end">
+              <button 
+                onClick={() => setSelectedHistoryLog(null)}
+                className="py-2 px-6 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-lg transition-colors"
               >
                 Đóng
               </button>
-              
-              {(!selectedReport.status || selectedReport.status === 'Pending') && (
-                <>
-                  <button 
-                    onClick={() => resolveReport(selectedReport, 'REJECTED')}
-                    className="px-5 py-2.5 text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors disabled:opacity-50"
-                    disabled={reportActionLoading}
-                  >
-                    Từ chối báo cáo
-                  </button>
-                  <button 
-                    onClick={() => resolveReport(selectedReport, 'RESOLVED')}
-                    className="px-5 py-2.5 text-sm font-bold text-white bg-[#006b2c] hover:bg-[#005a24] shadow-sm rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
-                    disabled={reportActionLoading}
-                  >
-                    {reportActionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Đánh dấu đã xử lý
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>

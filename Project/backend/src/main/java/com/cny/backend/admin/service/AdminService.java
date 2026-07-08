@@ -139,6 +139,12 @@ public class AdminService {
     @Autowired
     private com.cny.backend.project.service.ProjectService projectService;
 
+    @Autowired
+    private com.cny.backend.notification.service.NotificationService notificationService;
+
+    @Autowired
+    private com.cny.backend.notification.repository.SystemNotificationRepository systemNotificationRepository;
+
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
@@ -713,6 +719,25 @@ public class AdminService {
         return 1;
     }
 
+    private String resolveEmailFromId(int id) {
+        // Try admin
+        Optional<Admin> adminOpt = adminRepository.findById(id);
+        if (adminOpt.isPresent()) {
+            return adminOpt.get().getEmail();
+        }
+        // Try manager
+        Optional<com.cny.backend.admin.entity.Manager> managerOpt = managerRepository.findById(id);
+        if (managerOpt.isPresent()) {
+            return managerOpt.get().getEmail();
+        }
+        // Try staff
+        Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findById(id);
+        if (staffOpt.isPresent()) {
+            return staffOpt.get().getEmail();
+        }
+        return null;
+    }
+
     private String getCurrentAdminEmail() {
         try {
             org.springframework.web.context.request.ServletRequestAttributes attributes = 
@@ -729,7 +754,11 @@ public class AdminService {
 
     public void writeAuditLog(int adminId, String action, String module, String description) {
         int validAdminId = getValidAdminId(adminId);
-        dashboardRepository.logAudit(validAdminId, getCurrentAdminEmail(), action, module, description);
+        String resolvedEmail = resolveEmailFromId(adminId);
+        if (resolvedEmail == null) {
+            resolvedEmail = getCurrentAdminEmail();
+        }
+        dashboardRepository.logAudit(validAdminId, resolvedEmail, action, module, description);
     }
 
     public List<PendingProjectDto> getPendingProjects() {
@@ -1072,6 +1101,7 @@ public class AdminService {
         return response;
     }
 
+    @Transactional
     public Map<String, Object> resolveReport(int id, String status, int adminId) {
         Map<String, Object> response = new HashMap<>();
         Optional<ViolationReport> opt = violationReportRepository.findById(id);
@@ -1985,14 +2015,17 @@ public class AdminService {
             String title = (String) payload.getOrDefault("title", "Yêu cầu kiểm duyệt");
             String description = (String) payload.getOrDefault("description", "");
             String requiredDepartments = (String) payload.getOrDefault("requiredDepartments", "CS");
+            String status = (String) payload.getOrDefault("status", "PENDING");
+            String assignedToEmail = (String) payload.get("assignedToEmail");
             
             DepartmentVerificationTask task = DepartmentVerificationTask.builder()
                     .taskType(taskType)
                     .referenceId(referenceId)
                     .title(title)
                     .description(description)
-                    .status("PENDING")
+                    .status(status)
                     .requiredDepartments(requiredDepartments)
+                    .assignedToEmail(assignedToEmail)
                     .build();
                     
             departmentVerificationTaskRepository.save(task);
@@ -2120,6 +2153,7 @@ public class AdminService {
         return response;
     }
 
+    @Transactional
     public Map<String, Object> submitTaskSignoff(int taskId, Map<String, Object> payload, String verifierEmail) {
         Map<String, Object> response = new HashMap<>();
         Optional<DepartmentVerificationTask> taskOpt = departmentVerificationTaskRepository.findById(taskId);
@@ -2130,7 +2164,7 @@ public class AdminService {
         }
 
         DepartmentVerificationTask task = taskOpt.get();
-        if (!"PENDING".equals(task.getStatus())) {
+        if (!"PENDING".equals(task.getStatus()) && !"IN_PROGRESS".equals(task.getStatus())) {
             response.put("success", false);
             response.put("message", "Tác vụ này đã được hoàn tất trước đó!");
             return response;
@@ -2172,7 +2206,23 @@ public class AdminService {
                 .build();
         departmentTaskSignoffRepository.save(signoff);
 
-        writeAuditLog(0, "TASK_SIGNOFF", "DEPARTMENTS", 
+        int verifierId = 1;
+        Optional<com.cny.backend.admin.entity.Staff> verifierStaffOpt = staffRepository.findByEmail(verifierEmail);
+        if (verifierStaffOpt.isPresent()) {
+            verifierId = verifierStaffOpt.get().getStaffId();
+        } else {
+            Optional<com.cny.backend.admin.entity.Manager> verifierMgrOpt = managerRepository.findByEmail(verifierEmail);
+            if (verifierMgrOpt.isPresent()) {
+                verifierId = verifierMgrOpt.get().getManagerId();
+            } else {
+                Optional<Admin> verifierAdminOpt = adminRepository.findByEmail(verifierEmail);
+                if (verifierAdminOpt.isPresent()) {
+                    verifierId = verifierAdminOpt.get().getAdminId();
+                }
+            }
+        }
+
+        writeAuditLog(verifierId, "TASK_SIGNOFF", "DEPARTMENTS", 
                 "Tài khoản " + verifierEmail + " của khoa " + departmentCode + " đã ký duyệt " + status + " tác vụ #" + taskId);
 
 
@@ -2181,7 +2231,7 @@ public class AdminService {
             departmentVerificationTaskRepository.save(task);
             
 
-            rejectOriginalTransaction(task.getTaskType(), task.getReferenceId());
+            rejectOriginalTransaction(task.getTaskType(), task.getReferenceId(), verifierId);
             
             response.put("success", true);
             response.put("message", "Đã từ chối tác vụ kiểm chứng thành công. Giao dịch gốc đã bị hủy.");
@@ -2208,7 +2258,7 @@ public class AdminService {
             departmentVerificationTaskRepository.save(task);
             
 
-            approveOriginalTransaction(task.getTaskType(), task.getReferenceId());
+            approveOriginalTransaction(task.getTaskType(), task.getReferenceId(), verifierId);
             
             response.put("success", true);
             response.put("message", "Tất cả các khoa đã đồng ý ký duyệt. Giao dịch gốc đã được tự động phê duyệt.");
@@ -2220,29 +2270,41 @@ public class AdminService {
         return response;
     }
 
-    private void approveOriginalTransaction(String type, int referenceId) {
+    private void approveOriginalTransaction(String type, int referenceId, int verifierId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", null, getValidAdminId(1));
+                dashboardRepository.processWithdrawalRequest(referenceId, "APPROVED", null, getValidAdminId(verifierId));
             } else if ("DISPUTE_REFUND".equals(type)) {
 
                 System.out.println("Dispute refund #" + referenceId + " approved!");
             } else if ("KYC_VERIFICATION".equals(type)) {
                 System.out.println("KYC Verification #" + referenceId + " approved!");
+            } else if ("PROJECT_MODERATION".equals(type)) {
+                moderateProject(referenceId, true, "Phê duyệt qua Task Signoff", verifierId);
+            } else if ("GIG_MODERATION".equals(type)) {
+                moderateGig(referenceId, true, "Phê duyệt qua Task Signoff", verifierId);
+            } else if ("REPORT_RESOLUTION".equals(type)) {
+                resolveReport(referenceId, "RESOLVED", verifierId);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void rejectOriginalTransaction(String type, int referenceId) {
+    private void rejectOriginalTransaction(String type, int referenceId, int verifierId) {
         try {
             if ("WITHDRAWAL".equals(type)) {
-                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", "Rejection via reconciliation log analysis", getValidAdminId(1));
+                dashboardRepository.processWithdrawalRequest(referenceId, "REJECTED", "Rejection via reconciliation log analysis", getValidAdminId(verifierId));
             } else if ("DISPUTE_REFUND".equals(type)) {
                 System.out.println("Dispute refund #" + referenceId + " rejected!");
             } else if ("KYC_VERIFICATION".equals(type)) {
                 System.out.println("KYC Verification #" + referenceId + " rejected!");
+            } else if ("PROJECT_MODERATION".equals(type)) {
+                moderateProject(referenceId, false, "Từ chối qua Task Signoff", verifierId);
+            } else if ("GIG_MODERATION".equals(type)) {
+                moderateGig(referenceId, false, "Từ chối qua Task Signoff", verifierId);
+            } else if ("REPORT_RESOLUTION".equals(type)) {
+                resolveReport(referenceId, "REJECTED", verifierId);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -2595,9 +2657,12 @@ public class AdminService {
             Map<String, Object> map = new HashMap<>();
             map.put("requestId", t.getRequestId());
             map.put("userEmail", t.getUserEmail());
+            map.put("userDisplayName", t.getUserDisplayName());
             map.put("fromDepartment", t.getFromDepartment() != null ? t.getFromDepartment().getName() : "");
             map.put("toDepartment", t.getToDepartment() != null ? t.getToDepartment().getName() : "");
+            map.put("reason", t.getReason());
             map.put("status", t.getStatus());
+            map.put("decisionNote", t.getDecisionNote());
             map.put("createdAt", t.getCreatedAt() != null ? t.getCreatedAt().toString() : "");
             return map;
         }).collect(Collectors.toList());
@@ -2622,15 +2687,76 @@ public class AdminService {
             if (toDeptId != null) {
                 req.setToDepartment(departmentRepository.findById(toDeptId).orElse(null));
             }
-            
-            departmentTransferRequestRepository.save(req);
+            String displayName = "Nhân viên";
+            Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findById(adminId);
+            if (staffOpt.isPresent()) {
+                displayName = staffOpt.get().getDisplayName();
+            }
+            req.setUserDisplayName(displayName);
+
+            req = departmentTransferRequestRepository.save(req);
             writeAuditLog(adminId, "SUBMIT_TRANSFER_REQUEST", "HR", "Gửi yêu cầu chuyển phòng ban sang phòng ban #" + toDeptId);
             
+            try {
+                messagingTemplate.convertAndSend("/topic/admin", Map.of("type", "TRANSFER_REQUEST_SUBMITTED"));
+            } catch (Exception wsEx) {
+                System.err.println("Failed to send transfer request websocket notification: " + wsEx.getMessage());
+            }
+
+            // Create system notification for all Managers directly
+            String targetDeptName = req.getToDepartment() != null ? req.getToDepartment().getName() : "Phòng ban mới";
+            String notifTitle = "Yêu cầu điều chuyển mới";
+            String notifMsg = String.format("Nhân viên %s (%s) yêu cầu chuyển sang %s", 
+                displayName, req.getUserEmail(), targetDeptName);
+            try {
+                com.cny.backend.notification.entity.SystemNotification notif = com.cny.backend.notification.entity.SystemNotification.builder()
+                    .recipientId(0L)
+                    .recipientRole("MANAGER")
+                    .title(notifTitle)
+                    .message(notifMsg)
+                    .type("TRANSFER_REQUEST")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .referenceId(String.valueOf(req.getRequestId()))
+                    .build();
+                
+                com.cny.backend.notification.entity.SystemNotification savedNotif = systemNotificationRepository.save(notif);
+
+                // Send websocket notification directly
+                try {
+                    messagingTemplate.convertAndSend("/topic/notifications/MANAGER/0", Map.of(
+                        "id", savedNotif.getId(),
+                        "recipientId", 0L,
+                        "recipientRole", "MANAGER",
+                        "title", notifTitle,
+                        "message", notifMsg,
+                        "type", "TRANSFER_REQUEST",
+                        "isRead", false,
+                        "createdAt", savedNotif.getCreatedAt().toString(),
+                        "referenceId", String.valueOf(req.getRequestId())
+                    ));
+                } catch (Exception wsEx2) {
+                    System.err.println("Failed to send websocket notification for manager: " + wsEx2.getMessage());
+                }
+            } catch (Exception notifEx) {
+                System.err.println("Failed to create system notification for manager: " + notifEx.getMessage());
+                notifEx.printStackTrace();
+            }
+
             response.put("success", true);
             response.put("message", "Đã gửi yêu cầu chuyển phòng ban thành công.");
         } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                java.io.FileWriter fw = new java.io.FileWriter("E:/Ky5/SWP391/Project_SWP391/Project/backend/error.log", true);
+                java.io.PrintWriter pw = new java.io.PrintWriter(fw);
+                pw.println("--- ERROR AT " + java.time.LocalDateTime.now() + " ---");
+                e.printStackTrace(pw);
+                pw.close();
+                fw.close();
+            } catch (Exception fileEx) {}
             response.put("success", false);
-            response.put("message", "Lỗi gửi yêu cầu: " + e.getMessage());
+            response.put("message", "Lỗi gửi yêu cầu: (" + e.getClass().getName() + ") " + e.getMessage());
         }
         return response;
     }
@@ -2645,6 +2771,70 @@ public class AdminService {
             req.setDecidedBy(adminId);
             req.setDecisionNote(reason);
             departmentTransferRequestRepository.save(req);
+
+            if ("APPROVED".equalsIgnoreCase(status)) {
+                if ("STAFF".equalsIgnoreCase(req.getUserType())) {
+                    Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findById(req.getUserId());
+                    if (staffOpt.isPresent()) {
+                        com.cny.backend.admin.entity.Staff stf = staffOpt.get();
+                        stf.setDepartmentEntity(req.getToDepartment());
+                        staffRepository.save(stf);
+                    }
+                } else if ("MANAGER".equalsIgnoreCase(req.getUserType())) {
+                    Optional<com.cny.backend.admin.entity.Manager> managerOpt = managerRepository.findById(req.getUserId());
+                    if (managerOpt.isPresent()) {
+                        com.cny.backend.admin.entity.Manager mgr = managerOpt.get();
+                        mgr.setDepartment(req.getToDepartment() != null ? req.getToDepartment().getName() : "");
+                        mgr.setDepartmentEntity(req.getToDepartment());
+                        managerRepository.save(mgr);
+                    }
+                }
+            }
+
+            // Create system notification for the requesting user
+            String notifTitle = "Đơn điều chuyển phòng ban";
+            String notifMsg = String.format("Đơn điều chuyển sang %s của bạn đã được %s.",
+                req.getToDepartment() != null ? req.getToDepartment().getName() : "phòng ban mới",
+                "APPROVED".equalsIgnoreCase(status) ? "PHÊ DUYỆT" : "TỪ CHỐI");
+            if ("REJECTED".equalsIgnoreCase(status) && reason != null && !reason.trim().isEmpty()) {
+                notifMsg += " Lý do: " + reason;
+            }
+
+            try {
+                com.cny.backend.notification.entity.SystemNotification notif = com.cny.backend.notification.entity.SystemNotification.builder()
+                    .recipientId(Long.valueOf(req.getUserId()))
+                    .recipientRole(req.getUserType().toUpperCase())
+                    .title(notifTitle)
+                    .message(notifMsg)
+                    .type("TRANSFER_REQUEST")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .referenceId(String.valueOf(req.getRequestId()))
+                    .build();
+
+                com.cny.backend.notification.entity.SystemNotification savedNotif = systemNotificationRepository.save(notif);
+
+                // Send websocket notification to the specific user's notification channel
+                String destination = String.format("/topic/notifications/%s/%d", 
+                    req.getUserType().toUpperCase(), req.getUserId());
+                try {
+                    messagingTemplate.convertAndSend(destination, Map.of(
+                        "id", savedNotif.getId(),
+                        "recipientId", Long.valueOf(req.getUserId()),
+                        "recipientRole", req.getUserType().toUpperCase(),
+                        "title", notifTitle,
+                        "message", notifMsg,
+                        "type", "TRANSFER_REQUEST",
+                        "isRead", false,
+                        "createdAt", savedNotif.getCreatedAt().toString(),
+                        "referenceId", String.valueOf(req.getRequestId())
+                    ));
+                } catch (Exception wsEx) {
+                    System.err.println("Failed to send websocket notification for user: " + wsEx.getMessage());
+                }
+            } catch (Exception notifEx) {
+                System.err.println("Failed to create system notification: " + notifEx.getMessage());
+            }
 
             writeAuditLog(adminId, "APPROVE_TRANSFER_REQUEST", "HR", "Duyệt yêu cầu chuyển phòng ban #" + id + " thành " + status);
             

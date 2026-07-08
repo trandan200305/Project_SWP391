@@ -37,6 +37,7 @@ public class DepartmentTransferRequest {
     @JoinColumn(name = "to_department_id", nullable = false)
     private Department toDepartment;
 
+    @Column(name = "reason", columnDefinition = "NVARCHAR(MAX)")
     private String reason;
 
     @Column(nullable = false, length = 20)

@@ -1,5 +1,20 @@
 import { api } from '../../../api/apiClient.js';
 
+const getAdminHeaders = (adminId) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (adminId) headers['X-Admin-Id'] = adminId.toString();
+  try {
+    const userStr = sessionStorage.getItem("user");
+    if (userStr) {
+      const userObj = JSON.parse(userStr);
+      if (userObj && userObj.email) {
+        headers['X-Admin-Email'] = userObj.email;
+      }
+    }
+  } catch (e) {}
+  return headers;
+};
+
 export const adminApi = {
   getStats: (period) => api.get(`/admin/stats?period=${period}`),
   getFeeConfig: () => api.get('/admin/fee-config'),
@@ -37,33 +52,24 @@ export const adminApi = {
   getJobCategories: () => api.get('/admin/job-categories'),
   getKycRequests: () => api.get('/admin/kyc/requests'),
   requireMoreInfoKyc: (id, role, reason, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/kyc/requests/${id}/require-more-info?role=${role}`, {
       method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json'
-      },
+      headers: getAdminHeaders(adminId),
       body: JSON.stringify({ reason })
     }).then(res => res.json());
   },
   getDisputes: () => api.get('/admin/disputes'),
   resolveDispute: (id, status, note, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/disputes/${id}/resolve?status=${status}&note=${note || ''}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   getReports: () => api.get('/admin/moderation/reports'),
   resolveReport: (id, status, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/moderation/reports/${id}/resolve?status=${status}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   getWarningTemplates: () => api.get('/admin/warning-templates'),
@@ -74,70 +80,64 @@ export const adminApi = {
   getSeoConfigs: () => api.get('/admin/seo-configs'),
   getProfileRequests: () => api.get('/admin/kyc/profile-requests'),
   moderateProfileRequest: (requestId, approve, reasonParam, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/kyc/profile-requests/${requestId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   updateUserStatus: (userId, role, status, reasonParam, adminPin, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/users/${userId}/status?role=${role}&status=${status}&reason=${reasonParam}&pin=${adminPin}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   moderateProject: (projectId, approve, reasonParam, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/moderation/projects/${projectId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   processWithdrawal: (withdrawalId, status, adminId, reason) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     let url = `http://localhost:8080/api/admin/finance/withdrawals/${withdrawalId}/process?status=${status}`;
     if (reason) url += `&reason=${encodeURIComponent(reason)}`;
     return fetch(url, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   getVerificationTasks: () => api.get('/admin/verification-tasks'),
   createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
   moderateKycRequest: (requestId, approve, role, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/kyc/requests/${requestId}/moderate?approve=${approve}&role=${role}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
-  claimVerificationTask: (taskId) => api.post(`/admin/verification-tasks/${taskId}/claim`),
-  submitTaskSignoff: (taskId, data) => api.post(`/admin/verification-tasks/${taskId}/signoff`, data),
-  escalateVerificationTask: (taskId, reason) => api.post(`/admin/verification-tasks/${taskId}/escalate`, { reason }),
+  claimVerificationTask: (taskId, email) => api.post(`/admin/verification-tasks/${taskId}/claim`, {}, {
+    headers: { 'X-Verifier-Email': email }
+  }),
+  submitTaskSignoff: (taskId, data, email) => api.post(`/admin/verification-tasks/${taskId}/signoff`, data, {
+    headers: { 'X-Verifier-Email': email }
+  }),
+  escalateVerificationTask: (taskId, reason, email) => api.post(`/admin/verification-tasks/${taskId}/escalate`, { reason }, {
+    headers: { 'X-Verifier-Email': email }
+  }),
   getVnpayConfig: () => api.get('/admin/vnpay-config'),
   saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
   getVnpayTransactions: () => api.get('/admin/finance/vnpay-transactions'),
   reconcileVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/reconcile`),
   getPendingGigs: () => api.get('/admin/moderation/gigs/pending'),
   moderateGig: (gigId, approve, reasonParam, adminId) => {
-    const headers = {};
-    if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return fetch(`http://localhost:8080/api/admin/moderation/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
-      headers
+      headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
   queryVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/query`),
   refundVnpayTransaction: (id, payload) => api.post(`/admin/finance/vnpay-transactions/${id}/refund`, payload),
   getTransferRequests: () => api.get('/admin/transfers/requests'),
-  submitTransferRequest: (payload) => api.post('/admin/transfers/requests', payload),
-  approveTransferRequest: (id, status, reason) => api.put(`/admin/transfers/requests/${id}/approve?status=${status}&reason=${reason}`),
+  submitTransferRequest: (payload, adminId) => api.post('/admin/transfers/requests', payload, { headers: { 'X-Admin-Id': adminId } }),
+  approveTransferRequest: (id, status, reason, adminId) => api.put(`/admin/transfers/requests/${id}/approve?status=${status}&reason=${reason}`, null, { headers: { 'X-Admin-Id': adminId } }),
   lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
   createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
   createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
