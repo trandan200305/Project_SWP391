@@ -143,7 +143,7 @@ public class AuthController {
             String emailContent = "Chào bạn,\n\n"
                     + "Cảm ơn bạn đã đăng ký tài khoản tại LancerPro.\n\n"
                     + "Mã xác nhận đăng ký của bạn là: " + code + "\n\n"
-                    + "Mã này có hiệu lực trong vòng 60 giây. Vui lòng nhập mã này vào trang đăng ký để hoàn tất quy trình.\n\n"
+                    + "Mã này có hiệu lực trong vòng 5 phút. Vui lòng nhập mã này vào trang đăng ký để hoàn tất quy trình.\n\n"
                     + "Trân trọng,\n"
                     + "Đội ngũ LancerPro";
 
@@ -176,9 +176,9 @@ public class AuthController {
         }
 
         Long timestamp = registrationTimestamps.get(email);
-        if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
+        if (timestamp == null || System.currentTimeMillis() - timestamp > 300000) {
             response.put("success", false);
-            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 60 giây)!");
+            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 5 phút)!");
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -289,7 +289,7 @@ public class AuthController {
         String emailContent = "Chào bạn,\n\n"
                 + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại LancerPro.\n\n"
                 + "Mã xác nhận của bạn là: " + code + "\n\n"
-                + "Mã này có hiệu lực trong vòng 60 giây. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
+                + "Mã này có hiệu lực trong vòng 5 phút. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
                 + "Trân trọng,\n"
                 + "Đội ngũ LancerPro";
 
@@ -311,9 +311,9 @@ public class AuthController {
 
         
         Long timestamp = codeTimestamps.get(email);
-        if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
+        if (timestamp == null || System.currentTimeMillis() - timestamp > 300000) {
             response.put("success", false);
-            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 60 giây)!");
+            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 5 phút)!");
             return ResponseEntity.badRequest().body(response);
         }
 

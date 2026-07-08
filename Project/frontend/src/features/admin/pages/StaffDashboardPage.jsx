@@ -137,6 +137,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
   const [reportSearch, setReportSearch] = useState('');
   const [kycSearch, setKycSearch] = useState('');
+  const [kycRoleFilter, setKycRoleFilter] = useState('ALL');
+  const [kycSortOrder, setKycSortOrder] = useState('NEWEST');
 
   // Finance states
   const [withdrawals, setWithdrawals] = useState([]);
@@ -3255,6 +3257,8 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
           {/* ---------------- TAB: KYC ---------------- */}
           {activeTab === 'KYC' && (() => {
             const filteredKyc = kycRequests.filter(req => {
+              if (kycRoleFilter !== 'ALL' && req.role !== kycRoleFilter) return false;
+              
               if (!kycSearch) return true;
               const searchLower = kycSearch.toLowerCase();
               return (
@@ -3262,27 +3266,52 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 (req.email && req.email.toLowerCase().includes(searchLower)) ||
                 (req.id && req.id.toLowerCase().includes(searchLower))
               );
+            }).sort((a, b) => {
+              const dateA = new Date(a.subDate || 0).getTime();
+              const dateB = new Date(b.subDate || 0).getTime();
+              return kycSortOrder === 'NEWEST' ? dateB - dateA : dateA - dateB;
             });
 
             return (
               <div className="space-y-6 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                   <div>
                     <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Xét duyệt danh tính KYC</h1>
                     <p className="text-body-sm text-[#3e4a3d] mt-1">Kiểm tra thông tin định danh hợp pháp của freelancer và nhà tuyển dụng để duy trì hệ sinh thái an toàn.</p>
                   </div>
-                  {/* Search bar */}
-                  <div className="w-full md:w-72 relative">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
-                      <Search className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm theo Tên, Email, Mã..."
-                      value={kycSearch}
-                      onChange={(e) => setKycSearch(e.target.value)}
-                      className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
-                    />
+                  {/* Filters & Search */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <select
+                      value={kycRoleFilter}
+                      onChange={(e) => setKycRoleFilter(e.target.value)}
+                      className="w-full sm:w-auto bg-[#f1f3ff] border-none text-[#141b2b] py-2 px-3 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                    >
+                      <option value="ALL">Tất cả vai trò</option>
+                      <option value="FREELANCER">Freelancer</option>
+                      <option value="EMPLOYER">Nhà tuyển dụng</option>
+                    </select>
+
+                    <select
+                      value={kycSortOrder}
+                      onChange={(e) => setKycSortOrder(e.target.value)}
+                      className="w-full sm:w-auto bg-[#f1f3ff] border-none text-[#141b2b] py-2 px-3 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                    >
+                      <option value="NEWEST">Mới đến cũ</option>
+                      <option value="OLDEST">Cũ đến mới</option>
+                    </select>
+
+                    <div className="w-full sm:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo Tên, Email, Mã..."
+                        value={kycSearch}
+                        onChange={(e) => setKycSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
