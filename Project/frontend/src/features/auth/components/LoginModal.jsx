@@ -258,7 +258,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
           </div>
           <div className="relative z-10 my-4 max-w-sm">
             <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-[1.2]">
-              Connect with the world's most elite freelance talent.
+              Kết nối với những freelancer tài năng nhất thế giới.
             </h1>
           </div>
           <div className="relative z-10 bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-lg">
@@ -271,19 +271,18 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
               ))}
             </div>
             <p className="text-white/95 text-[13px] italic leading-relaxed mb-4 font-medium">
-              "LancerPro has completely transformed how we scale our engineering
-              teams. The caliber of talent is unmatched."
+              "Thể thao là không ngừng bỏ cuộc"
             </p>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/15 border border-white/20 rounded-full flex items-center justify-center font-extrabold text-white text-[12px] shadow-sm">
-                JD
+                TĐ
               </div>
               <div>
                 <h4 className="font-bold text-white text-[12px]">
-                  James Dalton
+                  Trần Đán
                 </h4>
                 <p className="text-[10px] text-white/50 font-medium">
-                  CTO at TechFlow
+                  Giám đốc Công nghệ tại TechFlow
                 </p>
               </div>
             </div>
@@ -435,7 +434,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     {/* Email input */}
                     <div>
                       <label className="block text-[11px] font-bold text-primary mb-1">
-                        Email Address
+                        Địa chỉ Email
                       </label>
                       <input
                         type="email"
@@ -576,10 +575,10 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
               <>
                 {/* ===================== REGULAR LOGIN FLOW ===================== */}
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
-                  Welcome back
+                  Chào mừng trở lại
                 </h2>
                 <p className="font-sans text-muted text-[13px] mb-4">
-                  Log in to manage your professional ecosystem.
+                  Đăng nhập để quản lý không gian làm việc của bạn.
                 </p>
 
                 {/* Display lock warning when account is blocked */}
@@ -652,7 +651,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                         : "text-muted hover:text-primary"
                       }`}
                   >
-                    Employer
+                    Nhà tuyển dụng
                   </button>
                 </div>
 
@@ -692,7 +691,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     <div className="w-full border-t border-muted-light/60"></div>
                   </div>
                   <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
-                    OR CONTINUE WITH EMAIL
+                    HOẶC ĐĂNG NHẬP BẰNG EMAIL
                   </span>
                 </div>
 
@@ -700,7 +699,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-bold text-primary mb-1">
-                      Email Address
+                      Địa chỉ Email
                     </label>
                     <input
                       type="email"
@@ -716,7 +715,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[11px] font-bold text-primary">
-                        Password
+                        Mật khẩu
                       </label>
                       {/* Password toggle and Forgot Password link */}
                       <a
@@ -732,7 +731,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                         }}
                         className="text-secondary font-bold text-[11px] hover:underline"
                       >
-                        Forgot password?
+                        Quên mật khẩu?
                       </a>
                     </div>
                     <div className="relative">
@@ -772,14 +771,14 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     ) : success ? (
                       "Đăng nhập thành công!"
                     ) : (
-                      "Sign In to LancerPro"
+                      "Đăng nhập LancerPro"
                     )}
                   </button>
                 </form>
 
                 {/* Footer Link to register modal */}
                 <div className="mt-3.5 text-center text-[12px] text-muted font-medium">
-                  Don't have an account?{" "}
+                  Chưa có tài khoản?{" "}
                   <a
                     href="#register"
                     onClick={(e) => {
@@ -788,7 +787,7 @@ export default function Login({ onClose, onSwitchToRegister, onLoginSuccess }) {
                     }}
                     className="text-secondary font-bold hover:underline"
                   >
-                    Create a free profile
+                    Tạo hồ sơ miễn phí
                   </a>
                 </div>
               </>

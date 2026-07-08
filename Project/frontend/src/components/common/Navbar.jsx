@@ -660,10 +660,10 @@ export default function Navbar({
                 >
                   <Shield className="w-4 h-4" />{" "}
                   {user.role === "ADMIN"
-                    ? "Admin Control Panel"
+                    ? "Cổng Quản trị"
                     : user.role === "MANAGER"
-                      ? "Manager Control Panel"
-                      : "Staff Control Panel"}
+                      ? "Cổng Quản lý"
+                      : "Cổng Nhân viên"}
                 </button>
               )}
 

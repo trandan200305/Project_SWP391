@@ -259,11 +259,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
 
           <div className="relative z-10 my-2 max-w-sm">
             <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-[1.2]">
-              Join the world's finest digital workforce.
+              Gia nhập lực lượng lao động số hàng đầu thế giới.
             </h1>
             <p className="text-white/60 text-[12px] mt-2 font-medium">
-              Start building your professional profile, connecting with top-tier
-              partners, and securing projects.
+              Bắt đầu xây dựng hồ sơ chuyên nghiệp, kết nối với các đối tác hàng đầu và nhận dự án.
             </p>
           </div>
 
@@ -273,10 +272,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
               <CheckCircle className="w-5 h-5 text-secondary shrink-0" />
               <div>
                 <h4 className="font-bold text-white text-[12px]">
-                  Top International Projects
+                  Dự án Quốc tế Hàng đầu
                 </h4>
                 <p className="text-[10px] text-white/50">
-                  Gain access to clients looking for skilled talent worldwide.
+                  Tiếp cận với khách hàng tìm kiếm nhân tài trên toàn thế giới.
                 </p>
               </div>
             </div>
@@ -285,11 +284,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
               <CheckCircle className="w-5 h-5 text-secondary shrink-0" />
               <div>
                 <h4 className="font-bold text-white text-[12px]">
-                  Secure Escrow System
+                  Hệ thống Thanh toán An toàn
                 </h4>
                 <p className="text-[10px] text-white/50">
-                  Your funds are completely protected via smart milestone
-                  contracts.
+                  Tiền của bạn được bảo vệ hoàn toàn qua các hợp đồng theo giai đoạn.
                 </p>
               </div>
             </div>
@@ -309,7 +307,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                     850k+
                   </span>
                   <span className="text-[9px] text-white/40 uppercase font-semibold">
-                    Completed Projects
+                    Dự án Hoàn thành
                   </span>
                 </div>
               </div>
@@ -325,10 +323,10 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
               <>
                 {/* Form Headers */}
                 <h2 className="font-display text-xl font-extrabold text-primary mb-0.5">
-                  Create your free profile
+                  Tạo hồ sơ miễn phí
                 </h2>
                 <p className="font-sans text-muted text-[13px] mb-2.5">
-                  Start your professional ecosystem today.
+                  Bắt đầu không gian làm việc chuyên nghiệp của bạn ngay hôm nay.
                 </p>
 
                 {/* Error Message */}
@@ -359,7 +357,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                         : "text-muted hover:text-primary"
                       }`}
                   >
-                    Employer
+                    Nhà tuyển dụng
                   </button>
                 </div>
 
@@ -392,7 +390,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                     <div className="w-full border-t border-muted-light/60"></div>
                   </div>
                   <span className="relative z-10 bg-white px-3 text-[9px] font-extrabold uppercase text-muted tracking-wider">
-                    OR REGISTER WITH EMAIL
+                    HOẶC ĐĂNG KÝ BẰNG EMAIL
                   </span>
                 </div>
 
@@ -402,7 +400,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[11px] font-bold text-primary mb-1">
-                        Full Name
+                        Họ và Tên
                       </label>
                       <input
                         type="text"
@@ -418,7 +416,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                       <label
                         className={`block text-[11px] font-bold mb-1 ${errorField === "displayName" ? "text-rose-600" : "text-primary"}`}
                       >
-                        Display Name
+                        Tên hiển thị
                       </label>
                       <input
                         type="text"
@@ -448,7 +446,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                       <label
                         className={`block text-[11px] font-bold mb-1 ${errorField === "email" ? "text-rose-600" : "text-primary"}`}
                       >
-                        Email Address
+                        Địa chỉ Email
                       </label>
                       <input
                         type="email"
@@ -475,7 +473,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                       <label
                         className={`block text-[11px] font-bold mb-1 ${errorField === "phone" ? "text-rose-600" : "text-primary"}`}
                       >
-                        Phone Number
+                        Số điện thoại
                       </label>
                       <input
                         type="tel"
@@ -504,7 +502,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[11px] font-bold text-primary">
-                        Password
+                        Mật khẩu
                       </label>
                     </div>
                     <div className="relative">
@@ -544,19 +542,19 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                       htmlFor="agree"
                       className="text-[10px] text-muted font-semibold cursor-pointer select-none leading-normal"
                     >
-                      I agree to the{" "}
+                      Tôi đồng ý với{" "}
                       <a
                         href="#terms"
                         className="text-secondary hover:underline"
                       >
-                        Terms of Service
+                        Điều khoản Dịch vụ
                       </a>{" "}
                       &{" "}
                       <a
                         href="#privacy"
                         className="text-secondary hover:underline"
                       >
-                        Privacy Policy
+                        Chính sách Bảo mật
                       </a>
                       .
                     </label>
@@ -576,14 +574,14 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                     ) : success ? (
                       "Tạo tài khoản thành công!"
                     ) : (
-                      `Create free profile`
+                      `Tạo hồ sơ miễn phí`
                     )}
                   </button>
                 </form>
 
                 {/* Switch to Login */}
                 <div className="mt-2.5 text-center text-[12px] text-muted font-medium">
-                  Already have an account?{" "}
+                  Đã có tài khoản?{" "}
                   <a
                     href="#login"
                     onClick={(e) => {
@@ -592,7 +590,7 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                     }}
                     className="text-secondary font-bold hover:underline"
                   >
-                    Sign In
+                    Đăng nhập
                   </a>
                 </div>
               </>
@@ -700,13 +698,13 @@ export default function Register({ onClose, onSwitchToLogin, onLoginSuccess }) {
                 href="#privacy"
                 className="hover:text-primary transition-colors"
               >
-                Privacy
+                Bảo mật
               </a>
               <a href="#terms" className="hover:text-primary transition-colors">
-                Terms
+                Điều khoản
               </a>
               <a href="#help" className="hover:text-primary transition-colors">
-                Help
+                Trợ giúp
               </a>
             </div>
           </div>
