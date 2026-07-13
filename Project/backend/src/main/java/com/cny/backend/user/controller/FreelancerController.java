@@ -15,7 +15,6 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
-import com.cny.backend.user.service.*;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +32,10 @@ public class FreelancerController {
     private FreelancerRepository freelancerRepository;
 
     @Autowired
-    private FreelancerService freelancerService;
+    private com.cny.backend.user.service.FreelancerService freelancerService;
 
     @Autowired
-    private EmployerRepository employerRepository;
-
-    @Autowired
-    private com.cny.backend.notification.service.NotificationService notificationService;
+    private com.cny.backend.user.service.PortfolioService portfolioService;
 
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
@@ -59,89 +55,30 @@ public class FreelancerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FreelancerDto> getFreelancerById(@PathVariable Integer id) {
+    public ResponseEntity<FreelancerDto> getById(@PathVariable Integer id) {
         return freelancerRepository.findById(id)
-                .map(this::mapToDto)
-                .map(ResponseEntity::ok)
+                .map(f -> ResponseEntity.ok(mapToDto(f)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}/work-profile")
-    public ResponseEntity<WorkProfileDto> updateWorkProfile(@PathVariable("id") Integer id, @RequestBody WorkProfileDto dto) {
-        return ResponseEntity.ok(freelancerService.updateWorkProfile(id, dto));
-    }
-
-    @GetMapping("/{id}/portfolios")
-    public ResponseEntity<List<PortfolioDto>> getPortfolios(@PathVariable("id") Integer id) {
-        return ResponseEntity.ok(freelancerService.getPortfolios(id));
-    }
-
-    @PostMapping("/{id}/portfolios")
-    public ResponseEntity<PortfolioDto> addPortfolio(@PathVariable("id") Integer id, @RequestBody PortfolioDto dto) {
-        return ResponseEntity.ok(freelancerService.addPortfolio(id, dto));
-    }
-
-    @PutMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<PortfolioDto> updatePortfolio(@PathVariable("portfolioId") Integer portfolioId, @RequestBody PortfolioDto dto) {
-        return ResponseEntity.ok(freelancerService.updatePortfolio(portfolioId, dto));
-    }
-
-    @DeleteMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<Void> deletePortfolio(@PathVariable("portfolioId") Integer portfolioId) {
-        freelancerService.deletePortfolio(portfolioId);
-        return ResponseEntity.noContent().build();
-    }
-
     @PutMapping("/{id}/profile")
-    public ResponseEntity<?> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
-        return freelancerRepository.findById(id).map(f -> {
-            if (updated.getPhone() != null) {
-                String phone = updated.getPhone().trim();
-                if (!phone.isEmpty()) {
-                    if (!phone.matches("^(0[3|5|7|8|9])[0-9]{8}$")) {
-                        java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
-                        errResponse.put("success", false);
-                        errResponse.put("message", "Số điện thoại không hợp lệ (phải gồm 10 số bắt đầu bằng 03, 05, 07, 08 hoặc 09).");
-                        return ResponseEntity.badRequest().body(errResponse);
-                    }
-                    if (freelancerRepository.countByPhoneAndProfileIdNot(phone, id) > 0 ||
-                            employerRepository.countByPhone(phone) > 0) {
-                        java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
-                        errResponse.put("success", false);
-                        errResponse.put("message", "Số điện thoại này đã được sử dụng trên hệ thống. Vui lòng nhập số khác!");
-                        return ResponseEntity.badRequest().body(errResponse);
-                    }
-                    f.setPhone(phone);
-                } else {
-                    f.setPhone(null);
-                }
-            }
-            if(updated.getDisplayName() != null) f.setDisplayName(updated.getDisplayName());
-            if(updated.getFullName() != null) f.setFullName(updated.getFullName());
-            if(updated.getProfessionalTitle() != null) f.setProfessionalTitle(updated.getProfessionalTitle());
-            if(updated.getBio() != null) f.setBio(updated.getBio());
-            if(updated.getHourlyRate() != null) f.setHourlyRate(updated.getHourlyRate());
-            if(updated.getAddress() != null) f.setAddress(updated.getAddress());
-            if(updated.getCity() != null) f.setCity(updated.getCity());
-            if(updated.getCountry() != null) f.setCountry(updated.getCountry());
-            if(updated.getHideEmail() != null) f.setHideEmail(updated.getHideEmail());
-            if(updated.getHidePhone() != null) f.setHidePhone(updated.getHidePhone());
-            if(updated.getHideLocation() != null) f.setHideLocation(updated.getHideLocation());
-            if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
-            f.setUpdatedAt(java.time.LocalDateTime.now());
-            Freelancer saved = freelancerRepository.save(f);
-            return ResponseEntity.ok(mapToDto(saved));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<java.util.Map<String, Object>> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        boolean success = freelancerService.updateProfile(id, updated);
+        if (success) {
+            response.put("success", true);
+            response.put("message", "Cập nhật thông tin thành công.");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng hoặc Email/Số điện thoại đã bị trùng lặp!");
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id) {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        if (confirmationText == null || !confirmationText.equals("DELETE")) {
-            response.put("success", false);
-            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
-            return ResponseEntity.badRequest().body(response);
-        }
         return freelancerRepository.findById(id).map(f -> {
             f.setIsDeleted(true);
             f.setUpdatedAt(java.time.LocalDateTime.now());
@@ -168,17 +105,6 @@ public class FreelancerController {
             f.setUpdatedAt(java.time.LocalDateTime.now());
             
             freelancerRepository.save(f);
-            
-            // Notify STAFF
-            notificationService.createNotification(
-                0L, // Global for staff
-                "STAFF",
-                "Yêu cầu xác minh danh tính KYC mới",
-                "Freelancer " + (f.getFullName() != null ? f.getFullName() : f.getDisplayName()) + " vừa gửi yêu cầu xác minh danh tính.",
-                "INFO",
-                "KYC-FL-" + f.getProfileId()
-            );
-
             response.put("success", true);
             response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
             return ResponseEntity.ok(response);
@@ -226,5 +152,35 @@ public class FreelancerController {
                 .kycRejectedReason(f.getKycRejectedReason())
                 .isVerified(f.getIsVerified())
                 .build();
+    }
+
+    // ==========================================
+    // PORTFOLIO APIs
+    // ==========================================
+    @GetMapping("/{id}/portfolios")
+    public ResponseEntity<List<com.cny.backend.user.dto.PortfolioDto>> getPortfolios(@PathVariable Integer id) {
+        return ResponseEntity.ok(portfolioService.getFreelancerPortfolios(id));
+    }
+
+    @PostMapping("/{id}/portfolios")
+    public ResponseEntity<com.cny.backend.user.dto.PortfolioDto> addPortfolio(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.PortfolioDto dto) {
+        return ResponseEntity.ok(portfolioService.addPortfolio(id, dto));
+    }
+
+    @PutMapping("/{id}/portfolios/{portfolioId}")
+    public ResponseEntity<com.cny.backend.user.dto.PortfolioDto> updatePortfolio(
+            @PathVariable Integer id, 
+            @PathVariable Integer portfolioId, 
+            @RequestBody com.cny.backend.user.dto.PortfolioDto dto) {
+        return ResponseEntity.ok(portfolioService.updatePortfolio(id, portfolioId, dto));
+    }
+
+    @DeleteMapping("/{id}/portfolios/{portfolioId}")
+    public ResponseEntity<java.util.Map<String, Object>> deletePortfolio(@PathVariable Integer id, @PathVariable Integer portfolioId) {
+        portfolioService.deletePortfolio(id, portfolioId);
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.put("message", "Đã xóa Portfolio thành công.");
+        return ResponseEntity.ok(response);
     }
 }
