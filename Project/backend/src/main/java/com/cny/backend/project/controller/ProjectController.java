@@ -68,6 +68,15 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, minSalary, pageable));
     }
 
+    @GetMapping("/{projectId}")
+    public ResponseEntity<?> getProjectById(@PathVariable Integer projectId) {
+        try {
+            return ResponseEntity.ok(projectService.getProjectById(projectId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/employer/{employerId}")
     public ResponseEntity<List<Project>> getProjectsByEmployer(@PathVariable Integer employerId) {
         return ResponseEntity.ok(projectService.getProjectsByEmployer(employerId));

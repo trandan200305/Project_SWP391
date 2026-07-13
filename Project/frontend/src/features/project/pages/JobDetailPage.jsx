@@ -3,7 +3,11 @@ import { AlertTriangle, CheckCircle2, Bookmark, Send, Calendar, Clock, Landmark,
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function JobDetailPage({ job, onNavigate, user }) {
+export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
+  const [job, setJob] = useState(initialJob);
+  const [loadingJob, setLoadingJob] = useState(false);
+  const [jobError, setJobError] = useState('');
+
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
@@ -19,9 +23,32 @@ export default function JobDetailPage({ job, onNavigate, user }) {
   const [uploadingCv, setUploadingCv] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
 
+  // Fetch full details if initialJob is incomplete
+  useEffect(() => {
+    if (initialJob && (!initialJob.title || !initialJob.description)) {
+      setLoadingJob(true);
+      fetch(`http://localhost:8080/api/projects/${initialJob.id}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Không thể tải chi tiết công việc.');
+          return res.json();
+        })
+        .then((data) => {
+          setJob(data);
+          setJobError('');
+        })
+        .catch((err) => {
+          console.error(err);
+          setJobError(err.message || 'Lỗi khi tải chi tiết dự án.');
+        })
+        .finally(() => setLoadingJob(false));
+    } else {
+      setJob(initialJob);
+    }
+  }, [initialJob]);
+
   // Check if freelancer already applied
   useEffect(() => {
-    if (user && user.role === 'FREELANCER' && job) {
+    if (user && user.role === 'FREELANCER' && job && job.id) {
       fetch(`http://localhost:8080/api/proposals/project/${job.id}/check?freelancerId=${user.id}`)
         .then((res) => {
           if (!res.ok) throw new Error('Lỗi kiểm tra báo giá.');
@@ -37,10 +64,22 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }
   }, [user, job]);
 
-  if (!job) {
+  if (loadingJob) {
     return (
-      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex justify-center">
-        <p>Không tìm thấy công việc.</p>
+      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex flex-col items-center justify-center gap-2">
+        <Loader2 className="w-8 h-8 text-indigo-650 animate-spin" />
+        <p className="text-slate-550 text-xs">Đang tải chi tiết dự án...</p>
+      </div>
+    );
+  }
+
+  if (jobError || !job) {
+    return (
+      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex flex-col items-center justify-center gap-3">
+        <p className="text-red-500 text-sm font-medium">{jobError || 'Không tìm thấy công việc.'}</p>
+        <button onClick={() => onNavigate('find_jobs')} className="px-4 py-1.5 bg-indigo-50 text-indigo-650 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
+          Quay lại danh sách
+        </button>
       </div>
     );
   }
@@ -201,13 +240,13 @@ export default function JobDetailPage({ job, onNavigate, user }) {
         
         
         <div className="text-sm mb-6 flex items-center gap-2 text-slate-500">
-          <button onClick={() => onNavigate('find_jobs')} className="text-blue-500 hover:underline">
+          <button onClick={() => onNavigate('find_jobs')} className="text-indigo-600 hover:underline">
             Việc làm
           </button>
           <span>›</span>
           <button 
             onClick={() => onNavigate('find_jobs', { category: job.categoryId || 'all' })} 
-            className="text-blue-500 hover:underline"
+            className="text-indigo-600 hover:underline"
           >
             {job.categoryName || 'Thiết kế'}
           </button>
@@ -215,7 +254,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
-          
+          {/* Main Info */}
           <div className="lg:col-span-2">
             <div className="flex justify-between items-start gap-4 mb-6">
               <h1 className="text-3xl font-bold text-slate-800 leading-tight">
@@ -232,10 +271,10 @@ export default function JobDetailPage({ job, onNavigate, user }) {
 
             <div className={`bg-slate-50 border rounded-lg p-5 mb-8 transition-colors duration-300 ${isJobSaved(job.id) ? 'border-amber-500 bg-amber-50/20' : 'border-slate-100'}`}>
               <div className="text-slate-700 font-medium mb-1">
-                Mô tả công việc: <span className="text-blue-600 font-bold">{job.categoryName || 'Dựng motion video'}</span>
+                Mô tả công việc: <span className="text-indigo-600 font-bold">{job.categoryName || 'Dựng motion video'}</span>
               </div>
               <div className="text-sm text-slate-500">
-                Bạn có thể cung cấp dịch vụ này? <button onClick={handleShowComingSoon} className="text-blue-500 hover:underline">Thêm vào hồ sơ làm việc</button>.
+                Bạn có thể cung cấp dịch vụ này? <button onClick={handleShowComingSoon} className="text-indigo-650 hover:underline">Thêm vào hồ sơ làm việc</button>.
               </div>
             </div>
 
@@ -249,12 +288,12 @@ export default function JobDetailPage({ job, onNavigate, user }) {
             </button>
           </div>
 
-          
+          {/* Sidebar */}
           <div className="space-y-6">
 
             {/* Bidding Actions Card */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+              <div className="absolute top-0 left-0 w-2 h-full bg-[#4f46e5]"></div>
               <h3 className="font-bold text-lg text-slate-800 mb-4">Chào giá thầu</h3>
               
               {!user ? (
@@ -262,7 +301,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                   <p className="text-xs text-slate-500 leading-relaxed">Đăng nhập tài khoản Freelancer của bạn để nộp đề xuất báo giá thầu cho dự án này.</p>
                   <button 
                     onClick={() => onNavigate('login')}
-                    className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                    className="w-full bg-[#4f46e5] text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm"
                   >
                     Đăng nhập để ứng tuyển
                   </button>
@@ -306,7 +345,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                         setApplyForm({ bidAmount: job.budgetFixed || '', estimatedDays: '', coverLetter: '' });
                         setShowApplyModal(true);
                       }}
-                      className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-2"
+                      className="w-full bg-[#4f46e5] text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-2"
                     >
                       <Send className="w-4 h-4" />
                       Nộp hồ sơ ứng tuyển

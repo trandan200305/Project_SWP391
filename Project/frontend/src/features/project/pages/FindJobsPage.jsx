@@ -192,38 +192,38 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
   const { buttons: pageButtons, startPage, endPage } = getPaginationButtons();
 
   return (
-    <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
+    <div className="pt-24 pb-12 bg-slate-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        
-        <div className="md:col-span-1 bg-white border border-slate-200 rounded-xl p-4 shadow-sm h-fit">
-          <h2 className="font-bold text-lg text-slate-800 mb-4 px-2">Lĩnh vực</h2>
+        {/* Left Column - Categories */}
+        <div className="md:col-span-1 bg-white border border-slate-200/85 rounded-xl p-4 shadow-sm h-fit">
+          <h2 className="font-bold text-base text-slate-800 mb-4 px-2 tracking-wide uppercase text-[12px] text-slate-400">Lĩnh vực</h2>
           <ul className="space-y-1">
             {categories.map(cat => (
               <li key={cat.id}>
                 <button
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     activeCategory === cat.id 
-                      ? 'bg-blue-50 text-blue-700 font-semibold' 
+                      ? 'bg-indigo-50 text-indigo-650 font-bold' 
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  {cat.name} {cat.count != null && <span className="text-slate-400">({cat.count})</span>}
+                  {cat.name} {cat.count != null && <span className="text-slate-400 text-xs">({cat.count})</span>}
                 </button>
               </li>
             ))}
           </ul>
         </div>
 
-        
+        {/* Right Column - Search & Jobs */}
         <div className="md:col-span-3 flex flex-col gap-6">
           
-          
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+          {/* Search bar */}
+          <div className="bg-white border border-slate-200/85 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
             <div className="flex flex-col md:flex-row items-center gap-3 w-full">
               <div className="flex-1 relative w-full">
-                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-slate-400" />
                 </div>
                 <input 
@@ -231,32 +231,32 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                   placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)" 
                   value={keyword}
                   onChange={handleKeywordChange}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
               
               <button 
                 onClick={handleExecuteSearch}
-                className="w-full md:w-auto px-6 py-2.5 bg-[#1e40af] text-white font-semibold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+                className="w-full md:w-auto px-6 py-2.5 bg-[#4f46e5] text-white font-semibold rounded-full shadow-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 Tìm kiếm
               </button>
             </div>
             
-            
+            {/* Filter Salary */}
             <div className="flex justify-end items-center gap-2 w-full">
-              <span className="text-sm text-slate-600 font-medium">Mức lương:</span>
+              <span className="text-xs text-slate-600 font-medium">Mức lương:</span>
               <div className="relative w-48">
                 <input 
                   type="text" 
                   placeholder="Tối thiểu..." 
                   value={minSalary}
                   onChange={handleMinSalaryChange}
-                  className="w-full pl-3 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-3 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
                 <button 
                   onClick={handleExecuteSearch}
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-[#1e40af] hover:bg-slate-100 rounded-r-lg transition-colors"
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-[#4f46e5] hover:bg-slate-100 rounded-r-full transition-colors"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -264,48 +264,51 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
             </div>
           </div>
 
-          
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100">
+          {/* Job List */}
+          <div className="bg-white border border-slate-200/85 rounded-2xl shadow-sm divide-y divide-slate-100 overflow-hidden">
             {isLoading ? (
               <div className="p-8 text-center text-slate-500">Đang tải dữ liệu...</div>
             ) : jobs.length === 0 ? (
               <div className="p-8 text-center text-slate-500">Không tìm thấy công việc nào.</div>
             ) : (
               jobs.map(job => (
-                <div key={job.id} className="p-5 hover:bg-slate-50/50 transition-all duration-300 group border-2 border-transparent">
-                  <div className="flex justify-between items-start gap-4 mb-3">
+                <div key={job.id} className="p-5 hover:bg-slate-50/40 transition-all duration-300 group border-b border-slate-100 last:border-0">
+                  <div className="flex justify-between items-start gap-4 mb-2">
                     <div className="flex-1">
+                      
+                      {/* Budget and ID on top */}
+                      <div className="flex items-center gap-2 text-xs text-slate-450 font-bold uppercase tracking-wider mb-1.5">
+                        <span className="text-slate-400">Mã dự án: #{job.id}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-emerald-600 font-extrabold">{formatBudget(job.budgetMin, job.budgetMax)}</span>
+                      </div>
+
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }} className="text-[#1e40af] hover:underline font-bold text-lg leading-tight">
+                        <a 
+                          href="#" 
+                          onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }} 
+                          className="text-slate-900 hover:text-[#4f46e5] hover:underline font-bold text-[17px] leading-tight transition-colors"
+                        >
                           {job.title}
                         </a>
                         {job.isNew && (
-                          <button onClick={handleAction} className="bg-[#ea580c] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm leading-none whitespace-nowrap uppercase tracking-wide">
+                          <span className="bg-[#ea580c] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm leading-none whitespace-nowrap uppercase tracking-wider">
                             Mới
-                          </button>
+                          </span>
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-500 mb-3 flex-wrap">
                         <button onClick={handleAction} className="flex items-center gap-1.5 hover:text-slate-700 transition-colors">
                           <img src={job.employerAvatar} alt={job.employerName} className="w-5 h-5 rounded-full" />
-                          <span className="font-medium text-slate-600">{job.employerName}</span>
+                          <span className="font-medium text-slate-600 text-xs">{job.employerName}</span>
                         </button>
-                      </div>
-
-                      <div className="bg-slate-100 rounded-md p-2.5 flex flex-wrap items-center justify-between gap-4 text-sm mb-3">
-                        <div className="text-slate-600">
-                          <span className="text-slate-400 mr-1">ID:</span>{job.id} <span className="mx-2 text-slate-300">|</span> 
-                          <span className="font-semibold text-slate-700">{formatBudget(job.budgetMin, job.budgetMax)}</span>
-                        </div>
-                        <div className="text-slate-600 text-sm">
-                          Hạn nhận hồ sơ: <span className="font-medium text-slate-800">{formatDeadline(job.deadline)}</span>
-                        </div>
+                        <span className="text-slate-350">•</span>
+                        <span className="text-xs text-slate-400">Hạn nộp: {formatDeadline(job.deadline)}</span>
                       </div>
                       
-                      <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                      <p className="text-sm text-slate-600 leading-relaxed mb-1">
                         {job.description?.length > 150 ? job.description.substring(0, 150) + '.........' : job.description}
-                        <button onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }} className="text-blue-600 hover:underline ml-1">Xem thêm</button>
                       </p>
                     </div>
                     
@@ -314,51 +317,56 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                       className={`p-1.5 rounded-lg transition-colors shadow-sm ${isJobSaved(job.id) ? 'bg-yellow-400 text-white hover:bg-yellow-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
                       title={isJobSaved(job.id) ? 'Bỏ lưu' : 'Lưu công việc'}
                     >
-                      <Bookmark className={`w-5 h-5 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
+                      <Bookmark className={`w-4 h-4 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
                     </button>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-50 border-dashed">
-                    <div>
-                      <button onClick={handleAction} className="bg-[#1e40af] text-white text-xs font-semibold px-2.5 py-1 rounded shadow-sm hover:bg-blue-900 transition-colors uppercase">
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 border-dashed">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-indigo-50 text-indigo-650 text-xs font-semibold px-2 py-0.5 rounded-md">
                         {job.categoryName}
-                      </button>
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {job.applications || 0} người đã ứng tuyển
+                      </span>
                     </div>
-                    <div className="text-sm font-medium text-slate-600">
-                      <>{job.applications} người đã ứng tuyển</>
-                    </div>
+                    
+                    <button 
+                      onClick={(e) => { e.preventDefault(); onNavigate('job_details', { job }); }}
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-850 flex items-center gap-1 transition-colors"
+                    >
+                      Xem chi tiết &rarr;
+                    </button>
                   </div>
                 </div>
               ))
             )}
           </div>
           
-          
+          {/* Pagination */}
           {!isLoading && totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4 mb-8">
               
-              <div className="px-4 py-2 mr-2 rounded-xl text-sm font-semibold bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 shadow-sm flex items-center justify-center">
+              <div className="px-4 py-2 mr-2 rounded-xl text-xs font-semibold bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 shadow-sm flex items-center justify-center">
                 Trang {page + 1} của {totalPages}
               </div>
-              
               
               {startPage > 0 && (
                 <button 
                   onClick={() => handlePageChange(0)}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Đầu
                 </button>
               )}
               
-              
               {pageButtons.map((btnIndex) => (
                 <button
                   key={btnIndex}
                   onClick={() => handlePageChange(btnIndex)}
-                  className={`min-w-[40px] h-10 px-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
+                  className={`min-w-[36px] h-9 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
                     page === btnIndex 
-                      ? 'bg-[#1e40af] text-white border-transparent hover:-translate-y-0.5 shadow-blue-500/30' 
+                      ? 'bg-[#4f46e5] text-white border-transparent hover:-translate-y-0.5 shadow-indigo-500/30' 
                       : 'bg-white/70 border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
@@ -366,11 +374,10 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                 </button>
               ))}
 
-              
               {endPage < totalPages - 1 && (
                 <button 
                   onClick={() => handlePageChange(totalPages - 1)}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold transition-all bg-white/70 backdrop-blur-md border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5 shadow-sm flex items-center justify-center"
                 >
                   Trang Cuối
                 </button>

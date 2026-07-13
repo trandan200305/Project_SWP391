@@ -102,16 +102,16 @@ export default function YourJobsPage({ onNavigate, user }) {
   });
 
   return (
-    <div className="pt-24 pb-12 bg-slate-50 min-h-screen">
+    <div className="pt-24 pb-12 bg-slate-50/50 min-h-screen">
       <div className="max-w-6xl mx-auto px-6">
         
-        
-        <div className="flex border-b border-slate-200 mb-6">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200/80 mb-6">
           <button
             onClick={() => handleTabClick('saved')}
             className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors ${
               activeTab === 'saved'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-indigo-600 text-indigo-650'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
@@ -121,7 +121,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             onClick={() => handleTabClick('received')}
             className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors ${
               activeTab === 'received'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-indigo-600 text-indigo-650'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
@@ -131,7 +131,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             onClick={() => handleTabClick('completed')}
             className={`py-4 px-6 text-sm font-bold border-b-2 transition-colors ${
               activeTab === 'completed'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-indigo-600 text-indigo-650'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
@@ -139,11 +139,11 @@ export default function YourJobsPage({ onNavigate, user }) {
           </button>
         </div>
 
-        
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        {/* List Card Container */}
+        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
           
-          
-          <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-sm font-bold text-slate-700 hidden md:grid">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50/70 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:grid">
             <div className="col-span-5">Tên công việc / Hợp đồng</div>
             <div className="col-span-2 text-center">
               {activeTab === 'saved' ? 'Tổng hồ sơ' : 'Ngân sách'}
@@ -152,32 +152,33 @@ export default function YourJobsPage({ onNavigate, user }) {
               {activeTab === 'saved' ? 'Hạn nhận hồ sơ' : 'Ngày bắt đầu'}
             </div>
             <div className="col-span-2 text-center">Trạng thái</div>
-            <div className="col-span-1 text-center"></div>
+            <div className="col-span-1 text-center">Hành động</div>
           </div>
 
-          
+          {/* Table Content */}
           <div className="divide-y divide-slate-100">
+            
             {/* SAVED JOBS TAB */}
             {activeTab === 'saved' && savedJobs.length === 0 && (
               <div className="p-10 text-center text-slate-500 flex flex-col items-center">
                 <Bookmark className="w-12 h-12 text-slate-300 mb-3" />
-                <p>Bạn chưa lưu công việc nào.</p>
+                <p className="text-sm">Bạn chưa lưu công việc nào.</p>
               </div>
             )}
             
             {activeTab === 'saved' && savedJobs.length > 0 && (
               savedJobs.map((job) => (
-                <div key={job.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/50 transition-colors relative group">
+                <div key={job.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/30 transition-colors relative group">
                   <div className="md:col-span-5">
                     <a 
                       href="#" 
                       onClick={(e) => handleJobClick(e, job)}
-                      className="text-[#1e40af] hover:underline font-bold text-base leading-tight mb-1 block"
+                      className="text-slate-900 hover:text-indigo-600 hover:underline font-bold text-base leading-tight mb-1 block"
                     >
                       {job.title}
                     </a>
-                    <div className="text-xs text-slate-500">
-                      Khách hàng: <span className="font-semibold text-slate-600">{job.employerName}</span>
+                    <div className="text-xs text-slate-450">
+                      Khách hàng: <span className="font-semibold text-slate-500">{job.employerName}</span>
                     </div>
                   </div>
 
@@ -193,7 +194,7 @@ export default function YourJobsPage({ onNavigate, user }) {
 
                   <div className="md:col-span-2 flex justify-center items-center text-sm text-slate-600">
                     <span className="md:hidden font-medium mr-2">Trạng thái:</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-650">
                       Đang tuyển
                     </span>
                   </div>
@@ -201,10 +202,10 @@ export default function YourJobsPage({ onNavigate, user }) {
                   <div className="md:col-span-1 flex justify-center items-center">
                     <button 
                       onClick={() => handleUnsave(job.id)}
-                      className="text-amber-500 hover:text-slate-400 p-1 transition-colors"
-                      title="Bỏ lưu"
+                      className="text-[11px] font-bold text-slate-400 hover:text-red-650 transition-colors py-1 px-2 hover:bg-red-50 rounded-md"
+                      title="Bỏ lưu công việc này"
                     >
-                      <Bookmark className="w-5 h-5 fill-current" />
+                      Bỏ lưu
                     </button>
                   </div>
                 </div>
@@ -214,7 +215,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             {/* CONTRACTS TABS (RECEIVED & COMPLETED) */}
             {(activeTab === 'received' || activeTab === 'completed') && loadingContracts && (
               <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                 <p className="text-sm font-medium">Đang tải danh sách hợp đồng...</p>
               </div>
             )}
@@ -229,7 +230,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             {(activeTab === 'received' || activeTab === 'completed') && !loadingContracts && !errorContracts && filteredContracts.length === 0 && (
               <div className="p-10 text-center text-slate-500 flex flex-col items-center">
                 <Briefcase className="w-12 h-12 text-slate-300 mb-3" />
-                <p>Không tìm thấy hợp đồng nào ở trạng thái này.</p>
+                <p className="text-sm">Không tìm thấy hợp đồng nào ở trạng thái này.</p>
               </div>
             )}
 
@@ -237,18 +238,18 @@ export default function YourJobsPage({ onNavigate, user }) {
               filteredContracts.map((contract) => (
                 <div 
                   key={contract.contractId} 
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/50 transition-colors relative group"
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 items-center hover:bg-slate-50/30 transition-colors relative group"
                 >
                   <div className="md:col-span-5">
                     <a 
                       href="#" 
                       onClick={(e) => handleContractClick(e, contract.contractId)}
-                      className="text-[#1e40af] hover:underline font-bold text-base leading-tight mb-1 block"
+                      className="text-slate-900 hover:text-indigo-600 hover:underline font-bold text-base leading-tight mb-1 block"
                     >
                       {contract.title}
                     </a>
-                    <div className="text-xs text-slate-500">
-                      Khách hàng: <span className="font-semibold text-slate-600">{contract.clientName}</span>
+                    <div className="text-xs text-slate-450">
+                      Khách hàng: <span className="font-semibold text-slate-500">{contract.clientName}</span>
                     </div>
                   </div>
 
@@ -264,7 +265,7 @@ export default function YourJobsPage({ onNavigate, user }) {
 
                   <div className="md:col-span-2 flex justify-center items-center">
                     <span className="md:hidden font-medium mr-2">Trạng thái:</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getContractStatusClass(contract.status)}`}>
+                    <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${getContractStatusClass(contract.status)}`}>
                       {getContractStatusText(contract.status)}
                     </span>
                   </div>
@@ -272,7 +273,7 @@ export default function YourJobsPage({ onNavigate, user }) {
                   <div className="md:col-span-1 flex justify-center items-center">
                     <button 
                       onClick={(e) => handleContractClick(e, contract.contractId)}
-                      className="text-slate-400 hover:text-blue-600 p-1.5 transition-all rounded-lg hover:bg-slate-100"
+                      className="text-slate-450 hover:text-indigo-650 p-1.5 transition-all rounded-lg hover:bg-slate-100"
                       title="Xem chi tiết"
                     >
                       <ArrowRight className="w-5 h-5" />
@@ -284,7 +285,6 @@ export default function YourJobsPage({ onNavigate, user }) {
           </div>
         </div>
       </div>
-      
       
       {toastMessage && (
         <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">

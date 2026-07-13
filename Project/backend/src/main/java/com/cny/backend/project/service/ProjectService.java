@@ -260,6 +260,12 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
+    public ProjectDto getProjectById(Integer projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+        return mapToDto(project);
+    }
+
     public ProjectDto createProject(Project project) {
         Project saved = projectRepository.save(project);
         return mapToDto(saved);
