@@ -37,6 +37,8 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     List<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword);
     @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
            "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "AND (:workForm IS NULL OR p.workForm = :workForm) " +
+           "AND (:projectType IS NULL OR p.projectType = :projectType) " +
            "AND (:minSalary IS NULL OR " +
            "    (p.budgetMax IS NOT NULL AND p.budgetMax >= :minSalary) OR " +
            "    (p.budgetFixed IS NOT NULL AND p.budgetFixed >= :minSalary) OR " +
@@ -48,7 +50,14 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
            "OR LOWER(p.client.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Project> searchProjectsByKeywordAndCategory(@Param("status") String status, @Param("keyword") String keyword, @Param("categoryId") Integer categoryId, @Param("minSalary") java.math.BigDecimal minSalary, Pageable pageable);
+    Page<Project> searchProjectsByKeywordAndCategory(
+            @Param("status") String status, 
+            @Param("keyword") String keyword, 
+            @Param("categoryId") Integer categoryId, 
+            @Param("workForm") String workForm, 
+            @Param("projectType") String projectType, 
+            @Param("minSalary") java.math.BigDecimal minSalary, 
+            Pageable pageable);
     
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
     

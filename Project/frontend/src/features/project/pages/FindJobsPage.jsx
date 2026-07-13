@@ -12,6 +12,8 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
   const [jobs, setJobs] = useState([]);
   const [keyword, setKeyword] = useState(initialKeyword || '');
   const [minSalary, setMinSalary] = useState('');
+  const [workForm, setWorkForm] = useState(''); // '' (Tất cả), 'ONLINE', 'OFFLINE'
+  const [projectType, setProjectType] = useState(''); // '' (Tất cả), 'FIXED', 'HOURLY'
   const [isLoading, setIsLoading] = useState(true);
   const [errorToast, setErrorToast] = useState(null);
   
@@ -53,11 +55,11 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
         return;
       }
       setErrorToast(null);
-      fetchJobs(keyword, activeCategory, minSalary, page, size);
+      fetchJobs(keyword, activeCategory, minSalary, workForm, projectType, page, size);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [keyword, activeCategory, minSalary, page, size]);
+  }, [keyword, activeCategory, minSalary, workForm, projectType, page, size]);
 
   const fetchCategories = async () => {
     try {
@@ -71,13 +73,15 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     }
   };
 
-  const fetchJobs = async (searchQuery, categoryFilter, minSalaryFilter, currentPage, currentSize) => {
+  const fetchJobs = async (searchQuery, categoryFilter, minSalaryFilter, workFormFilter, projectTypeFilter, currentPage, currentSize) => {
     setIsLoading(true);
     try {
       let url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
       if (searchQuery) url += `&keyword=${encodeURIComponent(searchQuery)}`;
       if (categoryFilter && categoryFilter !== 'all') url += `&categoryId=${categoryFilter}`;
       if (minSalaryFilter) url += `&minSalary=${minSalaryFilter}`;
+      if (workFormFilter) url += `&workForm=${workFormFilter}`;
+      if (projectTypeFilter) url += `&projectType=${projectTypeFilter}`;
 
       const res = await fetch(url);
       if (res.ok) {
@@ -140,7 +144,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     setErrorToast(null);
     setPage(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    fetchJobs(keyword, activeCategory, minSalary, 0, size);
+    fetchJobs(keyword, activeCategory, minSalary, workForm, projectType, 0, size);
   };
 
   const handleCategoryChange = (catId) => {
@@ -195,10 +199,10 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     <div className="pt-24 pb-12 bg-slate-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        {/* Left Column - Categories */}
+        {/* Left Column - Categories & Filters */}
         <div className="md:col-span-1 bg-white border border-slate-200/85 rounded-xl p-4 shadow-sm h-fit">
-          <h2 className="font-bold text-base text-slate-800 mb-4 px-2 tracking-wide uppercase text-[12px] text-slate-400">Lĩnh vực</h2>
-          <ul className="space-y-1">
+          <h2 className="font-bold text-base text-slate-800 mb-4 px-2 tracking-wide uppercase text-[12px] text-slate-405">Lĩnh vực</h2>
+          <ul className="space-y-1 mb-4">
             {categories.map(cat => (
               <li key={cat.id}>
                 <button
@@ -214,6 +218,56 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
               </li>
             ))}
           </ul>
+
+          {/* Divider */}
+          <div className="border-t border-slate-100 my-4"></div>
+
+          {/* Work Form Filter */}
+          <h2 className="font-bold text-base text-slate-800 mb-3 px-2 tracking-wide uppercase text-[12px] text-slate-400">Hình thức</h2>
+          <div className="space-y-2 px-2 mb-4">
+            {[
+              { id: '', label: 'Tất cả' },
+              { id: 'ONLINE', label: 'Làm Online' },
+              { id: 'OFFLINE', label: 'Làm Offline' }
+            ].map(wf => (
+              <label key={wf.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="workForm" 
+                  value={wf.id} 
+                  checked={workForm === wf.id}
+                  onChange={(e) => { setWorkForm(e.target.value); setPage(0); }}
+                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                />
+                <span className={workForm === wf.id ? "font-semibold text-slate-800" : "text-slate-600"}>{wf.label}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-slate-100 my-4"></div>
+
+          {/* Project Type Filter */}
+          <h2 className="font-bold text-base text-slate-800 mb-3 px-2 tracking-wide uppercase text-[12px] text-slate-400">Loại dự án</h2>
+          <div className="space-y-2 px-2">
+            {[
+              { id: '', label: 'Tất cả' },
+              { id: 'FIXED', label: 'Ngân sách cố định' },
+              { id: 'HOURLY', label: 'Tính theo giờ' }
+            ].map(pt => (
+              <label key={pt.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="projectType" 
+                  value={pt.id} 
+                  checked={projectType === pt.id}
+                  onChange={(e) => { setProjectType(e.target.value); setPage(0); }}
+                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                />
+                <span className={projectType === pt.id ? "font-semibold text-slate-800" : "text-slate-600"}>{pt.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Right Column - Search & Jobs */}

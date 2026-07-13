@@ -254,9 +254,11 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, java.math.BigDecimal minSalary, Pageable pageable) {
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, String workForm, String projectType, java.math.BigDecimal minSalary, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.trim();
-        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, minSalary, pageable);
+        String wf = (workForm == null || workForm.trim().isEmpty()) ? null : workForm.trim();
+        String pt = (projectType == null || projectType.trim().isEmpty()) ? null : projectType.trim();
+        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, wf, pt, minSalary, pageable);
         return projects.map(this::mapToDto);
     }
 
