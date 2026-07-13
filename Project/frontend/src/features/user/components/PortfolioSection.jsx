@@ -8,11 +8,12 @@ export default function PortfolioSection({ targetId, isOwner }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState(null);
   
-  // Form state
+  // Form state (tương thích với backend API gốc)
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [projectUrl, setProjectUrl] = useState('');
-  const [files, setFiles] = useState([]); // [{fileUrl, fileName, fileSize, fileType}]
+  const [productLink, setProductLink] = useState('');
+  const [relatedService, setRelatedService] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -35,14 +36,16 @@ export default function PortfolioSection({ targetId, isOwner }) {
       setEditingPortfolio(portfolio);
       setTitle(portfolio.title);
       setDescription(portfolio.description || '');
-      setProjectUrl(portfolio.projectUrl || '');
-      setFiles(portfolio.files || []);
+      setProductLink(portfolio.productLink || '');
+      setRelatedService(portfolio.relatedService || '');
+      setAttachmentUrl(portfolio.attachmentUrl || '');
     } else {
       setEditingPortfolio(null);
       setTitle('');
       setDescription('');
-      setProjectUrl('');
-      setFiles([]);
+      setProductLink('');
+      setRelatedService('');
+      setAttachmentUrl('');
     }
     setIsModalOpen(true);
   };
@@ -67,12 +70,7 @@ export default function PortfolioSection({ targetId, isOwner }) {
       });
       const data = await res.json();
       if (data.success) {
-        setFiles(prev => [...prev, {
-          fileUrl: data.fileUrl,
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
-        }]);
+        setAttachmentUrl(data.fileUrl);
       } else {
         alert("Lỗi upload ảnh!");
       }
@@ -83,8 +81,8 @@ export default function PortfolioSection({ targetId, isOwner }) {
     }
   };
 
-  const handleRemoveFile = (indexToRemove) => {
-    setFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  const handleRemoveFile = () => {
+    setAttachmentUrl('');
   };
 
   const handleSave = () => {
@@ -96,12 +94,13 @@ export default function PortfolioSection({ targetId, isOwner }) {
     const payload = {
       title,
       description,
-      projectUrl,
-      files
+      productLink,
+      relatedService,
+      attachmentUrl
     };
 
     const url = editingPortfolio 
-      ? `http://localhost:8080/api/freelancers/${targetId}/portfolios/${editingPortfolio.portfolioId}`
+      ? `http://localhost:8080/api/freelancers/portfolios/${editingPortfolio.portfolioId}`
       : `http://localhost:8080/api/freelancers/${targetId}/portfolios`;
     
     const method = editingPortfolio ? 'PUT' : 'POST';
@@ -125,12 +124,11 @@ export default function PortfolioSection({ targetId, isOwner }) {
   const handleDelete = (portfolioId) => {
     if (!window.confirm("Bạn có chắc muốn xóa dự án này?")) return;
 
-    fetch(`http://localhost:8080/api/freelancers/${targetId}/portfolios/${portfolioId}`, {
+    fetch(`http://localhost:8080/api/freelancers/portfolios/${portfolioId}`, {
       method: 'DELETE'
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
+      .then(res => {
+        if (res.ok || res.status === 204) {
           fetchPortfolios();
         } else {
           alert("Lỗi xóa portfolio!");
@@ -171,8 +169,8 @@ export default function PortfolioSection({ targetId, isOwner }) {
             <div key={p.portfolioId} className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
               {/* Thumbnail Area */}
               <div className="h-48 bg-gray-100 relative overflow-hidden flex items-center justify-center">
-                {p.files && p.files.length > 0 ? (
-                  <img src={p.files[0].fileUrl} alt={p.title} className="w-full h-full object-cover" />
+                {p.attachmentUrl ? (
+                  <img src={p.attachmentUrl} alt={p.title} className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon className="w-10 h-10 text-gray-300" />
                 )}
@@ -191,11 +189,16 @@ export default function PortfolioSection({ targetId, isOwner }) {
               
               {/* Content Area */}
               <div className="p-4">
+                {p.relatedService && (
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider mb-2 inline-block">
+                    {p.relatedService}
+                  </span>
+                )}
                 <h4 className="font-bold text-gray-900 line-clamp-1 mb-1">{p.title}</h4>
                 <p className="text-sm text-gray-500 line-clamp-2 mb-3">{p.description || 'Không có mô tả'}</p>
-                {p.projectUrl && (
-                  <a href={p.projectUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800">
-                    <ExternalLink className="w-3 h-3" /> Xem dự án
+                {p.productLink && (
+                  <a href={p.productLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800">
+                    <ExternalLink className="w-3 h-3" /> Xem sản phẩm/dự án
                   </a>
                 )}
               </div>
@@ -218,41 +221,42 @@ export default function PortfolioSection({ targetId, isOwner }) {
             <div className="p-6 overflow-y-auto flex-1 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tên dự án *</label>
-                <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="VD: Ứng dụng quản lý nhân sự..." value={title} onChange={e => setTitle(e.target.value)} />
+                <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="VD: Thiết kế logo cho thương hiệu thời trang..." value={title} onChange={e => setTitle(e.target.value)} />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dịch vụ liên quan</label>
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="VD: Thiết kế Logo, Phát triển Web..." value={relatedService} onChange={e => setRelatedService(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Link sản phẩm / Website</label>
+                  <input type="url" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://..." value={productLink} onChange={e => setProductLink(e.target.value)} />
+                </div>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả dự án</label>
-                <textarea rows={4} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Mô tả các tính năng chính, công nghệ sử dụng..." value={description} onChange={e => setDescription(e.target.value)} />
+                <textarea rows={4} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Mô tả công việc thực hiện, công nghệ sử dụng..." value={description} onChange={e => setDescription(e.target.value)} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Đường dẫn thực tế (Link)</label>
-                <input type="url" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://..." value={projectUrl} onChange={e => setProjectUrl(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Hình ảnh dự án (Tối đa 5 ảnh)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Hình ảnh dự án / File đính kèm</label>
                 
-                {/* Lưới hiển thị ảnh đã up */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
-                  {files.map((file, idx) => (
-                    <div key={idx} className="relative rounded-lg overflow-hidden border border-gray-200 aspect-video group">
-                      <img src={file.fileUrl} alt="portfolio file" className="w-full h-full object-cover" />
-                      <button onClick={() => handleRemoveFile(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {files.length < 5 && (
-                    <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-video flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-                      <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                      <span className="text-xs text-gray-500 font-medium">{isUploading ? 'Đang tải...' : 'Thêm ảnh'}</span>
-                      <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={handleFileUpload} />
-                    </label>
-                  )}
-                </div>
+                {attachmentUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200 w-full max-w-sm aspect-video group">
+                    <img src={attachmentUrl} alt="portfolio attachment" className="w-full h-full object-cover" />
+                    <button onClick={handleRemoveFile} className="absolute top-2 right-2 bg-red-500 text-white rounded p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-gray-300 rounded-lg w-full max-w-sm aspect-video flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    <Plus className="w-8 h-8 text-gray-400 mb-1" />
+                    <span className="text-sm text-gray-500 font-medium">{isUploading ? 'Đang tải lên...' : 'Tải lên hình ảnh dự án'}</span>
+                    <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={handleFileUpload} />
+                  </label>
+                )}
               </div>
             </div>
 

@@ -5,18 +5,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class PortfolioDto {
     private Integer portfolioId;
     private Integer freelancerId;
     private String title;
+    private String attachmentUrl;
     private String description;
-    private String projectUrl;
-    private List<PortfolioFileDto> files;
+    private String relatedService;
+    private String productLink;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
