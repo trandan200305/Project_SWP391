@@ -2788,6 +2788,7 @@ public class AdminService {
         }
         writeAuditLog(adminId, "UPDATE_PACKAGE_CONFIG", "FINANCE", "Cập nhật cấu hình và giá các gói dịch vụ tin đăng");
         return servicePackageConfigRepository.findAll();
+    }
 
     public List<Object> getBugReports() {
         return bugReportRepository.findAll().stream().map(b -> {

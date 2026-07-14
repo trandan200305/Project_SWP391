@@ -37,8 +37,10 @@ public class FinanceStaffController {
     }
 
     @GetMapping("/vnpay-transactions")
-    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions() {
-        return ResponseEntity.ok(adminService.getVnpayTransactions());
+    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        return ResponseEntity.ok(adminService.getVnpayTransactions(page, size).getContent());
     }
 
     @PostMapping("/vnpay-transactions/{id}/reconcile")

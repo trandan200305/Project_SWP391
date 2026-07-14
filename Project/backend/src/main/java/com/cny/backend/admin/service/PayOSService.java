@@ -222,7 +222,7 @@ public class PayOSService {
                     });
                 }
                 
-                dashboardRepository.logAudit(1, "PAYOS_WEBHOOK", "FINANCE", "Hệ thống tự động duyệt thanh toán PayOS cho dự án ID: " + txn.getProjectId() + ", Mã đơn: " + txn.getTxnRef());
+                dashboardRepository.logAudit(1, "system", "PAYOS_WEBHOOK", "FINANCE", "Hệ thống tự động duyệt thanh toán PayOS cho dự án ID: " + txn.getProjectId() + ", Mã đơn: " + txn.getTxnRef());
             }
         }
         return true;
@@ -262,7 +262,7 @@ public class PayOSService {
                 }
             }
         }
-        dashboardRepository.logAudit(adminId, "QUERY_PAYOS_TRANSACTION", "FINANCE", "Truy vấn giao dịch PayOS " + txnRef + " - Trạng thái: " + payosStatus);
+        dashboardRepository.logAudit(adminId, "admin", "QUERY_PAYOS_TRANSACTION", "FINANCE", "Truy vấn giao dịch PayOS " + txnRef + " - Trạng thái: " + payosStatus);
         return payosStatus;
     }
 
@@ -287,7 +287,7 @@ public class PayOSService {
             System.err.println("Lỗi khi gọi API hủy link PayOS: " + e.getMessage());
         }
 
-        dashboardRepository.logAudit(adminId, "CANCEL_PAYOS_TRANSACTION", "FINANCE", "Hủy giao dịch PayOS " + txnRef);
+        dashboardRepository.logAudit(adminId, "admin", "CANCEL_PAYOS_TRANSACTION", "FINANCE", "Hủy giao dịch PayOS " + txnRef);
     }
 
     public PaymentTransaction getTransactionByRef(String txnRef) {
