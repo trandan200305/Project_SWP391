@@ -87,19 +87,16 @@ public class PaymentController {
                 return employerRepository.save(dummyEmp);
             });
 
-            double price = 100000.0;
+            double price = 0.0;
             if (project != null && project.getServiceFee() != null) {
                 price = project.getServiceFee();
             } else if (packageType != null) {
-                if ("REGULAR".equalsIgnoreCase(packageType)) price = 200000.0;
-                if ("PREMIUM".equalsIgnoreCase(packageType)) price = 500000.0;
-
-                try {
-                    Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
-                    if (configOpt.isPresent()) {
-                        price = configOpt.get().getPrice();
-                    }
-                } catch (Exception e) {}
+                Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
+                if (configOpt.isPresent()) {
+                    price = configOpt.get().getPrice();
+                } else {
+                    throw new IllegalArgumentException("Không tìm thấy cấu hình giá cho gói dịch vụ: " + packageType);
+                }
             } else {
                 throw new IllegalArgumentException("Vui lòng cung cấp projectId hoặc packageType");
             }

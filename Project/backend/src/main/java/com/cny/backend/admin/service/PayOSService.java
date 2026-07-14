@@ -100,19 +100,16 @@ public class PayOSService {
             return employerRepository.save(dummyEmp);
         });
 
-        double price = 100000.0;
+        double price = 0.0;
         if (project != null && project.getServiceFee() != null) {
             price = project.getServiceFee();
         } else if (packageType != null) {
-            if ("REGULAR".equalsIgnoreCase(packageType)) price = 200000.0;
-            if ("PREMIUM".equalsIgnoreCase(packageType)) price = 500000.0;
-
-            try {
-                Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
-                if (configOpt.isPresent()) {
-                    price = configOpt.get().getPrice();
-                }
-            } catch (Exception e) {}
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
+            if (configOpt.isPresent()) {
+                price = configOpt.get().getPrice();
+            } else {
+                throw new IllegalArgumentException("Không tìm thấy cấu hình giá cho gói dịch vụ: " + packageType);
+            }
         } else {
             throw new IllegalArgumentException("Vui lòng cung cấp projectId hoặc packageType");
         }
@@ -125,7 +122,7 @@ public class PayOSService {
         long orderCode = Long.parseLong(orderCodeStr);
         String txnRef = String.valueOf(orderCode);
 
-        // Hủy các giao dịch PENDING cũ của dự án này
+        // Hủy các giao dịch PENDING cũ của dự án
         if (project != null) {
             List<PaymentTransaction> pendingTxns = transactionRepository.findByProjectIdAndStatus(project.getProjectId(), "PENDING");
             for (PaymentTransaction pendingTxn : pendingTxns) {
@@ -151,7 +148,7 @@ public class PayOSService {
 
         transactionRepository.save(txn);
 
-        int timeoutMinutes = 15;
+        int timeoutMinutes = 30;
         try {
             Optional<VnpayConfig> configOpt = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc();
             if (configOpt.isPresent() && configOpt.get().getSessionTimeout() != null) {

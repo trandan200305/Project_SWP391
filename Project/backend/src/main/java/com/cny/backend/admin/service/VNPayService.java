@@ -150,7 +150,7 @@ public class VNPayService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         vnp_Params.put("vnp_CreateDate", now.format(formatter));
 
-        int timeoutMinutes = 15;
+        int timeoutMinutes = 30;
         try {
             Optional<VnpayConfig> configOpt = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc();
             if (configOpt.isPresent() && configOpt.get().getSessionTimeout() != null) {

@@ -175,6 +175,12 @@ public class AdminService {
                 activeDisputes = dashboardRepository.countActiveDisputes();
             } catch(Exception e) {}
 
+            double instantRevenue = 0.0;
+            try {
+                Double ir = paymentTransactionRepository.calculateInstantRevenue();
+                if (ir != null) instantRevenue = ir;
+            } catch(Exception e) {}
+
             return AdminStatsDto.builder()
                     .totalUsers(totalUsers)
                     .activeProjects(activeProjects)
@@ -184,6 +190,7 @@ public class AdminService {
                     .usersGrowthPercent(0.0)
                     .projectsGrowthPercent(0.0)
                     .revenueGrowthPercent(0.0)
+                    .instantRevenue(instantRevenue)
                     .build();
         } catch (Exception e) {
             return AdminStatsDto.builder()
@@ -195,6 +202,7 @@ public class AdminService {
                     .usersGrowthPercent(12.0)
                     .projectsGrowthPercent(5.0)
                     .revenueGrowthPercent(8.2)
+                    .instantRevenue(0.0)
                     .build();
         }
     }
@@ -2576,7 +2584,8 @@ public class AdminService {
             if ("MEDIUM".equals(pkgType) || "REGULAR".equals(pkgType) || "PREMIUM".equals(pkgType)) {
                 com.cny.backend.admin.entity.ServicePackageConfig config = servicePackageConfigRepository.findByPackageType(pkgType)
                     .orElseGet(() -> com.cny.backend.admin.entity.ServicePackageConfig.builder().packageType(pkgType).build());
-                config.setPrice(pkg.getPrice());
+                
+                    config.setPrice(pkg.getPrice());
                 
                 if (pkg.getPostLimit() != null && pkg.getPostLimit() > 0) {
                     config.setPostLimit(pkg.getPostLimit());

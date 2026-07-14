@@ -6,7 +6,7 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save
+  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -95,7 +95,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     pendingWithdrawals: 2,
     usersGrowthPercent: 12.0,
     projectsGrowthPercent: 5.0,
-    revenueGrowthPercent: 8.2
+    revenueGrowthPercent: 8.2,
+    instantRevenue: 0.0
   });
 
   const [users, setUsers] = useState([]);
@@ -106,11 +107,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [feeRate, setFeeRate] = useState(10.0);
-  const [servicePackages, setServicePackages] = useState([
-    { packageType: 'MEDIUM', price: 100000 },
-    { packageType: 'REGULAR', price: 200000 },
-    { packageType: 'PREMIUM', price: 500000 }
-  ]);
+  const [servicePackages, setServicePackages] = useState([]);
   const [isUpdatingPackages, setIsUpdatingPackages] = useState(false);
   const [isEditingPackages, setIsEditingPackages] = useState(false);
   const [tempPackages, setTempPackages] = useState([]);
@@ -2518,154 +2515,115 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
       
       {}
-      <aside className="w-64 bg-slate-50 border-r border-slate-200/80 flex flex-col justify-between p-4 shrink-0">
-        <div className="space-y-5">
-          <div className="px-1">
-            <div className="flex items-center gap-2 text-primary font-extrabold text-[20px] font-display">
-              <ShieldAlert className="w-5 h-5 text-blue-600 animate-pulse" />
-              <span>vLance Admin</span>
+      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between p-5 shrink-0">
+        <div className="space-y-8">
+          {/* Top Logo Section */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-[#0f4c5c] rounded-[8px] flex items-center justify-center text-white shadow-sm">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <span className="font-extrabold text-slate-800 text-[15px] tracking-tight">vLance Admin</span>
             </div>
-            <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 pl-7">System Control Panel</p>
+            {/* Mock Collapse Button */}
+            <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors">
+              <ChevronsLeft className="w-3.5 h-3.5 text-slate-400" />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Settings</p>
-            
-            <nav className="space-y-2">
-              {}
-              <div 
-                onClick={() => setActiveTab('home')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'home' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'home' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-blue-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <Home className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-800'}`}>Home</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'home' ? 'text-blue-500 font-medium' : 'text-slate-500'}`}>Trang chủ trung tâm</p>
-                </div>
-              </div>
-
-              {}
-              <div 
-                onClick={() => setActiveTab('dashboard')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'dashboard' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'dashboard' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-emerald-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <LayoutDashboard className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'dashboard' ? 'text-emerald-600' : 'text-slate-800'}`}>Dashboard</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'dashboard' ? 'text-emerald-500 font-medium' : 'text-slate-500'}`}>Báo cáo & Thống kê</p>
-                </div>
-              </div>
-
-              {}
-              <div 
-                onClick={() => setActiveTab('users')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'users' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'users' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-rose-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-rose-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'users' ? 'text-rose-600' : 'text-slate-800'}`}>Users</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'users' ? 'text-rose-500 font-medium' : 'text-slate-500'}`}>Quản lý người dùng</p>
-                </div>
-              </div>
-
+          <div className="space-y-6">
+            {/* GENERAL Section */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">General</p>
               
-              <div 
-                onClick={() => setActiveTab('departments')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'departments' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'departments' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-indigo-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <Sliders className="w-5 h-5" />
+              {[
+                { id: 'home', icon: Home, label: 'Dashboard' },
+                { id: 'dashboard', icon: LayoutDashboard, label: 'Analytics' },
+                { id: 'vnpay', icon: BadgeDollarSign, label: 'Payment' },
+                { id: 'users', icon: Users, label: 'Users' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'departments' ? 'text-indigo-600' : 'text-slate-800'}`}>Departments</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'departments' ? 'text-indigo-500 font-medium' : 'text-slate-500'}`}>Quản lý khoa/phòng ban</p>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              {}
-              <div 
-                onClick={() => setActiveTab('cms')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'cms' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'cms' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-violet-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <Settings className="w-5 h-5" />
+            {/* MANAGEMENT Section */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Management</p>
+              
+              {[
+                { id: 'departments', icon: Sliders, label: 'Departments' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'cms' ? 'text-violet-600' : 'text-slate-800'}`}>CMS Settings</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'cms' ? 'text-violet-500 font-medium' : 'text-slate-500'}`}>Cấu hình & SEO</p>
-                </div>
-              </div>
-
-              <div 
-                onClick={() => setActiveTab('vnpay')}
-                className={`relative rounded-2xl p-3 flex items-center gap-3.5 transition-all duration-300 ease-out cursor-pointer group ${
-                  activeTab === 'vnpay' 
-                    ? 'bg-white border border-slate-200 shadow-md' 
-                    : 'bg-transparent border border-transparent hover:bg-slate-100/80 hover:shadow-sm hover:translate-x-1.5'
-                }`}
-              >
-                {activeTab === 'vnpay' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full shadow-sm"></div>}
-                <div className="w-10 h-10 rounded-[14px] bg-emerald-500 flex items-center justify-center text-white shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                  <BadgeDollarSign className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-[14px] transition-colors ${activeTab === 'vnpay' ? 'text-emerald-600' : 'text-slate-800'}`}>VNPay Billing</p>
-                  <p className={`text-[12px] truncate mt-0.5 transition-colors ${activeTab === 'vnpay' ? 'text-emerald-500 font-medium' : 'text-slate-500'}`}>Giao dịch & Cấu hình</p>
-                </div>
-              </div>
-            </nav>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="bg-slate-200/50 p-3 rounded-xl border border-slate-200 space-y-1.5">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Database Status</p>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-              <span className="text-[11.5px] font-bold text-slate-700">SQL Server Connected</span>
-            </div>
-            <p className="text-[9px] text-slate-400">Latency: <span className="font-mono font-bold text-emerald-600">12ms</span></p>
+        <div className="space-y-1 mt-auto pb-4">
+          <div 
+            onClick={() => setActiveTab('cms')}
+            className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+              activeTab === 'cms' ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+            }`}
+          >
+            <Settings className={`w-4 h-4 ${activeTab === 'cms' ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+            <span className={`text-[13px] ${activeTab === 'cms' ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+              Settings
+            </span>
           </div>
           
-          <div className="pt-3 border-t border-slate-200/60">
-            <button 
-              onClick={onNavigateToHome}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-[12.5px] transition-all"
-            >
-              <LogOut className="w-4.5 h-4.5" />
-              <span>Exit Admin</span>
-            </button>
+          <div className="px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+            <HelpCircle className="w-4 h-4 text-slate-400" />
+            <span className="text-[13px] font-medium text-slate-600">Help</span>
+          </div>
+
+          <div className="px-3 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-4 h-4 text-slate-400" />
+              <span className="text-[13px] font-medium text-slate-600">Pro Mode</span>
+            </div>
+            <div className="w-8 h-4 bg-emerald-500 rounded-full relative cursor-pointer">
+              <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow-sm"></div>
+            </div>
+          </div>
+          
+          <div className="px-2 pt-2">
+            <div className="flex items-center gap-3 p-2 bg-slate-50/80 hover:bg-slate-100 cursor-pointer rounded-xl transition-colors">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-lg object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs">
+                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-bold text-slate-800 truncate leading-tight">{user?.displayName || user?.email || 'Admin'}</p>
+                <p className="text-[10px] font-medium text-slate-400 truncate leading-tight">Admin System</p>
+              </div>
+              <ChevronsRight className="w-3.5 h-3.5 text-slate-400 shrink-0 transform rotate-90" />
+            </div>
           </div>
         </div>
       </aside>
@@ -2944,8 +2902,38 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           {}
           {activeTab === 'dashboard' && (
             <>
-              {}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+              {/* TOP BANNER */}
+              <div className="bg-[#0f4c5c] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center text-white mb-8 shadow-[0_4px_20px_rgb(15,76,92,0.15)]">
+                <div>
+                  <p className="text-teal-100/80 font-medium text-[13px] mb-1.5">Total Balance</p>
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-3xl md:text-[40px] font-bold tracking-tight">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
+                    </h2>
+                    <span className="text-emerald-400 text-sm font-semibold flex items-center gap-0.5">
+                      <ArrowUpRight className="w-4 h-4" /> {stats.revenueGrowthPercent || 0}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 mt-6 md:mt-0">
+                  <button className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-bold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm shadow-sm">
+                    <Plus className="w-4 h-4" /> Add
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
+                    <ArrowUpRight className="w-4 h-4" /> Send
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
+                    <RefreshCw className="w-4 h-4" /> Request
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold p-2.5 rounded-xl transition-colors flex items-center justify-center backdrop-blur-sm">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* STATS CARDS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
                 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
@@ -2994,6 +2982,24 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
 
+                {/* Thẻ Instant Revenue Mới */}
+                <div className="bg-gradient-to-br from-yellow-50 to-amber-100 p-5 rounded-xl border border-amber-200 shadow-sm border-l-[4px] border-l-amber-500 flex flex-col justify-between hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="flex justify-between items-start">
+                    <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-inner">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5 animate-pulse">
+                      Hôm nay
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-2xl font-extrabold text-amber-600 font-mono">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
+                    </p>
+                    <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tức thì</p>
+                  </div>
+                </div>
+
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-violet-500 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="w-10 h-10 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center">
@@ -3025,82 +3031,107 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               </div>
 
-              {}
-              {/* Service Package Pricing Configuration */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Sliders className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-bold text-primary text-[16px]">Cấu hình Giá gói dịch vụ tin đăng (Service Package Config)</h3>
+              {/* Sequence-style Cash Flow Chart */}
+              <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-[0_2px_20px_rgb(0,0,0,0.04)] col-span-full">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/><path d="M11 21v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"/><path d="M3 11h18"/><path d="M3 15h18"/></svg>
                     </div>
-                    <p className="text-body-sm text-slate-500">Thiết lập mức phí dịch vụ áp dụng cho nhà tuyển dụng đăng dự án tương ứng các thời gian hiển thị (7 ngày, 15 ngày, 30 ngày).</p>
+                    <h3 className="font-bold text-slate-800 text-lg">Dòng tiền (Cash Flow)</h3>
                   </div>
-                  
-                  <button 
-                    onClick={handleUpdatePackages}
-                    disabled={isUpdatingPackages}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-6 py-2.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 flex items-center gap-2 shrink-0 self-end md:self-auto font-sans"
-                  >
-                    {isUpdatingPackages ? 'Đang cập nhật...' : 'Cập nhật Bảng Giá'}
-                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {servicePackages.map((pkg, idx) => {
-                    const type = pkg.packageType;
-                    const price = pkg.price;
-                    let title = 'Gói Trung bình (Medium)';
-                    let duration = 'Hiển thị 7 ngày';
-                    let colorBg = 'bg-slate-50 border-slate-200';
-                    let accentColor = 'text-slate-600';
-                    
-                    if (type === 'REGULAR') {
-                      title = 'Gói Thường (Regular)';
-                      duration = 'Hiển thị 15 ngày';
-                      colorBg = 'bg-indigo-50/20 border-indigo-150';
-                      accentColor = 'text-indigo-600';
-                    } else if (type === 'PREMIUM') {
-                      title = 'Gói Cao cấp (Premium)';
-                      duration = 'Hiển thị 30 ngày + Nổi bật';
-                      colorBg = 'bg-amber-50/20 border-amber-150';
-                      accentColor = 'text-amber-600';
-                    }
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                  {/* Chart Area */}
+                  <div className="flex-1 h-[260px] relative">
+                    <svg className="w-full h-full" viewBox="0 0 700 240" preserveAspectRatio="none">
+                      {/* Very minimal Y-axis grid */}
+                      <line x1="40" y1="20" x2="680" y2="20" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4,4" />
+                      {/* Zero line */}
+                      <line x1="40" y1="120" x2="680" y2="120" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,4" />
+                      <line x1="40" y1="220" x2="680" y2="220" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4,4" />
 
-                    return (
-                      <div key={type} className={`p-5 rounded-2xl border ${colorBg} flex flex-col justify-between`}>
-                        <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-[10px] font-extrabold uppercase bg-white border px-2 py-0.5 rounded-md text-slate-500 shadow-sm">
-                              {type}
-                            </span>
-                            <span className={`text-xs font-bold ${accentColor}`}>{duration}</span>
-                          </div>
-                          <h4 className="text-sm font-extrabold text-slate-900 mb-4">{title}</h4>
+                      {/* Minimal Y-axis labels */}
+                      <text x="30" y="25" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">50M</text>
+                      <text x="30" y="124" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">0</text>
+                      <text x="30" y="225" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">30M</text>
+
+                      {/* X-axis labels */}
+                      <text x="90" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">18/10</text>
+                      <text x="250" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">25/10</text>
+                      <text x="410" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">02/11</text>
+                      <text x="570" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">09/11</text>
+                      {/* DYNAMIC DATA BARS */}
+                      {[
+                        { x: 70, in: 46, out: 20 },
+                        { x: 110, in: 66, out: 50 },
+                        { x: 150, in: 26, out: 40 },
+                        { x: 190, in: 36, out: 15 },
+                        { x: 230, in: 16, out: 25 },
+                        { x: 270, in: 76, out: 65 },
+                        { x: 310, in: 86, out: 35 },
+                        { x: 350, in: 56, out: 20 },
+                        { x: 390, in: 11, out: 15 },
+                        { x: 430, in: 41, out: 25 },
+                        { x: 470, in: 26, out: 10 },
+                        { x: 510, in: 31, out: 45 },
+                        { x: 550, in: 66, out: 55 },
+                        { x: 590, in: 21, out: 20 },
+                        { x: 630, in: 16, out: 12 },
+                        { x: 670, in: 11, out: 10 }
+                      ].map((data, i) => {
+                         const hasData = stats.totalRevenue > 0;
+                         const hIn = hasData ? data.in : 0;
+                         const hOut = hasData ? data.out : 0;
+                         
+                         return (
+                           <g key={i}>
+                             {/* Income Bar (Upper) */}
+                             {hIn > 0 && <rect x={data.x} y={124 - hIn} width="16" height={hIn} fill="#0f4c5c" rx="8" className="hover:opacity-80 transition-all duration-1000 cursor-pointer" />}
+                             {/* Expense Bar (Lower) */}
+                             {hOut > 0 && <rect x={data.x} y="124" width="16" height={hOut} fill="#22c55e" rx="8" className="hover:opacity-80 transition-all duration-1000 cursor-pointer" />}
+                           </g>
+                         );
+                      })}
+                    </svg>
+                  </div>
+
+                  {/* Summary Area */}
+                  <div className="w-full lg:w-72 flex flex-col justify-center gap-8 lg:border-l border-slate-100 lg:pl-10">
+                    {/* Total Revenue */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#0f4c5c] flex items-center justify-center text-white shadow-sm">
+                          <ArrowUpRight className="w-5 h-5" />
                         </div>
-                        
-                        <div>
-                          <label className="block">
-                            <span className="block text-[11px] font-semibold text-slate-400 mb-1">Giá tiền (VND)</span>
-                            <div className="relative">
-                              <input 
-                                type="number" 
-                                min="0"
-                                step="1000"
-                                value={price} 
-                                onChange={e => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setServicePackages(prev => prev.map((p, i) => i === idx ? { ...p, price: val } : p));
-                                }}
-                                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-12 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-mono"
-                              />
-                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">VND</span>
-                            </div>
-                          </label>
-                        </div>
+                        <span className="text-slate-600 font-semibold">Doanh thu tổng hợp</span>
                       </div>
-                    );
-                  })}
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-slate-800 tracking-tight">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
+                        </span>
+                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> {stats.revenueGrowthPercent || 0}%</span>
+                      </div>
+                    </div>
+                    
+                    {/* Instant Revenue */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#22c55e] flex items-center justify-center text-white shadow-sm">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <span className="text-slate-600 font-semibold">Doanh thu tức thời</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-slate-800 tracking-tight">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
+                        </span>
+                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> Hôm nay</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -4391,7 +4422,23 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {servicePackages.map((pkg) => {
+                  {servicePackages.length === 0 ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <div key={i} className="rounded-2xl border border-slate-200 p-6 bg-white animate-pulse shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="h-6 w-28 bg-slate-200 rounded-lg"></div>
+                          <div className="h-5 w-16 bg-slate-100 rounded-full"></div>
+                        </div>
+                        <div className="h-8 w-32 bg-slate-200 rounded-lg mb-2"></div>
+                        <div className="h-4 w-40 bg-slate-100 rounded mb-6"></div>
+                        <div className="space-y-3">
+                          <div className="h-4 w-full bg-slate-100 rounded"></div>
+                          <div className="h-4 w-3/4 bg-slate-100 rounded"></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    servicePackages.map((pkg) => {
                     const isSelected = testPackageType === pkg.packageType;
                     let pkgTitle = 'Gói Trung bình';
                     let pkgClass = 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30';
@@ -4491,7 +4538,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         </div>
                       </div>
                     );
-                  })}
+                  }))}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">

@@ -35,4 +35,5 @@ public class AdminStatsDto {
     private double usersGrowthPercent;
     private double projectsGrowthPercent;
     private double revenueGrowthPercent;
+    private double instantRevenue;
 }
