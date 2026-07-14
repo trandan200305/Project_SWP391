@@ -308,6 +308,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
         alert("Đường dẫn Logo không hợp lệ.");
         return;
       }
+      const companySizeRegex = /^(Hơn\s+|Dưới\s+)?([1-9][0-9]*)(\s*-\s*[1-9][0-9]*)?(\s*\+)?(\s*(nhân viên|người))?$/i;
+      if (companySize && !companySizeRegex.test(companySize.trim())) {
+        alert("Quy mô công ty không hợp lệ (ví dụ: 10-50, 50+, Hơn 100 nhân viên).");
+        return;
+      }
     }
 
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;

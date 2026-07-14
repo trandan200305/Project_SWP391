@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,51 +25,67 @@ public class EmployerProfileRequest {
     @JoinColumn(name = "employer_id", nullable = false)
     private Employer employer;
 
+    @Nationalized
     @Column(name = "display_name")
     private String displayName;
 
+    @Nationalized
     @Column(name = "full_name")
     private String fullName;
 
     private String phone;
 
+    @Nationalized
     @Column(name = "company_name")
     private String companyName;
 
     @Column(name = "company_logo_url")
     private String companyLogoUrl;
 
+    @Nationalized
     @Column(name = "company_description", length = 4000)
     private String companyDescription;
 
     private String website;
+
+    @Nationalized
     private String address;
+
+    @Nationalized
     private String city;
+
+    @Nationalized
     private String country;
 
+    @Nationalized
     @Column(name = "company_size")
     private String companySize;
 
+    @Nationalized
     private String industry;
 
     @Column(name = "tax_code", length = 50)
     private String taxCode;
 
     // Bank Account details
+    @Nationalized
     @Column(name = "bank_name")
     private String bankName;
 
     @Column(name = "account_number")
     private String accountNumber;
 
+    @Nationalized
     @Column(name = "account_holder")
     private String accountHolder;
 
+    @Nationalized
     private String branch;
 
     @Column(nullable = false)
     private String status; 
 
+    @Nationalized
     @Column(name = "reject_reason")
     private String rejectReason;
 

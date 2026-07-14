@@ -39,4 +39,10 @@ public interface EmployerRepository extends JpaRepository<Employer, Integer> {
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) > 0 FROM Employer e WHERE e.phone = :phone AND (e.isDeleted IS NULL OR e.isDeleted = false) AND e.email <> :email")
     boolean existsByPhoneActiveAndEmailNot(@org.springframework.data.repository.query.Param("phone") String phone, @org.springframework.data.repository.query.Param("email") String email);
+
+    @Query("SELECT COUNT(e) FROM Employer e WHERE e.phone = :phone AND e.employerId <> :employerId AND (e.isDeleted IS NULL OR e.isDeleted = false)")
+    int countPhoneDuplicate(@Param("phone") String phone, @Param("employerId") Integer employerId);
+
+    @Query("SELECT COUNT(e) FROM Employer e WHERE e.taxCode = :taxCode AND e.employerId <> :employerId AND (e.isDeleted IS NULL OR e.isDeleted = false)")
+    int countTaxCodeDuplicate(@Param("taxCode") String taxCode, @Param("employerId") Integer employerId);
 }

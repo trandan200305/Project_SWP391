@@ -434,6 +434,13 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
+        // Validate Quy mô công ty
+        const companySizeRegex = /^(Hơn\s+|Dưới\s+)?([1-9][0-9]*)(\s*-\s*[1-9][0-9]*)?(\s*\+)?(\s*(nhân viên|người))?$/i;
+        if (form.companySize && !companySizeRegex.test(form.companySize.trim())) {
+            setNotice({type: 'error', message: 'Quy mô công ty không hợp lệ (ví dụ: 10-50, 50+, Hơn 100 nhân viên).'});
+            return false;
+        }
+
         // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
         const {bankName, accountNumber, accountHolder, branch} = form.billing;
         if (bankName || accountNumber || accountHolder || branch) {
@@ -1321,14 +1328,16 @@ function TextInput({label, value, onChange, placeholder, icon, required}) {
         {label}{required ? ' *' : ''}
       </span>
         <div className="relative">
-            {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
+            {icon && <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
             <input
                 type="text"
                 required={required}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                className={`w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
+                    icon ? 'pl-10' : 'pl-3'
+                }`}
             />
         </div>
     </label>);

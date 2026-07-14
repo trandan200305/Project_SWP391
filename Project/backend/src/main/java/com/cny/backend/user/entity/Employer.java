@@ -23,6 +23,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -45,9 +46,11 @@ public class Employer {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Nationalized
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
+    @Nationalized
     @Column(name = "full_name")
     private String fullName;
 
@@ -71,18 +74,26 @@ public class Employer {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Nationalized
     @Column(name = "company_name")
     private String companyName;
 
     @Column(name = "company_logo_url")
     private String companyLogoUrl;
 
+    @Nationalized
     @Column(name = "company_description")
     private String companyDescription;
 
     private String website;
+
+    @Nationalized
     private String address;
+
+    @Nationalized
     private String city;
+
+    @Nationalized
     private String country;
 
     @Column(name = "hide_email")
@@ -94,9 +105,11 @@ public class Employer {
     @Column(name = "hide_location")
     private Boolean hideLocation = false;
 
+    @Nationalized
     @Column(name = "company_size")
     private String companySize;
 
+    @Nationalized
     private String industry;
 
     @Column(name = "tax_code", length = 50)

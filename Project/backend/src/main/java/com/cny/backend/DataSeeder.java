@@ -633,6 +633,13 @@ public class DataSeeder implements CommandLineRunner {
                     staffRepository.save(extraStaff);
                 }
             }
+
+            com.cny.backend.department.entity.Department modDept = departmentRepository.findByCode("MOD").orElse(null);
+            Staff existingStaff = staffRepository.findByEmail("staff@gmail.com").orElse(null);
+            if (existingStaff != null && modDept != null) {
+                existingStaff.setDepartmentEntity(modDept);
+                staffRepository.save(existingStaff);
+            }
         } catch (Exception e) {
             System.err.println("Error seeding staff and managers: " + e.getMessage());
         }
