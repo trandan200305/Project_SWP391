@@ -58,9 +58,8 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<Object> getUsers(
-            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            //@RequestParam(value = "size", required = false) Integer size
-            @RequestParam(value = "size", required = false, defaultValue = "2") Integer size,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
             @RequestParam(value = "role", defaultValue = "ALL") String role,
             @RequestParam(value = "search", defaultValue = "") String search,
             @RequestParam(value = "status", defaultValue = "ALL") String status,
@@ -73,9 +72,10 @@ public class AdminController {
             @RequestParam(value = "activeOnlineChecked", defaultValue = "true") boolean activeOnlineChecked,
             @RequestParam(value = "activeOfflineChecked", defaultValue = "true") boolean activeOfflineChecked
     ) {
-        if (page != null && size != null) {
+        if (page != null) {
+            int pageSize = (size != null) ? size : 20;
             return ResponseEntity.ok(adminService.getUsersPaginated(
-                    page, size, role, search, status, timeFilter, timeStart, timeEnd,
+                    page, pageSize, role, search, status, timeFilter, timeStart, timeEnd,
                     filterEmployer, filterManager, filterStaff, activeOnlineChecked, activeOfflineChecked
             ));
         }
