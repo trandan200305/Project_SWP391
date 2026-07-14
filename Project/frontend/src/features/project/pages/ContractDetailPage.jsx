@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -11,16 +11,19 @@ import {
   AlertCircle,
   Briefcase,
   User,
-  Paperclip
+  Paperclip,
+  Star
 } from 'lucide-react';
 import { contractApi } from '../../../api/contractApi';
 import { getImageUrl } from '../../../utils/imageHelper.js';
 
 export default function ContractDetailPage({ contractId, user, onNavigate }) {
+  const contractReviewSectionRef = useRef(null);
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeMilestoneId, setActiveMilestoneId] = useState(null); // For submit work form
+  const [contractReviews, setContractReviews] = useState([]);
   
   // Submit work form state
   const [submitTitle, setSubmitTitle] = useState('');
@@ -31,6 +34,9 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   // Review form state
   const [reviewFeedback, setReviewFeedback] = useState({});
   const [submittingReview, setSubmittingReview] = useState({});
+  const [contractReviewRating, setContractReviewRating] = useState(5);
+  const [contractReviewComment, setContractReviewComment] = useState('');
+  const [submittingContractReview, setSubmittingContractReview] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -41,8 +47,12 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
     try {
       setLoading(true);
       setError(null);
-      const data = await contractApi.getContractDetails(contractId, user.id);
-      setContract(data);
+      const [contractData, reviewsData] = await Promise.all([
+        contractApi.getContractDetails(contractId, user.id),
+        contractApi.getReviewsForContract(contractId)
+      ]);
+      setContract(contractData);
+      setContractReviews(reviewsData || []);
     } catch (err) {
       setError(err.message || 'Không thể tải thông tin hợp đồng.');
     } finally {
@@ -150,6 +160,58 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
     }
   };
 
+  const handleReviewFreelancerClick = () => {
+    contractReviewSectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  const handleContractReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!contractReviewRating || contractReviewRating < 1 || contractReviewRating > 5) {
+      setActionError('Vui lòng chọn số sao từ 1 đến 5.');
+      return;
+    }
+
+    try {
+      setSubmittingContractReview(true);
+      setActionError(null);
+
+      const payload = {
+        rating: contractReviewRating,
+        comment: contractReviewComment
+      };
+
+      if (isClient) {
+        await contractApi.submitEmployerReview(contract.contractId, user.id, payload);
+      }
+
+      setContractReviewRating(5);
+      setContractReviewComment('');
+      showSuccess('Đã gửi đánh giá thành công!');
+      fetchContractDetails();
+    } catch (err) {
+      setActionError(err.message || 'Lỗi khi gửi đánh giá hợp đồng.');
+    } finally {
+      setSubmittingContractReview(false);
+    }
+  };
+
+  const renderStars = (rating, sizeClass = 'w-4 h-4') => {
+    const numericRating = Number(rating) || 0;
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <Star
+            key={value}
+            className={`${sizeClass} ${value <= Math.round(numericRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+          />
+        ))}
+      </div>
+    );
+  };
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'ACTIVE':
@@ -214,6 +276,10 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   // Check if all milestones are approved to allow project completion
   const allMilestonesApproved = contract.milestones && contract.milestones.length > 0 && 
     contract.milestones.every(m => m.status === 'APPROVED');
+  const myContractReview = contractReviews.find((review) =>
+    review.reviewerType === 'EMPLOYER' && review.reviewerId === user.id
+  );
+  const canReviewContract = contract.status === 'COMPLETED' && isClient;
 
   return (
     <div className="pt-24 pb-16 bg-slate-50 min-h-screen">
@@ -236,6 +302,16 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             >
               <Check className="w-5 h-5" />
               <span>Hoàn thành Hợp đồng</span>
+            </button>
+          )}
+
+          {isClient && contract.status === 'COMPLETED' && !myContractReview && (
+            <button
+              onClick={handleReviewFreelancerClick}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
+            >
+              <Star className="w-5 h-5 fill-white" />
+              <span>Đánh giá ứng viên</span>
             </button>
           )}
         </div>
@@ -337,6 +413,86 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             </div>
           )}
         </div>
+
+        {canReviewContract && (
+          <div ref={contractReviewSectionRef} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 scroll-mt-28">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-800">Đánh giá ứng viên</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  Chia sẻ trải nghiệm làm việc với {contract.freelancerName}.
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 w-fit">
+                Hợp đồng đã hoàn thành
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5">
+              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/40">
+                <h3 className="text-sm font-extrabold text-slate-800 mb-3">Đánh giá của bạn</h3>
+                {myContractReview ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      {renderStars(myContractReview.rating, 'w-5 h-5')}
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        Bạn đã gửi đánh giá
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-100 rounded-lg p-3">
+                      {myContractReview.comment || 'Không có nhận xét.'}
+                    </p>
+                    <span className="block text-xs text-slate-400">
+                      Gửi lúc {new Date(myContractReview.createdAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                ) : (
+                  <form onSubmit={handleContractReviewSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-2">Số sao</label>
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setContractReviewRating(value)}
+                            className="p-1 rounded-lg hover:bg-amber-50 transition-colors"
+                            aria-label={`${value} sao`}
+                          >
+                            <Star className={`w-7 h-7 ${value <= contractReviewRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                          </button>
+                        ))}
+                        <span className="ml-2 text-sm font-bold text-slate-600">{contractReviewRating}/5</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét</label>
+                      <textarea
+                        value={contractReviewComment}
+                        onChange={(e) => setContractReviewComment(e.target.value)}
+                        rows={4}
+                        maxLength={2000}
+                        placeholder="Viết nhận xét của bạn về quá trình hợp tác..."
+                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingContractReview}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 inline-flex items-center gap-2"
+                    >
+                      <Star className="w-4 h-4" />
+                      <span>{submittingContractReview ? 'Đang gửi...' : 'Gửi đánh giá'}</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* Milestones / Progress Section */}
         <h2 className="text-lg font-extrabold text-slate-800 mb-4 flex items-center gap-2">
