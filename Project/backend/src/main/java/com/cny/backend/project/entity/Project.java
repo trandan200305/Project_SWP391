@@ -74,6 +74,12 @@ public class Project {
     @Builder.Default
     private String status = "DRAFT";
 
+    @Column(name = "service_package", length = 30)
+    private String servicePackage;
+
+    @Column(name = "service_fee")
+    private Double serviceFee;
+
     @Column(name = "reject_reason", length = 1000)
     private String rejectReason;
 

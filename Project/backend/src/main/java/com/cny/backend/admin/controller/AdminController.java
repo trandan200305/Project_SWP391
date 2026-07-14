@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cny.backend.admin.dto.AdminAuditLogDto;
+import com.cny.backend.admin.dto.AdminDto;
+import com.cny.backend.admin.repository.AdminRepository;
 import com.cny.backend.admin.dto.AdminStatsDto;
 import com.cny.backend.admin.dto.DisputeDto;
 import com.cny.backend.admin.dto.KycRequestDto;
@@ -78,6 +81,18 @@ public class AdminController {
             @RequestParam("fee") double fee,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.updateFeeConfig(fee, adminId));
+    }
+
+    @GetMapping("/service-packages")
+    public ResponseEntity<List<com.cny.backend.admin.entity.ServicePackageConfig>> getServicePackages() {
+        return ResponseEntity.ok(adminService.getServicePackageConfigs());
+    }
+
+    @PostMapping("/service-packages")
+    public ResponseEntity<List<com.cny.backend.admin.entity.ServicePackageConfig>> updateServicePackages(
+            @RequestBody List<com.cny.backend.admin.entity.ServicePackageConfig> packages,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        return ResponseEntity.ok(adminService.updateServicePackages(packages, adminId));
     }
 
     @GetMapping("/users")
@@ -291,6 +306,21 @@ public class AdminController {
         return ResponseEntity.ok(adminService.regenerateUserPassword(role, id));
     }
 
+    @PostMapping("/users/{role}/{id}/change-password-direct")
+    public ResponseEntity<Map<String, Object>> changeUserPasswordDirectly(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id,
+            @RequestBody Map<String, String> body) {
+        String newPassword = body.get("newPassword");
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", false);
+            response.put("message", "Mật khẩu mới không được để trống!");
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(adminService.changeUserPasswordDirectly(role, id, newPassword));
+    }
+
     @GetMapping("/verification-tasks")
     public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
         return ResponseEntity.ok(adminService.getVerificationTasks());
@@ -386,7 +416,22 @@ public class AdminController {
 
     @GetMapping("/vnpay-config")
     public ResponseEntity<VnpayConfig> getVnpayConfig() {
-        return ResponseEntity.ok(adminService.getVnpayConfig());
+        VnpayConfig config = adminService.getVnpayConfig();
+        // Create a safe copy to prevent sending the actual secret to the frontend
+        VnpayConfig safeConfig = VnpayConfig.builder()
+                .id(config.getId())
+                .tmnCode("********") // MASKED
+                .hashSecret("********") // MASKED
+                .vnpUrl(config.getVnpUrl())
+                .returnUrl(config.getReturnUrl())
+                .bankName(config.getBankName())
+                .bankAccountNo(config.getBankAccountNo())
+                .bankAccountName(config.getBankAccountName())
+                .isActive(config.getIsActive())
+                .sessionTimeout(config.getSessionTimeout())
+                .updatedAt(config.getUpdatedAt())
+                .build();
+        return ResponseEntity.ok(safeConfig);
     }
 
     @PostMapping("/vnpay-config")
@@ -397,8 +442,10 @@ public class AdminController {
     }
 
     @GetMapping("/vnpay-transactions")
-    public ResponseEntity<List<PaymentTransaction>> getVnpayTransactions() {
-        return ResponseEntity.ok(adminService.getVnpayTransactions());
+    public ResponseEntity<org.springframework.data.domain.Page<PaymentTransaction>> getVnpayTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(adminService.getVnpayTransactions(page, size));
     }
 
     @PostMapping("/vnpay-transactions/{id}/reconcile")
@@ -406,6 +453,11 @@ public class AdminController {
             @PathVariable("id") int id,
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
+    }
+
+    @GetMapping("/payment-gateways/status")
+    public ResponseEntity<Map<String, Object>> getPaymentGatewaysStatus() {
+        return ResponseEntity.ok(adminService.checkGatewayStatus());
     }
 
     @PostMapping("/vnpay-transactions/{id}/query")

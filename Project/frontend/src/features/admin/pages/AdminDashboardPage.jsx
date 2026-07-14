@@ -6,7 +6,7 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode
+  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -84,6 +84,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [customNewPassword, setCustomNewPassword] = useState('');
   
   
   const [stats, setStats] = useState({
@@ -105,6 +106,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [feeRate, setFeeRate] = useState(10.0);
+  const [servicePackages, setServicePackages] = useState([
+    { packageType: 'MEDIUM', price: 100000 },
+    { packageType: 'REGULAR', price: 200000 },
+    { packageType: 'PREMIUM', price: 500000 }
+  ]);
+  const [isUpdatingPackages, setIsUpdatingPackages] = useState(false);
+  const [isEditingPackages, setIsEditingPackages] = useState(false);
+  const [tempPackages, setTempPackages] = useState([]);
 
   
   const [jobCategories, setJobCategories] = useState([]);
@@ -127,6 +136,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     isActive: true
   });
   const [vnpayTransactions, setVnpayTransactions] = useState([]);
+  const [vnpayPage, setVnpayPage] = useState(0);
+  const [vnpayTotalPages, setVnpayTotalPages] = useState(1);
   const [vnpayLoading, setVnpayLoading] = useState(false);
   const [vnpaySaving, setVnpaySaving] = useState(false);
   const [vnpaySuccessMessage, setVnpaySuccessMessage] = useState('');
@@ -137,6 +148,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [isEditingVnpay, setIsEditingVnpay] = useState(false);
   const [tempVnpayConfig, setTempVnpayConfig] = useState(null);
   const [showQrZoomModal, setShowQrZoomModal] = useState(false);
+  const [showInvoicePreviewModal, setShowInvoicePreviewModal] = useState(false);
 
   // VNPay Query/Refund/VietQR States
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -148,6 +160,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [selectedTxnDetails, setSelectedTxnDetails] = useState(null);
   const [testCheckoutUrl, setTestCheckoutUrl] = useState(null);
   const [payosCheckoutUrl, setPayosCheckoutUrl] = useState(null);
+  const [currentPayosTxnRef, setCurrentPayosTxnRef] = useState(null);
+
 
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState(null);
@@ -169,22 +183,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [adminPin, setAdminPin] = useState('');
   const [activeUserForAction, setActiveUserForAction] = useState(null);
   const [actionType, setActionType] = useState('');
+  const [testPackageType, setTestPackageType] = useState('MEDIUM');
 
   
   const [toast, setToast] = useState({ message: '', type: 'success', visible: false });
 
-  const handleTestVnpay = async () => {
-    const inputId = window.prompt('Nhập ID dự án để tạo thanh toán thử:', '8');
-    if (!inputId) return;
-    const projectId = parseInt(inputId, 10);
-    if (isNaN(projectId)) {
-      showToast('ID dự án không hợp lệ', 'error');
-      return;
-    }
-
+  const handleTestVnpay = async (pkgType) => {
+    const actualPkgType = pkgType || testPackageType;
     setIsLoading(true);
     try {
-      const res = await adminApi.createTestVnpayUrl(projectId);
+      const res = await adminApi.createTestVnpayUrl(null, actualPkgType);
       if (res && res.url) {
         window.open(res.url, '_blank');
       } else if (res && res.paymentUrl) {
@@ -194,36 +202,44 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       }
     } catch (err) {
       console.error(err);
-      showToast('Lỗi tạo URL. Có thể ID dự án không tồn tại.', 'error');
+      showToast('Lỗi tạo URL thanh toán VNPay.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTestPayos = async () => {
-    const inputId = window.prompt('Nhập ID dự án để tạo link PayOS:', '8');
-    if (!inputId) return;
-    const projectId = parseInt(inputId, 10);
-    if (isNaN(projectId)) {
-      showToast('ID dự án không hợp lệ', 'error');
-      return;
-    }
-
+  const handleTestPayos = async (pkgType) => {
+    const actualPkgType = pkgType || testPackageType;
     setIsLoading(true);
     try {
-      const res = await adminApi.createPayosUrl(projectId);
+      const res = await adminApi.createPayosUrl(null, actualPkgType);
       if (res && res.paymentUrl) {
         setPayosCheckoutUrl(res.paymentUrl);
+        setCurrentPayosTxnRef(res.txnRef);
       } else {
         showToast('Không tạo được URL thanh toán PayOS', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Lỗi tạo URL. Có thể ID dự án không tồn tại.', 'error');
+      showToast('Lỗi tạo URL thanh toán PayOS.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleCancelPayos = async () => {
+    if (currentPayosTxnRef) {
+      try {
+        await adminApi.cancelPayosTransaction(currentPayosTxnRef);
+        showToast('Đã hủy giao dịch và vô hiệu hóa QR code PayOS thành công', 'success');
+      } catch (err) {
+        console.error('Lỗi khi hủy giao dịch PayOS:', err);
+      }
+      setCurrentPayosTxnRef(null);
+    }
+    setPayosCheckoutUrl(null);
+  };
+
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type, visible: true });
@@ -259,6 +275,29 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .catch(err => {
         console.error('Error updating fee:', err);
         setIsUpdatingFee(false);
+      });
+  };
+
+  const handleUpdatePackages = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setIsUpdatingPackages(true);
+    const pricesMap = {};
+    servicePackages.forEach(pkg => {
+      pricesMap[pkg.packageType] = parseFloat(pkg.price);
+    });
+    
+    adminApi.updateServicePackages(pricesMap, user?.id || 1)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setServicePackages(data);
+          showToast('Cập nhật bảng giá các gói dịch vụ thành công!', 'success');
+        }
+        setIsUpdatingPackages(false);
+      })
+      .catch(err => {
+        console.error('Error updating packages:', err);
+        showToast('Lỗi cập nhật bảng giá gói dịch vụ.', 'error');
+        setIsUpdatingPackages(false);
       });
   };
 
@@ -338,6 +377,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(data => {
         setIsLoading(false);
         if (data.success) {
+          setCustomNewPassword('');
           setCreatedCredentials({
             email: data.email,
             password: data.password,
@@ -366,6 +406,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(data => {
         setIsLoading(false);
         if (data.success) {
+          setCustomNewPassword('');
           showToast(data.message || 'Đã cấp lại mật khẩu mới!', 'success');
           setCreatedCredentials({
             email: data.email,
@@ -382,6 +423,31 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       })
       .catch(err => {
         setIsLoading(false);
+        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleSaveCustomPassword = (role, userId) => {
+    if (!customNewPassword || !customNewPassword.trim()) {
+      showToast('Vui lòng nhập mật khẩu mới!', 'error');
+      return;
+    }
+    setIsLoading(true);
+    adminApi.changeUserPasswordDirectly(role, userId, customNewPassword)
+      .then(data => {
+        setIsLoading(false);
+        if (data.success) {
+          showToast(data.message || 'Đặt lại mật khẩu thành công!', 'success');
+          setCustomNewPassword('');
+          setCreatedCredentials(null);
+          refreshUsers();
+        } else {
+          showToast(data.message || 'Không thể đặt lại mật khẩu.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
         showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
       });
   };
@@ -520,11 +586,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     }
   };
 
-  const fetchVnpayTransactions = async () => {
+  const fetchVnpayTransactions = async (pageArg = vnpayPage) => {
+    const page = typeof pageArg === 'number' ? pageArg : vnpayPage;
     try {
       setVnpayLoading(true);
-      const data = await adminApi.getVnpayTransactions();
-      setVnpayTransactions(Array.isArray(data) ? data : []);
+      const data = await adminApi.getVnpayTransactions(page);
+      if (data && data.content) {
+        setVnpayTransactions(data.content);
+        setVnpayTotalPages(data.totalPages || 1);
+        setVnpayPage(page);
+      } else if (Array.isArray(data)) {
+        setVnpayTransactions(data);
+      }
     } catch (err) {
       console.error("Error loading VNPay transactions:", err);
     } finally {
@@ -686,10 +759,43 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     }
   };
 
+  const fetchServicePackages = () => {
+    adminApi.getServicePackages()
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setServicePackages(data);
+        }
+      })
+      .catch(err => console.error('Error loading service packages:', err));
+  };
+
+  const handleEditPackages = () => {
+    setTempPackages(JSON.parse(JSON.stringify(servicePackages)));
+    setIsEditingPackages(true);
+  };
+
+  const handleSavePackages = async () => {
+    try {
+      setIsUpdatingPackages(true);
+      const res = await adminApi.updateServicePackages(tempPackages);
+      if (Array.isArray(res) && res.length > 0) {
+        setServicePackages(res);
+        setIsEditingPackages(false);
+        showToast('Cập nhật bảng giá thành công', 'success');
+      }
+    } catch (err) {
+      console.error('Error updating packages:', err);
+      showToast('Lỗi cập nhật bảng giá', 'error');
+    } finally {
+      setIsUpdatingPackages(false);
+    }
+  };
+
   const loadDashboardData = () => {
     setIsLoading(true);
     fetchStats(selectedPeriod);
     fetchFeeConfig();
+    fetchServicePackages();
 
     adminApi.getUserGrowth()
       .then(data => { if (Array.isArray(data)) setUserGrowthTrend(data); })
@@ -837,7 +943,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         } else {
           setIsEditingVnpay(true);
         }
-        setVnpayTransactions(Array.isArray(txns) ? txns : []);
+        if (txns && txns.content) {
+          setVnpayTransactions(txns.content);
+          setVnpayTotalPages(txns.totalPages || 1);
+        } else {
+          setVnpayTransactions(Array.isArray(txns) ? txns : []);
+        }
         setIsLoading(false);
       }).catch(err => {
         console.error('Error loading VNPay data:', err);
@@ -2915,38 +3026,81 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
 
               {}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="space-y-1 w-full md:w-auto">
-                  <div className="flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-bold text-primary text-[16px]">Cấu hình Hoa hồng Dịch vụ Escrow (Platform Fee Config)</h3>
+              {/* Service Package Pricing Configuration */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Sliders className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-bold text-primary text-[16px]">Cấu hình Giá gói dịch vụ tin đăng (Service Package Config)</h3>
+                    </div>
+                    <p className="text-body-sm text-slate-500">Thiết lập mức phí dịch vụ áp dụng cho nhà tuyển dụng đăng dự án tương ứng các thời gian hiển thị (7 ngày, 15 ngày, 30 ngày).</p>
                   </div>
-                  <p className="text-body-sm text-slate-500">Thiết lập trực tiếp mức hoa hồng nền tảng thu của mỗi cột mốc dự án. Thay đổi sẽ lưu ngay vào DB và tự tính toán doanh thu tương lai.</p>
+                  
+                  <button 
+                    onClick={handleUpdatePackages}
+                    disabled={isUpdatingPackages}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-6 py-2.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 flex items-center gap-2 shrink-0 self-end md:self-auto font-sans"
+                  >
+                    {isUpdatingPackages ? 'Đang cập nhật...' : 'Cập nhật Bảng Giá'}
+                  </button>
                 </div>
 
-                <div className="flex items-center gap-6 w-full md:w-auto justify-end">
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="range" 
-                      min="5" 
-                      max="25" 
-                      step="0.5"
-                      value={feeRate} 
-                      onChange={e => setFeeRate(parseFloat(e.target.value))}
-                      className="w-48 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <span className="font-mono font-extrabold text-lg text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl min-w-[70px] text-center border border-blue-100">
-                      {feeRate.toFixed(1)}%
-                    </span>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {servicePackages.map((pkg, idx) => {
+                    const type = pkg.packageType;
+                    const price = pkg.price;
+                    let title = 'Gói Trung bình (Medium)';
+                    let duration = 'Hiển thị 7 ngày';
+                    let colorBg = 'bg-slate-50 border-slate-200';
+                    let accentColor = 'text-slate-600';
+                    
+                    if (type === 'REGULAR') {
+                      title = 'Gói Thường (Regular)';
+                      duration = 'Hiển thị 15 ngày';
+                      colorBg = 'bg-indigo-50/20 border-indigo-150';
+                      accentColor = 'text-indigo-600';
+                    } else if (type === 'PREMIUM') {
+                      title = 'Gói Cao cấp (Premium)';
+                      duration = 'Hiển thị 30 ngày + Nổi bật';
+                      colorBg = 'bg-amber-50/20 border-amber-150';
+                      accentColor = 'text-amber-600';
+                    }
 
-                  <button 
-                    onClick={() => handleUpdateFeeConfig(feeRate)}
-                    disabled={isUpdatingFee}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-md shadow-blue-600/10 hover:shadow-blue-600/30 flex items-center gap-2"
-                  >
-                    {isUpdatingFee ? 'Đang cập nhật...' : 'Áp Dụng Config'}
-                  </button>
+                    return (
+                      <div key={type} className={`p-5 rounded-2xl border ${colorBg} flex flex-col justify-between`}>
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-[10px] font-extrabold uppercase bg-white border px-2 py-0.5 rounded-md text-slate-500 shadow-sm">
+                              {type}
+                            </span>
+                            <span className={`text-xs font-bold ${accentColor}`}>{duration}</span>
+                          </div>
+                          <h4 className="text-sm font-extrabold text-slate-900 mb-4">{title}</h4>
+                        </div>
+                        
+                        <div>
+                          <label className="block">
+                            <span className="block text-[11px] font-semibold text-slate-400 mb-1">Giá tiền (VND)</span>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                min="0"
+                                step="1000"
+                                value={price} 
+                                onChange={e => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setServicePackages(prev => prev.map((p, i) => i === idx ? { ...p, price: val } : p));
+                                }}
+                                className="w-full bg-white border border-slate-200 rounded-xl pl-4 pr-12 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-mono"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">VND</span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -3916,7 +4070,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
               {}
               {activeCmsTab === 'seo' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="max-w-2xl animate-in fade-in duration-300">
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <h3 className="font-bold text-primary text-body-md border-b border-slate-100 pb-2">Thiết lập cấu hình SEO (UC-42)</h3>
                     <div className="space-y-3">
@@ -3929,36 +4083,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <textarea rows="3" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_description : "Sàn thương mại điện tử về dịch vụ tự do..."} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500 resize-none" />
                       </div>
                       <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30">Lưu cấu hình SEO</button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-primary text-body-md border-b border-slate-100 pb-2">Cấu hình phí dịch vụ Escrow (UC-30)</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-slate-700">Mức phí nền tảng hiện tại</p>
-                          <p className="text-[12px] text-slate-500">Phí thu trên mỗi cột mốc hoàn thành</p>
-                        </div>
-                        <span className="font-extrabold text-2xl text-blue-600 bg-blue-50 px-4 py-2 rounded-xl">{feeRate.toFixed(1)}%</span>
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Thay đổi % phí mới</label>
-                        <input 
-                          type="number" 
-                          value={feeRate} 
-                          onChange={e => setFeeRate(parseFloat(e.target.value))}
-                          min="5" 
-                          max="25" 
-                          className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500" 
-                        />
-                      </div>
-                      <button 
-                        onClick={() => handleUpdateFeeConfig(feeRate)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30"
-                      >
-                        Áp dụng phí mới
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -4109,44 +4233,308 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <div className="space-y-8 animate-in fade-in duration-300">
               
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-primary text-lg">Quản lý Cổng Thanh toán VNPay</h3>
-                    <p className="text-[12px] text-slate-400 mt-1">Quản lý cấu hình API và đối soát nhật ký giao dịch thanh toán trực tuyến.</p>
+                    <h3 className="font-bold text-primary text-lg">Cấu hình Cổng Thanh toán VNPay / VietQR</h3>
+                    <p className="text-[12px] text-slate-400 mt-1">Cài đặt mã Ngân hàng, Số tài khoản nhận tiền và Secret Key tích hợp thanh toán.</p>
+                  </div>
+                  <div>
+                    {!isEditingVnpay ? (
+                      <button 
+                        onClick={() => setShowVnpayEditConfirmModal(true)}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[13px] rounded-xl transition-all flex items-center gap-2"
+                      >
+                        <Edit3 className="w-4 h-4" /> Chỉnh sửa cấu hình
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setVnpayConfig(tempVnpayConfig || vnpayConfig);
+                            setIsEditingVnpay(false);
+                          }}
+                          className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[13px] rounded-xl transition-all"
+                        >
+                          Hủy
+                        </button>
+                        <button 
+                          onClick={handleSaveVnpayConfig}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] rounded-xl transition-all shadow-sm flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" /> Lưu cấu hình
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Mã Ngân hàng (Bank Name)</label>
+                      <select 
+                        value={vnpayConfig?.bankName || ''}
+                        onChange={(e) => setVnpayConfig({...vnpayConfig, bankName: e.target.value})}
+                        disabled={!isEditingVnpay}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
+                      >
+                        <option value="">Chọn ngân hàng...</option>
+                        <option value="VNPAY">Ví VNPAY</option>
+                        <option value="NCB">NCB - Ngân hàng Quốc Dân</option>
+                        <option value="VISA">Thẻ Quốc tế VISA</option>
+                        <option value="MASTERCARD">Thẻ Quốc tế MasterCard</option>
+                        <option value="JCB">Thẻ Quốc tế JCB</option>
+                        <option value="VCB">Vietcombank</option>
+                        <option value="TECHCOMBANK">Techcombank</option>
+                        <option value="MB">MBBank</option>
+                        <option value="ACB">ACB</option>
+                        <option value="VPBANK">VPBank</option>
+                        <option value="BIDV">BIDV</option>
+                        <option value="CTG">VietinBank</option>
+                        <option value="VIB">VIB</option>
+                        <option value="TPBANK">TPBank</option>
+                        <option value="HDBANK">HDBank</option>
+                        <option value="SACOMBANK">Sacombank</option>
+                        <option value="MSB">MSB</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Số Tài khoản (Bank Account No)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={vnpayConfig?.bankAccountNo || ''}
+                          onChange={(e) => setVnpayConfig({...vnpayConfig, bankAccountNo: e.target.value})}
+                          disabled={!isEditingVnpay}
+                          placeholder="VD: 1234567890"
+                          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        />
+                        {isEditingVnpay && (
+                          <button
+                            onClick={handleLookupBank}
+                            disabled={isLookingUp || !vnpayConfig?.bankName || !vnpayConfig?.bankAccountNo}
+                            className="px-4 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-[13px] rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
+                          >
+                            {isLookingUp ? 'Đang dò...' : 'Kiểm tra'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Tên Chủ Tài khoản</label>
+                      <input 
+                        type="text" 
+                        value={vnpayConfig?.bankAccountName || ''}
+                        onChange={(e) => setVnpayConfig({...vnpayConfig, bankAccountName: e.target.value.toUpperCase()})}
+                        disabled={!isEditingVnpay}
+                        placeholder="Tự động điền khi bấm Kiểm tra"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+
+
+                    <div className="flex items-center gap-3 pt-6">
+                      <div className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${vnpayConfig?.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                           onClick={() => isEditingVnpay && setVnpayConfig({...vnpayConfig, isActive: !vnpayConfig.isActive})}>
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${vnpayConfig?.isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                      </div>
+                      <span className="text-[13px] font-medium text-slate-600">
+                        {vnpayConfig?.isActive ? 'Cổng thanh toán đang hoạt động' : 'Tạm khóa cổng thanh toán'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-primary text-[18px]">Nhật Ký Giao Dịch VNPay</h3>
-                      <p className="text-body-sm text-slate-500 mt-1">Danh sách đối soát và duyệt hóa đơn cho Employer đăng dự án tuyển dụng.</p>
+              {/* Sandbox Test Area */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Sliders className="w-4 h-4" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={handleTestVnpay}
-                        disabled={isLoading}
-                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-                      >
-                        Tạo thanh toán VNPay (Test)
-                      </button>
-                      <button 
-                        onClick={handleTestPayos}
-                        disabled={isLoading}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-                      >
-                        Tạo thanh toán PayOS (Test)
-                      </button>
-                      <button 
-                        onClick={fetchVnpayTransactions}
-                        className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
-                        title="Tải lại giao dịch"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-[15px]">Cấu hình Gói Dịch Vụ & Cổng Thanh toán (VNPay / PayOS)</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Quản lý giá tiền và chọn gói để tạo liên kết thanh toán thử nghiệm.</p>
                     </div>
                   </div>
+                  <div>
+                    {!isEditingPackages ? (
+                      <button 
+                        onClick={handleEditPackages}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[12px] rounded-lg transition-all"
+                      >
+                        Chỉnh sửa giá
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setIsEditingPackages(false)}
+                          disabled={isUpdatingPackages}
+                          className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[12px] rounded-lg transition-all disabled:opacity-50"
+                        >
+                          Hủy
+                        </button>
+                        <button 
+                          onClick={handleSavePackages}
+                          disabled={isUpdatingPackages}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] rounded-lg transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {isUpdatingPackages && <RefreshCw className="w-3 h-3 animate-spin" />}
+                          Lưu bảng giá
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {servicePackages.map((pkg) => {
+                    const isSelected = testPackageType === pkg.packageType;
+                    let pkgTitle = 'Gói Trung bình';
+                    let pkgClass = 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30';
+                    let badgeColor = 'bg-slate-100 text-slate-600';
+                    const postLimit = pkg.postLimit || (pkg.packageType === 'PREMIUM' ? 40 : pkg.packageType === 'REGULAR' ? 10 : 20);
+                    const durationDays = pkg.durationDays || 30;
+                    let pkgDuration = `${postLimit} bài / ${durationDays} ngày`;
+
+                    if (pkg.packageType === 'REGULAR') {
+                      pkgTitle = 'Gói Thường';
+                      if (isSelected) {
+                        pkgClass = 'border-indigo-500 bg-indigo-50/10 ring-2 ring-indigo-500/10';
+                      }
+                      badgeColor = 'bg-indigo-50 text-indigo-700';
+                    } else if (pkg.packageType === 'PREMIUM') {
+                      pkgTitle = 'Gói Cao cấp';
+                      if (isSelected) {
+                        pkgClass = 'border-amber-500 bg-amber-50/10 ring-2 ring-amber-500/10';
+                      }
+                      badgeColor = 'bg-amber-50 text-amber-700';
+                    } else { // MEDIUM
+                      if (isSelected) {
+                        pkgClass = 'border-emerald-500 bg-emerald-50/10 ring-2 ring-emerald-500/10';
+                      }
+                      badgeColor = 'bg-emerald-50 text-emerald-700';
+                    }
+
+                    return (
+                      <div 
+                        key={pkg.packageType}
+                        onClick={() => setTestPackageType(pkg.packageType)}
+                        className={`border rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between ${pkgClass}`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
+                              {pkg.packageType}
+                            </span>
+                            {isEditingPackages ? (
+                              <div className="flex gap-1 items-center">
+                                <input
+                                  type="number"
+                                  className="w-10 border border-slate-300 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-700 text-center focus:outline-none focus:border-blue-500"
+                                  value={tempPackages.find(p => p.packageType === pkg.packageType)?.postLimit || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : Number(e.target.value);
+                                    setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, postLimit: val } : p));
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Số bài"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">bài /</span>
+                                <input
+                                  type="number"
+                                  className="w-10 border border-slate-300 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-700 text-center focus:outline-none focus:border-blue-500"
+                                  value={tempPackages.find(p => p.packageType === pkg.packageType)?.durationDays || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : Number(e.target.value);
+                                    setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, durationDays: val } : p));
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Số ngày"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">ngày</span>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 font-semibold">{pkgDuration}</span>
+                            )}
+                          </div>
+                          <h5 className="font-bold text-slate-800 text-[14px]">{pkgTitle}</h5>
+                        </div>
+                        <div className="mt-4 flex justify-between items-end">
+                          <div>
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Giá gói</span>
+                            {isEditingPackages ? (
+                              <input
+                                type="number"
+                                className="w-full mt-1 border border-slate-300 rounded-md px-2 py-1 text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
+                                value={tempPackages.find(p => p.packageType === pkg.packageType)?.price ?? ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, price: val } : p));
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <p className="text-md font-extrabold text-slate-900 mt-0.5 font-mono">
+                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(pkg.price)}
+                              </p>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100/60 text-emerald-800 px-2 py-0.5 rounded-md">
+                              ✓ Chọn
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowQrZoomModal(true)}
+                    disabled={isLoading}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    Hiển thị mã VietQR ({testPackageType})
+                  </button>
+                  <button 
+                    onClick={() => setShowInvoicePreviewModal(true)}
+                    disabled={isLoading}
+                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-md shadow-rose-600/10 hover:shadow-rose-600/20 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> Xem mẫu Hóa đơn ({testPackageType})
+                  </button>
+                  <button 
+                    onClick={() => handleTestPayos()}
+                    disabled={isLoading}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    Tạo thanh toán PayOS ({testPackageType})
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <div>
+                    <h3 className="font-bold text-primary text-[17px]">Nhật Ký Giao Dịch</h3>
+                    <p className="text-[12px] text-slate-500 mt-1">Danh sách đối soát và duyệt hóa đơn cho Employer đăng dự án tuyển dụng.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => fetchVnpayTransactions(0)}
+                      className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
+                      title="Tải lại giao dịch"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
                   {vnpayLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-450 space-y-3">
@@ -4164,7 +4552,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider font-extrabold">
                             <th className="p-3">Mã GD / Order Info</th>
-                            <th className="p-3">Employer / Dự án</th>
+                            <th className="p-3">Employer / Dịch vụ</th>
                             <th className="p-3">Số tiền</th>
                             <th className="p-3">Thời gian</th>
                             <th className="p-3">Cổng GD / VNP No.</th>
@@ -4176,14 +4564,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           {vnpayTransactions.map(txn => (
                             <tr key={txn.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
                               <td className="p-3">
-                                <span className="font-bold text-slate-800 font-mono text-[12px] block">#{txn.vnpTxnRef}</span>
+                                <span className="font-bold text-slate-800 font-mono text-[12px] block">#{txn.txnRef || txn.vnpTxnRef || 'N/A'}</span>
                                 <span className="text-[11px] text-slate-450 leading-normal block max-w-[150px] truncate" title={txn.orderInfo}>
                                   {txn.orderInfo || 'N/A'}
                                 </span>
                               </td>
                               <td className="p-3">
                                 <span className="font-semibold text-slate-700 block">Employer ID: {txn.employerId}</span>
-                                <span className="text-[11.5px] text-slate-500 block">Dự án: ID #{txn.projectId}</span>
+                                {txn.packageType ? (
+                                  <span className="text-[11.5px] text-indigo-600 font-medium block">Gói: {txn.packageType}</span>
+                                ) : (
+                                  <span className="text-[11.5px] text-slate-500 block">Dự án: ID #{txn.projectId || 'N/A'}</span>
+                                )}
                               </td>
                               <td className="p-3">
                                 <span className="font-bold text-emerald-600">
@@ -4236,6 +4628,31 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           ))}
                         </tbody>
                       </table>
+                      
+                      {/* Pagination Controls */}
+                      {vnpayTotalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+                          <span className="text-xs text-slate-500 font-semibold">
+                            Trang {vnpayPage + 1} / {vnpayTotalPages}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => fetchVnpayTransactions(vnpayPage - 1)}
+                              disabled={vnpayPage === 0 || vnpayLoading}
+                              className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-xs font-bold"
+                            >
+                              Trang trước
+                            </button>
+                            <button
+                              onClick={() => fetchVnpayTransactions(vnpayPage + 1)}
+                              disabled={vnpayPage >= vnpayTotalPages - 1 || vnpayLoading}
+                              className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-xs font-bold"
+                            >
+                              Trang sau
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -5130,9 +5547,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật khẩu tạm thời</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                    {createdCredentials.status === 'ACCEPTED' ? 'Mật khẩu hiện tại (tự sinh)' : 'Mật khẩu tạm thời'}
+                  </span>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider overflow-x-auto">{createdCredentials.password || '(Trống/Đã thay đổi)'}</code>
+                    <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider overflow-x-auto">
+                      {createdCredentials.password || '(Trống/Đã thay đổi)'}
+                    </code>
                     <button
                       type="button"
                       onClick={() => { 
@@ -5450,8 +5871,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           </div>
         </div>
       </div>
-
-      {/* VietQR Zoom Modal */}
+              {/* VietQR Zoom Modal */}
       <div className={`fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showQrZoomModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl transition-all duration-300 flex flex-col items-center relative ${
           showQrZoomModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
@@ -5465,22 +5885,175 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <X className="w-5 h-5" />
           </button>
           
-          <div className="text-center w-full pb-3 border-b border-slate-100 mb-5">
-            <h3 className="font-bold text-slate-800 text-lg">Mã VietQR Thử Nghiệm</h3>
-            <p className="text-body-sm text-slate-500">{vnpayConfig.bankAccountName || 'Chưa có tên'}</p>
-            <p className="text-body-xs font-mono text-slate-400 mt-0.5">{vnpayConfig.bankName} - {vnpayConfig.bankAccountNo}</p>
-          </div>
+          {(() => {
+            const currentAmount = isEditingPackages 
+              ? (tempPackages.find(p => p.packageType === testPackageType)?.price || 0) 
+              : (servicePackages?.find(p => p.packageType === testPackageType)?.price || 0);
+            
+            return (
+              <>
+                <div className="text-center w-full pb-3 border-b border-slate-100 mb-5">
+                  <h3 className="font-bold text-slate-800 text-lg">Mã VietQR Thử Nghiệm ({testPackageType})</h3>
+                  <p className="text-body-sm text-slate-500">{vnpayConfig.bankAccountName || 'Chưa có tên'}</p>
+                  <p className="text-body-xs font-mono text-slate-400 mt-0.5">{vnpayConfig.bankName} - {vnpayConfig.bankAccountNo}</p>
+                </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-slate-150 inline-block shadow-lg">
-            <img 
-              src={`https://img.vietqr.io/image/${vnpayConfig.bankName}-${vnpayConfig.bankAccountNo}-compact2.png?amount=50000&addInfo=TEST_VERIFY&accountName=${encodeURIComponent(vnpayConfig.bankAccountName || '')}`} 
-              alt="VietQR Zoomed Preview" 
-              className="w-96 h-96 object-contain mx-auto"
-            />
-          </div>
+                <div className="bg-white p-5 rounded-3xl border border-slate-150 inline-block shadow-lg">
+                  <img 
+                    src={`https://img.vietqr.io/image/${vnpayConfig.bankName}-${vnpayConfig.bankAccountNo}-compact2.png?amount=${currentAmount}&addInfo=TEST_VERIFY_${testPackageType}&accountName=${encodeURIComponent(vnpayConfig.bankAccountName || '')}`} 
+                    alt="VietQR Zoomed Preview" 
+                    className="w-96 h-96 object-contain mx-auto"
+                  />
+                </div>
 
-          <div className="mt-5 text-center text-body-xs text-slate-450 leading-relaxed max-w-sm">
-            Quét mã trên bằng ứng dụng Ngân hàng của bạn để kiểm tra tài khoản thụ hưởng. Số tiền mặc định là <span className="font-bold text-slate-700">50.000đ</span>.
+                <div className="mt-5 text-center text-body-xs text-slate-450 leading-relaxed max-w-sm">
+                  Quét mã trên bằng ứng dụng Ngân hàng của bạn để kiểm tra tài khoản thụ hưởng. Số tiền thanh toán: <span className="font-bold text-slate-700 text-[14px]">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentAmount)}</span>.
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Invoice Preview Modal */}
+      <div className={`fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showInvoicePreviewModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-xl w-full max-w-4xl p-0 shadow-2xl transition-all duration-300 flex flex-col relative ${
+          showInvoicePreviewModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}>
+          <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-rose-600"/> Mẫu Hóa Đơn Điện Tử (MISA Simulation)</h3>
+            <button 
+              type="button"
+              onClick={() => setShowInvoicePreviewModal(false)}
+              className="text-slate-400 hover:text-slate-700 shrink-0 transition-all p-1.5 hover:bg-slate-200 rounded-full active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="p-8 overflow-y-auto max-h-[80vh] bg-white">
+            {(() => {
+              const currentAmount = isEditingPackages 
+                ? (tempPackages.find(p => p.packageType === testPackageType)?.price || 0) 
+                : (servicePackages?.find(p => p.packageType === testPackageType)?.price || 0);
+              
+              // Giả định giá trị hiện tại là ĐÃ BAO GỒM VAT 8% hoặc VAT là riêng biệt. 
+              // Trong bài toán này, ta tính VAT 8% tách từ Tổng tiền thanh toán (thường giá bán = Giá trước thuế + VAT)
+              // Ví dụ tổng tiền 50.000 => Giá trước thuế = 50.000 / 1.08
+              const taxRate = 0.08;
+              const preTaxAmount = Math.round(currentAmount / (1 + taxRate));
+              const taxAmount = currentAmount - preTaxAmount;
+              
+              const formatVND = (val) => new Intl.NumberFormat('vi-VN').format(val);
+
+              return (
+                <div className="border border-red-500 p-8 rounded-md mx-auto relative font-sans text-slate-900 max-w-3xl" style={{backgroundImage: 'radial-gradient(#fecaca 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundColor: 'white'}}>
+                  
+                  {/* Watermark fake */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                    <span className="text-[120px] font-bold text-red-500 transform -rotate-45">MẪU</span>
+                  </div>
+
+                  {/* Header Hóa đơn */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-1/3">
+                      <div className="w-24 h-24 bg-red-50 border-2 border-red-200 flex items-center justify-center text-red-500 font-bold mb-2">
+                        LOGO
+                      </div>
+                    </div>
+                    <div className="w-1/3 text-center">
+                      <h2 className="text-xl font-bold text-red-600 mb-1">HÓA ĐƠN GIÁ TRỊ GIA TĂNG</h2>
+                      <p className="text-sm italic text-slate-600">(Bản thể hiện của hóa đơn điện tử)</p>
+                      <p className="text-sm text-slate-800 mt-2">Ngày 14 tháng 07 năm 2026</p>
+                    </div>
+                    <div className="w-1/3 text-right text-sm">
+                      <p>Mẫu số: <span className="font-semibold">1</span></p>
+                      <p>Ký hiệu: <span className="font-semibold">C26TMA</span></p>
+                      <p>Số: <span className="font-bold text-red-600 text-lg">0001234</span></p>
+                    </div>
+                  </div>
+
+                  <hr className="border-t-2 border-red-500 mb-6" />
+
+                  {/* Seller Info */}
+                  <div className="mb-6 space-y-1 text-sm">
+                    <p><span className="font-semibold">Đơn vị bán hàng:</span> CÔNG TY TNHH LANCERPRO VIỆT NAM</p>
+                    <p><span className="font-semibold">Mã số thuế:</span> 0101234567</p>
+                    <p><span className="font-semibold">Địa chỉ:</span> Tầng 3, Tòa nhà FPT, Khu CNC Hòa Lạc, Thạch Thất, Hà Nội</p>
+                    <p><span className="font-semibold">Điện thoại:</span> 024.1234.5678 <span className="ml-8 font-semibold">Số tài khoản:</span> {vnpayConfig.bankAccountNo} ({vnpayConfig.bankName})</p>
+                  </div>
+
+                  <hr className="border-t border-dashed border-red-300 mb-6" />
+
+                  {/* Buyer Info */}
+                  <div className="mb-6 space-y-1 text-sm">
+                    <p><span className="font-semibold">Họ tên người mua hàng:</span> NGUYỄN VĂN A</p>
+                    <p><span className="font-semibold">Tên đơn vị:</span> CÔNG TY TNHH DEMO KHÁCH HÀNG</p>
+                    <p><span className="font-semibold">Mã số thuế:</span> 0109876543</p>
+                    <p><span className="font-semibold">Địa chỉ:</span> Quận 1, Thành phố Hồ Chí Minh</p>
+                    <p><span className="font-semibold">Hình thức thanh toán:</span> Chuyển khoản (VietQR)</p>
+                  </div>
+
+                  {/* Table */}
+                  <table className="w-full border-collapse border border-red-500 text-sm mb-4">
+                    <thead>
+                      <tr className="bg-red-50 font-semibold text-center">
+                        <td className="border border-red-500 p-2">STT</td>
+                        <td className="border border-red-500 p-2">Tên Hàng Hóa, Dịch vụ</td>
+                        <td className="border border-red-500 p-2">ĐVT</td>
+                        <td className="border border-red-500 p-2">Số lượng</td>
+                        <td className="border border-red-500 p-2">Đơn giá</td>
+                        <td className="border border-red-500 p-2">Thành tiền</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-red-500 p-2 text-center">1</td>
+                        <td className="border border-red-500 p-2 font-medium">Gói dịch vụ đăng tin tuyển dụng {testPackageType}</td>
+                        <td className="border border-red-500 p-2 text-center">Gói</td>
+                        <td className="border border-red-500 p-2 text-center">1</td>
+                        <td className="border border-red-500 p-2 text-right">{formatVND(preTaxAmount)}</td>
+                        <td className="border border-red-500 p-2 text-right font-semibold">{formatVND(preTaxAmount)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Totals */}
+                  <div className="flex justify-end mb-6 text-sm">
+                    <div className="w-1/2 space-y-2">
+                      <div className="flex justify-between">
+                        <span>Cộng tiền hàng:</span>
+                        <span className="font-semibold">{formatVND(preTaxAmount)} đ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Thuế suất GTGT (8%):</span>
+                        <span className="font-semibold">{formatVND(taxAmount)} đ</span>
+                      </div>
+                      <div className="flex justify-between text-base font-bold text-red-600 mt-2 border-t border-red-200 pt-2">
+                        <span>Tổng cộng tiền thanh toán:</span>
+                        <span>{formatVND(currentAmount)} đ</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex justify-between text-center pt-8 mb-4 text-sm">
+                    <div className="w-1/3">
+                      <p className="font-semibold">Người mua hàng</p>
+                      <p className="italic text-slate-500 text-xs">(Ký, ghi rõ họ tên)</p>
+                    </div>
+                    <div className="w-1/3">
+                      <p className="font-semibold">Người bán hàng</p>
+                      <p className="italic text-slate-500 text-xs">(Ký, ghi rõ họ tên)</p>
+                      <div className="mt-8 border-2 border-red-500 text-red-500 font-bold p-2 inline-block rounded-md rotate-[-5deg]">
+                        ĐÃ KÝ ĐIỆN TỬ
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -5623,7 +6196,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', textAlign: 'center', width: '900px', maxWidth: '95%', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h3 style={{ margin: 0, color: '#1a1a1a', fontSize: '20px', fontWeight: 'bold' }}>Thanh toán thử nghiệm PayOS</h3>
-              <button onClick={() => setPayosCheckoutUrl(null)} style={{ padding: '8px 15px', cursor: 'pointer', background: '#e2e8f0', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+              <button onClick={handleCancelPayos} style={{ padding: '8px 15px', cursor: 'pointer', background: '#e2e8f0', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
                 Đóng
               </button>
             </div>

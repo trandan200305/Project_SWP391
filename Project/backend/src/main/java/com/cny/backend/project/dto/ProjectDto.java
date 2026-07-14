@@ -50,4 +50,6 @@ public class ProjectDto {
     private String employerJoinDate;
     private Integer employerJobsPosted;
     private List<String> skills;
+    private String servicePackage;
+    private Double serviceFee;
 }

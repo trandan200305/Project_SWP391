@@ -38,6 +38,40 @@ public class AuthController {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private ManagerRepository managerRepository;
+
+    @Autowired
+    private StaffRepository staffRepository;
+
+    @GetMapping("/status/{role}/{id}")
+    public ResponseEntity<Map<String, Object>> getUserStatus(
+            @PathVariable("role") String role,
+            @PathVariable("id") int id) {
+        Map<String, Object> response = new HashMap<>();
+        String status = null;
+
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            status = managerRepository.findById(id)
+                    .map(m -> m.getStatus())
+                    .orElse(null);
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            status = staffRepository.findById(id)
+                    .map(s -> s.getStatus())
+                    .orElse(null);
+        }
+
+        if (status == null) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng!");
+            return ResponseEntity.notFound().build();
+        }
+
+        response.put("success", true);
+        response.put("status", status);
+        return ResponseEntity.ok(response);
+    }
+
     
     private final Map<String, String> verificationCodes = new ConcurrentHashMap<>();
 

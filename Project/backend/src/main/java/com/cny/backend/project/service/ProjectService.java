@@ -47,6 +47,9 @@ public class ProjectService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private ServicePackageConfigRepository servicePackageConfigRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -89,6 +92,58 @@ public class ProjectService {
             }
         }
 
+        String projectStatus = "PENDING_PAYMENT";
+        String appliedPackage = "MEDIUM";
+        double serviceFee = 100000.0;
+        int durationDays = 7;
+
+        // Check if Employer has an active subscription package with available quota
+        boolean hasActiveSubscription = client.getPackageExpiryDate() != null && client.getPackageExpiryDate().isAfter(LocalDateTime.now());
+        if (hasActiveSubscription && client.getPackagePostQuota() != null && client.getPackagePostQuota() > 0) {
+            // Deduct quota and publish immediately
+            client.setPackagePostQuota(client.getPackagePostQuota() - 1);
+            employerRepository.save(client);
+
+            projectStatus = "PUBLISHED";
+            appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
+            serviceFee = 0.0; // Already paid via subscription
+            
+            // Get duration from config if possible
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
+            if (configOpt.isPresent()) {
+                durationDays = configOpt.get().getDurationDays();
+            } else {
+                if ("REGULAR".equals(appliedPackage)) durationDays = 15;
+                if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
+            }
+        } else {
+            // Fallback to Pay-per-post logic
+            appliedPackage = dto.getServicePackage() != null ? dto.getServicePackage().toUpperCase() : "MEDIUM";
+            if (!"MEDIUM".equals(appliedPackage) && !"REGULAR".equals(appliedPackage) && !"PREMIUM".equals(appliedPackage)) {
+                appliedPackage = "MEDIUM";
+            }
+            
+            if ("REGULAR".equals(appliedPackage)) {
+                serviceFee = 200000.0;
+                durationDays = 15;
+            } else if ("PREMIUM".equals(appliedPackage)) {
+                serviceFee = 500000.0;
+                durationDays = 30;
+            }
+
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
+            if (configOpt.isPresent()) {
+                serviceFee = configOpt.get().getPrice();
+            } else {
+                servicePackageConfigRepository.save(ServicePackageConfig.builder()
+                    .packageType(appliedPackage)
+                    .price(serviceFee)
+                    .postLimit(10)
+                    .durationDays(30)
+                    .build());
+            }
+        }
+
         Project project = Project.builder()
                 .client(client)
                 .category(category)
@@ -99,8 +154,10 @@ public class ProjectService {
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
-                .postingExpires(LocalDate.now().plusDays(30)) 
-                .status("PENDING") 
+                .postingExpires(LocalDate.now().plusDays(durationDays)) 
+                .status(projectStatus) 
+                .servicePackage(appliedPackage)
+                .serviceFee(serviceFee)
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
@@ -314,6 +371,8 @@ public class ProjectService {
                 .employerJoinDate(employerJoin)
                 .employerJobsPosted(employerJobs)
                 .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
+                .servicePackage(project.getServicePackage())
+                .serviceFee(project.getServiceFee())
                 .build();
     }
 }

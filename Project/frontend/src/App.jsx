@@ -57,6 +57,7 @@ export default function App() {
             setSuspended({ reason: event.reason });
           } else if (event.type === "ACCOUNT_REACTIVATED") {
             setSuspended(null);
+            setUser(prev => prev ? { ...prev, status: 'ACTIVE' } : null);
           }
         } catch (_) {}
       });

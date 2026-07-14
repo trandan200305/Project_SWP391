@@ -162,6 +162,17 @@ public class Employer {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
+    // --- Subscription Package System ---
+    @Column(name = "current_package_type", length = 30)
+    private String currentPackageType;
+
+    @Column(name = "package_post_quota")
+    private Integer packagePostQuota = 0;
+
+    @Column(name = "package_expiry_date")
+    private LocalDateTime packageExpiryDate;
+    // -----------------------------------
+
     
 
     @Transient

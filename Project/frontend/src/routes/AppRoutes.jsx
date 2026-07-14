@@ -6,6 +6,7 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import ManagerDashboardPage from '../features/admin/pages/ManagerDashboardPage.jsx';
 import StaffDashboardPage from '../features/admin/pages/StaffDashboardPage.jsx';
+import WaitingRoomPage from '../features/auth/pages/WaitingRoomPage.jsx';
 import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
@@ -30,6 +31,15 @@ export default function AppRoutes({
   onLogout
 }) {
   if (currentPage === 'admin') {
+    if (user?.status === 'PENDING_ACTIVATION' && (user?.role === 'MANAGER' || user?.role === 'STAFF')) {
+      return (
+        <WaitingRoomPage 
+          user={user} 
+          onStatusActive={() => onUserUpdate({ ...user, status: 'ACTIVE' })} 
+          onLogout={onLogout} 
+        />
+      );
+    }
     if (user?.role === 'ADMIN') {
       return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }

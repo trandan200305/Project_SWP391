@@ -10,7 +10,8 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
     bankName = 'Techcombank', 
     bankAccountNo = '19031234567890', 
     bankAccountName = 'TRAN DUC AN',
-    projectTitle = 'Dự án LancerPro'
+    projectTitle = 'Dự án LancerPro',
+    servicePackage
   } = pageParams || {};
 
   const [paymentMethod, setPaymentMethod] = useState('vietqr'); // default to VietQR
@@ -67,7 +68,15 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
             <div className="bg-slate-50 border border-slate-150/50 rounded-2xl p-5 mb-6">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dự án cần thanh toán</span>
               <h3 className="font-bold text-slate-800 text-[15px] truncate mt-1">{projectTitle}</h3>
-              <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200/50">
+              {servicePackage && (
+                <div className="mt-2.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gói dịch vụ</span>
+                  <span className="inline-flex items-center gap-1.5 mt-1 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {servicePackage === 'MEDIUM' ? 'Trung bình (Medium)' : servicePackage === 'REGULAR' ? 'Thường (Regular)' : 'Cao cấp (Premium)'}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-3.5 pt-3.5 border-t border-slate-200/50">
                 <span className="text-sm font-semibold text-slate-500">Tổng phí dịch vụ:</span>
                 <span className="text-xl font-extrabold text-emerald-600">{formattedAmount}</span>
               </div>
@@ -123,27 +132,13 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
 
             </div>
 
-            {paymentMethod === 'vnpay' && (
-              <div className="mt-8 animate-in fade-in duration-300">
-                <button
-                  onClick={handleRedirectVnpay}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-4 rounded-2xl shadow-lg shadow-emerald-600/15 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
-                >
-                  Thanh toán qua VNPay
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-2 mt-3 text-slate-400 text-left">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-[11px]">Hệ thống sẽ chuyển hướng bạn đến cổng thanh toán VNPay Sandbox an toàn.</span>
-                </div>
-              </div>
-            )}
+            {/* VNPay redirect button removed - Using QR Code instead */}
           </div>
 
           {/* Right Column: Dynamic VietQR presentation OR VNPay Info */}
           <div className="md:col-span-5 bg-slate-50/80 p-8 flex flex-col items-center justify-center">
-            {paymentMethod === 'vietqr' ? (
-              <div className="w-full space-y-6 text-center animate-in fade-in duration-300">
+            {/* Both VietQR and VNPay now share the same QR code UI as requested by user */}
+            <div className="w-full space-y-6 text-center animate-in fade-in duration-300">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mã QR Thanh Toán</span>
                 
                 {/* QR Code Frame */}
@@ -217,24 +212,13 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
                     <div>
                       <h5 className="font-bold text-xs">Lưu ý đối với thử nghiệm:</h5>
                       <p className="text-[11px] leading-relaxed mt-1">
-                        Do đây là hệ thống thử nghiệm, sau khi chuyển khoản, bạn có thể thông báo cho Ban quản trị phê duyệt. Admin sẽ vào trang Dashboard quản lý giao dịch để nhấn nút <strong>Duyệt thủ công</strong> để kích hoạt bài đăng lập tức.
+                        Do phương thức này yêu cầu đối soát thủ công, sau khi bạn chuyển khoản thành công, bộ phận <strong>Nhân viên (Staff)</strong> sẽ tiến hành xác nhận giao dịch và kích hoạt bài đăng của bạn trong thời gian sớm nhất.
                       </p>
                     </div>
                   </div>
                 </div>
 
               </div>
-            ) : (
-              <div className="text-center py-8 space-y-4 animate-in fade-in duration-300">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mx-auto shadow-md">
-                  <CreditCard className="w-8 h-8" />
-                </div>
-                <h4 className="font-bold text-slate-800 text-[15px]">Cổng thanh toán VNPay</h4>
-                <p className="text-[12px] text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                  Nhấn nút bên trái để được chuyển hướng an toàn qua hệ thống cổng thanh toán VNPay thực hiện quét QR động hoặc nhập thông tin thẻ.
-                </p>
-              </div>
-            )}
           </div>
 
         </div>
@@ -242,3 +226,4 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
     </div>
   );
 }
+

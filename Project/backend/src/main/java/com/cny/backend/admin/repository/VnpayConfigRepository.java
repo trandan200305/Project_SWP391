@@ -8,4 +8,5 @@ import java.util.Optional;
 @Repository
 public interface VnpayConfigRepository extends JpaRepository<VnpayConfig, Integer> {
     Optional<VnpayConfig> findFirstByIsActiveTrueOrderByIdDesc();
+    Optional<VnpayConfig> findFirstByOrderByIdDesc();
 }

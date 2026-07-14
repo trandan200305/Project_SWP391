@@ -230,7 +230,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                       bankName: payData.bankName,
                       bankAccountNo: payData.bankAccountNo,
                       bankAccountName: payData.bankAccountName,
-                      projectTitle: project?.title || 'Dự án LancerPro'
+                      projectTitle: project?.title || 'Dự án LancerPro',
+                      servicePackage: project?.servicePackage
                     });
                 } else {
                     window.location.href = payData.paymentUrl;

@@ -15,4 +15,5 @@ export const authApi = {
   acceptInvitation: (onboardData) => api.post(ENDPOINTS.AUTH.ACCEPT_INVITATION, onboardData),
   resetPassword: (resetData) => api.post(ENDPOINTS.AUTH.RESET_PASSWORD, resetData),
   changePassword: (payload) => api.post('/auth/change-password', payload),
+  getUserStatus: (role, id) => api.get(`/auth/status/${role}/${id}`),
 };

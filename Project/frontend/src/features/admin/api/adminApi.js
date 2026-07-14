@@ -28,6 +28,7 @@ export const adminApi = {
   },
   getUserCredentials: (role, userId) => api.get(`/admin/users/${role}/${userId}/credentials`),
   regenerateUserPassword: (role, userId) => api.post(`/admin/users/${role}/${userId}/regenerate-password`),
+  changeUserPasswordDirectly: (role, userId, newPassword) => api.post(`/admin/users/${role}/${userId}/change-password-direct`, { newPassword }),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
   getManagers: () => api.get('/admin/managers'),
@@ -101,7 +102,7 @@ export const adminApi = {
   escalateVerificationTask: (taskId, reason) => api.post(`/admin/verification-tasks/${taskId}/escalate`, { reason }),
   getVnpayConfig: () => api.get('/admin/vnpay-config'),
   saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
-  getVnpayTransactions: () => api.get('/admin/vnpay-transactions'),
+  getVnpayTransactions: (page = 0, size = 10) => api.get(`/admin/vnpay-transactions?page=${page}&size=${size}`),
   reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`),
   getPendingGigs: () => api.get('/admin/gigs/pending'),
   moderateGig: (gigId, approve, reasonParam, adminId) => {
@@ -115,7 +116,29 @@ export const adminApi = {
   queryVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/query`),
   refundVnpayTransaction: (id, payload) => api.post(`/admin/vnpay-transactions/${id}/refund`, payload),
   lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
-  createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
-  createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
-  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`)
+  createTestVnpayUrl: (projectId, packageType) => {
+    let url = '/payment/create-url';
+    const params = [];
+    if (projectId) params.push(`projectId=${projectId}`);
+    if (packageType) params.push(`packageType=${packageType}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return api.post(url);
+  },
+  createPayosUrl: (projectId, packageType) => {
+    let url = '/payment/payos/create-url';
+    const params = [];
+    if (projectId) params.push(`projectId=${projectId}`);
+    if (packageType) params.push(`packageType=${packageType}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return api.post(url);
+  },
+  queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`),
+  cancelPayosTransaction: (txnRef) => api.post(`/payment/payos/cancel?txnRef=${txnRef}`),
+  getServicePackages: () => api.get('/admin/service-packages'),
+  updateServicePackages: (prices, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return api.post('/admin/service-packages', prices, { headers });
+  }
 };
+
