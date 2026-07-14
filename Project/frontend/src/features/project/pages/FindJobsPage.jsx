@@ -288,7 +288,17 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                       </div>
                       
                       <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
-                        <button onClick={handleAction} className="flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (job.employerId) {
+                              onNavigate('view_profile', { targetUserId: job.employerId, targetRole: 'employer' });
+                            } else {
+                              setShowModal(true);
+                            }
+                          }} 
+                          className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                        >
                           <img src={getImageUrl(job.employerAvatar)} alt={job.employerName} className="w-5 h-5 rounded-full" />
                           <span className="font-medium text-slate-600">{job.employerName}</span>
                         </button>

@@ -309,7 +309,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(15000000))
                 .deadline(LocalDate.now().plusDays(10))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -321,7 +321,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(6000000))
                 .deadline(LocalDate.now().plusDays(20))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -333,7 +333,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("MONTHLY")
                 .budgetFixed(BigDecimal.valueOf(4500000))
                 .deadline(LocalDate.now().plusDays(30))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 

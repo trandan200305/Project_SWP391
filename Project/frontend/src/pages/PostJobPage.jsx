@@ -79,7 +79,11 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         }
         const min = parseFloat(minStr);
         const max = parseFloat(maxStr);
-        if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
+        if (min < 0 || max < 0) {
+          setNotice({ type: 'error', message: 'Lương nhập không được nhỏ hơn 0.' });
+          return;
+        }
+        if (isNaN(min) || isNaN(max) || min === 0 || max === 0) {
           setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
           return;
         }
@@ -92,7 +96,11 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       const fixedStr = newProject.budgetFixed ? String(newProject.budgetFixed).trim() : '';
       if (fixedStr) {
         const fixed = parseFloat(fixedStr);
-        if (isNaN(fixed) || fixed <= 0) {
+        if (fixed < 0) {
+          setNotice({ type: 'error', message: 'Lương nhập không được nhỏ hơn 0.' });
+          return;
+        }
+        if (isNaN(fixed) || fixed === 0) {
           setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
           return;
         }

@@ -60,6 +60,19 @@ export default function AppRoutes({
     return <UserProfilePage user={user} defaultTab={currentPage} initialTab={initialTab} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
+  if (currentPage === 'view_profile') {
+    return (
+      <UserProfilePage
+        user={user}
+        targetRole={pageParams?.targetRole}
+        targetUserId={pageParams?.targetUserId}
+        defaultTab="profile"
+        onNavigate={handleNavigate}
+        onLogout={onLogout}
+      />
+    );
+  }
+
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
   }

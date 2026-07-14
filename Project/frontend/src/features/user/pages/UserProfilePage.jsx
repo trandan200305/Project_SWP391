@@ -5,9 +5,9 @@ import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
-export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab = 'profile' }) {
-  const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
-  const [targetId, setTargetId] = useState(user?.id || 1);
+export default function UserProfilePage({ user, targetRole, targetUserId, onNavigate, onLogout, defaultTab = 'profile' }) {
+  const [role, setRole] = useState(targetRole?.toLowerCase() || user?.role?.toLowerCase() || 'freelancer');
+  const [targetId, setTargetId] = useState(targetUserId || user?.id || 1);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'work_profile', 'portfolio', 'preferences'
   const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger', 'kyc'
 
@@ -19,6 +19,11 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
+
+  useEffect(() => {
+    setRole(targetRole?.toLowerCase() || user?.role?.toLowerCase() || 'freelancer');
+    setTargetId(targetUserId || user?.id || 1);
+  }, [targetRole, targetUserId, user]);
   
   // ================= COMMON STATE =================
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -619,6 +624,8 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
   };
 
+  const isOwnProfile = user && user.role?.toLowerCase() === role && user.id === targetId;
+
   const allProps = {
     user, onLogout,
     role, targetId, activeTab, setActiveTab, prefTab, setPrefTab, onNavigate,
@@ -633,27 +640,39 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry, companyLogoUrl, setCompanyLogoUrl,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
-    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency
+    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency,
+    isOwnProfile
   };
 
-  const tabs = role === 'freelancer' 
-    ? [
-        { id: 'profile', label: 'Hồ sơ cá nhân' },
-        { id: 'edit_profile', label: 'Sửa hồ sơ' },
-        { id: 'work_profile', label: 'Hồ sơ làm việc' },
-        { id: 'portfolio', label: 'Hồ sơ năng lực' },
-        { id: 'preferences', label: 'Cài đặt chung' }
-      ]
-    : role === 'employer'
-    ? [
-        { id: 'profile', label: 'Thông tin chung' },
-        { id: 'edit_profile', label: 'Sửa hồ sơ' },
-        { id: 'preferences', label: 'Cài đặt chung' }
-      ]
-    : [
-        { id: 'edit_profile', label: 'Sửa hồ sơ' },
-        { id: 'preferences', label: 'Cài đặt chung' }
-      ];
+  const tabs = isOwnProfile
+    ? (role === 'freelancer' 
+      ? [
+          { id: 'profile', label: 'Hồ sơ cá nhân' },
+          { id: 'edit_profile', label: 'Sửa hồ sơ' },
+          { id: 'work_profile', label: 'Hồ sơ làm việc' },
+          { id: 'portfolio', label: 'Hồ sơ năng lực' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ]
+      : role === 'employer'
+      ? [
+          { id: 'profile', label: 'Thông tin chung' },
+          { id: 'edit_profile', label: 'Sửa hồ sơ' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ]
+      : [
+          { id: 'edit_profile', label: 'Sửa hồ sơ' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ])
+    : (role === 'freelancer'
+      ? [
+          { id: 'profile', label: 'Hồ sơ cá nhân' },
+          { id: 'portfolio', label: 'Hồ sơ năng lực' }
+        ]
+      : role === 'employer'
+      ? [
+          { id: 'profile', label: 'Thông tin chung' }
+        ]
+      : []);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans antialiased text-gray-800">
@@ -681,47 +700,49 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                       {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
                     </div>
                   )}
-                  <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Camera className="w-6 h-6 text-white mb-1" />
-                    <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Đang tải lên...' : 'Thay đổi'}</span>
-                    <input type="file" className="hidden" accept="image/*" disabled={isUploadingAvatar} onChange={async (e)=>{
-                        const file = e.target.files[0];
-                        if(!file) return;
-                        
-                        setIsUploadingAvatar(true);
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        try {
-                          const res = await fetch('http://localhost:8080/api/upload', {
-                            method: 'POST',
-                            body: formData
-                          });
-                          const data = await res.json();
+                  {isOwnProfile && (
+                    <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <Camera className="w-6 h-6 text-white mb-1" />
+                      <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Đang tải lên...' : 'Thay đổi'}</span>
+                      <input type="file" className="hidden" accept="image/*" disabled={isUploadingAvatar} onChange={async (e)=>{
+                          const file = e.target.files[0];
+                          if(!file) return;
                           
-                          if (data.success) {
-                            const filename = getFilenameFromUrl(data.fileUrl);
-                            setAvatarUrl(filename);
-                            
-                            const updateEndpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
-                            await fetch(updateEndpoint, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ avatarUrl: filename })
+                          setIsUploadingAvatar(true);
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          
+                          try {
+                            const res = await fetch('http://localhost:8080/api/upload', {
+                              method: 'POST',
+                              body: formData
                             });
+                            const data = await res.json();
                             
-                            alert('Đã tải ảnh lên và lưu vào CSDL thành công!');
-                          } else {
-                            alert('Upload ảnh thất bại!');
+                            if (data.success) {
+                              const filename = getFilenameFromUrl(data.fileUrl);
+                              setAvatarUrl(filename);
+                              
+                              const updateEndpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
+                              await fetch(updateEndpoint, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ avatarUrl: filename })
+                              });
+                              
+                              alert('Đã tải ảnh lên và lưu vào CSDL thành công!');
+                            } else {
+                              alert('Upload ảnh thất bại!');
+                            }
+                          } catch (err) {
+                            alert('Lỗi upload ảnh! Đảm bảo Backend đang chạy.');
+                          } finally {
+                            setIsUploadingAvatar(false);
+                            e.target.value = '';
                           }
-                        } catch (err) {
-                          alert('Lỗi upload ảnh! Đảm bảo Backend đang chạy.');
-                        } finally {
-                          setIsUploadingAvatar(false);
-                          e.target.value = '';
-                        }
-                    }}/>
-                  </label>
+                      }}/>
+                    </label>
+                  )}
                </div>
 
                {/* Name & Actions Header */}

@@ -51,6 +51,15 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     setShowModal(true);
   };
 
+  const handleCompanyClick = (e) => {
+    e.preventDefault();
+    if (job.employerId) {
+      onNavigate('view_profile', { targetUserId: job.employerId, targetRole: 'employer' });
+    } else {
+      setShowModal(true);
+    }
+  };
+
   const showToastNotification = (type, message = '') => {
     setSuccessToast({ show: true, type, message });
     setTimeout(() => {
@@ -361,7 +370,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
               <h3 className="font-bold text-lg text-slate-800 mb-6">Thông tin khách hàng</h3>
               
               <div className="flex flex-col items-center mb-6">
-                <button onClick={handleShowComingSoon} className="mb-3 hover:opacity-90 transition-opacity">
+                <button onClick={handleCompanyClick} className="mb-3 hover:opacity-90 transition-opacity">
                   {job.employerAvatar ? (
                     <img src={getImageUrl(job.employerAvatar)} alt={job.employerName} className="w-20 h-20 rounded-full object-cover shadow-sm" />
                   ) : (
@@ -371,7 +380,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                   )}
                 </button>
                 <div className="flex items-center gap-1.5 justify-center">
-                  <button onClick={handleShowComingSoon} className="text-blue-500 font-bold hover:underline text-lg">
+                  <button onClick={handleCompanyClick} className="text-blue-500 font-bold hover:underline text-lg">
                     {job.employerName || 'Nguyễn Nguyễn'}
                   </button>
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
