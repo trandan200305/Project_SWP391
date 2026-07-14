@@ -28,6 +28,7 @@ import {
     FileText
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
+import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
 
 const emptyForm = {
     displayName: '',
@@ -555,8 +556,12 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 <aside className="space-y-4">
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
                         <div
-                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4">
-                            <Building2 className="w-7 h-7"/>
+                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
+                            {form.companyLogoUrl ? (
+                                <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <Building2 className="w-7 h-7"/>
+                            )}
                         </div>
                         <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
                         <p className="text-sm text-slate-500 mt-2 leading-relaxed">
@@ -651,6 +656,60 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </div>) : activeTab === 'company' ? (/* Company info form */
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
+                                {/* Company Logo Upload Area */}
+                                <div className="flex items-center gap-6 pb-6 border-b border-slate-100 mb-6">
+                                    <div className="w-20 h-20 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                        {form.companyLogoUrl ? (
+                                            <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Building2 className="w-8 h-8 text-slate-400" />
+                                        )}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-sm font-bold text-slate-800">Logo công ty</h4>
+                                        <p className="text-xs text-slate-500">Chấp nhận JPG, PNG, GIF. Tối đa 2MB.</p>
+                                        <div className="flex items-center gap-2">
+                                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-sm">
+                                                <span>Tải ảnh lên</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        try {
+                                                            const res = await fetch('http://localhost:8080/api/upload', {
+                                                                method: 'POST',
+                                                                body: formData
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                updateField('companyLogoUrl', getFilenameFromUrl(data.fileUrl));
+                                                            } else {
+                                                                alert('Tải ảnh lên thất bại!');
+                                                            }
+                                                        } catch (err) {
+                                                            alert('Lỗi tải ảnh lên! Đảm bảo Backend đang chạy.');
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            {form.companyLogoUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField('companyLogoUrl', '')}
+                                                    className="px-3 py-1.5 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-lg transition-colors"
+                                                >
+                                                    Xóa Logo
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <TextInput label="Tên công ty" value={form.companyName}
                                                onChange={(value) => updateField('companyName', value)} required/>

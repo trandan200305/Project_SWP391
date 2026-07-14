@@ -15,6 +15,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { authApi } from "../../features/auth/api/authApi.js";
+import { getImageUrl } from "../../utils/imageHelper.js";
 
 export default function Navbar({
   onNavigate,
@@ -391,8 +392,9 @@ export default function Navbar({
                 >
                   <img
                     src={
-                      user.avatar ||
-                      `https://ui-avatars.com/api/?name=${user.name}`
+                      user.avatar
+                        ? getImageUrl(user.avatar)
+                        : `https://ui-avatars.com/api/?name=${user.name}`
                     }
                     alt={user.name}
                     className="w-8 h-8 rounded-full border border-slate-200 object-cover"
@@ -581,8 +583,9 @@ export default function Navbar({
               <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                 <img
                   src={
-                    user.avatar ||
-                    `https://ui-avatars.com/api/?name=${user.name}`
+                    user.avatar
+                      ? getImageUrl(user.avatar)
+                      : `https://ui-avatars.com/api/?name=${user.name}`
                   }
                   alt={user.name}
                   className="w-10 h-10 rounded-full border border-slate-200"

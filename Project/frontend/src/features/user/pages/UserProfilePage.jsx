@@ -3,6 +3,7 @@ import { Camera, CheckCircle, Plus, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
+import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
 export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab = 'profile' }) {
   const [role, setRole] = useState(user?.role?.toLowerCase() || 'freelancer');
@@ -624,7 +625,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
-    companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
+    companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry, companyLogoUrl, setCompanyLogoUrl,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
     handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency
@@ -669,7 +670,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                {/* Avatar */}
                <div className="absolute -top-16 left-6 sm:left-10 w-32 h-32 rounded-full border-[5px] border-white shadow-sm bg-white overflow-hidden group cursor-pointer z-10">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={getImageUrl(avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-5xl font-bold text-gray-400">
                       {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
@@ -694,13 +695,14 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                           const data = await res.json();
                           
                           if (data.success) {
-                            setAvatarUrl(data.fileUrl);
+                            const filename = getFilenameFromUrl(data.fileUrl);
+                            setAvatarUrl(filename);
                             
                             const updateEndpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
                             await fetch(updateEndpoint, {
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ avatarUrl: data.fileUrl })
+                              body: JSON.stringify({ avatarUrl: filename })
                             });
                             
                             alert('Đã tải ảnh lên và lưu vào CSDL thành công!');

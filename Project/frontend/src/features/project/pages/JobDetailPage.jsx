@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle2, Bookmark, Send, Calendar, Clock, Landmark, Loader2 } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
+import { getImageUrl } from '../../../utils/imageHelper.js';
 
 export default function JobDetailPage({ job, onNavigate, user }) {
   const [showModal, setShowModal] = useState(false);
@@ -362,7 +363,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
               <div className="flex flex-col items-center mb-6">
                 <button onClick={handleShowComingSoon} className="mb-3 hover:opacity-90 transition-opacity">
                   {job.employerAvatar ? (
-                    <img src={job.employerAvatar} alt={job.employerName} className="w-20 h-20 rounded-full object-cover shadow-sm" />
+                    <img src={getImageUrl(job.employerAvatar)} alt={job.employerName} className="w-20 h-20 rounded-full object-cover shadow-sm" />
                   ) : (
                     <div className="w-20 h-20 bg-slate-300 rounded-full flex items-center justify-center text-slate-50 shadow-sm">
                       <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>

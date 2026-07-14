@@ -14,6 +14,7 @@ import {
   Paperclip
 } from 'lucide-react';
 import { contractApi } from '../../../api/contractApi';
+import { getImageUrl } from '../../../utils/imageHelper.js';
 
 export default function ContractDetailPage({ contractId, user, onNavigate }) {
   const [contract, setContract] = useState(null);
@@ -285,7 +286,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <div className="flex items-center gap-3 bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                 {contract.clientAvatar ? (
-                  <img src={contract.clientAvatar} alt="client" className="w-full h-full rounded-full object-cover" />
+                  <img src={getImageUrl(contract.clientAvatar)} alt="client" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <User className="w-5 h-5 text-blue-600" />
                 )}
@@ -300,7 +301,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <div className="flex items-center gap-3 bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                 {contract.freelancerAvatar ? (
-                  <img src={contract.freelancerAvatar} alt="freelancer" className="w-full h-full rounded-full object-cover" />
+                  <img src={getImageUrl(contract.freelancerAvatar)} alt="freelancer" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <User className="w-5 h-5 text-indigo-600" />
                 )}

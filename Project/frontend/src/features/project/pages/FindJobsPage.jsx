@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Bookmark } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
+import { getImageUrl } from '../../../utils/imageHelper.js';
 
 export default function FindJobsPage({ onNavigate, initialCategory = 'all', initialKeyword = '', user }) {
   const [showModal, setShowModal] = useState(false);
@@ -288,7 +289,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                       
                       <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
                         <button onClick={handleAction} className="flex items-center gap-1.5 hover:text-slate-700 transition-colors">
-                          <img src={job.employerAvatar} alt={job.employerName} className="w-5 h-5 rounded-full" />
+                          <img src={getImageUrl(job.employerAvatar)} alt={job.employerName} className="w-5 h-5 rounded-full" />
                           <span className="font-medium text-slate-600">{job.employerName}</span>
                         </button>
                       </div>
