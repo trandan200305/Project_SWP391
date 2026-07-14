@@ -16,7 +16,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     budgetMax: '',
     deadline: '',
     description: '',
-    servicePackage: 'MEDIUM'
+    servicePackage: 'MEDIUM',
+    workForm: 'ONLINE'
   });
 
   const [servicePackages, setServicePackages] = useState([
@@ -67,7 +68,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
-    
+    // Validate budget range
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
       const maxStr = newProject.budgetMax ? String(newProject.budgetMax).trim() : '';
@@ -111,7 +112,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       budgetMin: newProject.projectType === 'RANGE' && newProject.budgetMin ? parseFloat(newProject.budgetMin) : null,
       budgetMax: newProject.projectType === 'RANGE' && newProject.budgetMax ? parseFloat(newProject.budgetMax) : null,
       deadline: newProject.deadline || null,
-      servicePackage: newProject.servicePackage
+      servicePackage: newProject.servicePackage,
+      workForm: newProject.workForm
     };
 
     try {
@@ -191,7 +193,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         budgetMax: '',
         deadline: '',
         description: '',
-        servicePackage: 'MEDIUM'
+        servicePackage: 'MEDIUM',
+        workForm: 'ONLINE'
       });
       
       setTimeout(() => {
@@ -363,7 +366,39 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               </div>
             )}
 
-            
+            {/* Hình thức làm việc */}
+            <div>
+              <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-2">Hình thức làm việc</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setNewProject(prev => ({ ...prev, workForm: 'ONLINE' }))}
+                  className={`p-4 rounded-2xl border text-left transition-all ${
+                    newProject.workForm === 'ONLINE'
+                      ? 'border-secondary bg-secondary-light/25 ring-2 ring-secondary/10'
+                      : 'border-slate-200 bg-slate-50/30 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="text-xs font-extrabold text-slate-900 block mb-1">Online (Làm việc từ xa)</span>
+                  <span className="text-[10px] font-medium text-slate-500 block leading-relaxed">Freelancer có thể làm việc từ bất kỳ đâu.</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setNewProject(prev => ({ ...prev, workForm: 'OFFLINE' }))}
+                  className={`p-4 rounded-2xl border text-left transition-all ${
+                    newProject.workForm === 'OFFLINE'
+                      ? 'border-secondary bg-secondary-light/25 ring-2 ring-secondary/10'
+                      : 'border-slate-200 bg-slate-50/30 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="text-xs font-extrabold text-slate-900 block mb-1">Offline (Tại văn phòng)</span>
+                  <span className="text-[10px] font-medium text-slate-500 block leading-relaxed">Freelancer làm việc trực tiếp tại địa điểm của bạn.</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Deadline */}
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ ứng tuyển *</span>
               <div className="relative">

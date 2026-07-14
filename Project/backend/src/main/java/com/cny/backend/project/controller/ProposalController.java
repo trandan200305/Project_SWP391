@@ -1,5 +1,6 @@
 package com.cny.backend.project.controller;
 
+import com.cny.backend.project.dto.MilestoneCreateDto;
 import com.cny.backend.project.dto.ProposalCreateDto;
 import com.cny.backend.project.dto.ProposalDto;
 import com.cny.backend.project.service.ProposalService;
@@ -54,13 +55,14 @@ public class ProposalController {
         return ResponseEntity.ok(proposal); // Trả về null hoặc ProposalDto
     }
 
-    // Employer chọn Freelancer (chấp nhận báo giá)
+    // Employer chọn Freelancer (chấp nhận báo giá) và thiết lập các mốc thanh toán
     @PostMapping("/{proposalId}/accept")
     public ResponseEntity<?> acceptProposal(
             @PathVariable Integer proposalId,
-            @RequestParam Integer employerId) {
+            @RequestParam Integer employerId,
+            @RequestBody(required = false) List<MilestoneCreateDto> customMilestones) {
         try {
-            proposalService.acceptProposal(proposalId, employerId);
+            proposalService.acceptProposal(proposalId, employerId, customMilestones);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

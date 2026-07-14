@@ -369,7 +369,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 border-2 border-slate-900 bg-[#ffedd5] text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_#1c1917]">
                 <span className="w-2.5 h-2.5 rounded-none bg-orange-600 border border-slate-900"></span>
-                {inviteInfo?.role === 'ADMIN' ? 'Admin Portal' : inviteInfo?.role === 'MANAGER' ? 'Manager Portal' : 'Staff Portal'}
+                {inviteInfo?.role === 'ADMIN' ? 'Cổng Quản trị' : inviteInfo?.role === 'MANAGER' ? 'Cổng Quản lý' : 'Cổng Nhân viên'}
               </div>
 
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight mt-6 mb-4 font-serif">
@@ -549,7 +549,7 @@ export default function Onboard({ onBackToHome, onOpenLogin }) {
                 </button>
                 
                 <p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-black mt-2">
-                  By continuing, you agree to LancerPro terms
+                  Bằng cách tiếp tục, bạn đồng ý với các điều khoản của LancerPro
                 </p>
               </div>
 

@@ -15,6 +15,9 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
+import com.cny.backend.notification.service.NotificationService;
+import com.cny.backend.admin.repository.StaffRepository;
+import com.cny.backend.admin.entity.Staff;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,12 @@ public class ProjectService {
     private SavedJobRepository savedJobRepository;
 
     @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private StaffRepository staffRepository;
+
+    @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
@@ -69,6 +78,14 @@ public class ProjectService {
 
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
+
+        if (dto.getTitle() == null || dto.getTitle().trim().length() < 8) {
+            throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 ký tự.");
+        }
+
+        if (dto.getDescription() == null || dto.getDescription().trim().length() <= 50) {
+            throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 ký tự.");
+        }
 
         String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED";
 
@@ -154,6 +171,7 @@ public class ProjectService {
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
+                .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(durationDays)) 
                 .status(projectStatus) 
                 .servicePackage(appliedPackage)
@@ -161,8 +179,27 @@ public class ProjectService {
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
+        Project savedProject = projectRepository.save(project);
 
-        return projectRepository.save(project);
+        // Notify all staff
+        try {
+            List<Staff> allStaff = staffRepository.findAll();
+            for (Staff staff : allStaff) {
+                notificationService.createNotification(
+                    staff.getStaffId().longValue(),
+                    "STAFF",
+                    "Dự án mới cần duyệt",
+                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
+                    "TASK",
+                    savedProject.getProjectId().toString()
+                );
+            }
+        } catch (Exception e) {
+            // Ignore notification errors to not block project creation
+            System.err.println("Failed to send notifications: " + e.getMessage());
+        }
+
+        return savedProject;
     }
 
     @Transactional
@@ -196,9 +233,19 @@ public class ProjectService {
             project.setCategory(category);
         }
 
-        if (dto.getTitle() != null) project.setTitle(dto.getTitle());
-        if (dto.getDescription() != null) project.setDescription(dto.getDescription());
-        
+        if (dto.getTitle() != null) {
+            if (dto.getTitle().trim().length() < 8) {
+                throw new IllegalArgumentException("Tiêu đề phải chứa ít nhất 8 ký tự.");
+            }
+            project.setTitle(dto.getTitle());
+        }
+        if (dto.getDescription() != null) {
+            if (dto.getDescription().trim().length() <= 50) {
+                throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 ký tự.");
+            }
+            project.setDescription(dto.getDescription());
+        }
+        if (dto.getWorkForm() != null) project.setWorkForm(dto.getWorkForm());
         String type = dto.getProjectType() != null ? dto.getProjectType() : project.getProjectType();
         if (dto.getProjectType() != null) project.setProjectType(type);
 
@@ -335,7 +382,7 @@ public class ProjectService {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm");
         String formattedCreatedAt = project.getCreatedAt() != null ? project.getCreatedAt().format(dtf) : "Không rõ";
 
-        String workForm = "-";
+        String workForm = project.getWorkForm() != null ? project.getWorkForm() : "ONLINE";
         String paymentType = project.getBudgetFixed() != null ? "Trả theo dự án" : "Thỏa thuận";
 
         String employerLoc = "Chưa cập nhật";
@@ -374,5 +421,12 @@ public class ProjectService {
                 .servicePackage(project.getServicePackage())
                 .serviceFee(project.getServiceFee())
                 .build();
+    }
+
+    private int getWordCount(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return 0;
+        }
+        return text.trim().split("\\s+").length;
     }
 }

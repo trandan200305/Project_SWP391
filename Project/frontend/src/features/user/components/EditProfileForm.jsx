@@ -161,7 +161,7 @@ export default function EditProfileForm({
            <div className="space-y-4">
               <ReadOnlyRow 
                  label="Tình trạng tài khoản" 
-                 value={status || 'ACTIVE'} 
+                 value={status === 'BANNED' ? 'Bị khóa' : 'Đang hoạt động'} 
                  badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wide ${status === 'BANNED' ? 'text-red-600 bg-red-50' : 'text-[#34A853] bg-[#E6F4EA]'}`} 
               />
               <ReadOnlyRow 
@@ -192,14 +192,14 @@ export default function EditProfileForm({
            {role === 'freelancer' ? (
              <div className="space-y-4 relative z-10">
                <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
-               <ReadOnlyRow label="Tổng thu nhập" value={`$${totalEarnings}`} icon={DollarSign} badgeClass="text-sm font-extrabold text-green-600" />
+               <ReadOnlyRow label="Tổng thu nhập" value={`${totalEarnings} VNĐ`} icon={DollarSign} badgeClass="text-sm font-extrabold text-green-600" />
                <ReadOnlyRow label="Dự án hoàn thành" value={projectsCompleted} icon={Briefcase} />
                <ReadOnlyRow label="Đánh giá trung bình" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
              </div>
            ) : (
              <div className="space-y-4 relative z-10">
                <ReadOnlyRow label="Độ hoàn thiện thông tin" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
-               <ReadOnlyRow label="Tổng tiền đã chi" value={`$${totalSpent}`} icon={DollarSign} badgeClass="text-sm font-extrabold text-purple-600" />
+               <ReadOnlyRow label="Tổng tiền đã chi" value={`${totalSpent} VNĐ`} icon={DollarSign} badgeClass="text-sm font-extrabold text-purple-600" />
                <ReadOnlyRow label="Dự án đã đăng" value={projectsPosted} icon={Briefcase} />
                <ReadOnlyRow label="Đánh giá từ Freelancer" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
              </div>

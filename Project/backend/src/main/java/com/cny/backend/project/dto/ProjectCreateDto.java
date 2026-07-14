@@ -15,6 +15,7 @@ public class ProjectCreateDto {
     private Integer clientId;
     private Integer categoryId;
     private String title;
+    private String workForm;
     private String description;
     private String projectType;
     private BigDecimal budgetMin;

@@ -38,6 +38,9 @@ public class FreelancerController {
     @Autowired
     private EmployerRepository employerRepository;
 
+    @Autowired
+    private com.cny.backend.notification.service.NotificationService notificationService;
+
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
@@ -165,6 +168,17 @@ public class FreelancerController {
             f.setUpdatedAt(java.time.LocalDateTime.now());
             
             freelancerRepository.save(f);
+            
+            // Notify STAFF
+            notificationService.createNotification(
+                0L, // Global for staff
+                "STAFF",
+                "Yêu cầu xác minh danh tính KYC mới",
+                "Freelancer " + (f.getFullName() != null ? f.getFullName() : f.getDisplayName()) + " vừa gửi yêu cầu xác minh danh tính.",
+                "INFO",
+                "KYC-FL-" + f.getProfileId()
+            );
+
             response.put("success", true);
             response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
             return ResponseEntity.ok(response);

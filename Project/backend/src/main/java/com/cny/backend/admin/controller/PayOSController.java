@@ -74,6 +74,7 @@ public class PayOSController {
                 return ResponseEntity.badRequest().body("Webhook verification failed");
             }
 
+
             Map<String, Boolean> res = new HashMap<>();
             res.put("success", true);
             return ResponseEntity.ok(res);
@@ -87,7 +88,9 @@ public class PayOSController {
     }
 
     @PostMapping("/query")
-    public ResponseEntity<?> queryPayosTransaction(@RequestParam String txnRef, @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+    public ResponseEntity<?> queryPayosTransaction(@RequestParam String txnRef, 
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
+            @RequestHeader(value = "X-Admin-Email", required = false, defaultValue = "admin@lancerpro.com") String adminEmail) {
         try {
             String payosStatus = payOSService.queryTransaction(txnRef, adminId);
             
@@ -95,6 +98,7 @@ public class PayOSController {
             res.put("success", true);
             res.put("message", "Trạng thái trên PayOS: " + payosStatus);
             res.put("payosStatus", payosStatus);
+
 
             return ResponseEntity.ok(res);
         } catch (Exception e) {

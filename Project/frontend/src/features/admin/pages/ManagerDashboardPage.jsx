@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, CheckSquare, MessageSquare, ShieldAlert, UserCheck, 
-  BadgeDollarSign, Gavel, FileText, Bell, Settings, Search, HelpCircle, 
-  Grid, Plus, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
+  BadgeDollarSign, Gavel, FileText, Settings, Search, HelpCircle, 
+  Grid, Plus, ArrowRight, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
   TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
-  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown, ArrowLeftRight
+  Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown, ArrowLeftRight, Bell
 } from 'lucide-react';
+import NotificationDropdown from '../components/NotificationDropdown.jsx';
 import { adminApi } from '../api/adminApi.js';
 import { messengerApi } from '../../messenger/api/messengerApi.js';
 import { Client } from '@stomp/stompjs';
@@ -170,6 +171,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   });
   const [supportSubTab, setSupportSubTab] = useState('unclaimed'); 
   const [deletedChats, setDeletedChats] = useState([]);
+  const [staffSubTab, setStaffSubTab] = useState('list');
+  const [transferRequests, setTransferRequests] = useState([]);
+  const [transferFilter, setTransferFilter] = useState('ALL');
+  const [showTransferRejectModal, setShowTransferRejectModal] = useState(false);
+  const [rejectRequestId, setRejectRequestId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [selectedTransferRequest, setSelectedTransferRequest] = useState(null);
+  const [showTransferDetailModal, setShowTransferDetailModal] = useState(false);
 
   const fetchMyProfile = () => {
     if (!user?.id) return;
@@ -278,8 +287,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             }
           }
         }
-
         
+        if (received.type === 'TRANSFER_REQUEST_SUBMITTED') {
+          fetchTransferRequests();
+        }
+
         fetchSupportChats();
         if (supportSubTabRef.current === 'deleted') {
           fetchDeletedSupportChats();
@@ -561,6 +573,108 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       .catch(err => console.error(err));
   };
 
+  const fetchTransferRequests = () => {
+    adminApi.getTransferRequests()
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTransferRequests(data);
+        }
+      })
+      .catch(err => console.error("Error fetching transfer requests:", err));
+  };
+
+  const parseReason = (reasonText) => {
+    const data = {
+      reason: '',
+      desiredDept: '',
+      desiredPosition: '',
+      startDate: '',
+      transferType: '',
+      skills: '',
+      achievements: '',
+      attachment: ''
+    };
+    if (!reasonText) return data;
+
+    const lines = reasonText.split('\n');
+    lines.forEach(line => {
+      if (line.startsWith('Lý do điều chuyển: ')) {
+        data.reason = line.substring('Lý do điều chuyển: '.length);
+      } else if (line.startsWith('Phòng ban mong muốn: ')) {
+        data.desiredDept = line.substring('Phòng ban mong muốn: '.length);
+      } else if (line.startsWith('Vị trí mong muốn: ')) {
+        data.desiredPosition = line.substring('Vị trí mong muốn: '.length);
+      } else if (line.startsWith('Ngày mong muốn bắt đầu: ')) {
+        data.startDate = line.substring('Ngày mong muốn bắt đầu: '.length);
+      } else if (line.startsWith('Loại điều chuyển: ')) {
+        data.transferType = line.substring('Loại điều chuyển: '.length);
+      } else if (line.startsWith('Kỹ năng liên quan & kinh nghiệm trước đây: ')) {
+        data.skills = line.substring('Kỹ năng liên quan & kinh nghiệm trước đây: '.length);
+      } else if (line.startsWith('Thành tích nổi bật & lý do bạn phù hợp: ')) {
+        data.achievements = line.substring('Thành tích nổi bật & lý do bạn phù hợp: '.length);
+      } else if (line.startsWith('Tệp đính kèm: ')) {
+        data.attachment = line.substring('Tệp đính kèm: '.length);
+      }
+    });
+
+    if (!data.reason && !data.desiredDept && !data.desiredPosition) {
+      data.reason = reasonText;
+    }
+    return data;
+  };
+
+  const executeTransferRequestAction = (requestId, status, reason) => {
+    const adminId = user?.id || 1;
+    adminApi.approveTransferRequest(requestId, status, reason, adminId)
+      .then(res => {
+        if (res.success || res.success !== false) {
+          showToast(res.message || 'Xử lý đơn điều chuyển thành công!', 'success');
+          fetchTransferRequests();
+          fetchStaffAndDepartments();
+        } else {
+          showToast(res.message || 'Lỗi khi xử lý đơn điều chuyển.', 'error');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showToast(err.response?.data?.message || 'Không thể kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleApproveTransferRequest = (requestId, approve) => {
+    if (!approve) {
+      setRejectRequestId(requestId);
+      setRejectReason('');
+      setShowTransferRejectModal(true);
+    } else {
+      setConfirmConfig({
+        title: 'Xác nhận duyệt',
+        message: 'Bạn có chắc chắn muốn DUYỆT đơn điều chuyển này không?',
+        confirmText: 'Duyệt đơn',
+        cancelText: 'Hủy',
+        type: 'success',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          executeTransferRequestAction(requestId, 'APPROVED', '');
+        }
+      });
+      setShowConfirmModal(true);
+    }
+  };
+
+  const submitTransferRejection = () => {
+    if (!rejectReason || !rejectReason.trim()) {
+      showToast("Vui lòng nhập lý do từ chối.", "error");
+      return;
+    }
+    const reqId = rejectRequestId;
+    const reasonText = rejectReason.trim();
+    setShowTransferRejectModal(false);
+    setRejectReason('');
+    setRejectRequestId(null);
+    executeTransferRequestAction(reqId, 'REJECTED', reasonText);
+  };
+
   const fetchReports = () => {
     adminApi.getReports().then(data => {
       if (Array.isArray(data)) {
@@ -697,7 +811,37 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     fetchReports();
     fetchWithdrawals();
     fetchVnpayTransactions();
+    fetchTransferRequests();
   }, [chartPeriod]);
+
+  useEffect(() => {
+    const handleOpenDetail = (e) => {
+      const { requestId } = e.detail;
+      const found = transferRequests.find(r => r.requestId === requestId);
+      if (found) {
+        setSelectedTransferRequest(found);
+        setShowTransferDetailModal(true);
+        setActiveTab('Staff Management');
+        setStaffSubTab('requests');
+      } else {
+        adminApi.getTransferRequests()
+          .then(data => {
+            if (Array.isArray(data)) {
+              setTransferRequests(data);
+              const foundAgain = data.find(r => r.requestId === requestId);
+              if (foundAgain) {
+                setSelectedTransferRequest(foundAgain);
+                setShowTransferDetailModal(true);
+                setActiveTab('Staff Management');
+                setStaffSubTab('requests');
+              }
+            }
+          });
+      }
+    };
+    window.addEventListener('openTransferRequestDetail', handleOpenDetail);
+    return () => window.removeEventListener('openTransferRequestDetail', handleOpenDetail);
+  }, [transferRequests]);
 
   
   useEffect(() => {
@@ -1556,7 +1700,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 {sectionsOpen.taskManagement && (
                   <div className="pl-6 space-y-1 animate-in fade-in duration-200">
                     {[
-                      { name: 'Tasks', label: 'Công việc', icon: CheckSquare },
                       { name: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
                       { name: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
                     ].map((item) => {
@@ -1782,10 +1925,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3">
-              <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ba1a1a] rounded-full border border-white" />
-              </button>
+              <NotificationDropdown userId={user?.id} role={user?.role} />
               <button className="p-2 text-[#6e7b6c] hover:text-[#141b2b] hover:bg-[#f1f3ff] rounded-lg transition-colors">
                 <HelpCircle className="w-5 h-5" />
               </button>
@@ -2327,12 +2467,9 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </button>
               </div>
 
-            </div>
-          )}
+              {/* --- Tasks Directory moved to Dashboard --- */}
+              <div className="h-px w-full bg-[#e1e8fd] my-8" />
 
-          
-          {activeTab === 'Tasks' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Tasks Directory</h1>
@@ -2388,8 +2525,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Staff Registry</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Manage and assign departments for staff members.</p>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Nhân sự & Điều chuyển</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Danh sách nhân viên phòng ban và xử lý các đơn xin điều chuyển công việc.</p>
                 </div>
                 <div className="flex gap-3">
                   <button 
@@ -2397,45 +2534,179 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2"
                   >
                     <Move className="w-4 h-4" />
-                    <span>Transfer Staff</span>
+                    <span>Điều chuyển Nhự sự</span>
                   </button>
                   <button 
                     onClick={() => setShowInviteModal(true)}
                     className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
                   >
                     <UserPlus className="w-4 h-4" />
-                    <span>Invite Staff Member</span>
+                    <span>Mời Nhân sự Mới</span>
                   </button>
                 </div>
               </div>
 
-              
-              <div className="card-level-1 p-6 bg-white">
-                <table className="min-w-full divide-y divide-[#e9edff] text-left">
-                  <thead>
-                    <tr className="bg-[#f9f9ff]">
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Staff ID</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Name</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Email</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e9edff] bg-white">
-                    {staffList.map((staff) => (
-                      <tr key={staff.id || staff.staffId} className="hover:bg-[#f7fff2]/30 transition-colors">
-                        <td className="px-4 py-4 text-body-sm font-bold text-[#006b2c]">#STF-{staff.id || staff.staffId}</td>
-                        <td className="px-4 py-4 text-body-sm font-bold text-[#141b2b]">{staff.name || staff.fullName || 'CS Agent'}</td>
-                        <td className="px-4 py-4 text-body-sm text-[#3e4a3d]">{staff.email}</td>
-                        <td className="px-4 py-4">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#f7fff2] text-[#006b2c]">
-                            ACTIVE
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Sub-tabs Filter */}
+              <div className="flex border-b border-[#e1e8fd] gap-6 text-sm font-semibold">
+                <button
+                  onClick={() => setStaffSubTab('list')}
+                  className={`pb-3 transition-colors relative ${
+                    staffSubTab === 'list' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Nhân sự hiện tại ({staffList.length})
+                </button>
+                <button
+                  onClick={() => setStaffSubTab('requests')}
+                  className={`pb-3 transition-colors relative flex items-center gap-1.5 ${
+                    staffSubTab === 'requests' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Đơn xin điều chuyển ({transferRequests.length})
+                  {transferRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  )}
+                </button>
               </div>
+
+              {staffSubTab === 'list' ? (
+                <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
+                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                    <thead>
+                      <tr className="bg-[#f9f9ff]">
+                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã nhân sự</th>
+                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Họ và tên</th>
+                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Phòng ban</th>
+                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e9edff] bg-white">
+                      {staffList.map((staff) => (
+                        <tr key={staff.id || staff.staffId} className="hover:bg-[#f7fff2]/30 transition-colors">
+                          <td className="px-6 py-4 text-body-sm font-bold text-[#006b2c]">#STF-{staff.id || staff.staffId}</td>
+                          <td className="px-6 py-4 text-body-sm font-bold text-[#141b2b]">{staff.name || staff.fullName || 'Nhân viên'}</td>
+                          <td className="px-6 py-4 text-body-sm text-[#3e4a3d]">{staff.email}</td>
+                          <td className="px-6 py-4 text-body-sm text-[#3e4a3d] font-semibold">{staff.departmentName || 'Tổng bộ'}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#f7fff2] text-[#006b2c] border border-emerald-100">
+                              Đang hoạt động
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                (() => {
+                  const filteredRequests = transferFilter === 'ALL'
+                    ? transferRequests
+                    : transferRequests.filter(r => r.status === transferFilter);
+                  return (
+                    <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
+                      {/* Filter buttons */}
+                      <div className="mb-6 flex flex-wrap gap-2 items-center justify-between border-b border-slate-100 pb-5">
+                        <div className="flex gap-2">
+                          {[
+                            { label: 'Tất cả', value: 'ALL' },
+                            { label: 'Chờ xử lý', value: 'PENDING' },
+                            { label: 'Đã duyệt', value: 'APPROVED' },
+                            { label: 'Đã từ chối', value: 'REJECTED' }
+                          ].map(tab => {
+                            const count = tab.value === 'ALL'
+                              ? transferRequests.length
+                              : transferRequests.filter(r => r.status === tab.value).length;
+                            return (
+                              <button
+                                key={tab.value}
+                                onClick={() => setTransferFilter(tab.value)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                                  transferFilter === tab.value
+                                    ? 'bg-[#eaf4eb] text-[#006b2c] shadow-sm border border-[#006b2c]/20'
+                                    : 'bg-slate-50 text-slate-550 border border-slate-200/60 hover:bg-slate-100/70'
+                                }`}
+                              >
+                                {tab.label}
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                                  transferFilter === tab.value
+                                    ? 'bg-[#006b2c] text-white'
+                                    : 'bg-slate-200 text-slate-650'
+                                }`}>
+                                  {count}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                        <thead>
+                          <tr className="bg-[#f9f9ff]">
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã đơn</th>
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Nhân viên</th>
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Phòng ban đi</th>
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Phòng ban đến</th>
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Ngày gửi</th>
+                            <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#e9edff] bg-white">
+                          {filteredRequests.length === 0 ? (
+                            <tr>
+                              <td colSpan="6" className="text-center py-8 text-slate-400 font-bold">
+                                Không tìm thấy yêu cầu điều chuyển nào phù hợp.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredRequests.map((req) => (
+                              <tr key={req.requestId} className="hover:bg-[#f7fff2]/30 transition-colors">
+                                <td className="px-6 py-4">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTransferRequest(req);
+                                      setShowTransferDetailModal(true);
+                                    }}
+                                    className="text-body-sm font-extrabold text-[#006b2c] hover:underline"
+                                  >
+                                    #REQ-{req.requestId}
+                                  </button>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-col">
+                                    <span className="text-body-sm font-bold text-[#141b2b]">{req.userDisplayName || 'Nhân viên'}</span>
+                                    <span className="text-[11px] text-slate-400 font-mono mt-0.5">{req.userEmail}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-body-sm text-[#3e4a3d] font-semibold">
+                                  {req.fromDepartment || 'Chưa rõ'}
+                                </td>
+                                <td className="px-6 py-4 text-body-sm text-[#006b2c] font-bold">
+                                  {req.toDepartment || 'Chưa rõ'}
+                                </td>
+                                <td className="px-6 py-4 text-body-sm text-slate-400 font-semibold">
+                                  {req.createdAt ? new Date(req.createdAt).toLocaleDateString('vi-VN') : ''}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                                    req.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                    req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                    'bg-rose-50 text-rose-700 border-rose-100'
+                                  }`}>
+                                    {req.status === 'PENDING' ? 'Chờ xử lý' :
+                                     req.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()
+              )}
             </div>
           )}
 
@@ -3923,6 +4194,224 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               >
                 {confirmConfig.confirmText || 'Xác nhận'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransferRejectModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl border border-[#e1e8fd] animate-in fade-in zoom-in-95 duration-150 text-left">
+            <h3 className="text-title-md font-extrabold text-[#141b2b] mb-4">Từ chối đơn điều chuyển</h3>
+            <p className="text-body-sm text-[#3e4a3d] mb-3 font-semibold">Vui lòng nhập lý do từ chối đơn điều chuyển này (bắt buộc):</p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full min-h-[100px] p-3 border border-slate-200 rounded-lg text-body-sm focus:outline-none focus:border-amber-500 mb-4 resize-none"
+              placeholder="Nhập lý do chi tiết..."
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowTransferRejectModal(false);
+                  setRejectReason('');
+                  setRejectRequestId(null);
+                }}
+                className="flex-1 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={submitTransferRejection}
+                className="flex-1 py-2 rounded-lg font-bold text-body-sm shadow transition-all text-white bg-[#ba1a1a] hover:bg-[#93000a]"
+              >
+                Từ chối đơn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransferDetailModal && selectedTransferRequest && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#090d16]/55 backdrop-blur-md px-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-[#e2eafc] flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4.5 bg-gradient-to-r from-slate-50 to-white border-b border-[#e2eafc]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 shadow-sm">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-[17px] font-extrabold text-[#111827] text-left">
+                    Chi tiết đơn điều chuyển
+                  </h2>
+                  <p className="text-[12px] text-slate-400 font-semibold mt-0.5 text-left">
+                    Mã số đơn: <span className="text-[#006b2c] font-bold">#REQ-{selectedTransferRequest.requestId}</span>
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowTransferDetailModal(false);
+                  setSelectedTransferRequest(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6 text-left">
+              {/* SECTION 1: THÔNG TIN NHÂN VIÊN */}
+              <div>
+                <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3.5 border-b border-slate-100 pb-2">
+                  <User className="w-4.5 h-4.5" />
+                  Thông tin nhân viên
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Mã nhân viên</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">FP-{selectedTransferRequest.requestId}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Họ và tên</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">{selectedTransferRequest.userDisplayName || 'Nhân viên'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Phòng ban hiện tại</span>
+                    <span className="text-body-sm font-extrabold text-emerald-700">{selectedTransferRequest.fromDepartment || 'Chưa rõ'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Email liên hệ</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">{selectedTransferRequest.userEmail}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: THÔNG TIN ĐIỀU CHUYỂN */}
+              <div>
+                <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3.5 border-b border-slate-100 pb-2">
+                  <ArrowLeftRight className="w-4.5 h-4.5" />
+                  Thông tin điều chuyển phòng ban
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50/30 border border-blue-100/50 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)] col-span-2">
+                    <span className="text-[10px] font-extrabold text-blue-600 tracking-wider block mb-0.5 uppercase">Phòng ban muốn chuyển đến</span>
+                    <span className="text-body-sm font-extrabold text-blue-700">{selectedTransferRequest.toDepartment || 'Chưa rõ'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Vị trí mong muốn</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">{parseReason(selectedTransferRequest.reason).desiredPosition || 'Chưa cung cấp'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Ngày mong muốn bắt đầu</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">{parseReason(selectedTransferRequest.reason).startDate || 'Chưa cung cấp'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)] col-span-2">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Loại điều chuyển</span>
+                    <span className="text-body-sm font-extrabold text-slate-700">{parseReason(selectedTransferRequest.reason).transferType || 'Chưa cung cấp'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: LÝ DO ĐIỀU CHUYỂN */}
+              <div>
+                <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3.5 border-b border-slate-100 pb-2">
+                  <FileText className="w-4.5 h-4.5" />
+                  Lý do điều chuyển
+                </h3>
+                <div className="bg-[#fcfdfe] border border-[#e2e8f0]/60 rounded-xl p-4 leading-relaxed text-body-sm text-slate-700 font-medium border-l-4 border-l-[#006b2c] shadow-[0_2px_10px_rgba(0,0,0,0.01)] whitespace-pre-wrap">
+                  {parseReason(selectedTransferRequest.reason).reason || 'Không có lý do chi tiết.'}
+                </div>
+              </div>
+
+              {/* SECTION 4: KỸ NĂNG & KINH NGHIỆM */}
+              <div>
+                <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3.5 border-b border-slate-100 pb-2">
+                  <Activity className="w-4.5 h-4.5" />
+                  Kỹ năng và kinh nghiệm
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-1 uppercase">Kỹ năng liên quan & Kinh nghiệm trước đây</span>
+                    <div className="bg-[#fcfdfe] border border-[#e2e8f0]/60 rounded-xl p-4 leading-relaxed text-body-sm text-slate-700 font-medium border-l-4 border-l-[#006b2c] shadow-[0_2px_10px_rgba(0,0,0,0.01)] whitespace-pre-wrap">
+                      {parseReason(selectedTransferRequest.reason).skills || 'Chưa cung cấp'}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-1 uppercase">Thành tích nổi bật & Lý do phù hợp</span>
+                    <div className="bg-[#fcfdfe] border border-[#e2e8f0]/60 rounded-xl p-4 leading-relaxed text-body-sm text-slate-700 font-medium border-l-4 border-l-[#006b2c] shadow-[0_2px_10px_rgba(0,0,0,0.01)] whitespace-pre-wrap">
+                      {parseReason(selectedTransferRequest.reason).achievements || 'Chưa cung cấp'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: TỆP ĐÍNH KÈM */}
+              <div>
+                <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
+                  <Paperclip className="w-4.5 h-4.5" />
+                  Tệp đính kèm
+                </h3>
+                <div className="bg-slate-50/40 border border-slate-100 rounded-xl p-3.5 flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm shrink-0">
+                    <Paperclip className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body-sm font-bold text-slate-700 truncate">
+                      {parseReason(selectedTransferRequest.reason).attachment || 'Không có tệp đính kèm'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-semibold">Định dạng hỗ trợ: PDF, DOCX, PNG, JPG</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 6: PHẢN HỒI QUYẾT ĐỊNH */}
+              {selectedTransferRequest.status !== 'PENDING' && selectedTransferRequest.decisionNote && (
+                <div className="p-4 bg-amber-50/70 border border-amber-100 rounded-xl space-y-1.5 border-l-4 border-l-amber-500">
+                  <span className="text-[11px] font-bold text-amber-800 tracking-wider block uppercase">
+                    {selectedTransferRequest.status === 'APPROVED' ? 'Ghi chú phê duyệt từ Manager' : 'Lý do từ chối từ Manager'}
+                  </span>
+                  <p className="text-body-sm text-amber-900 font-bold leading-relaxed">{selectedTransferRequest.decisionNote}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4.5 bg-slate-50 border-t border-[#e2eafc] flex justify-between items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowTransferDetailModal(false);
+                  setSelectedTransferRequest(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-body-sm font-bold transition-all shadow-sm"
+              >
+                Đóng cửa sổ
+              </button>
+              
+              {selectedTransferRequest.status === 'PENDING' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowTransferDetailModal(false);
+                      handleApproveTransferRequest(selectedTransferRequest.requestId, false);
+                    }}
+                    className="px-4.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-body-sm font-extrabold rounded-lg transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                  >
+                    Từ chối đơn
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowTransferDetailModal(false);
+                      handleApproveTransferRequest(selectedTransferRequest.requestId, true);
+                    }}
+                    className="px-4.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-body-sm font-extrabold rounded-lg transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                  >
+                    Duyệt điều chuyển
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

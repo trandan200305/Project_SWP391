@@ -52,6 +52,23 @@ BEGIN TRY
         );
     END
 
+    IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.finance2@gmail.com')
+    BEGIN
+        INSERT INTO dbo.staff (email, password_hash, display_name, full_name, phone, avatar_url, status, specialization, department_id, is_deleted)
+        VALUES (
+            'staff.finance2@gmail.com', 
+            @HashPassword, 
+            N'Staff Finance 2', 
+            N'Nhân viên Tài chính 2', 
+            '0912000011', 
+            'https://ui-avatars.com/api/?name=Staff+Finance+2&background=006b2c&color=fff', 
+            'ACTIVE', 
+            N'Financial Analyst', 
+            (SELECT department_id FROM dbo.departments WHERE code = 'FIN'), 
+            0
+        );
+    END
+
     -- [2] Staff Phòng Kiểm duyệt (Moderation) - MOD
     IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.moderation@gmail.com')
     BEGIN
@@ -63,6 +80,23 @@ BEGIN TRY
             N'Nhân viên Kiểm duyệt', 
             '0912000002', 
             'https://ui-avatars.com/api/?name=Staff+Moderation&background=006b2c&color=fff', 
+            'ACTIVE', 
+            N'Content Moderator', 
+            (SELECT department_id FROM dbo.departments WHERE code = 'MOD'), 
+            0
+        );
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.moderation2@gmail.com')
+    BEGIN
+        INSERT INTO dbo.staff (email, password_hash, display_name, full_name, phone, avatar_url, status, specialization, department_id, is_deleted)
+        VALUES (
+            'staff.moderation2@gmail.com', 
+            @HashPassword, 
+            N'Staff Moderation 2', 
+            N'Nhân viên Kiểm duyệt 2', 
+            '0912000012', 
+            'https://ui-avatars.com/api/?name=Staff+Moderation+2&background=006b2c&color=fff', 
             'ACTIVE', 
             N'Content Moderator', 
             (SELECT department_id FROM dbo.departments WHERE code = 'MOD'), 
@@ -88,6 +122,23 @@ BEGIN TRY
         );
     END
 
+    IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.dispute2@gmail.com')
+    BEGIN
+        INSERT INTO dbo.staff (email, password_hash, display_name, full_name, phone, avatar_url, status, specialization, department_id, is_deleted)
+        VALUES (
+            'staff.dispute2@gmail.com', 
+            @HashPassword, 
+            N'Staff Dispute 2', 
+            N'Nhân viên Tranh chấp 2', 
+            '0912000013', 
+            'https://ui-avatars.com/api/?name=Staff+Dispute+2&background=006b2c&color=fff', 
+            'ACTIVE', 
+            N'Dispute Specialist', 
+            (SELECT department_id FROM dbo.departments WHERE code = 'DIS'), 
+            0
+        );
+    END
+
     -- [4] Staff Phòng Hỗ trợ (Customer Support) - CS
     IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.support@gmail.com')
     BEGIN
@@ -99,6 +150,23 @@ BEGIN TRY
             N'Nhân viên Hỗ trợ', 
             '0912000004', 
             'https://ui-avatars.com/api/?name=Staff+Support&background=006b2c&color=fff', 
+            'ACTIVE', 
+            N'Customer Support', 
+            (SELECT department_id FROM dbo.departments WHERE code = 'CS'), 
+            0
+        );
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.support2@gmail.com')
+    BEGIN
+        INSERT INTO dbo.staff (email, password_hash, display_name, full_name, phone, avatar_url, status, specialization, department_id, is_deleted)
+        VALUES (
+            'staff.support2@gmail.com', 
+            @HashPassword, 
+            N'Staff Support 2', 
+            N'Nhân viên Hỗ trợ 2', 
+            '0912000014', 
+            'https://ui-avatars.com/api/?name=Staff+Support+2&background=006b2c&color=fff', 
             'ACTIVE', 
             N'Customer Support', 
             (SELECT department_id FROM dbo.departments WHERE code = 'CS'), 
@@ -124,8 +192,25 @@ BEGIN TRY
         );
     END
 
+    IF NOT EXISTS (SELECT 1 FROM dbo.staff WHERE email = 'staff.it2@gmail.com')
+    BEGIN
+        INSERT INTO dbo.staff (email, password_hash, display_name, full_name, phone, avatar_url, status, specialization, department_id, is_deleted)
+        VALUES (
+            'staff.it2@gmail.com', 
+            @HashPassword, 
+            N'Staff IT 2', 
+            N'Nhân viên Kỹ thuật 2', 
+            '0912000015', 
+            'https://ui-avatars.com/api/?name=Staff+IT+2&background=006b2c&color=fff', 
+            'ACTIVE', 
+            N'IT Support', 
+            (SELECT department_id FROM dbo.departments WHERE code = 'IT'), 
+            0
+        );
+    END
+
     COMMIT TRANSACTION;
-    PRINT 'Da seed 5 tai khoan staff thanh cong!';
+    PRINT 'Da seed 10 tai khoan staff thanh cong!';
 END TRY
 BEGIN CATCH
     ROLLBACK TRANSACTION;

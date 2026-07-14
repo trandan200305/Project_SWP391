@@ -39,6 +39,9 @@ public class Proposal {
     @Column(name = "cover_letter", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String coverLetter;
 
+    @Column(name = "cv_url", length = 500)
+    private String cvUrl;
+
     @Column(nullable = false, length = 30)
     @Builder.Default
     private String status = "SUBMITTED";

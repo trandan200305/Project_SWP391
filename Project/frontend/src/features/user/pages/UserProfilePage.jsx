@@ -677,7 +677,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                   )}
                   <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                     <Camera className="w-6 h-6 text-white mb-1" />
-                    <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Uploading...' : 'Change'}</span>
+                    <span className="text-[10px] text-white font-medium uppercase tracking-wider">{isUploadingAvatar ? 'Đang tải lên...' : 'Thay đổi'}</span>
                     <input type="file" className="hidden" accept="image/*" disabled={isUploadingAvatar} onChange={async (e)=>{
                         const file = e.target.files[0];
                         if(!file) return;
@@ -721,7 +721,7 @@ export default function UserProfilePage({ user, onNavigate, onLogout, defaultTab
                <div className="flex flex-col sm:flex-row sm:items-end justify-between pt-20 sm:pt-4 ml-0 sm:ml-[140px] gap-4">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 leading-tight tracking-tight flex items-center gap-2">
-                       {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (role === 'employer' ? (displayName || companyName || 'Unnamed Company') : (displayName || fullName || 'Administrator'))}
+                       {role === 'freelancer' ? (displayName || fullName || 'Freelancer Ẩn danh') : (role === 'employer' ? (displayName || companyName || 'Công ty Ẩn danh') : (displayName || fullName || 'Quản trị viên'))}
                        {(isVerified || kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" title="Tài khoản đã xác thực KYC" />}
                     </h2>
                     <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">

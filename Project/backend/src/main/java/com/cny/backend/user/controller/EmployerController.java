@@ -27,6 +27,9 @@ public class EmployerController {
     private EmployerRepository employerRepository;
 
     @Autowired
+    private com.cny.backend.notification.service.NotificationService notificationService;
+
+    @Autowired
     private EmployerProfileRequestRepository employerProfileRequestRepository;
 
     @Autowired
@@ -253,6 +256,17 @@ public class EmployerController {
             e.setUpdatedAt(LocalDateTime.now());
 
             employerRepository.save(e);
+            
+            // Notify STAFF
+            notificationService.createNotification(
+                0L, // Global for staff
+                "STAFF",
+                "Yêu cầu xác minh danh tính KYC mới",
+                "Nhà tuyển dụng " + (e.getCompanyName() != null ? e.getCompanyName() : e.getDisplayName()) + " vừa gửi yêu cầu xác minh doanh nghiệp.",
+                "INFO",
+                "KYC-EMP-" + e.getEmployerId()
+            );
+
             response.put("success", true);
             response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
             return ResponseEntity.ok(response);

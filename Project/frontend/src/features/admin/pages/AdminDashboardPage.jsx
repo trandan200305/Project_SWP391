@@ -817,6 +817,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     setIsLoading(true);
     adminApi.getUsers({
       page: currentPage,
+      size: pageSize,
       role: selectedRoleTab,
       search: searchQuery,
       status: userStatusFilter,

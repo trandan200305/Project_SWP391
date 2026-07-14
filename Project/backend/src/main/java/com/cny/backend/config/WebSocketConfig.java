@@ -33,7 +33,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.enableSimpleBroker("/topic"); 
         config.setApplicationDestinationPrefixes("/app"); // địa chỉ
     }
-    // kết nối WebSocket endpoint gọi url
+    // kết nối WebSocket
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         

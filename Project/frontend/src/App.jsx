@@ -13,7 +13,14 @@ export default function App() {
   const [pageParams, setPageParams] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  });
   const [suspended, setSuspended] = useState(null);
   const stompClientRef = useRef(null);
 
@@ -98,6 +105,7 @@ export default function App() {
       "employer_profile",
       "profile",
       "checkout",
+      "contract_details",
     ];
     if (protectedPages.includes(page) && !user) {
       setCurrentPage("login");
@@ -127,13 +135,12 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    sessionStorage.setItem("user", JSON.stringify(userData));
     setSuspended(null);
     const redirectTo = localStorage.getItem('redirect_after_login');
     localStorage.removeItem('redirect_after_login');
     
-    if (userData.role === 'ADMIN' || userData.role === 'MANAGER' || userData.role === 'STAFF') {
-      setCurrentPage('admin');
-    } else if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
+    if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
       setCurrentPage('post_job');
     } else {
       setCurrentPage("home");
@@ -142,6 +149,7 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
+    sessionStorage.removeItem("user");
     setSuspended(null);
     setCurrentPage("home");
   };
@@ -149,11 +157,13 @@ export default function App() {
   const handleSuspendedGoHome = () => {
     setSuspended(null);
     setUser(null);
+    sessionStorage.removeItem("user");
     setCurrentPage("home");
   };
 
   const handleUserUpdate = (updatedUser) => {
     setUser(updatedUser);
+    sessionStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   const isLayoutPage = ![

@@ -3,42 +3,15 @@ package com.cny.backend.admin.controller;
 import java.util.List;
 import java.util.Map;
 
+import com.cny.backend.admin.dto.*;
+import com.cny.backend.admin.repository.AdminRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.cny.backend.admin.dto.AdminAuditLogDto;
-import com.cny.backend.admin.dto.AdminDto;
-import com.cny.backend.admin.repository.AdminRepository;
-import com.cny.backend.admin.dto.AdminStatsDto;
-import com.cny.backend.admin.dto.DisputeDto;
-import com.cny.backend.admin.dto.KycRequestDto;
-import com.cny.backend.admin.dto.ManagerCreateDto;
-import com.cny.backend.admin.dto.ManagerDto;
-import com.cny.backend.admin.dto.PendingProjectDto;
-import com.cny.backend.admin.dto.PlatformFeeDto;
-import com.cny.backend.admin.dto.ReportDto;
-import com.cny.backend.admin.dto.RevenueTrendDto;
-import com.cny.backend.admin.dto.SeoConfigDto;
-import com.cny.backend.admin.dto.StaffCreateDto;
-import com.cny.backend.admin.dto.StaffDto;
-import com.cny.backend.admin.dto.SupportTicketDto;
-import com.cny.backend.admin.dto.UserGrowthTrendDto;
-import com.cny.backend.admin.dto.WarningTemplateDto;
-import com.cny.backend.admin.dto.WithdrawalDto;
+import org.springframework.web.bind.annotation.*;
 import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.PaymentTransaction;
 import com.cny.backend.admin.entity.VnpayConfig;
+import com.cny.backend.admin.repository.AdminRepository;
 import com.cny.backend.admin.service.AdminService;
 import com.cny.backend.admin.service.VNPayService;
 import com.cny.backend.project.dto.ArticleDto;
@@ -97,9 +70,8 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<Object> getUsers(
-            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            //@RequestParam(value = "size", required = false) Integer size
-            @RequestParam(value = "size", required = false, defaultValue = "2") Integer size,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
             @RequestParam(value = "role", defaultValue = "ALL") String role,
             @RequestParam(value = "search", defaultValue = "") String search,
             @RequestParam(value = "status", defaultValue = "ALL") String status,
@@ -112,9 +84,10 @@ public class AdminController {
             @RequestParam(value = "activeOnlineChecked", defaultValue = "true") boolean activeOnlineChecked,
             @RequestParam(value = "activeOfflineChecked", defaultValue = "true") boolean activeOfflineChecked
     ) {
-        if (page != null && size != null) {
+        if (page != null) {
+            int pageSize = (size != null) ? size : 20;
             return ResponseEntity.ok(adminService.getUsersPaginated(
-                    page, size, role, search, status, timeFilter, timeStart, timeEnd,
+                    page, pageSize, role, search, status, timeFilter, timeStart, timeEnd,
                     filterEmployer, filterManager, filterStaff, activeOnlineChecked, activeOfflineChecked
             ));
         }
@@ -135,47 +108,7 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/projects/pending")
-    public ResponseEntity<List<PendingProjectDto>> getPendingProjects() {
-        return ResponseEntity.ok(adminService.getPendingProjects());
-    }
 
-    @PutMapping("/projects/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateProject(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateProject(id, approve, reason, adminId));
-    }
-
-    @GetMapping("/gigs/pending")
-    public ResponseEntity<List<com.cny.backend.admin.dto.PendingGigDto>> getPendingGigs() {
-        return ResponseEntity.ok(adminService.getPendingGigs());
-    }
-
-    @PutMapping("/gigs/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateGig(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateGig(id, approve, reason, adminId));
-    }
-
-    @GetMapping("/withdrawals")
-    public ResponseEntity<List<WithdrawalDto>> getWithdrawals() {
-        return ResponseEntity.ok(adminService.getWithdrawals());
-    }
-
-    @PutMapping("/withdrawals/{id}/process")
-    public ResponseEntity<Map<String, Object>> processWithdrawal(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.processWithdrawal(id, status, reason, adminId));
-    }
 
     @GetMapping("/audit-logs")
     public ResponseEntity<List<AdminAuditLogDto>> getAuditLogs() {
@@ -187,66 +120,16 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getJobCategories());
     }
 
-    @GetMapping("/kyc-requests")
-    public ResponseEntity<List<KycRequestDto>> getKycRequests() {
-        return ResponseEntity.ok(adminService.getKycRequests());
-    }
 
-    @GetMapping("/disputes")
-    public ResponseEntity<List<DisputeDto>> getDisputes() {
-        return ResponseEntity.ok(adminService.getDisputes());
-    }
 
-    @PutMapping("/disputes/{id}/resolve")
-    public ResponseEntity<Map<String, Object>> resolveDispute(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestParam(value = "note", required = false) String note,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.resolveDispute(id, status, note, adminId));
-    }
 
-    @GetMapping("/reports")
-    public ResponseEntity<List<ReportDto>> getReports() {
-        return ResponseEntity.ok(adminService.getReports());
-    }
-
-    @PutMapping("/reports/{id}/resolve")
-    public ResponseEntity<Map<String, Object>> resolveReport(
-            @PathVariable("id") int id,
-            @RequestParam("status") String status,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.resolveReport(id, status, adminId));
-    }
-
-    @GetMapping("/profile-requests")
-    public ResponseEntity<List<com.cny.backend.user.entity.EmployerProfileRequest>> getProfileRequests() {
-        return ResponseEntity.ok(adminService.getPendingProfileRequests());
-    }
-
-    @PutMapping("/profile-requests/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateProfileRequest(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam(value = "reason", required = false) String reason,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateProfileRequest(id, approve, reason, adminId));
-    }
 
     @GetMapping("/warning-templates")
     public ResponseEntity<List<WarningTemplateDto>> getWarningTemplates() {
         return ResponseEntity.ok(adminService.getWarningTemplates());
     }
 
-    @GetMapping("/articles")
-    public ResponseEntity<List<ArticleDto>> getArticles() {
-        return ResponseEntity.ok(adminService.getArticles());
-    }
 
-    @GetMapping("/tickets")
-    public ResponseEntity<List<SupportTicketDto>> getTickets() {
-        return ResponseEntity.ok(adminService.getTickets());
-    }
 
     @GetMapping("/seo-configs")
     public ResponseEntity<List<SeoConfigDto>> getSeoConfigs() {
@@ -405,14 +288,6 @@ public class AdminController {
                 .build();
     }
 
-    @PutMapping("/kyc-requests/{id}/moderate")
-    public ResponseEntity<Map<String, Object>> moderateKycRequest(
-            @PathVariable("id") int id,
-            @RequestParam("approve") boolean approve,
-            @RequestParam("role") String role,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.moderateKycRequest(id, approve, role, adminId));
-    }
 
     @GetMapping("/vnpay-config")
     public ResponseEntity<VnpayConfig> getVnpayConfig() {
@@ -520,4 +395,5 @@ public class AdminController {
         Map<String, Object> result = vnpayService.lookupBankAccount(bankCode.trim(), accountNumber.trim());
         return ResponseEntity.ok(result);
     }
+
 }
