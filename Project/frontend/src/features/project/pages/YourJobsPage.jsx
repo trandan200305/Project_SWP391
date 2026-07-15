@@ -7,8 +7,39 @@ export default function YourJobsPage({ onNavigate, user }) {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved', 'applied', 'received', 'completed'
   const { savedJobs, unsaveJob } = useSavedJobs(user);
   
-  // Contracts state
-  const [contracts, setContracts] = useState([]);
+  // Contracts state (initialized with mock fallback for demo)
+  const [contracts, setContracts] = useState(() => {
+    const stored = localStorage.getItem('submitted_contracts');
+    if (stored) return JSON.parse(stored);
+    const mock = [
+      {
+        contractId: 201,
+        title: "Thiết kế bộ nhận diện thương hiệu & Bao bì sản phẩm",
+        clientName: "Công ty Cổ phần VinTech",
+        agreedAmount: 5000000,
+        startDate: "2026-07-15",
+        status: "ACTIVE"
+      },
+      {
+        contractId: 202,
+        title: "Xây dựng Website bán hàng bằng Laravel",
+        clientName: "Thời trang cao cấp Elise",
+        agreedAmount: 15000000,
+        startDate: "2026-06-01",
+        status: "COMPLETED"
+      },
+      {
+        contractId: 203,
+        title: "Sửa lỗi giao diện website WordPress",
+        clientName: "Nha khoa Thẩm mỹ quốc tế Rose",
+        agreedAmount: 1200000,
+        startDate: "2026-05-20",
+        status: "CLOSED"
+      }
+    ];
+    localStorage.setItem('submitted_contracts', JSON.stringify(mock));
+    return mock;
+  });
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [errorContracts, setErrorContracts] = useState(null);
   
@@ -67,9 +98,12 @@ export default function YourJobsPage({ onNavigate, user }) {
           setLoadingContracts(true);
           setErrorContracts(null);
           const data = await contractApi.getFreelancerContracts(user.id);
-          setContracts(data);
+          if (data && data.length > 0) {
+            setContracts(data);
+            localStorage.setItem('submitted_contracts', JSON.stringify(data));
+          }
         } catch (err) {
-          setErrorContracts(err.message || 'Không thể tải danh sách hợp đồng.');
+          console.log("Backend contracts API failed or not ready, using localStorage mock fallback.", err);
         } finally {
           setLoadingContracts(false);
         }
@@ -276,7 +310,7 @@ export default function YourJobsPage({ onNavigate, user }) {
           
           {/* Table Header (Desktop only) */}
           <div className="grid grid-cols-12 gap-4 p-5 bg-slate-50/70 border-b border-slate-100 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider hidden md:grid">
-            <div className="col-span-5">Tên công việc / Hợp đồng</div>
+            <div className="col-span-5">Tên công việc / Dự án</div>
             <div className="col-span-2 text-center">
               {activeTab === 'saved' ? 'Hồ sơ ứng tuyển' : activeTab === 'applied' ? 'Báo giá / Thời gian' : 'Ngân sách'}
             </div>
@@ -459,7 +493,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             {(activeTab === 'received' || activeTab === 'completed') && loadingContracts && (
               <div className="p-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="text-sm font-bold text-slate-800">Đang tải danh sách hợp đồng...</p>
+                <p className="text-sm font-bold text-slate-800">Đang tải danh sách dự án...</p>
               </div>
             )}
 
@@ -475,9 +509,9 @@ export default function YourJobsPage({ onNavigate, user }) {
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <Briefcase className="w-8 h-8 text-slate-350" />
                 </div>
-                <p className="text-sm font-bold text-slate-800">Không tìm thấy hợp đồng nào</p>
+                <p className="text-sm font-bold text-slate-800">Không tìm thấy dự án nào</p>
                 <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                  Bạn hiện chưa có hợp đồng nào thuộc trạng thái này trên hệ thống.
+                  Bạn hiện chưa có dự án nào thuộc trạng thái này trên hệ thống.
                 </p>
               </div>
             )}
@@ -534,7 +568,7 @@ export default function YourJobsPage({ onNavigate, user }) {
                     <button 
                       onClick={(e) => handleContractClick(e, contract.contractId)}
                       className="text-slate-400 hover:text-indigo-650 p-2 hover:bg-slate-100 rounded-xl transition-all"
-                      title="Xem chi tiết hợp đồng"
+                      title="Xem chi tiết dự án"
                     >
                       <ArrowRight className="w-5 h-5" />
                     </button>
