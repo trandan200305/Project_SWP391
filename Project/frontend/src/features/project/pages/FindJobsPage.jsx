@@ -1,88 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bookmark } from 'lucide-react';
+import { Bookmark, Loader2 } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
-export default function FindJobsPage({ onNavigate, initialCategory = 'all', initialKeyword = '', user }) {
+export default function FindJobsPage({ onNavigate, user }) {
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
-  const [activeCategory, setActiveCategory] = useState(initialCategory || 'all');
-  const [categories, setCategories] = useState([{ id: 'all', name: 'Tất cả', count: null }]);
   const [jobs, setJobs] = useState([]);
-  const [keyword, setKeyword] = useState(initialKeyword || '');
-  const [minSalary, setMinSalary] = useState('');
-  const [workForm, setWorkForm] = useState(''); // '' (Tất cả), 'ONLINE', 'OFFLINE'
-  const [projectType, setProjectType] = useState(''); // '' (Tất cả), 'FIXED', 'HOURLY'
   const [isLoading, setIsLoading] = useState(true);
-  const [errorToast, setErrorToast] = useState(null);
   
-  
+  // Phân trang
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchJobs(page, size);
+  }, [page, size]);
 
-  useEffect(() => {
-    if (initialCategory) {
-      setActiveCategory(initialCategory);
-      setPage(0);
-    }
-  }, [initialCategory]);
-
-  useEffect(() => {
-    if (initialKeyword !== undefined) {
-      setKeyword(initialKeyword);
-      setPage(0);
-    }
-  }, [initialKeyword]);
-
-  const isValidSalary = (value) => {
-    if (!value) return true; 
-    
-    return /^[1-9]\d*$/.test(value);
-  };
-
-  
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (!isValidSalary(minSalary)) {
-        setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
-        setTimeout(() => setErrorToast(null), 3000);
-        return;
-      }
-      setErrorToast(null);
-      fetchJobs(keyword, activeCategory, minSalary, workForm, projectType, page, size);
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [keyword, activeCategory, minSalary, workForm, projectType, page, size]);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch('http://localhost:8080/api/categories');
-      if (res.ok) {
-        const data = await res.json();
-        setCategories([{ id: 'all', name: 'Tất cả', count: null }, ...data]);
-      }
-    } catch (e) {
-      console.error('Error fetching categories:', e);
-    }
-  };
-
-  const fetchJobs = async (searchQuery, categoryFilter, minSalaryFilter, workFormFilter, projectTypeFilter, currentPage, currentSize) => {
+  const fetchJobs = async (currentPage, currentSize) => {
     setIsLoading(true);
     try {
-      let url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
-      if (searchQuery) url += `&keyword=${encodeURIComponent(searchQuery)}`;
-      if (categoryFilter && categoryFilter !== 'all') url += `&categoryId=${categoryFilter}`;
-      if (minSalaryFilter) url += `&minSalary=${minSalaryFilter}`;
-      if (workFormFilter) url += `&workForm=${workFormFilter}`;
-      if (projectTypeFilter) url += `&projectType=${projectTypeFilter}`;
-
+      const url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -120,36 +60,8 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     }
   };
 
-  const handleKeywordChange = (e) => {
-    setKeyword(e.target.value);
-    setPage(0); 
-  };
-
-  const handleMinSalaryChange = (e) => {
-    setMinSalary(e.target.value);
-    setPage(0); 
-  };
-
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleExecuteSearch = () => {
-    if (!isValidSalary(minSalary)) {
-      setErrorToast('Vui lòng chỉ nhập số nguyên dương cho mức lương!');
-      setTimeout(() => setErrorToast(null), 3000);
-      return;
-    }
-    setErrorToast(null);
-    setPage(0);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    fetchJobs(keyword, activeCategory, minSalary, workForm, projectType, 0, size);
-  };
-
-  const handleCategoryChange = (catId) => {
-    setActiveCategory(catId);
-    setPage(0); // reset to first page when changing category
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -177,7 +89,6 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
     return `${diffHours} giờ`;
   };
 
-  
   const getPaginationButtons = () => {
     let startPage = Math.max(0, page - 2);
     let endPage = Math.min(totalPages - 1, startPage + 4);
@@ -197,140 +108,31 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
 
   return (
     <div className="pt-24 pb-12 bg-slate-50/50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="max-w-4xl mx-auto px-6">
         
-        {/* Left Column - Categories & Filters */}
-        <div className="md:col-span-1 bg-white border border-slate-200/85 rounded-xl p-4 shadow-sm h-fit">
-          <h2 className="font-bold text-base text-slate-800 mb-4 px-2 tracking-wide uppercase text-[12px] text-slate-405">Lĩnh vực</h2>
-          <ul className="space-y-1 mb-4">
-            {categories.map(cat => (
-              <li key={cat.id}>
-                <button
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    activeCategory === cat.id 
-                      ? 'bg-indigo-50 text-indigo-650 font-bold' 
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {cat.name} {cat.count != null && <span className="text-slate-400 text-xs">({cat.count})</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {/* Divider */}
-          <div className="border-t border-slate-100 my-4"></div>
-
-          {/* Work Form Filter */}
-          <h2 className="font-bold text-base text-slate-800 mb-3 px-2 tracking-wide uppercase text-[12px] text-slate-400">Hình thức</h2>
-          <div className="space-y-2 px-2 mb-4">
-            {[
-              { id: '', label: 'Tất cả' },
-              { id: 'ONLINE', label: 'Làm Online' },
-              { id: 'OFFLINE', label: 'Làm Offline' }
-            ].map(wf => (
-              <label key={wf.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="workForm" 
-                  value={wf.id} 
-                  checked={workForm === wf.id}
-                  onChange={(e) => { setWorkForm(e.target.value); setPage(0); }}
-                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                />
-                <span className={workForm === wf.id ? "font-semibold text-slate-800" : "text-slate-600"}>{wf.label}</span>
-              </label>
-            ))}
+        <div className="flex flex-col gap-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Tìm việc làm tự do</h1>
+            <span className="text-xs font-semibold text-slate-400">Trang {page + 1} của {totalPages || 1}</span>
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-slate-100 my-4"></div>
-
-          {/* Project Type Filter */}
-          <h2 className="font-bold text-base text-slate-800 mb-3 px-2 tracking-wide uppercase text-[12px] text-slate-400">Loại dự án</h2>
-          <div className="space-y-2 px-2">
-            {[
-              { id: '', label: 'Tất cả' },
-              { id: 'FIXED', label: 'Ngân sách cố định' },
-              { id: 'HOURLY', label: 'Tính theo giờ' }
-            ].map(pt => (
-              <label key={pt.id} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="projectType" 
-                  value={pt.id} 
-                  checked={projectType === pt.id}
-                  onChange={(e) => { setProjectType(e.target.value); setPage(0); }}
-                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                />
-                <span className={projectType === pt.id ? "font-semibold text-slate-800" : "text-slate-600"}>{pt.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column - Search & Jobs */}
-        <div className="md:col-span-3 flex flex-col gap-6">
-          
-          {/* Search bar */}
-          <div className="bg-white border border-slate-200/85 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-            <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-              <div className="flex-1 relative w-full">
-                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-slate-400" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Tìm việc freelancer (tiêu đề, mô tả, tên công ty...)" 
-                  value={keyword}
-                  onChange={handleKeywordChange}
-                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-              
-              <button 
-                onClick={handleExecuteSearch}
-                className="w-full md:w-auto px-6 py-2.5 bg-[#4f46e5] text-white font-semibold rounded-full shadow-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm"
-              >
-                Tìm kiếm
-              </button>
-            </div>
-            
-            {/* Filter Salary */}
-            <div className="flex justify-end items-center gap-2 w-full">
-              <span className="text-xs text-slate-600 font-medium">Mức lương:</span>
-              <div className="relative w-48">
-                <input 
-                  type="text" 
-                  placeholder="Tối thiểu..." 
-                  value={minSalary}
-                  onChange={handleMinSalaryChange}
-                  className="w-full pl-3 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-                <button 
-                  onClick={handleExecuteSearch}
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-[#4f46e5] hover:bg-slate-100 rounded-r-full transition-colors"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Job List */}
+          {/* Danh sách công việc */}
           <div className="bg-white border border-slate-200/85 rounded-2xl shadow-sm divide-y divide-slate-100 overflow-hidden">
             {isLoading ? (
-              <div className="p-8 text-center text-slate-500">Đang tải dữ liệu...</div>
+              <div className="p-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                <span className="text-sm font-medium">Đang tải danh sách công việc...</span>
+              </div>
             ) : jobs.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">Không tìm thấy công việc nào.</div>
+              <div className="p-16 text-center text-slate-500">Không tìm thấy công việc nào.</div>
             ) : (
               jobs.map(job => (
-                <div key={job.id} className="p-5 hover:bg-slate-50/40 transition-all duration-300 group border-b border-slate-100 last:border-0">
+                <div key={job.id} className="p-6 hover:bg-slate-50/40 transition-all duration-300 group border-b border-slate-100 last:border-0">
                   <div className="flex justify-between items-start gap-4 mb-2">
                     <div className="flex-1">
                       
-                      {/* Budget and ID on top */}
+                      {/* Ngân sách và ID */}
                       <div className="flex items-center gap-2 text-xs text-slate-450 font-bold uppercase tracking-wider mb-1.5">
                         <span className="text-slate-400">Mã dự án: #{job.id}</span>
                         <span className="text-slate-300">•</span>
@@ -377,7 +179,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                   
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 border-dashed">
                     <div className="flex items-center gap-2">
-                      <span className="bg-indigo-50 text-indigo-650 text-xs font-semibold px-2 py-0.5 rounded-md">
+                      <span className="bg-indigo-50 text-indigo-655 text-xs font-semibold px-2 py-0.5 rounded-md">
                         {job.categoryName}
                       </span>
                       <span className="text-xs text-slate-400">
@@ -397,7 +199,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
             )}
           </div>
           
-          {/* Pagination */}
+          {/* Phân trang */}
           {!isLoading && totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4 mb-8">
               
@@ -420,7 +222,7 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                   onClick={() => handlePageChange(btnIndex)}
                   className={`min-w-[36px] h-9 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center shadow-sm backdrop-blur-md ${
                     page === btnIndex 
-                      ? 'bg-[#4f46e5] text-white border-transparent hover:-translate-y-0.5 shadow-indigo-500/30' 
+                      ? 'bg-[#4f46e5] text-white border-transparent hover:-translate-y-0.5' 
                       : 'bg-white/70 border border-slate-200/60 text-slate-600 hover:bg-white hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
@@ -444,7 +246,6 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
       
-      
       {successToast.show && (
         <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <Bookmark className={`w-5 h-5 ${successToast.type === 'save' ? 'text-yellow-400 fill-yellow-400' : 'text-amber-400 fill-amber-400'}`} />
@@ -463,14 +264,6 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
               'Đã bỏ lưu việc làm'
             )}
           </span>
-        </div>
-      )}
-
-      
-      {errorToast && (
-        <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-bounce-in">
-          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span className="font-medium text-sm">{errorToast}</span>
         </div>
       )}
     </div>
