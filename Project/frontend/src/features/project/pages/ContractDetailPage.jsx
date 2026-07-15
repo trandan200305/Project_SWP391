@@ -68,7 +68,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
 
   const handleGoBack = () => {
     if (isClient) {
-      onNavigate('employer_profile');
+      onNavigate('employer_jobs');
     } else {
       onNavigate('your_jobs');
     }

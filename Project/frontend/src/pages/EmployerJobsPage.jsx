@@ -291,6 +291,27 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         }
     };
 
+    const handleProjectTitleClick = async (proj) => {
+        if (proj.status === 'IN_PROGRESS' || proj.status === 'CLOSED') {
+            try {
+                const contractDetails = await contractApi.getContractByProjectId(proj.projectId, user.id);
+                if (contractDetails && contractDetails.contractId) {
+                    onNavigate('contract_details', { contractId: contractDetails.contractId });
+                    return;
+                }
+            } catch (err) {
+                console.error("Error fetching contract details:", err);
+            }
+        }
+        const mappedJob = {
+            ...proj,
+            id: proj.projectId,
+            employerId: proj.client?.employerId || user?.id,
+            employerName: proj.client?.displayName || user?.name
+        };
+        if (onNavigate) onNavigate('job_details', { job: mappedJob });
+    };
+
     const handleViewProposals = (projectId) => {
         setSelectedProjectForProposals(projectId);
         setLoadingProposals(true);
@@ -638,15 +659,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                         <h4 className="font-extrabold text-slate-950 text-base leading-snug transition-colors">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    const mappedJob = {
-                                                                        ...proj,
-                                                                        id: proj.projectId,
-                                                                        employerId: proj.client?.employerId || user?.id,
-                                                                        employerName: proj.client?.displayName || user?.name
-                                                                    };
-                                                                    if (onNavigate) onNavigate('job_details', { job: mappedJob });
-                                                                }}
+                                                                onClick={() => handleProjectTitleClick(proj)}
                                                                 className="text-left font-extrabold text-slate-950 hover:text-cyan-600 transition-colors duration-200"
                                                             >
                                                                 {proj.title}
@@ -709,13 +722,13 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                                 </button>
                                                             </>
                                                         )}
-                                                        {proj.status === 'IN_PROGRESS' && (
+                                                        {(proj.status === 'IN_PROGRESS' || proj.status === 'CLOSED') && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleManageProgress(proj.projectId)}
                                                                 className="px-4 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors shrink-0"
                                                             >
-                                                                Quản lý tiến độ
+                                                                {proj.status === 'CLOSED' ? 'Xem tiến độ' : 'Quản lý tiến độ'}
                                                             </button>
                                                         )}
                                                         {['DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED'].includes(proj.status) && (
