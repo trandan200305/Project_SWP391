@@ -11,11 +11,22 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
   const [isLoading, setIsLoading] = useState(true);
   const [errorToast, setErrorToast] = useState(null);
 
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+
   useEffect(() => {
     if (initialKeyword !== undefined) {
       setKeyword(initialKeyword);
     }
   }, [initialKeyword]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    fetch('http://localhost:8080/api/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data || []))
+      .catch(e => console.error('Error fetching categories:', e));
+  }, []);
 
   // Fetch freelancers based on active filters
   const fetchFreelancers = async () => {
@@ -26,6 +37,7 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
       if (minRate) url += `&minRate=${minRate}`;
       if (maxRate) url += `&maxRate=${maxRate}`;
       if (minRating) url += `&minRating=${minRating}`;
+      if (selectedCategory && selectedCategory !== 'all') url += `&category=${encodeURIComponent(selectedCategory)}`;
 
       const res = await fetch(url);
       if (res.ok) {
@@ -39,10 +51,10 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
     }
   };
 
-  // Trigger search on mount
+  // Trigger search on mount or when select filters change
   useEffect(() => {
     fetchFreelancers();
-  }, []);
+  }, [selectedCategory, minRating]);
 
   const showError = (msg) => {
     setErrorToast(msg);
@@ -67,6 +79,7 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
     setMinRate('');
     setMaxRate('');
     setKeyword('');
+    setSelectedCategory('');
     setIsLoading(true);
     fetch('http://localhost:8080/api/freelancers')
       .then(res => res.json())
@@ -132,66 +145,83 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
                 className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
+            <button
+              type="submit"
+              className="w-full md:w-auto bg-[#1e40af] hover:bg-blue-800 text-white font-bold px-6 py-3 rounded-lg text-sm transition-all duration-150 flex items-center justify-center gap-1.5 shadow-sm shrink-0"
+            >
+              <Search className="w-4 h-4" />
+              <span>Tìm kiếm</span>
+            </button>
           </div>
 
           {/* Advanced Filters */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 pt-3 border-t border-slate-100 w-full text-slate-700">
-            <div className="flex items-center gap-2 font-medium text-sm text-slate-800">
-              <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-              <span>Bộ lọc nâng cao:</span>
-            </div>
-            
-            {/* Rating Dropdown */}
-            <div className="w-full md:w-48">
-              <select
-                value={minRating}
-                onChange={(e) => setMinRating(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Tất cả đánh giá</option>
-                <option value="4.5">Từ 4.5 ★ trở lên</option>
-                <option value="4.0">Từ 4.0 ★ trở lên</option>
-                <option value="3.0">Từ 3.0 ★ trở lên</option>
-              </select>
-            </div>
-
-            {/* Rate Range Inputs */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <input
-                type="text"
-                placeholder="Giá tối thiểu"
-                value={minRate}
-                onChange={(e) => setMinRate(e.target.value)}
-                className="w-full md:w-28 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-slate-400 text-xs">đến</span>
-              <input
-                type="text"
-                placeholder="Giá tối đa"
-                value={maxRate}
-                onChange={(e) => setMaxRate(e.target.value)}
-                className="w-full md:w-28 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 w-full md:w-auto md:ml-auto">
-              <button
-                type="submit"
-                className="bg-[#1e40af] hover:bg-blue-800 text-white font-bold px-5 py-2 rounded-lg text-sm transition-all duration-150 flex items-center gap-1.5 shadow-sm"
-              >
-                <Search className="w-4 h-4" />
-                <span>Tìm kiếm</span>
-              </button>
-
-              {(minRating || minRate || maxRate || keyword) && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="text-xs text-rose-600 hover:text-rose-700 font-semibold border-b border-transparent hover:border-rose-700 transition-all"
+          <div className="flex flex-col gap-4 pt-3 border-t border-slate-100 w-full text-slate-700">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 font-medium text-sm text-slate-800">
+                <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+                <span>Bộ lọc nâng cao:</span>
+              </div>
+              
+              {/* Category Dropdown */}
+              <div className="w-full md:w-48">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Xóa bộ lọc
-                </button>
+                  <option value="">Tất cả ngành nghề</option>
+                  {categories.map(cat => (
+                    <option key={cat.categoryId} value={cat.categoryName}>
+                      {cat.categoryName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rating Dropdown */}
+              <div className="w-full md:w-40">
+                <select
+                  value={minRating}
+                  onChange={(e) => setMinRating(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Tất cả đánh giá</option>
+                  <option value="4.5">Từ 4.5 ★ trở lên</option>
+                  <option value="4.0">Từ 4.0 ★ trở lên</option>
+                  <option value="3.0">Từ 3.0 ★ trở lên</option>
+                </select>
+              </div>
+
+              {/* Rate Range Inputs */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <input
+                  type="text"
+                  placeholder="Giá tối thiểu"
+                  value={minRate}
+                  onChange={(e) => setMinRate(e.target.value)}
+                  className="w-full md:w-28 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-slate-400 text-xs">đến</span>
+                <input
+                  type="text"
+                  placeholder="Giá tối đa"
+                  value={maxRate}
+                  onChange={(e) => setMaxRate(e.target.value)}
+                  className="w-full md:w-28 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Reset filter button at the right end */}
+              {(minRating || minRate || maxRate || keyword || selectedCategory) && (
+                <div className="flex items-center w-full md:w-auto md:ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-xs text-rose-600 hover:text-rose-700 font-semibold border-b border-transparent hover:border-rose-700 transition-all"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -323,6 +353,26 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
                         <>
                           <div>•</div>
                           <div className="bg-blue-50 text-blue-600 font-medium px-2 py-0.5 rounded text-[11px]">{fl.expertiseField}</div>
+                        </>
+                      )}
+                      {selectedCategory && (
+                        <>
+                          <div>•</div>
+                          <div className="bg-amber-50 text-amber-700 border border-amber-100 font-bold px-2 py-0.5 rounded text-[11px]">
+                            Đã làm: {
+                              fl.categoryProjectCounts 
+                                ? Object.entries(fl.categoryProjectCounts).find(([k]) => k.toLowerCase().includes(selectedCategory.toLowerCase()))?.[1] || 0
+                                : 0
+                            } dự án [{selectedCategory}]
+                          </div>
+                        </>
+                      )}
+                      {!selectedCategory && fl.categoryProjectCounts && Object.keys(fl.categoryProjectCounts).length > 0 && (
+                        <>
+                          <div>•</div>
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            Lịch sử làm việc: {Object.entries(fl.categoryProjectCounts).map(([cat, count]) => `${cat} (${count})`).join(', ')}
+                          </div>
                         </>
                       )}
                     </div>

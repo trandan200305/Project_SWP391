@@ -70,5 +70,6 @@ public class FreelancerDto {
     private String experienceLevel;
     private String primarySkills;
     private String servicesOffered;
+    private java.util.Map<String, Long> categoryProjectCounts;
 }
 

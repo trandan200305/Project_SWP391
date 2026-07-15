@@ -42,6 +42,9 @@ public class FreelancerController {
     private EmployerRepository employerRepository;
 
     @Autowired
+    private ContractRepository contractRepository;
+
+    @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
     @GetMapping
@@ -274,6 +277,18 @@ public class FreelancerController {
 
     private FreelancerDto mapToDto(Freelancer f) {
         FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
+        
+        java.util.List<Contract> contracts = contractRepository.findByFreelancerProfileId(f.getProfileId());
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        if (contracts != null) {
+            counts = contracts.stream()
+                    .filter(c -> "COMPLETED".equals(c.getStatus()) && c.getProject() != null && c.getProject().getCategory() != null)
+                    .collect(Collectors.groupingBy(
+                            c -> c.getProject().getCategory().getCategoryName(),
+                            Collectors.counting()
+                    ));
+        }
+
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
                 .email(f.getEmail())
@@ -313,6 +328,7 @@ public class FreelancerController {
                 .experienceLevel(profile != null ? profile.getExperienceLevel() : null)
                 .primarySkills(profile != null ? profile.getPrimarySkills() : null)
                 .servicesOffered(profile != null ? profile.getServicesOffered() : null)
+                .categoryProjectCounts(counts)
                 .build();
     }
 }
