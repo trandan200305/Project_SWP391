@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { adminApi } from '../api/adminApi.js';
 import { 
   LayoutDashboard, Users, ShieldAlert, BadgeDollarSign, Settings, 
@@ -159,7 +159,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [payosCheckoutUrl, setPayosCheckoutUrl] = useState(null);
   const [currentPayosTxnRef, setCurrentPayosTxnRef] = useState(null);
 
-
+  // Financial Dashboard States
+  const [paymentTimeFilter, setPaymentTimeFilter] = useState('Hôm nay');
+  const [donutHoverState, setDonutHoverState] = useState(null);
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
@@ -167,7 +169,83 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [seoConfigs, setSeoConfigs] = useState([]);
   const [activeCmsTab, setActiveCmsTab] = useState('seo'); 
 
-  
+  const [allVnpayTransactions, setAllVnpayTransactions] = useState([]);
+
+  useEffect(() => {
+    // Fetch all transactions once for the dashboard to calculate accurate stats
+    const fetchAllVnpay = async () => {
+      try {
+        const res = await adminApi.getVnpayTransactions(0, 1000);
+        setAllVnpayTransactions(res.content || []);
+      } catch (e) {
+        console.error('Failed to fetch all vnpay txns for dashboard:', e);
+      }
+    };
+    fetchAllVnpay();
+  }, []);
+
+  // --- Financial Dashboard Helper & Data ---
+  const paymentStats = useMemo(() => {
+    let totalRevenue = 0;
+    let completedOrders = 0;
+    let statuses = { SUCCESS: 0, FAILED: 0, PENDING: 0 };
+    
+    const now = new Date();
+    const isSameDay = (d1, d2) => d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+
+    const filteredTxns = allVnpayTransactions.filter(txn => {
+      if (!txn.createdAt) return false;
+      const d = new Date(txn.createdAt);
+      if (paymentTimeFilter === 'Hôm nay') return isSameDay(d, now);
+      if (paymentTimeFilter === 'Hôm qua') {
+        const y = new Date(now); y.setDate(now.getDate() - 1);
+        return isSameDay(d, y);
+      }
+      if (paymentTimeFilter === 'Tuần này') {
+        const start = new Date(now); start.setDate(now.getDate() - now.getDay());
+        return d >= start;
+      }
+      if (paymentTimeFilter === 'Tháng này') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (paymentTimeFilter === 'Tháng trước') {
+        let lm = now.getMonth() - 1; let y = now.getFullYear();
+        if (lm < 0) { lm = 11; y--; }
+        return d.getMonth() === lm && d.getFullYear() === y;
+      }
+      if (paymentTimeFilter === 'Năm này') return d.getFullYear() === now.getFullYear();
+      if (paymentTimeFilter === 'Năm trước') return d.getFullYear() === now.getFullYear() - 1;
+      return true;
+    });
+
+    filteredTxns.forEach(txn => {
+      if (txn.status === 'SUCCESS') {
+        totalRevenue += (txn.amount || 0);
+        completedOrders += 1;
+        statuses.SUCCESS += 1;
+      } else if (txn.status === 'FAILED' || txn.status === 'CANCELLED' || txn.status === 'REFUNDED') {
+        statuses.FAILED += 1;
+      } else {
+        statuses.PENDING += 1;
+      }
+    });
+
+    const totalTxns = filteredTxns.length || 1; 
+    const donutData = [
+      { id: 'SUCCESS', name: 'Đã thanh toán', value: statuses.SUCCESS, color: '#34d399', percent: (statuses.SUCCESS / totalTxns) * 100 },
+      { id: 'FAILED', name: 'Hủy', value: statuses.FAILED, color: '#a7f3d0', percent: (statuses.FAILED / totalTxns) * 100 },
+      { id: 'PENDING', name: 'Chờ thanh toán', value: statuses.PENDING, color: '#047857', percent: (statuses.PENDING / totalTxns) * 100 }
+    ];
+
+    return { totalRevenue, completedOrders, donutData, totalTxns: filteredTxns.length };
+  }, [allVnpayTransactions, paymentTimeFilter]);
+
+  const handleDonutMouseMove = (e, slice) => {
+    setDonutHoverState({
+      x: e.clientX,
+      y: e.clientY,
+      data: slice
+    });
+  };
+
   const [compareMode, setCompareMode] = useState(true);
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [chartWidth, setChartWidth] = useState(600);
@@ -4567,6 +4645,172 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               </div>
 
+              {/* === FINANCIAL DASHBOARD BLOCK === */}
+              <div className="bg-[#242424] rounded-2xl p-6 shadow-sm mb-6 animate-in fade-in duration-300">
+                {/* Time Filters */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {['Hôm qua', 'Hôm nay', 'Tuần này', 'Tháng này', 'Tháng trước', 'Năm này', 'Năm trước'].map(filter => (
+                    <button
+                      key={filter}
+                      onClick={() => setPaymentTimeFilter(filter)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        paymentTimeFilter === filter 
+                          ? 'bg-[#00b86b] text-white border border-[#00b86b]' 
+                          : 'bg-transparent text-gray-300 border border-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                  <button className="px-4 py-1.5 rounded-full text-xs font-medium text-gray-300 bg-transparent border border-gray-600 hover:border-gray-400 flex items-center gap-1">
+                    Tùy chỉnh <ChevronDown className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Top Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-[#00b86b] rounded-xl p-5 flex flex-col justify-center relative overflow-hidden">
+                    <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                    <div className="absolute -top-4 -right-10 w-24 h-24 bg-black/10 rounded-full blur-xl"></div>
+                    <span className="text-white/90 text-sm font-medium mb-3">Tổng doanh thu {paymentTimeFilter.toLowerCase()}</span>
+                    <span className="text-white text-2xl font-bold tracking-tight">
+                      {new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue)} VND
+                    </span>
+                  </div>
+                  <div className="bg-[#e8f5e9] rounded-xl p-5 flex flex-col justify-center">
+                    <span className="text-slate-700 text-sm font-medium mb-3">Tổng đơn hoàn thành {paymentTimeFilter.toLowerCase()}</span>
+                    <span className="text-[#00b86b] text-xl font-bold">
+                      {paymentStats.completedOrders} đơn hàng
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Panels */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
+                  {/* Left: Channels */}
+                  <div className="bg-[#2c2c2c] border border-gray-700/50 rounded-xl p-5">
+                    <h4 className="text-gray-300 text-sm font-medium mb-5">Thu theo kênh thanh toán</h4>
+                    <div className="bg-[#383838] rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-gray-600">
+                          <img src="/lancer-channel.jpg" alt="Channel" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-gray-300 text-sm">Kênh: <span className="text-white font-medium">lancer</span></span>
+                      </div>
+                      <span className="text-white font-bold text-sm">
+                        {new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue)} VND
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: Pie Chart */}
+                  <div className="bg-[#2c2c2c] border border-gray-700/50 rounded-xl p-5 flex flex-col">
+                    <h4 className="text-gray-300 text-sm font-medium mb-2">Thống kê trạng thái đơn hàng</h4>
+                    <div className="flex-1 flex flex-col items-center justify-center relative min-h-[220px]">
+                      {(() => {
+                        const radius = 70;
+                        const circumference = 2 * Math.PI * radius;
+                        let currentOffset = 0;
+                        
+                        return (
+                          <svg width="220" height="220" viewBox="0 0 220 220" className="relative z-10 -rotate-90">
+                            {/* Inner Circle Background */}
+                            <circle cx="110" cy="110" r={radius} fill="none" stroke="#383838" strokeWidth="40" />
+                            
+                            {/* Chart Slices & Text */}
+                            {(() => {
+                               let currentOffset = 0;
+                               return paymentStats.donutData.map((slice) => {
+                                 if (slice.value === 0) return null;
+                                 const dash = (slice.percent / 100) * circumference;
+                                 const offset = currentOffset;
+                                 
+                                 const startPercent = Math.abs(offset) / circumference;
+                                 const endPercent = (Math.abs(offset) + dash) / circumference;
+                                 const midPercent = (startPercent + endPercent) / 2;
+                                 
+                                 const angle = midPercent * 2 * Math.PI;
+                                 const textR = radius;
+                                 const tx = 110 + textR * Math.cos(angle);
+                                 const ty = 110 + textR * Math.sin(angle);
+                                 
+                                 currentOffset -= dash;
+                                 
+                                 return (
+                                   <g key={slice.id}>
+                                     <circle
+                                       cx="110"
+                                       cy="110"
+                                       r={radius}
+                                       fill="none"
+                                       stroke={slice.color}
+                                       strokeWidth="40"
+                                       strokeDasharray={`${dash} ${circumference}`}
+                                       strokeDashoffset={offset}
+                                       className="transition-all duration-300 cursor-pointer hover:opacity-80"
+                                       onMouseMove={(e) => handleDonutMouseMove(e, slice)}
+                                       onMouseLeave={() => setDonutHoverState(null)}
+                                     />
+                                     {slice.percent > 5 && (
+                                       <text 
+                                         x={tx} 
+                                         y={ty} 
+                                         textAnchor="middle" 
+                                         fill="#fff" 
+                                         fontSize="11" 
+                                         fontWeight="bold"
+                                         className="pointer-events-none"
+                                         transform={`rotate(90 ${tx} ${ty})`}
+                                         style={{ textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}
+                                       >
+                                         {slice.percent.toFixed(1)}%
+                                       </text>
+                                     )}
+                                   </g>
+                                 );
+                               });
+                            })()}
+                            
+                            {/* Inner Donut Text */}
+                            <g transform="rotate(90 110 110)">
+                              <text x="110" y="105" textAnchor="middle" fill={donutHoverState ? donutHoverState.data.color : "#fff"} fontSize="12" fontWeight="600">
+                                {donutHoverState ? donutHoverState.data.name : 'Tổng đơn hàng'}
+                              </text>
+                              <text x="110" y="125" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold">
+                                {donutHoverState ? donutHoverState.data.value : paymentStats.totalTxns}
+                              </text>
+                            </g>
+                          </svg>
+                        );
+                      })()}
+
+                      {/* Tooltip (Light Theme) */}
+                      {donutHoverState && (
+                        <div 
+                          className="fixed z-[9999] bg-white rounded-lg shadow-xl p-3 pointer-events-none transform -translate-x-1/2 -translate-y-[120%] min-w-[150px] border border-gray-100 transition-opacity duration-150"
+                          style={{ left: donutHoverState.x + 'px', top: donutHoverState.y + 'px' }}
+                        >
+                          <p className="text-gray-900 font-bold text-sm mb-1.5">{donutHoverState.data.name}</p>
+                          <p className="text-gray-600 text-xs mb-0.5">Số lượng: <span className="font-semibold text-gray-800">{donutHoverState.data.value} đơn hàng</span></p>
+                          <p className="text-gray-600 text-xs mb-0.5">Tỷ lệ: <span className="font-semibold text-gray-800">{donutHoverState.data.percent.toFixed(1)}%</span></p>
+                          <p className="text-gray-600 text-xs">Tổng tiền: <span className="font-semibold text-gray-800">{donutHoverState.data.id === 'SUCCESS' ? new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue) : '0'} VND</span></p>
+                        </div>
+                      )}
+
+                      {/* Chart Legend */}
+                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                        {paymentStats.donutData.map(slice => (
+                          <div key={slice.id} className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: slice.color }}></span>
+                            <span className="text-gray-300 text-xs">{slice.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <div>
@@ -4613,8 +4857,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <tr key={txn.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
                               <td className="p-3">
                                 <span className="font-bold text-slate-800 font-mono text-[12px] block">#{txn.txnRef || txn.vnpTxnRef || 'N/A'}</span>
-                                <span className="text-[11px] text-slate-450 leading-normal block max-w-[150px] truncate" title={txn.orderInfo}>
-                                  {txn.orderInfo || 'N/A'}
+                                <span className="text-[11px] text-slate-450 leading-normal block max-w-[150px] truncate" title={txn.orderInfo || 'Thông tin thanh toán'}>
+                                  {txn.orderInfo || (txn.packageType ? `Thanh toán Gói ${txn.packageType}` : `Thanh toán Dự án #${txn.projectId}`)}
                                 </span>
                               </td>
                               <td className="p-3">
@@ -4631,11 +4875,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 </span>
                               </td>
                               <td className="p-3 text-slate-550 text-body-xs font-medium">
-                                {txn.paymentDate ? new Date(txn.paymentDate).toLocaleString('vi-VN') : 'Chưa thanh toán'}
+                                {txn.status === 'SUCCESS' ? new Date(txn.updatedAt || txn.createdAt).toLocaleString('vi-VN') : 'Chưa thanh toán'}
                               </td>
                               <td className="p-3 font-mono text-body-xs">
-                                <span className="block font-semibold text-slate-700">{txn.bankCode || 'N/A'}</span>
-                                <span className="block text-slate-450 text-[10px]">VNP No: {txn.vnpTransactionNo || 'N/A'}</span>
+                                <span className="block font-semibold text-slate-700">{txn.bankCode || 'PayOS / VNPay'}</span>
+                                <span className="block text-slate-450 text-[10px]">Mã NH: {txn.vnpTransactionNo || 'Chưa ghi nhận'}</span>
                               </td>
                               <td className="p-3 text-center">
                                 <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold border ${
@@ -6168,52 +6412,54 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
       {/* TRANSACTION DETAILS MODAL */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedTxnDetails ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-        <div className={`bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl transition-all duration-300 ${
+        <div className={`bg-white rounded-3xl w-full max-w-md p-5 shadow-2xl transition-all duration-300 ${
           selectedTxnDetails ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}>
-          <div className="flex items-center gap-4 mb-5 border-b border-slate-100 pb-4">
-            <div className="w-12 h-12 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center shrink-0">
-              <QrCode className="w-6 h-6" />
+          <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
+            <div className="w-10 h-10 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center shrink-0">
+              <QrCode className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-lg">Chi tiết giao dịch</h3>
-              <p className="text-body-sm text-slate-500">Thông tin đối soát hệ thống</p>
+              <h3 className="font-bold text-slate-800 text-base">Chi tiết giao dịch</h3>
+              <p className="text-[11px] text-slate-500">Thông tin đối soát hệ thống</p>
             </div>
           </div>
 
           {selectedTxnDetails && (
-            <div className="space-y-4 mb-6">
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Cổng thanh toán:</span>
-                <span className="font-bold text-slate-700">{!String(selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef).includes('_') ? 'PayOS' : 'VNPAY'}</span>
+            <div className="space-y-2 mb-5">
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Cổng thanh toán:</span>
+                <span className="font-bold text-slate-700 text-sm text-right">{!String(selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef).includes('_') ? 'PayOS' : 'VNPAY'}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Mã tham chiếu:</span>
-                <span className="font-bold text-slate-700">{selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef}</span>
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Mã tham chiếu:</span>
+                <span className="font-bold text-slate-700 text-sm text-right">{selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Mã giao dịch NH:</span>
-                <span className="font-bold text-slate-700">{selectedTxnDetails.vnpTransactionNo || 'Chưa ghi nhận'}</span>
+              <div className="flex flex-col bg-slate-50 px-3 py-2 rounded-xl gap-0.5">
+                <span className="text-xs text-slate-500">Mã giao dịch NH:</span>
+                <span className="font-mono font-bold text-slate-700 text-xs break-all leading-tight">
+                  {selectedTxnDetails.vnpTransactionNo || 'Chưa ghi nhận'}
+                </span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Dự án ID:</span>
-                <span className="font-bold text-slate-700">{selectedTxnDetails.projectId}</span>
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Dự án ID:</span>
+                <span className="font-bold text-slate-700 text-sm text-right">{selectedTxnDetails.projectId || 'N/A'}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Nhà tuyển dụng ID:</span>
-                <span className="font-bold text-slate-700">{selectedTxnDetails.employerId}</span>
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500">Nhà tuyển dụng ID:</span>
+                <span className="font-bold text-slate-700 text-sm">{selectedTxnDetails.employerId}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Số tiền:</span>
-                <span className="font-bold text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTxnDetails.amount || 0)}</span>
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500">Số tiền:</span>
+                <span className="font-bold text-emerald-600 text-sm">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTxnDetails.amount || 0)}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Thời gian tạo:</span>
-                <span className="font-bold text-slate-700">{selectedTxnDetails.createdAt ? new Date(selectedTxnDetails.createdAt).toLocaleString('vi-VN') : '-'}</span>
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500">Thời gian tạo:</span>
+                <span className="font-bold text-slate-700 text-sm">{selectedTxnDetails.createdAt ? new Date(selectedTxnDetails.createdAt).toLocaleString('vi-VN') : '-'}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="text-body-sm text-slate-500">Trạng thái:</span>
-                <span className="font-bold">
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="text-xs text-slate-500">Trạng thái:</span>
+                <span className="font-bold text-sm">
                   {selectedTxnDetails.status === 'SUCCESS' ? <span className="text-emerald-600">Đã thanh toán</span> :
                    selectedTxnDetails.status === 'FAILED' ? <span className="text-rose-600">Thất bại</span> :
                    selectedTxnDetails.status === 'REFUNDED' ? <span className="text-amber-600">Đã hoàn tiền</span> :
@@ -6224,10 +6470,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           )}
 
-          <div className="flex justify-end pt-2 border-t border-slate-100">
+          <div className="flex justify-end pt-3 border-t border-slate-100">
             <button 
               onClick={() => setSelectedTxnDetails(null)}
-              className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm transition-all duration-200 active:scale-95"
+              className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
             >
               Đóng
             </button>

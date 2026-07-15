@@ -6,13 +6,13 @@ export default function PaymentResultPage({ pageParams, onNavigate }) {
   const projectId = pageParams?.projectId || 'N/A';
 
   const handleGoHome = () => {
-    // Clear search and query parameters
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Clear search and query parameters and reset path to /
+    window.history.replaceState({}, document.title, '/');
     if (onNavigate) onNavigate('home');
   };
 
   const handleGoJobs = () => {
-    window.history.replaceState({}, document.title, window.location.pathname);
+    window.history.replaceState({}, document.title, '/');
     if (onNavigate) onNavigate('your_jobs');
   };
 
@@ -68,7 +68,7 @@ export default function PaymentResultPage({ pageParams, onNavigate }) {
 
           <div className="flex justify-between text-sm">
             <span className="text-slate-500 font-semibold">Phương thức:</span>
-            <span className="text-slate-800 font-bold">Cổng VNPay</span>
+            <span className="text-slate-800 font-bold">Cổng Thanh toán</span>
           </div>
         </div>
 

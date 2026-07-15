@@ -5,6 +5,7 @@ import HowItWorks from '../components/HowItWorks.jsx';
 import FeaturedJobs from '../components/FeaturedJobs.jsx';
 import Testimonials from '../components/Testimonials.jsx';
 import CTA from '../components/CTA.jsx';
+import EmployerPackages from '../components/EmployerPackages.jsx';
 
 export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
   return (
@@ -13,6 +14,10 @@ export default function HomePage({ onSearch, searchQuery, onNavigate, user }) {
       <Stats />
       <HowItWorks />
       <FeaturedJobs searchQuery={searchQuery} onNavigate={onNavigate} />
+      
+      {/* Chỉ hiển thị cho Nhà Tuyển Dụng */}
+      
+
       <Testimonials onNavigate={onNavigate} />
       {user?.role !== 'FREELANCER' && <CTA onNavigate={onNavigate} user={user} />}
     </>

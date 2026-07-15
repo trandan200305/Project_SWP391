@@ -79,26 +79,32 @@ public class PayOSService {
         }
     }
 
-    public CreatePaymentLinkResponse createPaymentUrl(Integer projectId, String packageType) throws Exception {
+    public CreatePaymentLinkResponse createPaymentUrl(Integer projectId, String packageType, Integer employerIdReq) throws Exception {
         Project project = null;
         if (projectId != null) {
             project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
         }
 
-        Employer client = employerRepository.findAll().stream().findFirst().orElseGet(() -> {
-            Employer dummyEmp = Employer.builder()
-                    .email("employer_test@lancerpro.com")
-                    .passwordHash("hashed")
-                    .displayName("Employer Test")
-                    .fullName("Employer Test")
-                    .status("ACTIVE")
-                    .isVerified(true)
-                    .isDeleted(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            return employerRepository.save(dummyEmp);
-        });
+        Employer client = null;
+        if (employerIdReq != null) {
+            client = employerRepository.findById(employerIdReq)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Nhà tuyển dụng với ID: " + employerIdReq));
+        } else {
+            client = employerRepository.findAll().stream().findFirst().orElseGet(() -> {
+                Employer dummyEmp = Employer.builder()
+                        .email("employer_test@lancerpro.com")
+                        .passwordHash("hashed")
+                        .displayName("Employer Test")
+                        .fullName("Employer Test")
+                        .status("ACTIVE")
+                        .isVerified(true)
+                        .isDeleted(false)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                return employerRepository.save(dummyEmp);
+            });
+        }
 
         double price = 0.0;
         if (project != null && project.getServiceFee() != null) {
@@ -176,8 +182,9 @@ public class PayOSService {
             .price(feeAmount.longValue())
             .build();
 
-        String returnUrl = "http://localhost:8080/api/payment/payos/return";
-        String cancelUrl = "http://localhost:8080/api/payment/payos/return";
+        // Sử dụng domain ảo tạm thời để tránh lỗi Private Network Access (PNA) của Chrome khi chạy iframe trên localhost
+        String returnUrl = "https://cny-lancerpro.vercel.app/payment-result"; 
+        String cancelUrl = "https://cny-lancerpro.vercel.app/payment-result";
 
         CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest.builder()
                 .orderCode(orderCode)
@@ -243,6 +250,12 @@ public class PayOSService {
                     transactionRepository.save(txn);
                 } else if ("PAID".equalsIgnoreCase(payosStatus) || "SUCCESS".equalsIgnoreCase(payosStatus)) {
                     txn.setStatus("SUCCESS");
+                    
+                    // Trích xuất mã tham chiếu giao dịch ngân hàng thực tế từ PayOS
+                    if (link.getTransactions() != null && !link.getTransactions().isEmpty()) {
+                        txn.setVnpTransactionNo(link.getTransactions().get(0).getReference());
+                    }
+                    
                     transactionRepository.save(txn);
                     
                     invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich PayOS " + txn.getTxnRef());

@@ -13,6 +13,7 @@ import {
   Edit3,
   Settings,
   CheckCircle,
+  Sparkles,
 } from "lucide-react";
 import { authApi } from "../../features/auth/api/authApi.js";
 
@@ -372,15 +373,26 @@ export default function Navbar({
           {}
           <div className="hidden md:flex items-center gap-5">
             {user?.role === "EMPLOYER" && (
-              <button
-                onClick={() => {
-                  if (onNavigate) onNavigate("post_job");
-                }}
-                className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" />
-                Đăng dự án mới
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    if (onNavigate) onNavigate("employer_packages");
+                  }}
+                  className="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 px-4 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-sm flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Nâng cấp
+                </button>
+                <button
+                  onClick={() => {
+                    if (onNavigate) onNavigate("post_job");
+                  }}
+                  className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Đăng dự án mới
+                </button>
+              </>
             )}
 
             {user ? (
@@ -669,6 +681,15 @@ export default function Navbar({
 
             {user && user.role === "EMPLOYER" && (
               <>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("employer_packages");
+                  }}
+                  className="w-full text-center bg-amber-50 text-amber-600 border border-amber-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mb-2"
+                >
+                  <Sparkles className="w-4 h-4" /> Nâng cấp tài khoản
+                </button>
                 <button
                   onClick={() => {
                     setIsOpen(false);
