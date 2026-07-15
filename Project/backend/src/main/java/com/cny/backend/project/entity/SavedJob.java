@@ -1,5 +1,7 @@
 package com.cny.backend.project.entity;
 
+import com.cny.backend.user.entity.Freelancer;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "saved_jobs", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "user_role", "project_id"})
+    @UniqueConstraint(columnNames = {"freelancer_id", "project_id"})
 })
 @Data
 @Builder
@@ -23,11 +25,9 @@ public class SavedJob {
     @Column(name = "id")
     private Integer savedJobId;
 
-    @Column(name = "user_id", nullable = false)
-    private Integer userId;
-
-    @Column(name = "user_role", nullable = false)
-    private String userRole;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "freelancer_id", nullable = false)
+    private Freelancer freelancer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "project_id", nullable = false)

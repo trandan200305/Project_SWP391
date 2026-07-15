@@ -9,10 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface SavedJobRepository extends JpaRepository<SavedJob, Integer> {
-    
-    List<SavedJob> findByUserIdAndUserRoleOrderBySavedAtDesc(Integer userId, String userRole);
+    List<SavedJob> findByFreelancer_ProfileIdOrderBySavedAtDesc(Integer freelancerId);
 
-    Optional<SavedJob> findByUserIdAndUserRoleAndProject_ProjectId(Integer userId, String userRole, Integer projectId);
+    Optional<SavedJob> findByFreelancer_ProfileIdAndProject_ProjectId(Integer freelancerId, Integer projectId);
 
-    void deleteByUserIdAndUserRoleAndProject_ProjectId(Integer userId, String userRole, Integer projectId);
+    void deleteByFreelancer_ProfileIdAndProject_ProjectId(Integer freelancerId, Integer projectId);
 }

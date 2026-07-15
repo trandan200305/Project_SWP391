@@ -283,21 +283,26 @@ public class ProjectService {
     }
 
     public List<ProjectDto> getSavedProjects(Integer userId, String userRole) {
-        List<SavedJob> savedJobs = savedJobRepository.findByUserIdAndUserRoleOrderBySavedAtDesc(userId, userRole);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            return java.util.Collections.emptyList();
+        }
+        List<SavedJob> savedJobs = savedJobRepository.findByFreelancer_ProfileIdOrderBySavedAtDesc(userId);
         return savedJobs.stream()
                 .map(sj -> mapToDto(sj.getProject()))
                 .collect(Collectors.toList());
     }
 
     public void saveProject(Integer userId, String userRole, Integer projectId) {
-        Optional<SavedJob> existing = savedJobRepository.findByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            throw new RuntimeException("Chỉ tài khoản Freelancer mới có thể lưu việc làm.");
+        }
+        Optional<SavedJob> existing = savedJobRepository.findByFreelancer_ProfileIdAndProject_ProjectId(userId, projectId);
         if (existing.isEmpty()) {
             Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
             
             SavedJob savedJob = SavedJob.builder()
-                .userId(userId)
-                .userRole(userRole)
+                .freelancer(Freelancer.builder().profileId(userId).build())
                 .project(project)
                 .savedAt(LocalDateTime.now())
                 .build();
@@ -307,7 +312,10 @@ public class ProjectService {
 
     @Transactional
     public void unsaveProject(Integer userId, String userRole, Integer projectId) {
-        savedJobRepository.deleteByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            return;
+        }
+        savedJobRepository.deleteByFreelancer_ProfileIdAndProject_ProjectId(userId, projectId);
     }
 
     private ProjectDto mapToDto(Project project) {
