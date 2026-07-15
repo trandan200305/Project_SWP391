@@ -378,10 +378,7 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h3 className="font-extrabold text-base text-slate-900 mb-4 pb-2 border-b border-slate-150">Thông tin dự án</h3>
               <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500">ID dự án</span>
-                  <span className="font-bold text-slate-700">{job.id}</span>
-                </div>
+
                 <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Ngày đăng</span>
                   <span className="font-bold text-slate-700">{createdAt}</span>
