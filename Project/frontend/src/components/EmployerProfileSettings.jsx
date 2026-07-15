@@ -154,7 +154,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         if (editForm.projectType === 'RANGE') {
             const minStr = editForm.budgetMin ? String(editForm.budgetMin).trim() : '';
             const maxStr = editForm.budgetMax ? String(editForm.budgetMax).trim() : '';
-            if (minStr || maxStr) {
+            if (true) {
                 if (!minStr || !maxStr) {
                     alert('Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.');
                     return;
@@ -172,6 +172,10 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             }
         } else if (editForm.projectType === 'FIXED') {
             const fixedStr = editForm.budgetFixed ? String(editForm.budgetFixed).trim() : '';
+            if (!fixedStr) {
+                alert('Vui lòng nhập ngân sách cố định.');
+                return;
+            }
             if (fixedStr) {
                 const fixed = parseFloat(fixedStr);
                 if (isNaN(fixed) || fixed <= 0) {
@@ -853,37 +857,42 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     {/* Budget fields */}
                     {editForm.projectType === 'FIXED' ? (<label className="block">
                                     <span
-                                        className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
+                                        className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
                         <input
                             type="number"
+                            required
                             value={editForm.budgetFixed}
                             onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
-                            placeholder="Để trống nếu tự thỏa thuận"
+                            placeholder="VD: 5000000 (Bắt buộc nhập)"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                         />
                     </label>) : (<div className="grid grid-cols-2 gap-4">
                         <label className="block">
                                         <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
+                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
                             <input
                                 type="number"
+                                required
                                 value={editForm.budgetMin}
                                 onChange={(e) => setEditForm(prev => ({
                                     ...prev, budgetMin: e.target.value
                                 }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                placeholder="VD: 2000000 (Bắt buộc)"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
                         <label className="block">
                                         <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND)</span>
+                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND) *</span>
                             <input
                                 type="number"
+                                required
                                 value={editForm.budgetMax}
                                 onChange={(e) => setEditForm(prev => ({
                                     ...prev, budgetMax: e.target.value
                                 }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                placeholder="VD: 10000000 (Bắt buộc)"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
                     </div>)}

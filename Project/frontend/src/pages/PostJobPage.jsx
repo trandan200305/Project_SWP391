@@ -72,38 +72,39 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
       const maxStr = newProject.budgetMax ? String(newProject.budgetMax).trim() : '';
-      if (minStr || maxStr) {
-        if (!minStr || !maxStr) {
-          setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.' });
-          return;
-        }
-        const min = parseFloat(minStr);
-        const max = parseFloat(maxStr);
-        if (min < 0 || max < 0) {
-          setNotice({ type: 'error', message: 'Lương nhập không được nhỏ hơn 0.' });
-          return;
-        }
-        if (isNaN(min) || isNaN(max) || min === 0 || max === 0) {
-          setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
-          return;
-        }
-        if (min > max) {
-          setNotice({ type: 'error', message: 'Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.' });
-          return;
-        }
+      
+      if (!minStr || !maxStr) {
+        setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.' });
+        return;
+      }
+      const min = parseFloat(minStr);
+      const max = parseFloat(maxStr);
+      if (min < 0 || max < 0) {
+        setNotice({ type: 'error', message: 'Ngân sách nhập không được nhỏ hơn 0.' });
+        return;
+      }
+      if (isNaN(min) || isNaN(max) || min === 0 || max === 0) {
+        setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
+        return;
+      }
+      if (min > max) {
+        setNotice({ type: 'error', message: 'Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.' });
+        return;
       }
     } else if (newProject.projectType === 'FIXED') {
       const fixedStr = newProject.budgetFixed ? String(newProject.budgetFixed).trim() : '';
-      if (fixedStr) {
-        const fixed = parseFloat(fixedStr);
-        if (fixed < 0) {
-          setNotice({ type: 'error', message: 'Lương nhập không được nhỏ hơn 0.' });
-          return;
-        }
-        if (isNaN(fixed) || fixed === 0) {
-          setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
-          return;
-        }
+      if (!fixedStr) {
+        setNotice({ type: 'error', message: 'Vui lòng nhập ngân sách trọn gói.' });
+        return;
+      }
+      const fixed = parseFloat(fixedStr);
+      if (fixed < 0) {
+        setNotice({ type: 'error', message: 'Ngân sách nhập không được nhỏ hơn 0.' });
+        return;
+      }
+      if (isNaN(fixed) || fixed === 0) {
+        setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
+        return;
       }
     }
 
@@ -337,26 +338,28 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             
             {newProject.projectType === 'FIXED' ? (
               <label className="block">
-                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
+                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
                 <input
                   type="number"
                   min="0"
+                  required
                   value={newProject.budgetFixed}
                   onChange={(e) => setNewProject(prev => ({ ...prev, budgetFixed: e.target.value }))}
-                  placeholder="VD: 5000000 (Để trống nếu muốn tự thỏa thuận)"
+                  placeholder="VD: 5000000 (Bắt buộc nhập)"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                 />
               </label>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
-                  <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
+                  <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
                   <input
                     type="number"
                     min="0"
+                    required
                     value={newProject.budgetMin}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMin: e.target.value }))}
-                    placeholder="VD: 2000000"
+                    placeholder="VD: 2000000 (Bắt buộc)"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>
@@ -365,9 +368,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   <input
                     type="number"
                     min="0"
+                    required
                     value={newProject.budgetMax}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMax: e.target.value }))}
-                    placeholder="VD: 10000000"
+                    placeholder="VD: 10000000 (Bắt buộc)"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>

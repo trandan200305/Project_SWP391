@@ -193,30 +193,31 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         if (editForm.projectType === 'RANGE') {
             const minStr = editForm.budgetMin ? String(editForm.budgetMin).trim() : '';
             const maxStr = editForm.budgetMax ? String(editForm.budgetMax).trim() : '';
-            if (minStr || maxStr) {
-                if (!minStr || !maxStr) {
-                    alert('Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.');
-                    return;
-                }
-                const min = parseFloat(minStr);
-                const max = parseFloat(maxStr);
-                if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
-                    alert('Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.');
-                    return;
-                }
-                if (min > max) {
-                    alert('Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.');
-                    return;
-                }
+            
+            if (!minStr || !maxStr) {
+                alert('Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.');
+                return;
+            }
+            const min = parseFloat(minStr);
+            const max = parseFloat(maxStr);
+            if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
+                alert('Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.');
+                return;
+            }
+            if (min > max) {
+                alert('Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.');
+                return;
             }
         } else if (editForm.projectType === 'FIXED') {
             const fixedStr = editForm.budgetFixed ? String(editForm.budgetFixed).trim() : '';
-            if (fixedStr) {
-                const fixed = parseFloat(fixedStr);
-                if (isNaN(fixed) || fixed <= 0) {
-                    alert('Ngân sách cố định phải là số dương lớn hơn 0.');
-                    return;
-                }
+            if (!fixedStr) {
+                alert('Vui lòng nhập ngân sách trọn gói.');
+                return;
+            }
+            const fixed = parseFloat(fixedStr);
+            if (isNaN(fixed) || fixed <= 0) {
+                alert('Ngân sách cố định phải là số dương lớn hơn 0.');
+                return;
             }
         }
 
@@ -1059,6 +1060,155 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                     alert('Tuyển dụng Freelancer thành công! Hợp đồng đã được ký kết và bắt đầu thực hiện.');
                 }}
             />
+        )}
+
+        {editingProject && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10 animate-fade-in">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-2xl border border-slate-150 shadow-2xl my-auto animate-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-6">
+                        <h3 className="text-xl font-bold text-slate-800">Chỉnh sửa tin tuyển dụng</h3>
+                        <button
+                            type="button"
+                            onClick={() => setEditingProject(null)}
+                            className="text-slate-400 hover:text-slate-600 font-bold text-lg"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateProject} className="space-y-4 text-left">
+                        {/* Title */}
+                        <label className="block">
+                            <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
+                            <input
+                                type="text"
+                                required
+                                value={editForm.title}
+                                onChange={(e) => setEditForm(prev => ({...prev, title: e.target.value}))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                            />
+                        </label>
+
+                        {/* Category */}
+                        <label className="block">
+                            <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần thuê *</span>
+                            <select
+                                required
+                                value={editForm.categoryId}
+                                onChange={(e) => setEditForm(prev => ({...prev, categoryId: e.target.value}))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                            >
+                                <option value="">-- Chọn danh mục phù hợp --</option>
+                                {categories.map((cat) => (
+                                    <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        {/* Project Type */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setEditForm(prev => ({...prev, projectType: 'FIXED'}))}
+                                className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'FIXED' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
+                            >
+                                <span className="block text-xs font-bold text-slate-900">Chi phí cố định</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEditForm(prev => ({...prev, projectType: 'RANGE'}))}
+                                className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'RANGE' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
+                            >
+                                <span className="block text-xs font-bold text-slate-900">Khoảng ngân sách</span>
+                            </button>
+                        </div>
+
+                        {/* Budget fields */}
+                        {editForm.projectType === 'FIXED' ? (
+                            <label className="block">
+                                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
+                                <input
+                                    type="number"
+                                    required
+                                    value={editForm.budgetFixed}
+                                    onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
+                                    placeholder="VD: 5000000 (Bắt buộc nhập)"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                />
+                            </label>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                                <label className="block">
+                                    <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={editForm.budgetMin}
+                                        onChange={(e) => setEditForm(prev => ({...prev, budgetMin: e.target.value}))}
+                                        placeholder="VD: 2000000 (Bắt buộc)"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND) *</span>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={editForm.budgetMax}
+                                        onChange={(e) => setEditForm(prev => ({...prev, budgetMax: e.target.value}))}
+                                        placeholder="VD: 10000000 (Bắt buộc)"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                    />
+                                </label>
+                            </div>
+                        )}
+
+                        {/* Deadline */}
+                        <label className="block">
+                            <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ *</span>
+                            <input
+                                type="date"
+                                required
+                                min={new Date().toISOString().split('T')[0]}
+                                value={editForm.deadline}
+                                onChange={(e) => setEditForm(prev => ({...prev, deadline: e.target.value}))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                            />
+                        </label>
+
+                        {/* Description */}
+                        <label className="block">
+                            <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả chi tiết *</span>
+                            <textarea
+                                required
+                                rows={5}
+                                value={editForm.description}
+                                onChange={(e) => setEditForm(prev => ({...prev, description: e.target.value}))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
+                            />
+                        </label>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setEditingProject(null)}
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={updating}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-extrabold text-sm hover:bg-cyan-700 disabled:opacity-70 shadow-sm transition-all hover:scale-[1.02]"
+                            >
+                                {updating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
+                                Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         )}
         </div>
     );
