@@ -635,8 +635,22 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                                 {statusLabels[proj.status] || proj.status}
                                                             </span>
                                                         </div>
-                                                        <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
-                                                            {proj.title}
+                                                        <h4 className="font-extrabold text-slate-950 text-base leading-snug transition-colors">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const mappedJob = {
+                                                                        ...proj,
+                                                                        id: proj.projectId,
+                                                                        employerId: proj.client?.employerId || user?.id,
+                                                                        employerName: proj.client?.displayName || user?.name
+                                                                    };
+                                                                    if (onNavigate) onNavigate('job_details', { job: mappedJob });
+                                                                }}
+                                                                className="text-left font-extrabold text-slate-950 hover:text-cyan-600 transition-colors duration-200"
+                                                            >
+                                                                {proj.title}
+                                                            </button>
                                                         </h4>
                                                     </div>
                                                     <div className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
@@ -691,7 +705,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                                     onClick={() => handleViewProposals(proj.projectId)}
                                                                     className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0 shadow-md shadow-cyan-600/10"
                                                                 >
-                                                                    Xem báo giá ({proj.proposalsCount || 0})
+                                                                    Xem báo giá ({proj.proposalCount || 0})
                                                                 </button>
                                                             </>
                                                         )}
