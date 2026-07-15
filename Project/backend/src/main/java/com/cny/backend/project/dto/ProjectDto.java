@@ -37,6 +37,7 @@ public class ProjectDto {
     private String employerAvatar;
     private BigDecimal budgetMin;
     private BigDecimal budgetMax;
+    private BigDecimal budgetFixed;
     private LocalDate deadline;
     private String description;
     private Integer applications;

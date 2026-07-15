@@ -202,7 +202,8 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
 
-  const formatBudget = (min, max) => {
+  const formatBudget = (min, max, fixed) => {
+    if (fixed) return formatCurrency(fixed);
     if (min && max) return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     if (min) return `${formatCurrency(min)}`;
     return 'Thỏa thuận';
@@ -381,7 +382,7 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Ngân sách</span>
-                  <span className="font-medium text-slate-700">{formatBudget(job.budgetMin, job.budgetMax)}</span>
+                  <span className="font-medium text-slate-700">{formatBudget(job.budgetMin, job.budgetMax, job.budgetFixed)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Hình thức làm việc</span>

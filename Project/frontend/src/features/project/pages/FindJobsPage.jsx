@@ -178,7 +178,8 @@ export default function FindJobsPage({ onNavigate, user }) {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
 
-  const formatBudget = (min, max) => {
+  const formatBudget = (min, max, fixed) => {
+    if (fixed) return formatCurrency(fixed);
     if (min && max) return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     if (min) return `${formatCurrency(min)}`;
     return 'Thỏa thuận';
@@ -429,7 +430,7 @@ export default function FindJobsPage({ onNavigate, user }) {
                       <div className="flex items-center gap-2 text-xs text-slate-450 font-bold uppercase tracking-wider mb-1.5">
                         <span className="text-slate-450">Mã dự án: #{job.id}</span>
                         <span className="text-slate-300">•</span>
-                        <span className="text-emerald-600 font-extrabold">{formatBudget(job.budgetMin, job.budgetMax)}</span>
+                        <span className="text-emerald-600 font-extrabold">{formatBudget(job.budgetMin, job.budgetMax, job.budgetFixed)}</span>
                         <span className="text-slate-300">•</span>
                         <span className="text-indigo-600 bg-indigo-50/50 px-1.5 py-0.5 rounded text-[10px]">{translateWorkForm(job.workForm)}</span>
                       </div>

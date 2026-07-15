@@ -369,6 +369,7 @@ public class ProjectService {
                 .employerAvatar(employerAvatar)
                 .budgetMin(project.getBudgetMin())
                 .budgetMax(project.getBudgetMax())
+                .budgetFixed(project.getBudgetFixed())
                 .deadline(project.getDeadline())
                 .description(project.getDescription())
                 .applications(project.getProposalCount() != null ? project.getProposalCount() : 0)
