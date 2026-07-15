@@ -232,7 +232,11 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
   const paymentType = job.paymentType || 'Trả theo dự án';
   
   const employerLocation = job.employerLocation || 'TP. Hồ Chí Minh';
-  const employerJoinDate = job.employerJoinDat  return (
+  const employerJoinDate = job.employerJoinDate || '07/06/2026';
+  const employerJobsPosted = job.employerJobsPosted !== undefined ? `${job.employerJobsPosted} việc đã đăng` : '1 việc đã đăng';
+  const skills = job.skills || [];
+
+  return (
     <div className="min-h-screen bg-slate-100 text-slate-900 pt-20">
       {/* Breadcrumb Header */}
       <div className="bg-white border-b border-slate-200">
