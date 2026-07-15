@@ -441,15 +441,6 @@ export default function Navbar({
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("post_job");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
-                        >
-                          <Plus className="w-4 h-4" /> Đăng dự án mới
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
                             if (onNavigate) onNavigate("employer_profile");
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
