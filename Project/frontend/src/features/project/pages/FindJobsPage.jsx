@@ -157,15 +157,19 @@ export default function FindJobsPage({ onNavigate, user }) {
     }, 6000);
   };
 
-  const handleBookmarkClick = (e, job) => {
+  const handleBookmarkClick = async (e, job) => {
     e.preventDefault();
     e.stopPropagation();
     if (isJobSaved(job.id)) {
-      unsaveJob(job.id);
-      showToastNotification('unsave');
+      const success = await unsaveJob(job.id);
+      if (success) {
+        showToastNotification('unsave');
+      }
     } else {
-      saveJob(job);
-      showToastNotification('save');
+      const success = await saveJob(job);
+      if (success) {
+        showToastNotification('save');
+      }
     }
   };
 
