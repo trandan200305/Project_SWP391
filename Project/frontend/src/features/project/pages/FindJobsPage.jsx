@@ -29,6 +29,14 @@ export default function FindJobsPage({ onNavigate, user }) {
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
 
+  // Debug logs
+  console.log("=== FindJobsPage Render ===");
+  console.log("Current Filters State:", { activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillId });
+  console.log("Categories loaded:", categories);
+  console.log("WorkForms loaded:", workForms);
+  console.log("ProjectTypes loaded:", projectTypes);
+  console.log("Skills loaded:", skills);
+
   // Fetch metadata từ Database khi component mount
   useEffect(() => {
     fetchMetadata();
@@ -92,9 +100,12 @@ export default function FindJobsPage({ onNavigate, user }) {
         url += `&skillId=${activeSkillId}`;
       }
 
+      console.log("Fetching jobs from URL:", url);
       const res = await fetch(url);
+      console.log("API response status:", res.status);
       if (res.ok) {
         const data = await res.json();
+        console.log("Fetched jobs data:", data);
         setJobs(data.content || []);
         setTotalPages(data.totalPages || 0);
       }
