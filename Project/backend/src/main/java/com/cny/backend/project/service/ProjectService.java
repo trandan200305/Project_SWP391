@@ -56,6 +56,9 @@ public class ProjectService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private FreelancerRepository freelancerRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -300,9 +303,11 @@ public class ProjectService {
         if (existing.isEmpty()) {
             Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+            Freelancer freelancer = freelancerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Freelancer not found"));
             
             SavedJob savedJob = SavedJob.builder()
-                .freelancer(Freelancer.builder().profileId(userId).build())
+                .freelancer(freelancer)
                 .project(project)
                 .savedAt(LocalDateTime.now())
                 .build();
