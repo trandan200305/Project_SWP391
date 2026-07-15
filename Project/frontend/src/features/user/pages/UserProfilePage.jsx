@@ -656,7 +656,6 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
       : role === 'employer'
       ? [
           { id: 'profile', label: 'Thông tin chung' },
-          { id: 'edit_profile', label: 'Sửa hồ sơ' },
           { id: 'preferences', label: 'Cài đặt chung' }
         ]
       : [

@@ -11,6 +11,7 @@ import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
+import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
@@ -100,6 +101,17 @@ export default function AppRoutes({
   if (currentPage === 'employer_profile') {
     return (
       <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
+  if (currentPage === 'employer_jobs') {
+    return (
+      <EmployerJobsPage
         user={user}
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}

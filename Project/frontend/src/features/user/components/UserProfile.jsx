@@ -26,7 +26,7 @@ export default function UserProfile({
 
       <div className="lg:col-span-2 flex flex-col gap-6">
 
-        {isOwnProfile && (
+        {isOwnProfile && role !== 'employer' && (
           <div className="flex justify-end">
             <button onClick={() => onNavigate('edit_profile')} className="px-5 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-sm">
               <Edit3 className="w-4 h-4" /> Chỉnh sửa thông tin cá nhân

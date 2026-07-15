@@ -49,7 +49,7 @@ const emptyForm = {
     }
 };
 
-export default function EmployerProfileSettings({user, onNavigateHome, onNavigate, onUserUpdate}) {
+export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUserUpdate}) {
     const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -202,7 +202,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
 
             
             setProjects(prev => prev.map(p => p.projectId === data.projectId ? data : p));
-            setNotice({type: 'success', message: 'Cập nhật tin tuyển dụng thành công.'});
+            setNotice({type: 'success', message: 'Cập nhật dự án thành công.'});
             setEditingProject(null);
         } catch (err) {
             alert(err.message || 'Lỗi khi cập nhật dự án.');
@@ -228,7 +228,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     };
 
     const handleDeleteProject = async (projectId) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa tin tuyển dụng này?')) return;
+        if (!window.confirm('Bạn có chắc chắn muốn xóa dự án này?')) return;
         try {
             const response = await fetch(`http://localhost:8080/api/projects/${projectId}`, {
                 method: 'DELETE'
@@ -237,7 +237,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
 
             
             setProjects(prev => prev.filter(p => p.projectId !== projectId));
-            setNotice({type: 'success', message: 'Đã xóa tin tuyển dụng thành công.'});
+            setNotice({type: 'success', message: 'Đã xóa dự án thành công.'});
         } catch (err) {
             setNotice({type: 'error', message: err.message || 'Lỗi khi xóa dự án.'});
         }
@@ -539,539 +539,249 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         </div>);
     }
 
-    return (<div className="min-h-screen bg-slate-100 text-slate-900">
-        <div className="bg-white border-b border-slate-200">
-            <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
-                <button
-                    type="button"
-                    onClick={onNavigateHome}
-                    className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-950"
-                >
-                    <ArrowLeft className="w-4 h-4"/>
-                    Trang chủ
-                </button>
-                <div
-                    className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">
-                    <ShieldCheck className="w-4 h-4"/>
-                    Trust profile
-                </div>
-            </div>
-        </div>
-
-        <main className="max-w-6xl mx-auto px-6 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                <aside className="space-y-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div
-                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
-                            {form.companyLogoUrl ? (
-                                <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
-                            ) : (
-                                <Building2 className="w-7 h-7"/>
-                            )}
-                        </div>
-                        <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Cập nhật thông tin doanh nghiệp và tài khoản thanh toán để freelancer tin tưởng hơn khi
-                            nhận dự án.
+        return (
+        <div className="pt-28 pb-16 bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div>
+                        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                            Quản lý dự án
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Xem danh sách dự án, theo dõi trạng thái duyệt và quản lý báo giá từ freelancer.
                         </p>
                     </div>
-
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-bold text-slate-700">Độ hoàn thiện</span>
-                            <span className="text-sm font-extrabold text-cyan-700">{completion}%</span>
-                        </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-cyan-500 rounded-full transition-all"
-                                 style={{width: `${completion}%`}}/>
-                        </div>
-                        <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4 text-emerald-500"/>
-                                Thông tin rõ ràng tăng độ tin cậy
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Banknote className="w-4 h-4 text-amber-500"/>
-                                Billing dùng để đối soát thanh toán
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
-                    <div
-                        className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <h2 className="text-lg font-extrabold">
-                                {activeTab === 'company' ? 'Thông tin công ty' : 'Thông tin thanh toán'}
-                            </h2>
-                            <p className="text-sm text-slate-500">
-                                {activeTab === 'company' ? 'Cập nhật thông tin doanh nghiệp và người đại diện.' : 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.'}
-                            </p>
-                        </div>
-                        {notice && (<div
-                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all ${notice.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                            {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4"/> :
-                                <XCircle className="w-4 h-4"/>}
-                            {notice.message}
-                        </div>)}
-                    </div>
-
-                    <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('company');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'company' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Building2 className="w-4 h-4"/>
-                            Thông tin công ty
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('billing');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'billing' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Banknote className="w-4 h-4"/>
-                            Thông tin thanh toán
-                        </button>
-                    </div>
-
-                    {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
-                            <Loader2 className="w-6 h-6 animate-spin mr-2"/>
-                            Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (
-                        <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
-                            <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
-                                {/* Company Logo Upload Area */}
-                                <div className="flex items-center gap-6 pb-6 border-b border-slate-100 mb-6">
-                                    <div className="w-20 h-20 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                        {form.companyLogoUrl ? (
-                                            <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Building2 className="w-8 h-8 text-slate-400" />
-                                        )}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <h4 className="text-sm font-bold text-slate-800">Logo công ty</h4>
-                                        <p className="text-xs text-slate-500">Chấp nhận JPG, PNG, GIF. Tối đa 2MB.</p>
-                                        <div className="flex items-center gap-2">
-                                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-sm">
-                                                <span>Tải ảnh lên</span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files[0];
-                                                        if (!file) return;
-                                                        const formData = new FormData();
-                                                        formData.append('file', file);
-                                                        try {
-                                                            const res = await fetch('http://localhost:8080/api/upload', {
-                                                                method: 'POST',
-                                                                body: formData
-                                                            });
-                                                            const data = await res.json();
-                                                            if (data.success) {
-                                                                updateField('companyLogoUrl', getFilenameFromUrl(data.fileUrl));
-                                                            } else {
-                                                                alert('Tải ảnh lên thất bại!');
-                                                            }
-                                                        } catch (err) {
-                                                            alert('Lỗi tải ảnh lên! Đảm bảo Backend đang chạy.');
-                                                        }
-                                                    }}
-                                                />
-                                            </label>
-                                            {form.companyLogoUrl && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateField('companyLogoUrl', '')}
-                                                    className="px-3 py-1.5 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-lg transition-colors"
-                                                >
-                                                    Xóa Logo
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <TextInput label="Tên công ty" value={form.companyName}
-                                               onChange={(value) => updateField('companyName', value)} required/>
-                                    <TextInput label="Mã số thuế" value={form.taxCode}
-                                               onChange={(value) => updateField('taxCode', value)}
-                                               placeholder="VD: 0102030405"/>
-                                    <TextInput label="Ngành nghề" value={form.industry}
-                                               onChange={(value) => updateField('industry', value)}
-                                               placeholder="VD: Software, Marketing, Design"/>
-                                    <TextInput label="Quy mô công ty" value={form.companySize}
-                                               onChange={(value) => updateField('companySize', value)}
-                                               placeholder="VD: 11-50"/>
-                                    <TextInput label="Website" value={form.website}
-                                               onChange={(value) => updateField('website', value)}
-                                               icon={<Globe2 className="w-4 h-4"/>}
-                                               placeholder="https://company.com"/>
-
-                                    <TextInput label="Quốc gia" value={form.country}
-                                               onChange={(value) => updateField('country', value)}
-                                               icon={<MapPin className="w-4 h-4"/>}/>
-                                    <TextInput label="Thành phố" value={form.city}
-                                               onChange={(value) => updateField('city', value)}/>
-                                    <TextInput label="Địa chỉ" value={form.address}
-                                               onChange={(value) => updateField('address', value)}/>
-                                </div>
-                                <TextArea label="Mô tả công ty" value={form.companyDescription}
-                                          onChange={(value) => updateField('companyDescription', value)}/>
-                            </FormSection>
-
-                            <FormSection icon={<UserRound className="w-5 h-5"/>} title="Người đại diện">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <TextInput label="Tên hiển thị" value={form.displayName}
-                                               onChange={(value) => updateField('displayName', value)} required/>
-                                    <TextInput label="Họ tên" value={form.fullName}
-                                               onChange={(value) => updateField('fullName', value)}/>
-                                    <TextInput label="Số điện thoại" value={form.phone}
-                                               onChange={(value) => updateField('phone', value)}
-                                               icon={<Phone className="w-4 h-4"/>}/>
-                                </div>
-                            </FormSection>
-
-                            <div className="flex justify-end border-t border-slate-200 pt-5">
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
-                                >
-                                    {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
-                                    {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
-                            <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <TextInput label="Ngân hàng" value={form.billing.bankName}
-                                               onChange={(value) => updateBilling('bankName', value)}
-                                               placeholder="VD: Vietcombank"/>
-                                    <TextInput label="Số tài khoản" value={form.billing.accountNumber}
-                                               onChange={(value) => updateBilling('accountNumber', value)}/>
-                                    <TextInput label="Chủ tài khoản" value={form.billing.accountHolder}
-                                               onChange={(value) => updateBilling('accountHolder', value)}/>
-                                    <TextInput label="Chi nhánh" value={form.billing.branch}
-                                               onChange={(value) => updateBilling('branch', value)}/>
-                                </div>
-                            </FormSection>
-
-                            <div className="flex justify-end border-t border-slate-200 pt-5">
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
-                                >
-                                    {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
-                                    {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </section>
-            </div>
-        </main>
-
-        
-        {editingProject && (<div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md px-4 overflow-y-auto py-10">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-fade-in my-auto">
-                <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-6">
-                    <h3 className="text-xl font-bold text-slate-800">Chỉnh sửa tin tuyển dụng</h3>
                     <button
                         type="button"
-                        onClick={() => setEditingProject(null)}
-                        className="text-slate-400 hover:text-slate-650 font-bold text-lg"
+                        onClick={() => onNavigate('post_job')}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-blue-600/10"
                     >
-                        ✕
+                        <Plus className="w-4 h-4" /> Đăng dự án mới
                     </button>
                 </div>
 
-                <form onSubmit={handleUpdateProject} className="space-y-4">
-                    {/* Title */}
-                    <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tiêu đề dự án *</span>
-                        <input
-                            type="text"
-                            required
-                            value={editForm.title}
-                            onChange={(e) => setEditForm(prev => ({...prev, title: e.target.value}))}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                        />
-                    </label>
-
-                    {/* Category */}
-                    <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Lĩnh vực cần thuê *</span>
-                        <select
-                            required
-                            value={editForm.categoryId}
-                            onChange={(e) => setEditForm(prev => ({...prev, categoryId: e.target.value}))}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                        >
-                            <option value="">-- Chọn danh mục phù hợp --</option>
-                            {categories.map((cat) => (
-                                <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>))}
-                        </select>
-                    </label>
-
-                    {/* Project Type */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            type="button"
-                            onClick={() => setEditForm(prev => ({...prev, projectType: 'FIXED'}))}
-                            className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'FIXED' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
-                        >
-                            <span className="block text-xs font-bold text-slate-900">Chi phí cố định</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setEditForm(prev => ({...prev, projectType: 'RANGE'}))}
-                            className={`p-3 rounded-xl border text-left transition ${editForm.projectType === 'RANGE' ? 'border-cyan-500 bg-cyan-50/20' : 'border-slate-200 bg-slate-50'}`}
-                        >
-                            <span className="block text-xs font-bold text-slate-900">Khoảng ngân sách</span>
-                        </button>
+                {notice && (
+                    <div className={`mb-6 p-4 rounded-xl border flex items-center gap-2 text-sm font-bold transition-all ${
+                        notice.type === 'success' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                        {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        {notice.message}
                     </div>
+                )}
 
-                    {/* Budget fields */}
-                    {editForm.projectType === 'FIXED' ? (<label className="block">
-                                    <span
-                                        className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
-                        <input
-                            type="number"
-                            value={editForm.budgetFixed}
-                            onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
-                            placeholder="Để trống nếu tự thỏa thuận"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                        />
-                    </label>) : (<div className="grid grid-cols-2 gap-4">
-                        <label className="block">
-                                        <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
-                            <input
-                                type="number"
-                                value={editForm.budgetMin}
-                                onChange={(e) => setEditForm(prev => ({
-                                    ...prev, budgetMin: e.target.value
-                                }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                            />
-                        </label>
-                        <label className="block">
-                                        <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND)</span>
-                            <input
-                                type="number"
-                                value={editForm.budgetMax}
-                                onChange={(e) => setEditForm(prev => ({
-                                    ...prev, budgetMax: e.target.value
-                                }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                            />
-                        </label>
-                    </div>)}
-
-                    {/* Deadline */}
-                    <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Hạn nhận hồ sơ *</span>
-                        <input
-                            type="date"
-                            required
-                            min={new Date().toISOString().split('T')[0]}
-                            value={editForm.deadline}
-                            onChange={(e) => setEditForm(prev => ({...prev, deadline: e.target.value}))}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                        />
-                    </label>
-
-                    {/* Description */}
-                    <label className="block">
-                                <span
-                                    className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả chi tiết *</span>
-                        <textarea
-                            required
-                            rows="4"
-                            value={editForm.description}
-                            onChange={(e) => setEditForm(prev => ({...prev, description: e.target.value}))}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 resize-none"
-                        />
-                    </label>
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
-                        <button
-                            type="button"
-                            onClick={() => setEditingProject(null)}
-                            className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-sm text-slate-650 hover:bg-slate-50 transition-all"
-                        >
-                            Hủy bỏ
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={updating}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-extrabold text-sm hover:bg-cyan-700 disabled:opacity-70 shadow-sm transition-all hover:scale-[1.02]"
-                        >
-                            {updating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
-                            Lưu thay đổi
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>)}
-
-        {/* Proposals Modal */}
-        {selectedProjectForProposals && (
-            <div
-                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <div
-                    className="bg-white rounded-2xl w-full max-w-2xl border border-slate-150 shadow-2xl p-6 sm:p-8 animate-fade-in flex flex-col max-h-[85vh]">
-                    <div className="flex items-center justify-between border-b border-slate-150 pb-4 mb-4">
-                        <h3 className="font-extrabold text-lg text-slate-900">
-                            Danh sách đề xuất báo giá thầu
-                        </h3>
-                        <button
-                            type="button"
-                            onClick={() => setSelectedProjectForProposals(null)}
-                            className="text-slate-400 hover:text-slate-650 font-bold text-lg"
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    {loadingProposals ? (
-                        <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-                            <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
-                            <span className="text-sm font-semibold">Đang tải báo giá...</span>
-                        </div>
-                    ) : proposals.length === 0 ? (
-                        <div className="py-16 text-center text-slate-400">
-                            Chưa có Freelancer nào gửi báo giá thầu cho dự án này.
-                        </div>
-                    ) : (
-                        <div className="overflow-y-auto flex-1 space-y-4 pr-1">
-                            {proposals.map((prop) => (
-                                <div key={prop.proposalId}
-                                     className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                                    <div className="flex items-start justify-between gap-4 mb-3">
-                                        <div className="flex items-center gap-3">
-                                            {prop.freelancerAvatar ? (
-                                                <img
-                                                    src={prop.freelancerAvatar}
-                                                    alt={prop.freelancerName}
-                                                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="w-10 h-10 bg-blue-100 text-blue-600 font-bold rounded-full flex items-center justify-center text-sm">
-                                                    {prop.freelancerName.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div>
-                                                <h4 className="font-bold text-sm text-slate-900">{prop.freelancerName}</h4>
-                                                <p className="text-[11px] text-slate-400 font-medium">{prop.freelancerTitle || 'Freelancer tự do'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-extrabold text-emerald-600">
-                                                {new Intl.NumberFormat('vi-VN', {
-                                                    style: 'currency',
-                                                    currency: 'VND'
-                                                }).format(prop.bidAmount)}
-                                            </p>
-                                            <p className="text-[10px] text-slate-400 font-bold">Thực
-                                                hiện: {prop.estimatedDays} ngày</p>
-                                        </div>
-                                    </div>
-                                    <div
-                                        className="text-xs text-slate-650 bg-white border border-slate-100 rounded-lg p-3 leading-relaxed whitespace-pre-line">
-                                        {prop.coverLetter}
-                                    </div>
-                                     {prop.cvUrl && (
-                                         <div className="mt-2.5 flex justify-start">
-                                             <a 
-                                                 href={prop.cvUrl} 
-                                                 target="_blank" 
-                                                 rel="noopener noreferrer"
-                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 transition-colors"
-                                             >
-                                                 <FileText className="w-3.5 h-3.5" />
-                                                 <span>Đọc CV của ứng viên (PDF)</span>
-                                             </a>
-                                         </div>
-                                     )}
-                                    {prop.status === 'SUBMITTED' ? (
-                                        <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-100">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedProjectForProposals(null);
-                                                    if (onNavigate) onNavigate('messenger', {
-                                                        id: prop.freelancerId,
-                                                        role: 'FREELANCER',
-                                                        name: prop.freelancerName,
-                                                        avatar: prop.freelancerAvatar
-                                                    });
-                                                }}
-                                                className="px-3.5 py-1.5 rounded-lg text-slate-700 bg-white border border-slate-250 hover:bg-slate-50 text-xs font-bold transition-all"
-                                            >
-                                                Chat trao đổi
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setProposalForAccept(prop)}
-                                                className="px-4 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-xs font-bold shadow-sm transition-all"
-                                            >
-                                                Chấp nhận giao việc
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex justify-end mt-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                                prop.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
-                                            }`}>
-                                                {prop.status === 'ACCEPTED' ? 'Đã được giao việc' : 'Đã từ chối'}
-                                            </span>
-                                        </div>
-                                    )}
+                {/* Main Content Card */}
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
+                    <div className="p-6">
+                        {loadingProjects ? (
+                            <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
+                                <span className="text-sm font-semibold">Đang tải danh sách dự án...</span>
+                            </div>
+                        ) : projects.length === 0 ? (
+                            <div className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50/50">
+                                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+                                    <Briefcase className="w-6 h-6" />
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                                <h4 className="font-bold text-slate-800 mb-1">Chưa có dự án nào</h4>
+                                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
+                                    Bạn chưa đăng dự án nào. Hãy bắt đầu tìm kiếm freelancer bằng cách đăng dự án mới.
+                                </p>
+                                <button
+                                    onClick={() => onNavigate('post_job')}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors"
+                                >
+                                    Đăng dự án đầu tiên
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {paginatedProjects.map((proj) => {
+                                        const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
+                                        const statusColors = {
+                                            DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
+                                            PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+                                            PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+                                            PENDING_PAYMENT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                            PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+                                            IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
+                                            CLOSED: 'bg-slate-100 text-slate-600 border-slate-200'
+                                        };
+                                        const statusLabels = {
+                                            DRAFT: 'Bản nháp',
+                                            PENDING: 'Chờ duyệt',
+                                            PENDING_REVIEW: 'Chờ duyệt',
+                                            PENDING_PAYMENT: 'Chờ thanh toán',
+                                            PUBLISHED: 'Đang tuyển',
+                                            REJECTED: 'Từ chối',
+                                            IN_PROGRESS: 'Đang thực hiện',
+                                            CLOSED: 'Đã đóng'
+                                        };
+
+                                        return (
+                                            <div key={proj.projectId} className="border border-slate-100 bg-white rounded-2xl p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 group">
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                                            <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                                                                {proj.category?.categoryName || 'General'}
+                                                            </span>
+                                                            <span className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                                {statusLabels[proj.status] || proj.status}
+                                                            </span>
+                                                        </div>
+                                                        <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
+                                                            {proj.title}
+                                                        </h4>
+                                                    </div>
+                                                    <div className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
+                                                        <span className="text-xs text-slate-400 font-medium">Ngân sách</span>
+                                                        <span className="font-extrabold text-emerald-600 text-sm">
+                                                            {isFixed ? (
+                                                                proj.budgetFixed ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(proj.budgetFixed) : 'Thỏa thuận'
+                                                            ) : (
+                                                                proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(proj.budgetMax)}` : 'Thỏa thuận'
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                                                    {proj.description}
+                                                </p>
+
+                                                <div className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                                            Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                                        </span>
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                                            Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        {proj.status === 'PENDING_PAYMENT' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePayProject(proj.projectId)}
+                                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0 shadow-md shadow-indigo-600/10"
+                                                            >
+                                                                Thanh toán đăng tin
+                                                            </button>
+                                                        )}
+                                                        {proj.status === 'PUBLISHED' && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleCloseProject(proj.projectId)}
+                                                                    className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors shrink-0"
+                                                                >
+                                                                    Dừng tuyển
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleViewProposals(proj.projectId)}
+                                                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0 shadow-md shadow-cyan-600/10"
+                                                                >
+                                                                    Xem báo giá ({proj.proposalsCount || 0})
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {proj.status === 'IN_PROGRESS' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleManageProgress(proj.projectId)}
+                                                                className="px-4 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors shrink-0"
+                                                            >
+                                                                Quản lý tiến độ
+                                                            </button>
+                                                        )}
+                                                        {['DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED'].includes(proj.status) && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditingProject(proj)}
+                                                                    className="px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs font-bold rounded-xl transition-all shrink-0"
+                                                                >
+                                                                    Sửa tin
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteProject(proj.projectId)}
+                                                                    className="px-3.5 py-2 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-xl transition-all shrink-0"
+                                                                >
+                                                                    Xóa tin
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6 flex-wrap gap-4">
+                                        <span className="text-xs text-slate-500 font-medium">
+                                            Hiển thị từ <span className="font-extrabold text-slate-800">{(currentPage - 1) * PAGE_SIZE + 1}</span> đến{' '}
+                                            <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, projects.length)}</span> trong tổng số{' '}
+                                            <span className="font-extrabold text-slate-800">{projects.length}</span> dự án
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+                                                title="Trang trước"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </button>
+                                            
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    onClick={() => setCurrentPage(p)}
+                                                    className={`w-9 h-9 inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all duration-200 ${
+                                                        currentPage === p
+                                                            ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/10 border border-cyan-600'
+                                                            : 'border border-slate-200 text-slate-650 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                            
+                                            <button
+                                                type="button"
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+                                                title="Trang sau"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        )}
-        {proposalForAccept && (
-            <MilestoneSetupModal
-                proposal={proposalForAccept}
-                employerId={user.id}
-                onClose={() => setProposalForAccept(null)}
-                onSuccess={() => {
-                    setProposalForAccept(null);
-                    setSelectedProjectForProposals(null);
-                    fetchProjects();
-                    alert('Tuyển dụng Freelancer thành công! Hợp đồng đã được ký kết và bắt đầu thực hiện.');
-                }}
-            />
-        )}
-    </div>);
+        </div>
+    );
 }
 
 function FormSection({icon, title, children}) {

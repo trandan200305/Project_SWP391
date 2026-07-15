@@ -181,7 +181,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             message: `Dự án đã được lưu ở trạng thái chờ thanh toán, nhưng lỗi khởi tạo VNPay: ${payErr.message}. Vui lòng thanh toán sau trong quản lý dự án.` 
           });
           setTimeout(() => {
-            if (onNavigate) onNavigate('your_jobs');
+            if (onNavigate) onNavigate('employer_jobs');
           }, 4000);
           return;
         }
@@ -189,7 +189,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
       setNotice({ 
         type: 'success', 
-        message: 'Đăng tin tuyển dụng thành công! Dự án của bạn đã được xuất bản trực tiếp lên trang chủ.' 
+        message: 'Đăng dự án thành công! Dự án của bạn đã được xuất bản trực tiếp lên trang chủ.' 
       });
       
       setNewProject({
@@ -206,10 +206,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       });
       
       setTimeout(() => {
-        if (onNavigate) onNavigate('home');
+        if (onNavigate) onNavigate('employer_jobs');
       }, 2000);
     } catch (err) {
-      setNotice({ type: 'error', message: err.message || 'Lỗi khi đăng tin tuyển dụng.' });
+      setNotice({ type: 'error', message: err.message || 'Lỗi khi đăng dự án.' });
     } finally {
       setPostingProject(false);
     }
@@ -255,10 +255,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           <div className="border-b border-slate-100 pb-6 mb-8">
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
               <Briefcase className="w-8 h-8 text-secondary" />
-              Đăng tin tuyển dụng mới
+              Đăng dự án mới
             </h1>
             <p className="text-sm text-slate-500 mt-2">
-              Tin đăng của bạn sẽ được hiển thị công khai trên Trang chủ ngay sau khi nhấn đăng.
+              Dự án của bạn sẽ được hiển thị công khai trên Trang chủ ngay sau khi nhấn đăng.
             </p>
           </div>
 
@@ -425,7 +425,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             {/* Service Package Selection */}
             <div className="border-t border-slate-100 pt-6 mt-6">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-505" /> Chọn gói dịch vụ tin đăng *
+                <Sparkles className="w-3.5 h-3.5 text-amber-505" /> Chọn gói dịch vụ dự án *
               </span>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -437,7 +437,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   
                   let label = 'Trung bình';
                   let days = `${durationDays} ngày`;
-                  let desc = `Hiển thị tối đa ${durationDays} ngày. Phù hợp tin tuyển dụng quy mô nhỏ.`;
+                  let desc = `Hiển thị tối đa ${durationDays} ngày. Phù hợp dự án quy mô nhỏ.`;
                   let badge = null;
                   let borderStyle = 'border-slate-200 hover:border-slate-300';
                   let activeStyle = 'border-secondary bg-secondary-light/10 ring-2 ring-secondary/15';
