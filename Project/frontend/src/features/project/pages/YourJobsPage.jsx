@@ -554,6 +554,5 @@ export default function YourJobsPage({ onNavigate, user }) {
         </div>
       )}
     </div>
-    </div>
   );
 }
