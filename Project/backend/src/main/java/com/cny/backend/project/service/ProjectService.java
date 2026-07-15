@@ -254,12 +254,20 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, String workForm, String projectType, java.math.BigDecimal minSalary, Pageable pageable) {
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, String workForm, String projectType, java.math.BigDecimal minSalary, java.math.BigDecimal maxSalary, Integer skillId, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.trim();
         String wf = (workForm == null || workForm.trim().isEmpty()) ? null : workForm.trim();
         String pt = (projectType == null || projectType.trim().isEmpty()) ? null : projectType.trim();
-        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, wf, pt, minSalary, pageable);
+        Page<Project> projects = projectRepository.searchProjectsByFilters("PUBLISHED", kw, categoryId, wf, pt, minSalary, maxSalary, skillId, pageable);
         return projects.map(this::mapToDto);
+    }
+
+    public List<String> getDistinctWorkForms() {
+        return projectRepository.findDistinctWorkForms();
+    }
+
+    public List<String> getDistinctProjectTypes() {
+        return projectRepository.findDistinctProjectTypes();
     }
 
     public ProjectDto getProjectById(Integer projectId) {
@@ -348,6 +356,10 @@ public class ProjectService {
             employerJobs = project.getClient().getProjectsPosted() != null ? project.getClient().getProjectsPosted() : 0;
         }
 
+        List<String> skillNames = project.getSkills() != null
+                ? project.getSkills().stream().map(Skill::getSkillName).toList()
+                : List.of();
+
         return ProjectDto.builder()
                 .id(project.getProjectId())
                 .title(project.getTitle())
@@ -368,7 +380,7 @@ public class ProjectService {
                 .employerLocation(employerLoc)
                 .employerJoinDate(employerJoin)
                 .employerJobsPosted(employerJobs)
-                .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
+                .skills(skillNames)
                 .build();
     }
 

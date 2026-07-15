@@ -58,6 +58,8 @@ public class ProjectController {
             @RequestParam(value = "workForm", required = false) String workForm,
             @RequestParam(value = "projectType", required = false) String projectType,
             @RequestParam(value = "minSalary", required = false) java.math.BigDecimal minSalary,
+            @RequestParam(value = "maxSalary", required = false) java.math.BigDecimal maxSalary,
+            @RequestParam(value = "skillId", required = false) Integer skillId,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size) {
         if (page == null || size == null) {
@@ -67,7 +69,17 @@ public class ProjectController {
             return ResponseEntity.ok(projectService.searchProjects(keyword.trim()));
         }
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, workForm, projectType, minSalary, pageable));
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, workForm, projectType, minSalary, maxSalary, skillId, pageable));
+    }
+
+    @GetMapping("/work-forms")
+    public ResponseEntity<List<String>> getWorkForms() {
+        return ResponseEntity.ok(projectService.getDistinctWorkForms());
+    }
+
+    @GetMapping("/project-types")
+    public ResponseEntity<List<String>> getProjectTypes() {
+        return ResponseEntity.ok(projectService.getDistinctProjectTypes());
     }
 
     @GetMapping("/{projectId}")

@@ -44,20 +44,34 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
            "    (p.budgetFixed IS NOT NULL AND p.budgetFixed >= :minSalary) OR " +
            "    (p.budgetMax IS NULL AND p.budgetFixed IS NULL AND p.budgetMin IS NOT NULL AND p.budgetMin >= :minSalary)" +
            ") " +
+           "AND (:maxSalary IS NULL OR " +
+           "    (p.budgetMin IS NOT NULL AND p.budgetMin <= :maxSalary) OR " +
+           "    (p.budgetFixed IS NOT NULL AND p.budgetFixed <= :maxSalary) OR " +
+           "    (p.budgetMin IS NULL AND p.budgetFixed IS NULL AND p.budgetMax IS NOT NULL AND p.budgetMax <= :maxSalary)" +
+           ") " +
+           "AND (:skillId IS NULL OR :skillId IN (SELECT s.skillId FROM p.skills s)) " +
            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Project> searchProjectsByKeywordAndCategory(
+    Page<Project> searchProjectsByFilters(
             @Param("status") String status, 
             @Param("keyword") String keyword, 
             @Param("categoryId") Integer categoryId, 
             @Param("workForm") String workForm, 
             @Param("projectType") String projectType, 
             @Param("minSalary") java.math.BigDecimal minSalary, 
+            @Param("maxSalary") java.math.BigDecimal maxSalary, 
+            @Param("skillId") Integer skillId, 
             Pageable pageable);
+
+    @Query(value = "SELECT DISTINCT work_form FROM projects WHERE work_form IS NOT NULL", nativeQuery = true)
+    List<String> findDistinctWorkForms();
+
+    @Query(value = "SELECT DISTINCT project_type FROM projects WHERE project_type IS NOT NULL", nativeQuery = true)
+    List<String> findDistinctProjectTypes();
     
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
     

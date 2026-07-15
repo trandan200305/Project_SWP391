@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "projects")
@@ -103,4 +104,12 @@ public class Project {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "project_skills",
+        joinColumns = @JoinColumn(name = "project_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private List<Skill> skills;
 }
