@@ -105,6 +105,25 @@ export default function FindJobsPage({ onNavigate, user }) {
     }
   };
 
+  const handleWorkFormChange = (form) => {
+    setActiveWorkForm(form);
+    setPage(0);
+  };
+
+  const handleProjectTypeChange = (type) => {
+    setActiveProjectType(type);
+    setPage(0);
+  };
+
+  const handleSalaryChange = (type, value) => {
+    if (type === 'min') {
+      setMinSalary(value);
+    } else {
+      setMaxSalary(value);
+    }
+    setPage(0);
+  };
+
   const handleSkillChange = (skillId) => {
     setActiveSkillIds(prev => {
       if (prev.includes(skillId)) {
