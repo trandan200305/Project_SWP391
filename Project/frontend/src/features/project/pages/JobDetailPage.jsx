@@ -189,6 +189,27 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
       }
 
       const result = await response.json();
+      
+      // Lưu vào localStorage để hỗ trợ demo giao diện Freelancer Đã nộp thầu
+      try {
+        const newProposalMock = {
+          proposalId: result.proposalId || Date.now(),
+          projectId: job.id,
+          projectTitle: job.title,
+          employerName: job.employerName || 'Khách hàng',
+          bidAmount: amount,
+          estimatedDays: days,
+          coverLetter: applyForm.coverLetter.trim(),
+          status: 'PENDING',
+          createdAt: new Date().toISOString()
+        };
+        const storedProposals = JSON.parse(localStorage.getItem('submitted_proposals') || '[]');
+        const filteredProposals = storedProposals.filter(p => p.projectId !== job.id);
+        localStorage.setItem('submitted_proposals', JSON.stringify([newProposalMock, ...filteredProposals]));
+      } catch (e) {
+        console.error("Failed to save proposal to localStorage", e);
+      }
+
       setHasApplied(true);
       setUserProposal(result);
       setShowApplyModal(false);
