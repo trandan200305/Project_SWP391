@@ -7,39 +7,8 @@ export default function YourJobsPage({ onNavigate, user }) {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved', 'applied', 'received', 'completed'
   const { savedJobs, unsaveJob } = useSavedJobs(user);
   
-  // Contracts state (initialized with mock fallback for demo)
-  const [contracts, setContracts] = useState(() => {
-    const stored = localStorage.getItem('submitted_contracts');
-    if (stored) return JSON.parse(stored);
-    const mock = [
-      {
-        contractId: 201,
-        title: "Thiết kế bộ nhận diện thương hiệu & Bao bì sản phẩm",
-        clientName: "Công ty Cổ phần VinTech",
-        agreedAmount: 5000000,
-        startDate: "2026-07-15",
-        status: "ACTIVE"
-      },
-      {
-        contractId: 202,
-        title: "Xây dựng Website bán hàng bằng Laravel",
-        clientName: "Thời trang cao cấp Elise",
-        agreedAmount: 15000000,
-        startDate: "2026-06-01",
-        status: "COMPLETED"
-      },
-      {
-        contractId: 203,
-        title: "Sửa lỗi giao diện website WordPress",
-        clientName: "Nha khoa Thẩm mỹ quốc tế Rose",
-        agreedAmount: 1200000,
-        startDate: "2026-05-20",
-        status: "CLOSED"
-      }
-    ];
-    localStorage.setItem('submitted_contracts', JSON.stringify(mock));
-    return mock;
-  });
+  // Contracts state
+  const [contracts, setContracts] = useState([]);
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [errorContracts, setErrorContracts] = useState(null);
   
@@ -98,12 +67,9 @@ export default function YourJobsPage({ onNavigate, user }) {
           setLoadingContracts(true);
           setErrorContracts(null);
           const data = await contractApi.getFreelancerContracts(user.id);
-          if (data && data.length > 0) {
-            setContracts(data);
-            localStorage.setItem('submitted_contracts', JSON.stringify(data));
-          }
+          setContracts(data);
         } catch (err) {
-          console.log("Backend contracts API failed or not ready, using localStorage mock fallback.", err);
+          setErrorContracts(err.message || 'Không thể tải danh sách dự án.');
         } finally {
           setLoadingContracts(false);
         }
