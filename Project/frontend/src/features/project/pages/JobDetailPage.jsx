@@ -23,9 +23,9 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
   const [uploadingCv, setUploadingCv] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
 
-  // Fetch full details if initialJob is incomplete
+  // Fetch full details of the project by ID
   useEffect(() => {
-    if (initialJob && (!initialJob.title || !initialJob.description)) {
+    if (initialJob && initialJob.id) {
       setLoadingJob(true);
       fetch(`http://localhost:8080/api/projects/${initialJob.id}`)
         .then((res) => {
@@ -227,13 +227,14 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
   
   const createdAt = job.createdAt || '07/06/2026, 16:33';
   const location = job.location || 'TP. Hồ Chí Minh';
-  const workForm = job.workForm || 'Làm online';
+  const workFormRaw = job.workForm || 'ONLINE';
+  const workForm = workFormRaw === 'ONLINE' ? 'Làm Online (Từ xa)' : workFormRaw === 'OFFLINE' ? 'Làm Offline (Tại chỗ)' : workFormRaw;
   const paymentType = job.paymentType || 'Trả theo dự án';
   
   const employerLocation = job.employerLocation || 'TP. Hồ Chí Minh';
   const employerJoinDate = job.employerJoinDate || '07/06/2026';
-  const employerJobsPosted = job.employerJobsPosted || '1 việc';
-  const skills = job.skills || ['AFTER EFFECT', 'INFOGRAPHIC', 'MOTION GRAPHIC'];
+  const employerJobsPosted = job.employerJobsPosted !== undefined ? `${job.employerJobsPosted} việc đã đăng` : '1 việc đã đăng';
+  const skills = job.skills || [];
 
   return (
     <div className="pt-24 pb-12 bg-white min-h-screen">
@@ -282,6 +283,20 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
             <div className="text-slate-700 leading-relaxed mb-10 whitespace-pre-line">
               {job.description || "Chưa có mô tả công việc"}
             </div>
+
+            {/* Kỹ năng yêu cầu */}
+            {skills && skills.length > 0 && (
+              <div className="mb-10 pt-6 border-t border-slate-100">
+                <h3 className="font-bold text-slate-800 text-sm mb-3">Kỹ năng yêu cầu</h3>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map(skill => (
+                    <span key={skill} className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-wider">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button onClick={handleShowComingSoon} className="flex items-center gap-2 text-red-500 text-sm hover:underline">
               <AlertTriangle className="w-4 h-4" />
