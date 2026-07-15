@@ -849,23 +849,27 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                                         {proj.status === 'CLOSED' ? 'Xem tiến độ' : 'Quản lý tiến độ'}
                                                                     </button>
                                                                 )}
-                                                                {['DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED'].includes(proj.status) && (
-                                                                    <>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setEditingProject(proj)}
-                                                                            className="px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs font-bold rounded-xl transition-all shrink-0"
-                                                                        >
-                                                                            Sửa tin
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleDeleteProject(proj.projectId)}
-                                                                            className="px-3.5 py-2 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-xl transition-all shrink-0"
-                                                                        >
-                                                                            Xóa tin
-                                                                        </button>
-                                                                    </>
+                                                                
+                                                                {/* Sửa tin allowed for all statuses EXCEPT IN_PROGRESS and CLOSED */}
+                                                                {!['IN_PROGRESS', 'CLOSED'].includes(proj.status) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditingProject(proj)}
+                                                                        className="px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs font-bold rounded-xl transition-all shrink-0"
+                                                                    >
+                                                                        Sửa tin
+                                                                    </button>
+                                                                )}
+                                                                
+                                                                {/* Xóa tin allowed for all statuses EXCEPT IN_PROGRESS */}
+                                                                {proj.status !== 'IN_PROGRESS' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteProject(proj.projectId)}
+                                                                        className="px-3.5 py-2 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-xl transition-all shrink-0"
+                                                                    >
+                                                                        Xóa tin
+                                                                    </button>
                                                                 )}
                                                             </div>
                                                         </div>
