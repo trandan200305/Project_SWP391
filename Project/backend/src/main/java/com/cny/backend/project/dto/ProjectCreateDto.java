@@ -22,4 +22,5 @@ public class ProjectCreateDto {
     private BigDecimal budgetMax;
     private BigDecimal budgetFixed;
     private LocalDate deadline;
+    private String servicePackage;
 }

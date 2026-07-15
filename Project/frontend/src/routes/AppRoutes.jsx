@@ -6,10 +6,12 @@ import MessengerPage from '../features/messenger/pages/MessengerPage.jsx';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage.jsx';
 import ManagerDashboardPage from '../features/admin/pages/ManagerDashboardPage.jsx';
 import StaffDashboardPage from '../features/admin/pages/StaffDashboardPage.jsx';
+import WaitingRoomPage from '../features/auth/pages/WaitingRoomPage.jsx';
 import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
+import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
@@ -31,6 +33,15 @@ export default function AppRoutes({
   onLogout
 }) {
   if (currentPage === 'admin') {
+    if (user?.status === 'PENDING_ACTIVATION' && (user?.role === 'MANAGER' || user?.role === 'STAFF')) {
+      return (
+        <WaitingRoomPage 
+          user={user} 
+          onStatusActive={() => onUserUpdate({ ...user, status: 'ACTIVE' })} 
+          onLogout={onLogout} 
+        />
+      );
+    }
     if (user?.role === 'ADMIN') {
       return <AdminDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
     }
@@ -48,6 +59,19 @@ export default function AppRoutes({
         initialTab = 'Thông tin cá nhân';
     }
     return <UserProfilePage user={user} defaultTab={currentPage} initialTab={initialTab} onNavigate={handleNavigate} onLogout={onLogout} />;
+  }
+
+  if (currentPage === 'view_profile') {
+    return (
+      <UserProfilePage
+        user={user}
+        targetRole={pageParams?.targetRole}
+        targetUserId={pageParams?.targetUserId}
+        defaultTab="profile"
+        onNavigate={handleNavigate}
+        onLogout={onLogout}
+      />
+    );
   }
 
   if (currentPage === 'coming_soon') {
@@ -77,6 +101,17 @@ export default function AppRoutes({
   if (currentPage === 'employer_profile') {
     return (
       <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
+  if (currentPage === 'employer_jobs') {
+    return (
+      <EmployerJobsPage
         user={user}
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}

@@ -3,6 +3,7 @@ package com.cny.backend.admin.service;
 import com.cny.backend.admin.entity.PaymentTransaction;
 import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.repository.VnpayConfigRepository;
+import com.cny.backend.admin.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,8 @@ import java.util.*;
 
 import com.cny.backend.admin.repository.PaymentTransactionRepository;
 import com.cny.backend.project.service.ProjectService;
+import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.project.entity.Project;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +36,15 @@ public class VNPayService {
 
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private VnpayConfigRepository vnpayConfigRepository;
+
+    @Autowired
+    private InvoiceService invoiceService;
 
     @Value("${vnpay.tmn-code:DEMO2019}")
     private String vnpTmnCode;
@@ -117,7 +129,18 @@ public class VNPayService {
         vnp_Params.put("vnp_CurrCode", "VND");
         
         vnp_Params.put("vnp_TxnRef", txn.getTxnRef());
-        vnp_Params.put("vnp_OrderInfo", "Thanh toan phi dang tin du an ID " + txn.getProjectId());
+        String orderInfo = "Thanh toan phi dang tin du an ID " + txn.getProjectId();
+        try {
+            Optional<Project> projOpt = projectRepository.findById(txn.getProjectId());
+            if (projOpt.isPresent()) {
+                Project project = projOpt.get();
+                String pkgType = project.getServicePackage() != null ? project.getServicePackage().toUpperCase() : "MEDIUM";
+                orderInfo = "Thanh toan Goi " + pkgType + " - Du an ID " + project.getProjectId();
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        vnp_Params.put("vnp_OrderInfo", orderInfo);
         vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", vnpReturnUrl);
@@ -126,6 +149,17 @@ public class VNPayService {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         vnp_Params.put("vnp_CreateDate", now.format(formatter));
+
+        int timeoutMinutes = 30;
+        try {
+            Optional<VnpayConfig> configOpt = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc();
+            if (configOpt.isPresent() && configOpt.get().getSessionTimeout() != null) {
+                timeoutMinutes = configOpt.get().getSessionTimeout();
+            }
+        } catch (Exception e) {}
+        
+        LocalDateTime expireDate = now.plusMinutes(timeoutMinutes);
+        vnp_Params.put("vnp_ExpireDate", expireDate.format(formatter));
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
@@ -203,16 +237,16 @@ public class VNPayService {
             String txnRef = txn.getTxnRef();
             String orderInfo = "Truy van ket qua giao dich " + txnRef;
             
-            // Format dates
+            // format dates
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
             String txnDate = txn.getCreatedAt().format(formatter);
             String createDate = LocalDateTime.now().format(formatter);
 
-            // Construct hash source
+            // construct hash source
             String hashData = requestId + "|" + version + "|" + command + "|" + tmnCode + "|" + txnRef + "|" + txnDate + "|" + createDate + "|" + (ipAddress != null ? ipAddress : "127.0.0.1") + "|" + orderInfo;
             String secureHash = hmacSHA512(vnpHashSecret, hashData);
 
-            // Construct payload
+            // construct payload
             Map<String, Object> payload = new HashMap<>();
             payload.put("vnp_RequestId", requestId);
             payload.put("vnp_Version", version);
@@ -248,6 +282,9 @@ public class VNPayService {
                             txn.setVnpTransactionNo(String.valueOf(response.get("vnp_TransactionNo")));
                         }
                         transactionRepository.save(txn);
+
+                        invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich VNPay " + txn.getTxnRef());
+
                         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                     }
                     result.put("success", true);
@@ -410,5 +447,18 @@ public class VNPayService {
             result.put("message", "Lỗi kết nối API tra cứu: " + e.getMessage());
         }
         return result;
+    }
+
+    public boolean isVnpayHealthy() {
+        try {
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(2000);
+            factory.setReadTimeout(2000);
+            RestTemplate rest = new RestTemplate(factory);
+            org.springframework.http.ResponseEntity<String> response = rest.getForEntity(vnpUrl, String.class);
+            return response.getStatusCode().is2xxSuccessful() || response.getStatusCode().is3xxRedirection();
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

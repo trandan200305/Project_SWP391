@@ -249,6 +249,11 @@ public class AuthService {
                 response.put("message", "Tài khoản không tồn tại!");
                 return response;
             } else {
+                if (isOAuthLogin) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản Quản lý không được phép đăng nhập qua Google/Gmail. Vui lòng sử dụng mật khẩu được Admin cấp.");
+                    return response;
+                }
                 com.cny.backend.admin.entity.Manager dbManager = existingManager.get();
                 if (Boolean.TRUE.equals(dbManager.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbManager.getStatus())) {
                     response.put("success", false);
@@ -316,6 +321,11 @@ public class AuthService {
                 response.put("message", "Tài khoản không tồn tại!");
                 return response;
             } else {
+                if (isOAuthLogin) {
+                    response.put("success", false);
+                    response.put("message", "Tài khoản Nhân viên không được phép đăng nhập qua Google/Gmail. Vui lòng sử dụng mật khẩu được Admin cấp.");
+                    return response;
+                }
                 com.cny.backend.admin.entity.Staff dbStaff = existingStaff.get();
                 if (Boolean.TRUE.equals(dbStaff.getIsDeleted()) || "DELETED".equalsIgnoreCase(dbStaff.getStatus())) {
                     response.put("success", false);
@@ -526,6 +536,7 @@ public class AuthService {
         userObj.put("email", email);
         userObj.put("name", name);
         userObj.put("role", assignedRole);
+        userObj.put("status", userStatus);
         userObj.put("avatar", avatar != null ? avatar : "https://ui-avatars.com/api/?name=" + name);
         userObj.put("hasMessengerPin", hasMessengerPin);
         userObj.put("isVerified", isVerified);

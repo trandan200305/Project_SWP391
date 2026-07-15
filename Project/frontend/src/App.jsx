@@ -64,6 +64,7 @@ export default function App() {
             setSuspended({ reason: event.reason });
           } else if (event.type === "ACCOUNT_REACTIVATED") {
             setSuspended(null);
+            setUser(prev => prev ? { ...prev, status: 'ACTIVE' } : null);
           }
         } catch (_) {}
       });
@@ -102,6 +103,7 @@ export default function App() {
       "messenger",
       "post_job",
       "employer_profile",
+      "employer_jobs",
       "profile",
       "checkout",
       "contract_details",
@@ -119,12 +121,16 @@ export default function App() {
     }
     if (page === "post_job" && user?.role !== "EMPLOYER") {
       alert(
-        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng tin tuyển dụng!",
+        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
       );
       setCurrentPage("home");
       return;
     }
     if (page === "employer_profile" && user?.role !== "EMPLOYER") {
+      setCurrentPage("home");
+      return;
+    }
+    if (page === "employer_jobs" && user?.role !== "EMPLOYER") {
       setCurrentPage("home");
       return;
     }

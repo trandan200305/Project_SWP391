@@ -43,6 +43,7 @@ export const adminApi = {
   },
   getUserCredentials: (role, userId) => api.get(`/admin/users/${role}/${userId}/credentials`),
   regenerateUserPassword: (role, userId) => api.post(`/admin/users/${role}/${userId}/regenerate-password`),
+  changeUserPasswordDirectly: (role, userId, newPassword) => api.post(`/admin/users/${role}/${userId}/change-password-direct`, { newPassword }),
   getUserGrowth: () => api.get('/admin/charts/user-growth'),
   getRevenueGrowth: () => api.get('/admin/charts/revenue'),
   getManagers: () => api.get('/admin/managers'),
@@ -124,28 +125,51 @@ export const adminApi = {
   }),
   getVnpayConfig: () => api.get('/admin/vnpay-config'),
   saveVnpayConfig: (config) => api.post('/admin/vnpay-config', config),
-  getVnpayTransactions: () => api.get('/admin/finance/vnpay-transactions'),
-  reconcileVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/reconcile`),
-  getPendingGigs: () => api.get('/admin/moderation/gigs/pending'),
+  getVnpayTransactions: (page = 0, size = 10) => api.get(`/admin/vnpay-transactions?page=${page}&size=${size}`),
+  reconcileVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/reconcile`),
+  getPendingGigs: () => api.get('/admin/gigs/pending'),
   moderateGig: (gigId, approve, reasonParam, adminId) => {
-    return fetch(`http://localhost:8080/api/admin/moderation/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return fetch(`http://localhost:8080/api/admin/gigs/${gigId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',
       headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
-  queryVnpayTransaction: (id) => api.post(`/admin/finance/vnpay-transactions/${id}/query`),
-  refundVnpayTransaction: (id, payload) => api.post(`/admin/finance/vnpay-transactions/${id}/refund`, payload),
+  queryVnpayTransaction: (id) => api.post(`/admin/vnpay-transactions/${id}/query`),
+  refundVnpayTransaction: (id, payload) => api.post(`/admin/vnpay-transactions/${id}/refund`, payload),
   getTransferRequests: () => api.get('/admin/transfers/requests'),
   submitTransferRequest: (payload, adminId) => api.post('/admin/transfers/requests', payload, { headers: { 'X-Admin-Id': adminId } }),
   approveTransferRequest: (id, status, reason, adminId) => api.put(`/admin/transfers/requests/${id}/approve?status=${status}&reason=${reason}`, null, { headers: { 'X-Admin-Id': adminId } }),
   lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
-  createTestVnpayUrl: (projectId) => api.post(`/payment/create-url?projectId=${projectId}`),
-  createPayosUrl: (projectId) => api.post(`/payment/payos/create-url?projectId=${projectId}`),
+  createTestVnpayUrl: (projectId, packageType) => {
+    let url = '/payment/create-url';
+    const params = [];
+    if (projectId) params.push(`projectId=${projectId}`);
+    if (packageType) params.push(`packageType=${packageType}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return api.post(url);
+  },
+  createPayosUrl: (projectId, packageType) => {
+    let url = '/payment/payos/create-url';
+    const params = [];
+    if (projectId) params.push(`projectId=${projectId}`);
+    if (packageType) params.push(`packageType=${packageType}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return api.post(url);
+  },
   queryPayosTransaction: (txnRef) => api.post(`/payment/payos/query?txnRef=${txnRef}`),
-  
+  cancelPayosTransaction: (txnRef) => api.post(`/payment/payos/cancel?txnRef=${txnRef}`),
+  getServicePackages: () => api.get('/admin/service-packages'),
+  updateServicePackages: (prices, adminId) => {
+    const headers = {};
+    if (adminId) headers['X-Admin-Id'] = adminId.toString();
+    return api.post('/admin/service-packages', prices, { headers });
+  },
   // Notification API
   getNotifications: (role, userId) => api.get(`/notifications/${role}/${userId}`),
   markNotificationAsRead: (id) => api.put(`/notifications/${id}/read`),
   markAllNotificationsAsRead: (role, userId) => api.put(`/notifications/read-all/${role}/${userId}`),
   seedTestNotifications: (role, userId) => api.post(`/notifications/test-seed/${role}/${userId}`)
 };
+

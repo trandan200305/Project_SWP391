@@ -309,7 +309,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(15000000))
                 .deadline(LocalDate.now().plusDays(10))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -321,7 +321,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(6000000))
                 .deadline(LocalDate.now().plusDays(20))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -333,7 +333,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("MONTHLY")
                 .budgetFixed(BigDecimal.valueOf(4500000))
                 .deadline(LocalDate.now().plusDays(30))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -632,6 +632,13 @@ public class DataSeeder implements CommandLineRunner {
                             .build();
                     staffRepository.save(extraStaff);
                 }
+            }
+
+            com.cny.backend.department.entity.Department modDept = departmentRepository.findByCode("MOD").orElse(null);
+            Staff existingStaff = staffRepository.findByEmail("staff@gmail.com").orElse(null);
+            if (existingStaff != null && modDept != null) {
+                existingStaff.setDepartmentEntity(modDept);
+                staffRepository.save(existingStaff);
             }
         } catch (Exception e) {
             System.err.println("Error seeding staff and managers: " + e.getMessage());

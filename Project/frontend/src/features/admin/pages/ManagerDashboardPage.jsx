@@ -100,6 +100,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [kycRequests, setKycRequests] = useState([]);
   const [moderationItems, setModerationItems] = useState([]);
   const [escalationCases, setEscalationCases] = useState([]);
+  const [selectedModerationItem, setSelectedModerationItem] = useState(null);
+  const [showModerationModal, setShowModerationModal] = useState(false);
   const [violationReports, setViolationReports] = useState([]);
   const [reportFilter, setReportFilter] = useState('ALL');
   const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
@@ -408,15 +410,16 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
       if (Array.isArray(profilesData)) {
         mapped = [...mapped, ...profilesData.map(pr => ({
-          id: `PROF-${pr.id}`,
-          idRaw: pr.id,
+          id: `PROF-${pr.requestId}`,
+          idRaw: pr.requestId,
           title: `Cập nhật hồ sơ: ${pr.companyName || pr.displayName || 'Employer'}`,
           type: 'PROFILE',
           author: pr.displayName || 'Employer',
           detail: `Yêu cầu cập nhật hồ sơ công ty. ${pr.companyDescription ? 'Có thay đổi mô tả.' : ''}`,
           reason: 'Cập nhật hồ sơ',
           subDate: pr.createdAt ? String(pr.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
-          status: pr.status === 'PENDING' ? 'Pending' : 'Processed'
+          status: pr.status === 'PENDING' ? 'Pending' : 'Processed',
+          rawRequest: pr
         }))];
       }
 
@@ -843,7 +846,27 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     return () => window.removeEventListener('openTransferRequestDetail', handleOpenDetail);
   }, [transferRequests]);
 
-  
+  useEffect(() => {
+    const handleOpenProfileDetail = (e) => {
+      const { requestId } = e.detail;
+      // Navigate to Moderation queue and filter by PROFILE
+      setActiveTab('Moderation');
+      setQueueTab('PROFILE');
+      showToast('Đã chuyển đến hàng đợi kiểm duyệt hồ sơ', 'success');
+
+      // Open the modal if the item is already loaded in moderationItems
+      if (Array.isArray(moderationItems)) {
+        const found = moderationItems.find(item => item.type === 'PROFILE' && item.idRaw === requestId);
+        if (found) {
+          setSelectedModerationItem(found);
+          setShowModerationModal(true);
+        }
+      }
+    };
+
+    window.addEventListener('openProfileRequestDetail', handleOpenProfileDetail);
+    return () => window.removeEventListener('openProfileRequestDetail', handleOpenProfileDetail);
+  }, [moderationItems]);  
   useEffect(() => {
     if (!selectedChatId) return;
     setIsLoading(true);
@@ -3161,7 +3184,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                             <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
                               {item.type}
                             </span>
-                            <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5">{item.title}</h4>
+                            <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5 group cursor-pointer hover:text-[#006b2c] transition-colors" onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}>{item.title}</h4>
                             <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
                           </div>
                         </td>
@@ -4674,6 +4697,136 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODERATION DETAIL MODAL ---------------- */}
+      {showModerationModal && selectedModerationItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-[#e1e8fd] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e1e8fd]">
+              <h2 className="text-title-md font-extrabold text-[#141b2b]">Chi tiết kiểm duyệt</h2>
+              <button 
+                onClick={() => {
+                  setShowModerationModal(false);
+                  setSelectedModerationItem(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+              <div className="flex justify-between items-center mb-1">
+                <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-indigo-50 text-indigo-700 border-indigo-100">
+                  {selectedModerationItem.type}
+                </span>
+                <span className="text-xs text-[#6e7b6c] font-bold flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  {selectedModerationItem.subDate}
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-extrabold text-[#141b2b] leading-snug">{selectedModerationItem.title}</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                    {selectedModerationItem.author ? selectedModerationItem.author.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">Người đăng</span>
+                    <span className="text-sm font-extrabold text-slate-800 block truncate">{selectedModerationItem.author}</span>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/50 border border-amber-200/60 p-4 rounded-xl flex items-start gap-2.5 text-amber-850">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-amber-700 uppercase font-bold block">Lý do kiểm duyệt</span>
+                    <span className="text-xs font-bold text-amber-800">{selectedModerationItem.reason}</span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedModerationItem.type === 'PROFILE' && selectedModerationItem.rawRequest ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+                      <p className="font-bold text-slate-500 uppercase pb-2 border-b border-slate-200 mb-2">Thông tin hiện tại</p>
+                      <p><strong>Tên hiển thị:</strong> {selectedModerationItem.rawRequest.employer?.displayName || 'Chưa cập nhật'}</p>
+                      <p><strong>Họ và tên:</strong> {selectedModerationItem.rawRequest.employer?.fullName || 'Chưa cập nhật'}</p>
+                      <p><strong>Số điện thoại:</strong> {selectedModerationItem.rawRequest.employer?.phone || 'Chưa cập nhật'}</p>
+                      <p><strong>Tên công ty:</strong> {selectedModerationItem.rawRequest.employer?.companyName || 'Chưa cập nhật'}</p>
+                      <p><strong>Website:</strong> {selectedModerationItem.rawRequest.employer?.website || 'Chưa cập nhật'}</p>
+                      <p><strong>Quy mô:</strong> {selectedModerationItem.rawRequest.employer?.companySize || 'Chưa cập nhật'}</p>
+                      <p><strong>Ngành nghề:</strong> {selectedModerationItem.rawRequest.employer?.industry || 'Chưa cập nhật'}</p>
+                      <p><strong>Mã số thuế:</strong> {selectedModerationItem.rawRequest.employer?.taxCode || 'Chưa cập nhật'}</p>
+                      <p><strong>Địa chỉ:</strong> {selectedModerationItem.rawRequest.employer?.address ? `${selectedModerationItem.rawRequest.employer.address}, ${selectedModerationItem.rawRequest.employer.city || ''}, ${selectedModerationItem.rawRequest.employer.country || ''}` : 'Chưa cập nhật'}</p>
+                      <p><strong>Mô tả:</strong> {selectedModerationItem.rawRequest.employer?.companyDescription || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100 space-y-1">
+                      <p className="font-bold text-indigo-600 uppercase pb-2 border-b border-indigo-100 mb-2">Thông tin đề xuất</p>
+                      <p><strong>Tên hiển thị:</strong> <span className={selectedModerationItem.rawRequest.displayName !== selectedModerationItem.rawRequest.employer?.displayName ? "text-indigo-650 font-bold" : ""}>{selectedModerationItem.rawRequest.displayName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Họ và tên:</strong> <span className={selectedModerationItem.rawRequest.fullName !== selectedModerationItem.rawRequest.employer?.fullName ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.fullName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Số điện thoại:</strong> <span className={selectedModerationItem.rawRequest.phone !== selectedModerationItem.rawRequest.employer?.phone ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.phone || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Tên công ty:</strong> <span className={selectedModerationItem.rawRequest.companyName !== selectedModerationItem.rawRequest.employer?.companyName ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.companyName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Website:</strong> <span className={selectedModerationItem.rawRequest.website !== selectedModerationItem.rawRequest.employer?.website ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.website || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Quy mô:</strong> <span className={selectedModerationItem.rawRequest.companySize !== selectedModerationItem.rawRequest.employer?.companySize ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.companySize || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Ngành nghề:</strong> <span className={selectedModerationItem.rawRequest.industry !== selectedModerationItem.rawRequest.employer?.industry ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.industry || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Mã số thuế:</strong> <span className={selectedModerationItem.rawRequest.taxCode !== selectedModerationItem.rawRequest.employer?.taxCode ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.taxCode || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Địa chỉ:</strong> <span className={(selectedModerationItem.rawRequest.address !== selectedModerationItem.rawRequest.employer?.address || selectedModerationItem.rawRequest.city !== selectedModerationItem.rawRequest.employer?.city) ? "text-indigo-655 font-bold" : ""}>{selectedModerationItem.rawRequest.address ? `${selectedModerationItem.rawRequest.address}, ${selectedModerationItem.rawRequest.city || ''}, ${selectedModerationItem.rawRequest.country || ''}` : 'Chưa cập nhật'}</span></p>
+                      <p><strong>Mô tả:</strong> <span className={selectedModerationItem.rawRequest.companyDescription !== selectedModerationItem.rawRequest.employer?.companyDescription ? "text-indigo-655 font-bold block whitespace-pre-line" : ""}>{selectedModerationItem.rawRequest.companyDescription || 'Chưa cập nhật'}</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-xs space-y-1">
+                    <p className="font-bold text-slate-700 pb-1.5 border-b border-slate-200 mb-1.5">Thông tin tài khoản ngân hàng thụ hưởng đề xuất</p>
+                    <p><strong>Tên ngân hàng:</strong> {selectedModerationItem.rawRequest.bankName || 'Chưa cập nhật'}</p>
+                    <p><strong>Số tài khoản:</strong> {selectedModerationItem.rawRequest.accountNumber || 'Chưa cập nhật'}</p>
+                    <p><strong>Chủ tài khoản:</strong> {selectedModerationItem.rawRequest.accountHolder || 'Chưa cập nhật'}</p>
+                    <p><strong>Chi nhánh:</strong> {selectedModerationItem.rawRequest.branch || 'Chưa cập nhật'}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase block">Nội dung chi tiết</span>
+                  <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-sm text-slate-850 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                    {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-slate-50 flex items-center justify-between rounded-b-2xl">
+              <span className="text-xs text-[#6e7b6c] font-bold">Thao tác duyệt</span>
+              {selectedModerationItem.status === 'Pending' ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, false);
+                      setShowModerationModal(false);
+                      setSelectedModerationItem(null);
+                    }}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                  >
+                    <X className="w-3.5 h-3.5" /> Từ chối
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleModAction(selectedModerationItem, true);
+                      setShowModerationModal(false);
+                      setSelectedModerationItem(null);
+                    }}
+                    className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Phê duyệt
+                  </button>
+                </div>
+              ) : (
+                <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2.5 py-1 rounded-md">Đã xử lý</span>
+              )}
+            </div>
           </div>
         </div>
       )}

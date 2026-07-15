@@ -28,6 +28,7 @@ import {
     FileText
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
+import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
 
 const emptyForm = {
     displayName: '',
@@ -153,7 +154,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         if (editForm.projectType === 'RANGE') {
             const minStr = editForm.budgetMin ? String(editForm.budgetMin).trim() : '';
             const maxStr = editForm.budgetMax ? String(editForm.budgetMax).trim() : '';
-            if (minStr || maxStr) {
+            if (true) {
                 if (!minStr || !maxStr) {
                     alert('Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.');
                     return;
@@ -171,6 +172,10 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             }
         } else if (editForm.projectType === 'FIXED') {
             const fixedStr = editForm.budgetFixed ? String(editForm.budgetFixed).trim() : '';
+            if (!fixedStr) {
+                alert('Vui lòng nhập ngân sách cố định.');
+                return;
+            }
             if (fixedStr) {
                 const fixed = parseFloat(fixedStr);
                 if (isNaN(fixed) || fixed <= 0) {
@@ -263,7 +268,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                       bankName: payData.bankName,
                       bankAccountNo: payData.bankAccountNo,
                       bankAccountName: payData.bankAccountName,
-                      projectTitle: project?.title || 'Dự án LancerPro'
+                      projectTitle: project?.title || 'Dự án LancerPro',
+                      servicePackage: project?.servicePackage
                     });
                 } else {
                     window.location.href = payData.paymentUrl;
@@ -432,6 +438,13 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
+        // Validate Quy mô công ty
+        const companySizeRegex = /^(Hơn\s+|Dưới\s+)?([1-9][0-9]*)(\s*-\s*[1-9][0-9]*)?(\s*\+)?(\s*(nhân viên|người))?$/i;
+        if (form.companySize && !companySizeRegex.test(form.companySize.trim())) {
+            setNotice({type: 'error', message: 'Quy mô công ty không hợp lệ (ví dụ: 10-50, 50+, Hơn 100 nhân viên).'});
+            return false;
+        }
+
         // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
         const {bankName, accountNumber, accountHolder, branch} = form.billing;
         if (bankName || accountNumber || accountHolder || branch) {
@@ -554,8 +567,12 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 <aside className="space-y-4">
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
                         <div
-                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4">
-                            <Building2 className="w-7 h-7"/>
+                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
+                            {form.companyLogoUrl ? (
+                                <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <Building2 className="w-7 h-7"/>
+                            )}
                         </div>
                         <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
                         <p className="text-sm text-slate-500 mt-2 leading-relaxed">
@@ -587,15 +604,14 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 </aside>
 
                 <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
-                    
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <h2 className="text-lg font-extrabold">
-                                {activeTab === 'company' ? 'Thông tin công ty' : activeTab === 'billing' ? 'Thông tin thanh toán' : 'Tin tuyển dụng & Dự án'}
+                                {activeTab === 'company' ? 'Thông tin công ty' : 'Thông tin thanh toán'}
                             </h2>
                             <p className="text-sm text-slate-500">
-                                {activeTab === 'company' ? 'Cập nhật thông tin doanh nghiệp và người đại diện.' : activeTab === 'billing' ? 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.' : 'Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án.'}
+                                {activeTab === 'company' ? 'Cập nhật thông tin doanh nghiệp và người đại diện.' : 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.'}
                             </p>
                         </div>
                         {notice && (<div
@@ -606,7 +622,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </div>)}
                     </div>
 
-                    
                     <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
                         <button
                             type="button"
@@ -630,26 +645,68 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                             <Banknote className="w-4 h-4"/>
                             Thông tin thanh toán
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('projects');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'projects' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Briefcase className="w-4 h-4"/>
-                            Tin tuyển dụng ({projects.length})
-                        </button>
                     </div>
 
-                    
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
                             <Loader2 className="w-6 h-6 animate-spin mr-2"/>
                             Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (/* Company info form */
+                        </div>) : activeTab === 'company' ? (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
+                                {/* Company Logo Upload Area */}
+                                <div className="flex items-center gap-6 pb-6 border-b border-slate-100 mb-6">
+                                    <div className="w-20 h-20 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                        {form.companyLogoUrl ? (
+                                            <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Building2 className="w-8 h-8 text-slate-400" />
+                                        )}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-sm font-bold text-slate-800">Logo công ty</h4>
+                                        <p className="text-xs text-slate-500">Chấp nhận JPG, PNG, GIF. Tối đa 2MB.</p>
+                                        <div className="flex items-center gap-2">
+                                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-sm">
+                                                <span>Tải ảnh lên</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        try {
+                                                            const res = await fetch('http://localhost:8080/api/upload', {
+                                                                method: 'POST',
+                                                                body: formData
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                updateField('companyLogoUrl', getFilenameFromUrl(data.fileUrl));
+                                                            } else {
+                                                                alert('Tải ảnh lên thất bại!');
+                                                            }
+                                                        } catch (err) {
+                                                            alert('Lỗi tải ảnh lên! Đảm bảo Backend đang chạy.');
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            {form.companyLogoUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField('companyLogoUrl', '')}
+                                                    className="px-3 py-1.5 border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 text-xs font-bold rounded-lg transition-colors"
+                                                >
+                                                    Xóa Logo
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <TextInput label="Tên công ty" value={form.companyName}
                                                onChange={(value) => updateField('companyName', value)} required/>
@@ -701,7 +758,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
                                 </button>
                             </div>
-                        </form>) : activeTab === 'billing' ? (
+                        </form>
+                    ) : (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -727,230 +785,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
                                 </button>
                             </div>
-                        </form>) : (
-                        <div className="p-6 animate-fade-in">
-                            
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                                        <Briefcase className="w-5 h-5 text-slate-600"/>
-                                        Danh sách tin tuyển dụng ({projects.length})
-                                    </h3>
-                                </div>
-
-                                {loadingProjects ? (<div
-                                    className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                    <Loader2 className="w-8 h-8 animate-spin text-cyan-600"/>
-                                    <span className="text-sm font-semibold">Đang tải tin tuyển dụng...</span>
-                                </div>) : projects.length === 0 ? (<div
-                                    className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50/50">
-                                    <div
-                                        className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
-                                        <Briefcase className="w-6 h-6"/>
-                                    </div>
-                                    <h4 className="font-bold text-slate-800 mb-1">Chưa có tin tuyển dụng
-                                        nào</h4>
-                                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                        Quản lý các tin tuyển dụng và theo dõi trạng thái phê duyệt dự án của
-                                        bạn tại đây.
-                                    </p>
-                                </div>) : (
-                                    <>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            {paginatedProjects.map((proj) => {
-                                                const isFixed = proj.projectType === 'FIXED_PRICE' || proj.projectType === 'FIXED';
-                                                const statusColors = {
-                                                    DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
-                                                    PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                    PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                    PENDING_PAYMENT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-                                                    PUBLISHED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                    REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
-                                                    IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
-                                                    CLOSED: 'bg-slate-100 text-slate-600 border-slate-200'
-                                                };
-                                                const statusLabels = {
-                                                    DRAFT: 'Bản nháp',
-                                                    PENDING: 'Chờ duyệt',
-                                                    PENDING_REVIEW: 'Chờ duyệt',
-                                                    PENDING_PAYMENT: 'Chờ thanh toán',
-                                                    PUBLISHED: 'Đang tuyển',
-                                                    REJECTED: 'Từ chối',
-                                                    IN_PROGRESS: 'Đang thực hiện',
-                                                    CLOSED: 'Đã đóng'
-                                                };
-
-                                                return (<div key={proj.projectId}
-                                                             className="border border-slate-100 bg-white rounded-2xl p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 group">
-                                                    <div
-                                                        className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                                                        <div>
-                                                            <div
-                                                                className="flex items-center gap-2 flex-wrap mb-1.5">
-                                                                <span
-                                                                    className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                                                    {proj.category?.categoryName || 'General'}
-                                                                </span>
-                                                                <span
-                                                                    className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                                                    {statusLabels[proj.status] || proj.status}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-cyan-600 transition-colors">
-                                                                {proj.title}
-                                                            </h4>
-                                                        </div>
-                                                        <div
-                                                            className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
-                                                            <span
-                                                                className="text-xs text-slate-400 font-medium">Ngân sách</span>
-                                                            <span
-                                                                className="font-extrabold text-emerald-600 text-sm">
-                                                                {isFixed ? (proj.budgetFixed ? new Intl.NumberFormat('vi-VN', {
-                                                                    style: 'currency', currency: 'VND'
-                                                                }).format(proj.budgetFixed) : 'Thỏa thuận') : (proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', {
-                                                                    style: 'currency', currency: 'VND'
-                                                                }).format(proj.budgetMax)}` : 'Thỏa thuận')}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                                                        {proj.description}
-                                                    </p>
-
-                                                    <div
-                                                        className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs font-semibold text-slate-500">
-                                                        <div className="flex items-center gap-4">
-                                                            <span className="flex items-center gap-1.5">
-                                                                <Calendar className="w-3.5 h-3.5 text-slate-400"/>
-                                                                Hạn: {proj.deadline ? new Date(proj.deadline).toLocaleDateString('vi-VN') : 'Không giới hạn'}
-                                                            </span>
-                                                            <span className="flex items-center gap-1.5">
-                                                                <Clock className="w-3.5 h-3.5 text-slate-400"/>
-                                                                Đăng ngày: {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="bg-cyan-50 text-cyan-700 px-3 py-1 rounded-full text-[11px] font-bold">
-                                                                {proj.proposalCount || 0} Báo giá
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Management Actions */}
-                                                    <div
-                                                        className="flex items-center justify-end gap-2 border-t border-slate-50 mt-4 pt-3">
-                                                        {proj.status === 'PENDING_PAYMENT' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handlePayProject(proj.projectId)}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-all text-[11px] font-extrabold shadow-sm animate-pulse"
-                                                            >
-                                                                Thanh toán phí
-                                                            </button>
-                                                        )}
-                                                        {proj.status !== 'CLOSED' && proj.status !== 'PENDING_PAYMENT' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleCloseProject(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Dừng tuyển
-                                                            </button>
-                                                        )}
-                                                        {proj.status === 'PUBLISHED' && proj.proposalCount > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleViewProposals(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Xem báo giá ({proj.proposalCount})
-                                                            </button>
-                                                        )}
-                                                        {proj.status === 'IN_PROGRESS' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleManageProgress(proj.projectId)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-700 transition-all text-[11px] font-bold shadow-sm"
-                                                            >
-                                                                Quản lý tiến độ
-                                                            </button>
-                                                        )}
-                                                        {proj.status !== 'IN_PROGRESS' && proj.status !== 'PENDING_PAYMENT' && (
-                                                            <>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setEditingProject(proj)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-[11px] font-bold shadow-sm"
-                                                                >
-                                                                    Sửa
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleDeleteProject(proj.projectId)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all text-[11px] font-bold shadow-sm"
-                                                                >
-                                                                    Xóa
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>);
-                                            })}
-                                        </div>
-
-                                        {/* Pagination Controls */}
-                                        {totalPages > 1 && (
-                                            <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6 flex-wrap gap-4">
-                                                <span className="text-xs text-slate-500 font-medium">
-                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{(currentPage - 1) * PAGE_SIZE + 1}</span> đến{' '}
-                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, projects.length)}</span> trong tổng số{' '}
-                                                    <span className="font-extrabold text-slate-800">{projects.length}</span> tin tuyển dụng
-                                                </span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                                        disabled={currentPage === 1}
-                                                        className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
-                                                        title="Trang trước"
-                                                    >
-                                                        <ChevronLeft className="w-4 h-4" />
-                                                    </button>
-                                                    
-                                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                                                        <button
-                                                            key={p}
-                                                            type="button"
-                                                            onClick={() => setCurrentPage(p)}
-                                                            className={`w-9 h-9 inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all duration-200 ${
-                                                                currentPage === p
-                                                                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/10 border border-cyan-600'
-                                                                    : 'border border-slate-200 text-slate-650 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30'
-                                                            }`}
-                                                        >
-                                                            {p}
-                                                        </button>
-                                                    ))}
-                                                    
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                        disabled={currentPage === totalPages}
-                                                        className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
-                                                        title="Trang sau"
-                                                    >
-                                                        <ChevronRight className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>)}
+                        </form>
+                    )}
                 </section>
             </div>
         </main>
@@ -1021,37 +857,42 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     {/* Budget fields */}
                     {editForm.projectType === 'FIXED' ? (<label className="block">
                                     <span
-                                        className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
+                                        className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
                         <input
                             type="number"
+                            required
                             value={editForm.budgetFixed}
                             onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
-                            placeholder="Để trống nếu tự thỏa thuận"
+                            placeholder="VD: 5000000 (Bắt buộc nhập)"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                         />
                     </label>) : (<div className="grid grid-cols-2 gap-4">
                         <label className="block">
                                         <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
+                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
                             <input
                                 type="number"
+                                required
                                 value={editForm.budgetMin}
                                 onChange={(e) => setEditForm(prev => ({
                                     ...prev, budgetMin: e.target.value
                                 }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                placeholder="VD: 2000000 (Bắt buộc)"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
                         <label className="block">
                                         <span
-                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND)</span>
+                                            className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND) *</span>
                             <input
                                 type="number"
+                                required
                                 value={editForm.budgetMax}
                                 onChange={(e) => setEditForm(prev => ({
                                     ...prev, budgetMax: e.target.value
                                 }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                placeholder="VD: 10000000 (Bắt buộc)"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
                     </div>)}
@@ -1261,14 +1102,16 @@ function TextInput({label, value, onChange, placeholder, icon, required}) {
         {label}{required ? ' *' : ''}
       </span>
         <div className="relative">
-            {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
+            {icon && <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
             <input
                 type="text"
                 required={required}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                className={`w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
+                    icon ? 'pl-10' : 'pl-3'
+                }`}
             />
         </div>
     </label>);

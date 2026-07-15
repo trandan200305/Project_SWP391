@@ -26,6 +26,18 @@ export const contractApi = {
     return api.post(`/contracts/${contractId}/complete?employerId=${employerId}`);
   },
 
+  getReviewsForContract: (contractId) => {
+    return api.get(`/reviews/contract/${contractId}`);
+  },
+
+  submitEmployerReview: (contractId, employerId, reviewData) => {
+    return api.post(`/reviews/contract/${contractId}/employer?employerId=${employerId}`, reviewData);
+  },
+
+  submitFreelancerReview: (contractId, freelancerId, reviewData) => {
+    return api.post(`/reviews/contract/${contractId}/freelancer?freelancerId=${freelancerId}`, reviewData);
+  },
+
   // Freelancer nộp kết quả công việc/sản phẩm cho một mốc
   submitDeliverable: (milestoneId, freelancerId, submitData) => {
     return api.post(`/deliverables/milestones/${milestoneId}?freelancerId=${freelancerId}`, submitData);

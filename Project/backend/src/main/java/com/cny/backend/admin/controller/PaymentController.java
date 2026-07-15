@@ -9,6 +9,12 @@ import com.cny.backend.admin.service.VNPayService;
 import com.cny.backend.project.entity.Project;
 import com.cny.backend.project.repository.ProjectRepository;
 import com.cny.backend.project.service.ProjectService;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.admin.entity.ServicePackageConfig;
+import com.cny.backend.admin.repository.ServicePackageConfigRepository;
+import com.cny.backend.project.entity.JobCategory;
+import com.cny.backend.project.repository.JobCategoryRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,42 +50,74 @@ public class PaymentController {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private EmployerRepository employerRepository;
+
+    @Autowired
+    private ServicePackageConfigRepository servicePackageConfigRepository;
+
+    @Autowired
+    private JobCategoryRepository jobCategoryRepository;
+
+
+
     @PostMapping("/create-url")
-    public ResponseEntity<?> createPaymentUrl(@RequestParam Integer projectId, HttpServletRequest request) {
+    public ResponseEntity<?> createPaymentUrl(
+            @RequestParam(required = false) Integer projectId,
+            @RequestParam(required = false) String packageType,
+            HttpServletRequest request) {
         try {
-            Project project = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+            Project project = null;
+            if (projectId != null) {
+                project = projectRepository.findById(projectId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+            }
 
-            // Calculate posting fee based on platform fee percentage configuration
-            double feePercent = adminService.getFeeConfig().getFee();
-            BigDecimal budget = project.getBudgetFixed();
-            if (budget == null) {
-                if (project.getBudgetMin() != null && project.getBudgetMax() != null) {
-                    budget = project.getBudgetMin().add(project.getBudgetMax()).divide(new BigDecimal("2"));
+            Employer client = employerRepository.findAll().stream().findFirst().orElseGet(() -> {
+                Employer dummyEmp = Employer.builder()
+                        .email("employer_test@lancerpro.com")
+                        .passwordHash("hashed")
+                        .displayName("Employer Test")
+                        .fullName("Employer Test")
+                        .status("ACTIVE")
+                        .isVerified(true)
+                        .isDeleted(false)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                return employerRepository.save(dummyEmp);
+            });
+
+            double price = 0.0;
+            if (project != null && project.getServiceFee() != null) {
+                price = project.getServiceFee();
+            } else if (packageType != null) {
+                Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
+                if (configOpt.isPresent()) {
+                    price = configOpt.get().getPrice();
                 } else {
-                    budget = new BigDecimal("500000"); // fallback 500k VND
+                    throw new IllegalArgumentException("Không tìm thấy cấu hình giá cho gói dịch vụ: " + packageType);
                 }
-            }
-            BigDecimal feeAmount = budget.multiply(BigDecimal.valueOf(feePercent)).divide(BigDecimal.valueOf(100));
-            // Ensure minimum fee of 50,000 VND
-            if (feeAmount.compareTo(new BigDecimal("50000")) < 0) {
-                feeAmount = new BigDecimal("50000");
+            } else {
+                throw new IllegalArgumentException("Vui lòng cung cấp projectId hoặc packageType");
             }
 
-            // Create unique transaction reference
+            BigDecimal feeAmount = BigDecimal.valueOf(price);
+
+            // create unique transaction reference
             String txnRef = "CNY_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
 
             PaymentTransaction txn = PaymentTransaction.builder()
                     .txnRef(txnRef)
-                    .employerId(project.getClient().getEmployerId())
-                    .projectId(projectId)
+                    .employerId(project != null ? project.getClient().getEmployerId() : client.getEmployerId())
+                    .projectId(project != null ? project.getProjectId() : null)
+                    .packageType(packageType != null ? packageType.toUpperCase() : null)
                     .amount(feeAmount)
                     .status("PENDING")
                     .build();
 
             paymentTransactionRepository.save(txn);
 
-            // Get Client IP Address
+            // get client ip address
             String ipAddress = request.getHeader("X-Forwarded-For");
             if (ipAddress == null) {
                 ipAddress = request.getRemoteAddr();
@@ -151,8 +189,19 @@ public class PaymentController {
                 txn.setVnpTransactionNo(transactionNo);
                 paymentTransactionRepository.save(txn);
                 
-                // Publish project and log platform fee
-                projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+                // Publish project and log platform fee if this was a project payment
+                if (txn.getProjectId() != null) {
+                    projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+                } else if (txn.getPackageType() != null) {
+                    employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                        servicePackageConfigRepository.findByPackageType(txn.getPackageType().toUpperCase()).ifPresent(config -> {
+                            employer.setCurrentPackageType(txn.getPackageType().toUpperCase());
+                            employer.setPackagePostQuota(config.getPostLimit());
+                            employer.setPackageExpiryDate(LocalDateTime.now().plusDays(config.getDurationDays()));
+                            employerRepository.save(employer);
+                        });
+                    });
+                }
             } else {
                 txn.setStatus("FAILED");
                 txn.setVnpTransactionNo(transactionNo);
@@ -191,7 +240,18 @@ public class PaymentController {
                             txn.setStatus("SUCCESS");
                             txn.setVnpTransactionNo(allParams.get("vnp_TransactionNo"));
                             paymentTransactionRepository.save(txn);
-                            projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+                            if (txn.getProjectId() != null) {
+                                projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+                            } else if (txn.getPackageType() != null) {
+                                employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                                    servicePackageConfigRepository.findByPackageType(txn.getPackageType().toUpperCase()).ifPresent(config -> {
+                                        employer.setCurrentPackageType(txn.getPackageType().toUpperCase());
+                                        employer.setPackagePostQuota(config.getPostLimit());
+                                        employer.setPackageExpiryDate(LocalDateTime.now().plusDays(config.getDurationDays()));
+                                        employerRepository.save(employer);
+                                    });
+                                });
+                            }
                         }
                     } else {
                         status = "failed";

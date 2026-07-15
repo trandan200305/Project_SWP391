@@ -16,8 +16,29 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     budgetMax: '',
     deadline: '',
     description: '',
-    workForm: 'ONLINE',
+    servicePackage: 'MEDIUM',
+    workForm: 'ONLINE'
   });
+
+  const [servicePackages, setServicePackages] = useState([
+    { packageType: 'MEDIUM', price: 100000 },
+    { packageType: 'REGULAR', price: 200000 },
+    { packageType: 'PREMIUM', price: 500000 }
+  ]);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/admin/service-packages')
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setServicePackages(data);
+        }
+      })
+      .catch(err => console.log('Sử dụng bảng giá gói dịch vụ mặc định'));
+  }, []);
 
   useEffect(() => {
     if (!user || user.role !== 'EMPLOYER') {
@@ -51,30 +72,39 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
       const maxStr = newProject.budgetMax ? String(newProject.budgetMax).trim() : '';
-      if (minStr || maxStr) {
-        if (!minStr || !maxStr) {
-          setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.' });
-          return;
-        }
-        const min = parseFloat(minStr);
-        const max = parseFloat(maxStr);
-        if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
-          setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
-          return;
-        }
-        if (min > max) {
-          setNotice({ type: 'error', message: 'Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.' });
-          return;
-        }
+      
+      if (!minStr || !maxStr) {
+        setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ cả ngân sách tối thiểu và tối đa.' });
+        return;
+      }
+      const min = parseFloat(minStr);
+      const max = parseFloat(maxStr);
+      if (min < 0 || max < 0) {
+        setNotice({ type: 'error', message: 'Ngân sách nhập không được nhỏ hơn 0.' });
+        return;
+      }
+      if (isNaN(min) || isNaN(max) || min === 0 || max === 0) {
+        setNotice({ type: 'error', message: 'Ngân sách tối thiểu và tối đa phải là số dương lớn hơn 0.' });
+        return;
+      }
+      if (min > max) {
+        setNotice({ type: 'error', message: 'Ngân sách tối thiểu không được lớn hơn ngân sách tối đa.' });
+        return;
       }
     } else if (newProject.projectType === 'FIXED') {
       const fixedStr = newProject.budgetFixed ? String(newProject.budgetFixed).trim() : '';
-      if (fixedStr) {
-        const fixed = parseFloat(fixedStr);
-        if (isNaN(fixed) || fixed <= 0) {
-          setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
-          return;
-        }
+      if (!fixedStr) {
+        setNotice({ type: 'error', message: 'Vui lòng nhập ngân sách trọn gói.' });
+        return;
+      }
+      const fixed = parseFloat(fixedStr);
+      if (fixed < 0) {
+        setNotice({ type: 'error', message: 'Ngân sách nhập không được nhỏ hơn 0.' });
+        return;
+      }
+      if (isNaN(fixed) || fixed === 0) {
+        setNotice({ type: 'error', message: 'Ngân sách cố định phải là số dương lớn hơn 0.' });
+        return;
       }
     }
 
@@ -91,6 +121,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       budgetMin: newProject.projectType === 'RANGE' && newProject.budgetMin ? parseFloat(newProject.budgetMin) : null,
       budgetMax: newProject.projectType === 'RANGE' && newProject.budgetMax ? parseFloat(newProject.budgetMax) : null,
       deadline: newProject.deadline || null,
+      servicePackage: newProject.servicePackage,
       workForm: newProject.workForm
     };
 
@@ -134,7 +165,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   bankName: payData.bankName,
                   bankAccountNo: payData.bankAccountNo,
                   bankAccountName: payData.bankAccountName,
-                  projectTitle: savedProject.title
+                  projectTitle: savedProject.title,
+                  servicePackage: savedProject.servicePackage
                 });
               } else {
                 window.location.href = payData.paymentUrl;
@@ -150,7 +182,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             message: `Dự án đã được lưu ở trạng thái chờ thanh toán, nhưng lỗi khởi tạo VNPay: ${payErr.message}. Vui lòng thanh toán sau trong quản lý dự án.` 
           });
           setTimeout(() => {
-            if (onNavigate) onNavigate('your_jobs');
+            if (onNavigate) onNavigate('employer_jobs');
           }, 4000);
           return;
         }
@@ -158,7 +190,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
       setNotice({ 
         type: 'success', 
-        message: 'Đăng tin tuyển dụng thành công! Dự án của bạn đã được xuất bản trực tiếp lên trang chủ.' 
+        message: 'Đăng dự án thành công! Dự án của bạn đã được xuất bản trực tiếp lên trang chủ.' 
       });
       
       setNewProject({
@@ -170,14 +202,15 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         budgetMax: '',
         deadline: '',
         description: '',
+        servicePackage: 'MEDIUM',
         workForm: 'ONLINE'
       });
       
       setTimeout(() => {
-        if (onNavigate) onNavigate('home');
+        if (onNavigate) onNavigate('employer_jobs');
       }, 2000);
     } catch (err) {
-      setNotice({ type: 'error', message: err.message || 'Lỗi khi đăng tin tuyển dụng.' });
+      setNotice({ type: 'error', message: err.message || 'Lỗi khi đăng dự án.' });
     } finally {
       setPostingProject(false);
     }
@@ -223,10 +256,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           <div className="border-b border-slate-100 pb-6 mb-8">
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
               <Briefcase className="w-8 h-8 text-secondary" />
-              Đăng tin tuyển dụng mới
+              Đăng dự án mới
             </h1>
             <p className="text-sm text-slate-500 mt-2">
-              Tin đăng của bạn sẽ được hiển thị công khai trên Trang chủ ngay sau khi nhấn đăng.
+              Dự án của bạn sẽ được hiển thị công khai trên Trang chủ ngay sau khi nhấn đăng.
             </p>
           </div>
 
@@ -305,26 +338,28 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             
             {newProject.projectType === 'FIXED' ? (
               <label className="block">
-                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND)</span>
+                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
                 <input
                   type="number"
                   min="0"
+                  required
                   value={newProject.budgetFixed}
                   onChange={(e) => setNewProject(prev => ({ ...prev, budgetFixed: e.target.value }))}
-                  placeholder="VD: 5000000 (Để trống nếu muốn tự thỏa thuận)"
+                  placeholder="VD: 5000000 (Bắt buộc nhập)"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                 />
               </label>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
-                  <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND)</span>
+                  <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
                   <input
                     type="number"
                     min="0"
+                    required
                     value={newProject.budgetMin}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMin: e.target.value }))}
-                    placeholder="VD: 2000000"
+                    placeholder="VD: 2000000 (Bắt buộc)"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>
@@ -333,9 +368,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                   <input
                     type="number"
                     min="0"
+                    required
                     value={newProject.budgetMax}
                     onChange={(e) => setNewProject(prev => ({ ...prev, budgetMax: e.target.value }))}
-                    placeholder="VD: 10000000"
+                    placeholder="VD: 10000000 (Bắt buộc)"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-secondary focus:bg-white focus:ring-4 focus:ring-secondary/10"
                   />
                 </label>
@@ -390,6 +426,80 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
             </label>
 
             
+            {/* Service Package Selection */}
+            <div className="border-t border-slate-100 pt-6 mt-6">
+              <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-505" /> Chọn gói dịch vụ dự án *
+              </span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {servicePackages.map((pkg) => {
+                  const type = pkg.packageType;
+                  const price = pkg.price;
+                  const durationDays = pkg.durationDays || 30;
+                  const postLimit = pkg.postLimit || 10;
+                  
+                  let label = 'Trung bình';
+                  let days = `${durationDays} ngày`;
+                  let desc = `Hiển thị tối đa ${durationDays} ngày. Phù hợp dự án quy mô nhỏ.`;
+                  let badge = null;
+                  let borderStyle = 'border-slate-200 hover:border-slate-300';
+                  let activeStyle = 'border-secondary bg-secondary-light/10 ring-2 ring-secondary/15';
+                  let iconBg = 'bg-slate-100 text-slate-600';
+                  
+                  if (type === 'REGULAR') {
+                    label = 'Thường';
+                    desc = `Hiển thị tối đa ${durationDays} ngày, tiếp cận lượng lớn Freelancer.`;
+                    iconBg = 'bg-indigo-50 text-indigo-600';
+                  } else if (type === 'PREMIUM') {
+                    label = 'Cao cấp';
+                    desc = `Hiển thị tối đa ${durationDays} ngày. Đóng dấu nổi bật thu hút Freelancer chuyên nghiệp nhất.`;
+                    badge = 'Phổ biến nhất';
+                    iconBg = 'bg-amber-50 text-amber-600';
+                  }
+
+                  const isActive = newProject.servicePackage === type;
+
+                  return (
+                    <div
+                      key={type}
+                      onClick={() => setNewProject(prev => ({ ...prev, servicePackage: type }))}
+                      className={`relative p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                        isActive ? activeStyle : borderStyle
+                      }`}
+                    >
+                      {badge && (
+                        <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                          {badge}
+                        </span>
+                      )}
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className={`p-2 rounded-xl ${iconBg}`}>
+                            <Briefcase className="w-4 h-4" />
+                          </div>
+                          <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">
+                            Hạn {days}
+                          </span>
+                        </div>
+                        
+                        <h4 className="text-sm font-extrabold text-slate-900 mb-1">{label}</h4>
+                        <p className="text-[11px] font-medium text-slate-500 leading-relaxed mb-4">{desc}</p>
+                      </div>
+
+                      <div className="border-t border-slate-100/70 pt-3 mt-auto">
+                        <span className="text-xs font-semibold text-slate-400 block mb-0.5">Giá gói</span>
+                        <span className="text-base font-extrabold text-slate-900">
+                          {price.toLocaleString('vi-VN')} <span className="text-xs font-bold text-slate-500">VND</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả công việc & Yêu cầu chi tiết *</span>
               <textarea

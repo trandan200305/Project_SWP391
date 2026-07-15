@@ -40,6 +40,10 @@ public class VnpayConfig {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "session_timeout")
+    @Builder.Default
+    private Integer sessionTimeout = 15;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

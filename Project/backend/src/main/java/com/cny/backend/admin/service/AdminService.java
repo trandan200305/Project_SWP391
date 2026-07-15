@@ -128,6 +128,9 @@ public class AdminService {
     private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
 
     @Autowired
+    private com.cny.backend.admin.repository.ServicePackageConfigRepository servicePackageConfigRepository;
+
+    @Autowired
     private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
@@ -184,6 +187,12 @@ public class AdminService {
                 activeDisputes = dashboardRepository.countActiveDisputes();
             } catch(Exception e) {}
 
+            double instantRevenue = 0.0;
+            try {
+                Double ir = paymentTransactionRepository.calculateInstantRevenue();
+                if (ir != null) instantRevenue = ir;
+            } catch(Exception e) {}
+
             return AdminStatsDto.builder()
                     .totalUsers(totalUsers)
                     .activeProjects(activeProjects)
@@ -193,6 +202,7 @@ public class AdminService {
                     .usersGrowthPercent(0.0)
                     .projectsGrowthPercent(0.0)
                     .revenueGrowthPercent(0.0)
+                    .instantRevenue(instantRevenue)
                     .build();
         } catch (Exception e) {
             return AdminStatsDto.builder()
@@ -204,6 +214,7 @@ public class AdminService {
                     .usersGrowthPercent(12.0)
                     .projectsGrowthPercent(5.0)
                     .revenueGrowthPercent(8.2)
+                    .instantRevenue(0.0)
                     .build();
         }
     }
@@ -1249,7 +1260,7 @@ public class AdminService {
             mgr.setPasswordHash(dto.getPassword() != null ? dto.getPassword() : "123456");
             mgr.setDepartment(dept != null ? dept.getName() : "Customer Support");
             mgr.setDepartmentEntity(dept);
-            mgr.setStatus("ACTIVE");
+            mgr.setStatus("PENDING_ACTIVATION");
             mgr.setIsDeleted(false);
             mgr.setUpdatedAt(LocalDateTime.now());
             mgr = managerRepository.save(mgr);
@@ -1261,7 +1272,7 @@ public class AdminService {
                     .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Manager")
                     .fullName(dto.getFullName())
                     .phone(dto.getPhone())
-                    .status("ACTIVE")
+                    .status("PENDING_ACTIVATION")
                     .department(dept != null ? dept.getName() : "Customer Support")
                     .departmentEntity(dept)
                     .managedByAdmin(adminId)
@@ -1348,7 +1359,7 @@ public class AdminService {
             stf.setSpecialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General");
             stf.setManager(mgr);
             stf.setDepartmentEntity(dept);
-            stf.setStatus("ACTIVE");
+            stf.setStatus("PENDING_ACTIVATION");
             stf.setIsDeleted(false);
             stf.setUpdatedAt(LocalDateTime.now());
             stf = staffRepository.save(stf);
@@ -1360,7 +1371,7 @@ public class AdminService {
                     .displayName(dto.getDisplayName() != null ? dto.getDisplayName() : "Staff")
                     .fullName(dto.getFullName())
                     .phone(dto.getPhone())
-                    .status("ACTIVE")
+                    .status("PENDING_ACTIVATION")
                     .specialization(dto.getSpecialization() != null ? dto.getSpecialization() : "General")
                     .manager(mgr)
                     .departmentEntity(dept)
@@ -1564,10 +1575,12 @@ public class AdminService {
         }
 
         Optional<com.cny.backend.admin.entity.StaffInvitation> invOpt = staffInvitationRepository.findByEmail(email);
+        boolean isAlreadyAccepted = false;
         if (invOpt.isPresent()) {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
-
-            if ("PENDING".equalsIgnoreCase(inv.getStatus()) && inv.getExpiresAt().isAfter(LocalDateTime.now())) {
+            if ("ACCEPTED".equalsIgnoreCase(inv.getStatus())) {
+                isAlreadyAccepted = true;
+            } else if ("PENDING".equalsIgnoreCase(inv.getStatus()) && inv.getExpiresAt().isAfter(LocalDateTime.now())) {
                 response.put("success", false);
                 response.put("message", "Liên kết mời hiện tại vẫn còn hiệu lực (chưa hết 24 giờ). Không được phép cấp lại liên kết mới.");
                 return response;
@@ -1575,17 +1588,36 @@ public class AdminService {
         }
 
         String tempPassword = generateRandomPassword(10);
+        String hashedPassword = passwordEncoder.encode(tempPassword);
 
-        String status = "ACTIVE";
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                mgr.setPasswordHash(hashedPassword);
+                managerRepository.save(mgr);
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                stf.setPasswordHash(hashedPassword);
+                staffRepository.save(stf);
+            }
+        }
+
+        String status = "PENDING";
         if (invOpt.isPresent()) {
             com.cny.backend.admin.entity.StaffInvitation inv = invOpt.get();
             inv.setTempPassword(tempPassword);
-            if ("PENDING".equalsIgnoreCase(inv.getStatus()) || "EXPIRED".equalsIgnoreCase(inv.getStatus()) || inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+            if (!isAlreadyAccepted) {
                 inv.setStatus("PENDING");
                 inv.setExpiresAt(LocalDateTime.now().plusHours(24));
+                status = "PENDING";
+            } else {
+                status = "ACCEPTED";
             }
             staffInvitationRepository.save(inv);
-            status = inv.getStatus();
         } else {
             com.cny.backend.admin.entity.StaffInvitation inv = com.cny.backend.admin.entity.StaffInvitation.builder()
                     .email(email)
@@ -1598,30 +1630,9 @@ public class AdminService {
             status = "PENDING";
         }
 
-        String rawUserPassword = null;
-        if ("PENDING".equalsIgnoreCase(status)) {
-            rawUserPassword = generateRandomPassword(10);
-            String hashedPassword = passwordEncoder.encode(rawUserPassword);
-            if ("MANAGER".equalsIgnoreCase(role)) {
-                Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
-                if (mgrOpt.isPresent()) {
-                    com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
-                    mgr.setPasswordHash(hashedPassword);
-                    managerRepository.save(mgr);
-                }
-            } else if ("STAFF".equalsIgnoreCase(role)) {
-                Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
-                if (stfOpt.isPresent()) {
-                    com.cny.backend.admin.entity.Staff stf = stfOpt.get();
-                    stf.setPasswordHash(hashedPassword);
-                    staffRepository.save(stf);
-                }
-            }
-        }
-
         String setupLink = "http://localhost:3000";
 
-        if ("PENDING".equalsIgnoreCase(status)) {
+        if (!isAlreadyAccepted) {
             String roleLabel = "MANAGER".equalsIgnoreCase(role) ? "Manager (Quản Lý)" : "Staff (Nhân Viên)";
             java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             String currentDateTimeStr = java.time.LocalDateTime.now().format(dtf);
@@ -1662,7 +1673,7 @@ public class AdminService {
                     + "    </p>"
                     + "    <div style=\"background-color: #f1f5f9; padding: 15px; text-align: center; border-radius: 6px; margin-bottom: 25px;\">"
                     + "      <p style=\"margin: 0; font-size: 15px; color: #475569;\">Mật khẩu đăng nhập tạm thời:</p>"
-                    + "      <div style=\"font-family: monospace; font-size: 24px; font-weight: bold; color: #ef4444; letter-spacing: 2px; margin-top: 10px;\">" + rawUserPassword + "</div>"
+                    + "      <div style=\"font-family: monospace; font-size: 24px; font-weight: bold; color: #ef4444; letter-spacing: 2px; margin-top: 10px;\">" + tempPassword + "</div>"
                     + "    </div>"
                     + "    <div style=\"text-align: center; margin: 30px 0;\">"
                     + "      <a href=\"" + setupLink + "\" style=\"display: inline-block; background-color: #ef4444; color: #ffffff; font-weight: bold; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; letter-spacing: 0.5px; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);\">ĐĂNG NHẬP HỆ THỐNG</a>"
@@ -1686,7 +1697,7 @@ public class AdminService {
             try {
                 emailService.sendHtmlEmailAsync(email, "[LancerPro] Cấp lại liên kết kích hoạt nhân sự mới", emailHtml);
             } catch (Exception e) {
-
+                // Ignore email failure
             }
         }
 
@@ -1703,6 +1714,40 @@ public class AdminService {
             response.put("message", "Đã cấp lại mật khẩu cho Admin quản lý (tài khoản đã kích hoạt, không gửi email).");
         }
 
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> changeUserPasswordDirectly(String role, int id, String newPassword) {
+        Map<String, Object> response = new HashMap<>();
+        String email = null;
+
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+            if (mgrOpt.isPresent()) {
+                com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                mgr.setPasswordHash(passwordEncoder.encode(newPassword));
+                managerRepository.save(mgr);
+                email = mgr.getEmail();
+            }
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            Optional<com.cny.backend.admin.entity.Staff> stfOpt = staffRepository.findById(id);
+            if (stfOpt.isPresent()) {
+                com.cny.backend.admin.entity.Staff stf = stfOpt.get();
+                stf.setPasswordHash(passwordEncoder.encode(newPassword));
+                staffRepository.save(stf);
+                email = stf.getEmail();
+            }
+        }
+
+        if (email == null) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng!");
+            return response;
+        }
+
+        response.put("success", true);
+        response.put("message", "Đã cập nhật mật khẩu mới thành công!");
         return response;
     }
 
@@ -1834,7 +1879,7 @@ public class AdminService {
             if (existingManager.isPresent()) {
                 managerPlaceholder = existingManager.get();
                 managerPlaceholder.setPasswordHash(hashedPassword);
-                managerPlaceholder.setStatus("ACTIVE");
+                managerPlaceholder.setStatus("PENDING_ACTIVATION");
                 managerPlaceholder.setDepartment(dept != null ? dept.getName() : "Customer Support");
                 managerPlaceholder.setDepartmentEntity(dept);
                 managerPlaceholder.setManagedByAdmin(adminId);
@@ -1852,7 +1897,7 @@ public class AdminService {
                         .fullName(fullName)
                         .phone(phone)
                         .citizenId(citizenId)
-                        .status("ACTIVE")
+                        .status("PENDING_ACTIVATION")
                         .department(dept != null ? dept.getName() : "Customer Support")
                         .departmentEntity(dept)
                         .managedByAdmin(adminId)
@@ -1875,7 +1920,7 @@ public class AdminService {
             if (existingStaff.isPresent()) {
                 stf = existingStaff.get();
                 stf.setPasswordHash(hashedPassword);
-                stf.setStatus("ACTIVE");
+                stf.setStatus("PENDING_ACTIVATION");
                 stf.setSpecialization("General");
                 stf.setManager(mgr);
                 stf.setDepartmentEntity(dept);
@@ -1894,7 +1939,7 @@ public class AdminService {
                         .fullName(fullName)
                         .phone(phone)
                         .citizenId(citizenId)
-                        .status("ACTIVE")
+                        .status("PENDING_ACTIVATION")
                         .specialization("General")
                         .manager(mgr)
                         .departmentEntity(dept)
@@ -2406,6 +2451,20 @@ public class AdminService {
             writeAuditLog(validAdminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
                 "Duyệt cập nhật hồ sơ của '" + employer.getDisplayName() + "' thành công.");
             
+            // Notify EMPLOYER
+            try {
+                notificationService.createNotification(
+                    (long) employer.getEmployerId(),
+                    "EMPLOYER",
+                    "Yêu cầu cập nhật hồ sơ được phê duyệt",
+                    "Yêu cầu cập nhật thông tin hồ sơ doanh nghiệp của bạn đã được phê duyệt.",
+                    "SUCCESS",
+                    "PROFILE-EMP-" + req.getRequestId()
+                );
+            } catch (Exception ex) {
+                System.err.println("Failed to send approval notification to employer: " + ex.getMessage());
+            }
+
             response.put("success", true);
             response.put("message", "Đã phê duyệt và cập nhật hồ sơ Employer thành công.");
         } else {
@@ -2414,6 +2473,20 @@ public class AdminService {
             writeAuditLog(validAdminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
                 "Từ chối cập nhật hồ sơ của '" + req.getEmployer().getDisplayName() + "' | Lý do: " + reason);
             
+            // Notify EMPLOYER
+            try {
+                notificationService.createNotification(
+                    (long) req.getEmployer().getEmployerId(),
+                    "EMPLOYER",
+                    "Yêu cầu cập nhật hồ sơ bị từ chối",
+                    "Yêu cầu cập nhật thông tin hồ sơ doanh nghiệp của bạn đã bị từ chối. Lý do: " + reason,
+                    "WARNING",
+                    "PROFILE-EMP-" + req.getRequestId()
+                );
+            } catch (Exception ex) {
+                System.err.println("Failed to send rejection notification to employer: " + ex.getMessage());
+            }
+
             response.put("success", true);
             response.put("message", "Đã từ chối yêu cầu thay đổi thông tin.");
         }
@@ -2511,7 +2584,7 @@ public class AdminService {
     }
 
     public VnpayConfig getVnpayConfig() {
-        VnpayConfig config = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc().orElse(
+        VnpayConfig config = vnpayConfigRepository.findFirstByOrderByIdDesc().orElse(
             VnpayConfig.builder()
                 .tmnCode("DEMO2019")
                 .hashSecret("9A7F11E55E1C3806E0528B65355AA05C")
@@ -2532,17 +2605,44 @@ public class AdminService {
         if (config.getBankAccountName() == null) {
             config.setBankAccountName("NGUYEN VAN THANH");
         }
+        if (config.getSessionTimeout() == null) {
+            config.setSessionTimeout(15);
+        }
         return config;
     }
 
     @Transactional
     public VnpayConfig saveVnpayConfig(VnpayConfig config, int adminId) {
+        // If the incoming hashSecret is masked or empty, retain the old hash secret
+        if (config.getHashSecret() == null || config.getHashSecret().trim().isEmpty() || config.getHashSecret().equals("********")) {
+            VnpayConfig currentConfig = getVnpayConfig();
+            config.setHashSecret(currentConfig.getHashSecret());
+        }
+        
+        // Retain tmnCode if masked or empty
+        if (config.getTmnCode() == null || config.getTmnCode().trim().isEmpty() || config.getTmnCode().equals("********")) {
+            VnpayConfig currentConfig = getVnpayConfig();
+            config.setTmnCode(currentConfig.getTmnCode());
+        }
+
         vnpayConfigRepository.findAll().forEach(c -> {
             c.setIsActive(false);
             vnpayConfigRepository.save(c);
         });
         
-        config.setIsActive(true);
+        config.setId(null);
+        if (config.getIsActive() == null) {
+            config.setIsActive(true);
+        }
+        if (config.getVnpUrl() == null || config.getVnpUrl().trim().isEmpty()) {
+            config.setVnpUrl(getVnpayConfig().getVnpUrl());
+        }
+        if (config.getReturnUrl() == null || config.getReturnUrl().trim().isEmpty()) {
+            config.setReturnUrl(getVnpayConfig().getReturnUrl());
+        }
+        if (config.getSessionTimeout() == null) {
+            config.setSessionTimeout(15);
+        }
         VnpayConfig saved = vnpayConfigRepository.save(config);
         
         dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "UPDATE_VNPAY_CONFIG", "FINANCE", 
@@ -2551,8 +2651,59 @@ public class AdminService {
         return saved;
     }
 
-    public List<PaymentTransaction> getVnpayTransactions() {
-        return paymentTransactionRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+    public Map<String, Object> checkGatewayStatus() {
+        Map<String, Object> status = new HashMap<>();
+        
+        // VNPay Health Check
+        Map<String, Object> vnpayStatus = new HashMap<>();
+        long startVnpay = System.currentTimeMillis();
+        try {
+            VnpayConfig config = getVnpayConfig();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate(factory);
+            org.springframework.http.ResponseEntity<String> response = restTemplate.getForEntity(config.getVnpUrl(), String.class);
+            if (response.getStatusCode().is2xxSuccessful() || response.getStatusCode().is3xxRedirection()) {
+                vnpayStatus.put("status", "UP");
+            } else {
+                vnpayStatus.put("status", "DOWN");
+            }
+        } catch (Exception e) {
+            vnpayStatus.put("status", "DOWN");
+            vnpayStatus.put("error", e.getMessage());
+        }
+        vnpayStatus.put("responseTimeMs", System.currentTimeMillis() - startVnpay);
+        status.put("vnpay", vnpayStatus);
+
+        // PayOS Health Check
+        Map<String, Object> payosStatus = new HashMap<>();
+        long startPayos = System.currentTimeMillis();
+        try {
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate(factory);
+            try {
+                restTemplate.getForEntity("https://api-merchant.payos.vn", String.class);
+                payosStatus.put("status", "UP");
+            } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+                // If it's 404 or 401, the server is still UP
+                payosStatus.put("status", "UP");
+            }
+        } catch (Exception e) {
+            payosStatus.put("status", "DOWN");
+            payosStatus.put("error", e.getMessage());
+        }
+        payosStatus.put("responseTimeMs", System.currentTimeMillis() - startPayos);
+        status.put("payos", payosStatus);
+
+        return status;
+    }
+
+    public org.springframework.data.domain.Page<PaymentTransaction> getVnpayTransactions(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+        return paymentTransactionRepository.findAll(pageable);
     }
 
     @Transactional
@@ -2618,6 +2769,53 @@ public class AdminService {
             response.put("message", "Không tìm thấy dịch vụ.");
         }
         return response;
+    }
+
+
+    public List<com.cny.backend.admin.entity.ServicePackageConfig> getServicePackageConfigs() {
+        List<com.cny.backend.admin.entity.ServicePackageConfig> configs = servicePackageConfigRepository.findAll();
+        if (configs.size() < 3) {
+            String[] packages = {"MEDIUM", "REGULAR", "PREMIUM"};
+            double[] defaultPrices = {100000.0, 200000.0, 500000.0};
+            for (int i = 0; i < packages.length; i++) {
+                final String pkg = packages[i];
+                final double price = defaultPrices[i];
+                boolean exists = configs.stream().anyMatch(c -> pkg.equalsIgnoreCase(c.getPackageType()));
+                if (!exists) {
+                    com.cny.backend.admin.entity.ServicePackageConfig newConfig = com.cny.backend.admin.entity.ServicePackageConfig.builder()
+                        .packageType(pkg)
+                        .price(price)
+                        .build();
+                    servicePackageConfigRepository.save(newConfig);
+                }
+            }
+            configs = servicePackageConfigRepository.findAll();
+        }
+        return configs;
+    }
+
+    @Transactional
+    public List<com.cny.backend.admin.entity.ServicePackageConfig> updateServicePackages(List<com.cny.backend.admin.entity.ServicePackageConfig> packages, int adminId) {
+        for (com.cny.backend.admin.entity.ServicePackageConfig pkg : packages) {
+            String pkgType = pkg.getPackageType() != null ? pkg.getPackageType().toUpperCase() : "";
+            if ("MEDIUM".equals(pkgType) || "REGULAR".equals(pkgType) || "PREMIUM".equals(pkgType)) {
+                com.cny.backend.admin.entity.ServicePackageConfig config = servicePackageConfigRepository.findByPackageType(pkgType)
+                    .orElseGet(() -> com.cny.backend.admin.entity.ServicePackageConfig.builder().packageType(pkgType).build());
+                
+                    config.setPrice(pkg.getPrice());
+                
+                if (pkg.getPostLimit() != null && pkg.getPostLimit() > 0) {
+                    config.setPostLimit(pkg.getPostLimit());
+                }
+                if (pkg.getDurationDays() != null && pkg.getDurationDays() > 0) {
+                    config.setDurationDays(pkg.getDurationDays());
+                }
+                
+                servicePackageConfigRepository.save(config);
+            }
+        }
+        writeAuditLog(adminId, "UPDATE_PACKAGE_CONFIG", "FINANCE", "Cập nhật cấu hình và giá các gói dịch vụ tin đăng");
+        return servicePackageConfigRepository.findAll();
     }
 
     public List<Object> getBugReports() {
@@ -2845,6 +3043,7 @@ public class AdminService {
             response.put("message", "Không tìm thấy yêu cầu chuyển phòng ban.");
         }
         return response;
+
     }
 }
 

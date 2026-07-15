@@ -22,8 +22,11 @@ public class PaymentTransaction {
     @Column(name = "employer_id", nullable = false)
     private Integer employerId;
 
-    @Column(name = "project_id", nullable = false)
+    @Column(name = "project_id", nullable = true)
     private Integer projectId;
+
+    @Column(name = "package_type", length = 50)
+    private String packageType;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;

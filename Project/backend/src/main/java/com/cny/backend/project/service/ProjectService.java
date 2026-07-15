@@ -56,6 +56,9 @@ public class ProjectService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private ServicePackageConfigRepository servicePackageConfigRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -106,6 +109,47 @@ public class ProjectService {
             }
         }
 
+        String projectStatus = "PUBLISHED";
+        String appliedPackage = "MEDIUM";
+        double serviceFee = 0.0;
+        int durationDays = 7;
+
+        // Check if Employer has an active subscription package with available quota
+        boolean hasActiveSubscription = client.getPackageExpiryDate() != null && client.getPackageExpiryDate().isAfter(LocalDateTime.now());
+        if (hasActiveSubscription && client.getPackagePostQuota() != null && client.getPackagePostQuota() > 0) {
+            // Deduct quota and publish immediately
+            client.setPackagePostQuota(client.getPackagePostQuota() - 1);
+            employerRepository.save(client);
+
+            appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
+            
+            // Get duration from config if possible
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
+            if (configOpt.isPresent()) {
+                durationDays = configOpt.get().getDurationDays();
+            } else {
+                if ("REGULAR".equals(appliedPackage)) durationDays = 15;
+                if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
+            }
+        } else {
+            // Fallback to Pay-per-post logic
+            appliedPackage = dto.getServicePackage() != null ? dto.getServicePackage().toUpperCase() : "MEDIUM";
+            if (!"MEDIUM".equals(appliedPackage) && !"REGULAR".equals(appliedPackage) && !"PREMIUM".equals(appliedPackage)) {
+                appliedPackage = "MEDIUM";
+            }
+            
+            if ("REGULAR".equals(appliedPackage)) {
+                durationDays = 15;
+            } else if ("PREMIUM".equals(appliedPackage)) {
+                durationDays = 30;
+            }
+
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
+            if (configOpt.isPresent()) {
+                durationDays = configOpt.get().getDurationDays();
+            }
+        }
+
         Project project = Project.builder()
                 .client(client)
                 .category(category)
@@ -117,8 +161,10 @@ public class ProjectService {
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
                 .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
-                .postingExpires(LocalDate.now().plusDays(30)) 
-                .status("PENDING") 
+                .postingExpires(LocalDate.now().plusDays(durationDays)) 
+                .status(projectStatus) 
+                .servicePackage(appliedPackage)
+                .serviceFee(serviceFee)
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
@@ -131,9 +177,9 @@ public class ProjectService {
                 notificationService.createNotification(
                     staff.getStaffId().longValue(),
                     "STAFF",
-                    "Dự án mới cần duyệt",
-                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
-                    "TASK",
+                    "Dự án mới đã đăng",
+                    "Dự án '" + savedProject.getTitle() + "' đã được đăng và xuất bản trực tiếp.",
+                    "INFO",
                     savedProject.getProjectId().toString()
                 );
             }
@@ -342,6 +388,7 @@ public class ProjectService {
 
         return ProjectDto.builder()
                 .id(project.getProjectId())
+                .employerId(project.getClient() != null ? project.getClient().getEmployerId() : null)
                 .title(project.getTitle())
                 .isNew(isNew)
                 .employerName(employerName)
@@ -361,6 +408,8 @@ public class ProjectService {
                 .employerJoinDate(employerJoin)
                 .employerJobsPosted(employerJobs)
                 .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
+                .servicePackage(project.getServicePackage())
+                .serviceFee(project.getServiceFee())
                 .build();
     }
 
