@@ -22,20 +22,12 @@ export default function FindJobsPage({ onNavigate, user }) {
   const [activeProjectType, setActiveProjectType] = useState('');
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
-  const [activeSkillId, setActiveSkillId] = useState(null);
+  const [activeSkillIds, setActiveSkillIds] = useState([]);
 
   // Phân trang
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
-
-  // Debug logs
-  console.log("=== FindJobsPage Render ===");
-  console.log("Current Filters State:", { activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillId });
-  console.log("Categories loaded:", categories);
-  console.log("WorkForms loaded:", workForms);
-  console.log("ProjectTypes loaded:", projectTypes);
-  console.log("Skills loaded:", skills);
 
   // Fetch metadata từ Database khi component mount
   useEffect(() => {
@@ -75,7 +67,7 @@ export default function FindJobsPage({ onNavigate, user }) {
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [page, size, activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillId]);
+  }, [page, size, activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillIds]);
 
   const fetchJobs = async (currentPage, currentSize) => {
     setIsLoading(true);
@@ -96,16 +88,13 @@ export default function FindJobsPage({ onNavigate, user }) {
       if (maxSalary) {
         url += `&maxSalary=${maxSalary}`;
       }
-      if (activeSkillId !== null) {
-        url += `&skillId=${activeSkillId}`;
+      if (activeSkillIds && activeSkillIds.length > 0) {
+        url += `&skillIds=${activeSkillIds.join(',')}`;
       }
 
-      console.log("Fetching jobs from URL:", url);
       const res = await fetch(url);
-      console.log("API response status:", res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log("Fetched jobs data:", data);
         setJobs(data.content || []);
         setTotalPages(data.totalPages || 0);
       }
@@ -116,13 +105,24 @@ export default function FindJobsPage({ onNavigate, user }) {
     }
   };
 
+  const handleSkillChange = (skillId) => {
+    setActiveSkillIds(prev => {
+      if (prev.includes(skillId)) {
+        return prev.filter(id => id !== skillId);
+      } else {
+        return [...prev, skillId];
+      }
+    });
+    setPage(0);
+  };
+
   const handleResetFilters = () => {
     setActiveCategory('all');
     setActiveWorkForm('');
     setActiveProjectType('');
     setMinSalary('');
     setMaxSalary('');
-    setActiveSkillId(null);
+    setActiveSkillIds([]);
     setPage(0);
   };
 
@@ -351,20 +351,21 @@ export default function FindJobsPage({ onNavigate, user }) {
             {/* 5. Lọc theo Kỹ năng (Skills) */}
             <div className="space-y-2.5">
               <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wide">Kỹ năng yêu cầu</h3>
-              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
-                {skills.map(sk => (
-                  <button
-                    key={sk.skillId}
-                    onClick={() => handleSkillChange(sk.skillId)}
-                    className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-all border ${
-                      activeSkillId === sk.skillId
-                        ? 'bg-indigo-600 text-white border-transparent shadow-sm'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
-                    }`}
-                  >
-                    {sk.skillName}
-                  </button>
-                ))}
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                {skills.map(sk => {
+                  const isChecked = activeSkillIds.includes(sk.skillId);
+                  return (
+                    <label key={sk.skillId} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer font-semibold">
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        onChange={() => handleSkillChange(sk.skillId)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300"
+                      />
+                      <span className={isChecked ? "font-bold text-slate-800" : ""}>{sk.skillName}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
@@ -378,9 +379,9 @@ export default function FindJobsPage({ onNavigate, user }) {
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
               Tìm việc làm tự do
-              {activeSkillId !== null && (
-                <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-extrabold uppercase">
-                  Đang lọc kỹ năng
+              {activeSkillIds.length > 0 && (
+                <span className="text-[11px] bg-indigo-50 text-indigo-750 px-2 py-0.5 rounded font-extrabold uppercase">
+                  Đang lọc {activeSkillIds.length} kỹ năng
                 </span>
               )}
             </h1>
@@ -445,18 +446,22 @@ export default function FindJobsPage({ onNavigate, user }) {
                       {/* Hiển thị Nhãn Kỹ năng thực tế của dự án */}
                       {job.skills && job.skills.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-1">
-                          {job.skills.map(skill => (
-                            <span 
-                              key={skill} 
-                              className={`px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase ${
-                                skills.find(s => s.skillName === skill)?.skillId === activeSkillId
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-slate-100 text-slate-500'
-                              }`}
-                            >
-                              {skill}
-                            </span>
-                          ))}
+                          {job.skills.map(skill => {
+                            const relatedSkill = skills.find(s => s.skillName === skill);
+                            const isHighlighted = relatedSkill && activeSkillIds.includes(relatedSkill.skillId);
+                            return (
+                              <span 
+                                key={skill} 
+                                className={`px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase ${
+                                  isHighlighted
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-slate-100 text-slate-500'
+                                }`}
+                              >
+                                {skill}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
 

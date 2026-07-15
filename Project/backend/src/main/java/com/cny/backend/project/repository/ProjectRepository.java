@@ -49,7 +49,7 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
            "    (p.budgetFixed IS NOT NULL AND p.budgetFixed <= :maxSalary) OR " +
            "    (p.budgetMin IS NULL AND p.budgetFixed IS NULL AND p.budgetMax IS NOT NULL AND p.budgetMax <= :maxSalary)" +
            ") " +
-           "AND (:skillId IS NULL OR :skillId IN (SELECT s.skillId FROM p.skills s)) " +
+           "AND (:skillIds IS NULL OR EXISTS (SELECT s FROM p.skills s WHERE s.skillId IN :skillIds)) " +
            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -64,7 +64,7 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
             @Param("projectType") String projectType, 
             @Param("minSalary") java.math.BigDecimal minSalary, 
             @Param("maxSalary") java.math.BigDecimal maxSalary, 
-            @Param("skillId") Integer skillId, 
+            @Param("skillIds") List<Integer> skillIds, 
             Pageable pageable);
 
     @Query(value = "SELECT DISTINCT work_form FROM projects WHERE work_form IS NOT NULL", nativeQuery = true)
