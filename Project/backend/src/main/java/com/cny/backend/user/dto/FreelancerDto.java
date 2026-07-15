@@ -64,4 +64,11 @@ public class FreelancerDto {
     private Integer kycReviewedByStaffId;
     private String kycRejectedReason;
     private Boolean isVerified;
+
+    // Profile details for search/filter
+    private String expertiseField;
+    private String experienceLevel;
+    private String primarySkills;
+    private String servicesOffered;
 }
+

@@ -335,18 +335,18 @@ export default function Navbar({
                 Tìm việc làm
               </a>
               <a
-                href="#post-job"
+                href="#find-freelancers"
                 onClick={(e) => {
                   e.preventDefault();
                   if (onNavigate) {
                     if (!user) {
-                      localStorage.setItem("redirect_after_login", "post_job");
+                      localStorage.setItem("redirect_after_login", "find_freelancers");
                       onNavigate("login");
                     } else if (user.role === "EMPLOYER") {
-                      onNavigate("post_job");
+                      onNavigate("find_freelancers");
                     } else {
                       alert(
-                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                       );
                     }
                   }
@@ -627,19 +627,19 @@ export default function Navbar({
               Tìm việc làm
             </a>
             <a
-              href="#post-job"
+              href="#find-freelancers"
               onClick={(e) => {
                 e.preventDefault();
                 setIsOpen(false);
                 if (onNavigate) {
                   if (!user) {
-                    localStorage.setItem("redirect_after_login", "post_job");
+                    localStorage.setItem("redirect_after_login", "find_freelancers");
                     onNavigate("login");
                   } else if (user.role === "EMPLOYER") {
-                    onNavigate("post_job");
+                    onNavigate("find_freelancers");
                   } else {
                     alert(
-                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                     );
                   }
                 }
