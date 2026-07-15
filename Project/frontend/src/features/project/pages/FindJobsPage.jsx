@@ -253,7 +253,7 @@ export default function FindJobsPage({ onNavigate, user }) {
                     name="workForm" 
                     value="" 
                     checked={activeWorkForm === ''}
-                    onChange={(e) => handleWorkFormChange(e.target.value)}
+                    onChange={() => handleWorkFormChange('')}
                     className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                   />
                   <span className={activeWorkForm === '' ? "font-bold text-slate-800" : ""}>Tất cả</span>
@@ -265,7 +265,7 @@ export default function FindJobsPage({ onNavigate, user }) {
                       name="workForm" 
                       value={wf} 
                       checked={activeWorkForm === wf}
-                      onChange={(e) => handleWorkFormChange(e.target.value)}
+                      onChange={() => handleWorkFormChange(wf)}
                       className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                     />
                     <span className={activeWorkForm === wf ? "font-bold text-slate-800" : ""}>{translateWorkForm(wf)}</span>
@@ -287,7 +287,7 @@ export default function FindJobsPage({ onNavigate, user }) {
                     name="projectType" 
                     value="" 
                     checked={activeProjectType === ''}
-                    onChange={(e) => handleProjectTypeChange(e.target.value)}
+                    onChange={() => handleProjectTypeChange('')}
                     className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                   />
                   <span className={activeProjectType === '' ? "font-bold text-slate-800" : ""}>Tất cả</span>
@@ -299,7 +299,7 @@ export default function FindJobsPage({ onNavigate, user }) {
                       name="projectType" 
                       value={pt} 
                       checked={activeProjectType === pt}
-                      onChange={(e) => handleProjectTypeChange(e.target.value)}
+                      onChange={() => handleProjectTypeChange(pt)}
                       className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                     />
                     <span className={activeProjectType === pt ? "font-bold text-slate-800" : ""}>{translateProjectType(pt)}</span>
