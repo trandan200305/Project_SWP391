@@ -191,14 +191,52 @@ public class ProposalService {
         projectRepository.save(project);
     }
 
+    public List<ProposalDto> getProposalsByFreelancer(Integer freelancerId) {
+        return proposalRepository.findByFreelancerProfileId(freelancerId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void withdrawProposal(Integer proposalId, Integer freelancerId) {
+        Proposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy báo giá ID: " + proposalId));
+
+        if (!proposal.getFreelancer().getProfileId().equals(freelancerId)) {
+            throw new IllegalArgumentException("Bạn không có quyền rút báo giá này.");
+        }
+
+        if (!"SUBMITTED".equals(proposal.getStatus())) {
+            throw new IllegalArgumentException("Chỉ có thể rút báo giá khi ở trạng thái đang chờ duyệt.");
+        }
+
+        Project project = proposal.getProject();
+        if (project.getProposalCount() > 0) {
+            project.setProposalCount(project.getProposalCount() - 1);
+            projectRepository.save(project);
+        }
+
+        proposalRepository.delete(proposal);
+    }
+
     private ProposalDto mapToDto(Proposal proposal) {
         String fullName = proposal.getFreelancer().getFullName();
         String displayName = proposal.getFreelancer().getDisplayName();
         String title = proposal.getFreelancer().getProfessionalTitle();
+        
+        String empName = "Chưa rõ";
+        if (proposal.getProject().getClient() != null) {
+            String compName = proposal.getProject().getClient().getCompanyName();
+            String empFullName = proposal.getProject().getClient().getFullName();
+            empName = compName != null ? compName : (empFullName != null ? empFullName : "Employer");
+        }
 
         return ProposalDto.builder()
                 .proposalId(proposal.getProposalId())
                 .projectId(proposal.getProject().getProjectId())
+                .projectTitle(proposal.getProject().getTitle())
+                .employerName(empName)
                 .freelancerId(proposal.getFreelancer().getProfileId())
                 .freelancerName(displayName != null ? displayName : (fullName != null ? fullName : "Freelancer"))
                 .freelancerAvatar(proposal.getFreelancer().getAvatarUrl())

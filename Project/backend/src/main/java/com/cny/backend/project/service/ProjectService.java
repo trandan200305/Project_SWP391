@@ -57,7 +57,7 @@ public class ProjectService {
     private TransactionRepository transactionRepository;
 
     @Autowired
-    private ServicePackageConfigRepository servicePackageConfigRepository;
+    private FreelancerRepository freelancerRepository;
 
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
@@ -109,47 +109,6 @@ public class ProjectService {
             }
         }
 
-        String projectStatus = "PUBLISHED";
-        String appliedPackage = "MEDIUM";
-        double serviceFee = 0.0;
-        int durationDays = 7;
-
-        // Check if Employer has an active subscription package with available quota
-        boolean hasActiveSubscription = client.getPackageExpiryDate() != null && client.getPackageExpiryDate().isAfter(LocalDateTime.now());
-        if (hasActiveSubscription && client.getPackagePostQuota() != null && client.getPackagePostQuota() > 0) {
-            // Deduct quota and publish immediately
-            client.setPackagePostQuota(client.getPackagePostQuota() - 1);
-            employerRepository.save(client);
-
-            appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
-            
-            // Get duration from config if possible
-            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
-            if (configOpt.isPresent()) {
-                durationDays = configOpt.get().getDurationDays();
-            } else {
-                if ("REGULAR".equals(appliedPackage)) durationDays = 15;
-                if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
-            }
-        } else {
-            // Fallback to Pay-per-post logic
-            appliedPackage = dto.getServicePackage() != null ? dto.getServicePackage().toUpperCase() : "MEDIUM";
-            if (!"MEDIUM".equals(appliedPackage) && !"REGULAR".equals(appliedPackage) && !"PREMIUM".equals(appliedPackage)) {
-                appliedPackage = "MEDIUM";
-            }
-            
-            if ("REGULAR".equals(appliedPackage)) {
-                durationDays = 15;
-            } else if ("PREMIUM".equals(appliedPackage)) {
-                durationDays = 30;
-            }
-
-            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
-            if (configOpt.isPresent()) {
-                durationDays = configOpt.get().getDurationDays();
-            }
-        }
-
         Project project = Project.builder()
                 .client(client)
                 .category(category)
@@ -161,10 +120,8 @@ public class ProjectService {
                 .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
                 .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
-                .postingExpires(LocalDate.now().plusDays(durationDays)) 
-                .status(projectStatus) 
-                .servicePackage(appliedPackage)
-                .serviceFee(serviceFee)
+                .postingExpires(LocalDate.now().plusDays(30)) 
+                .status("PENDING") 
                 .proposalCount(0)
                 .isDeleted(false)
                 .build();
@@ -177,9 +134,9 @@ public class ProjectService {
                 notificationService.createNotification(
                     staff.getStaffId().longValue(),
                     "STAFF",
-                    "Dự án mới đã đăng",
-                    "Dự án '" + savedProject.getTitle() + "' đã được đăng và xuất bản trực tiếp.",
-                    "INFO",
+                    "Dự án mới cần duyệt",
+                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
+                    "TASK",
                     savedProject.getProjectId().toString()
                 );
             }
@@ -300,10 +257,27 @@ public class ProjectService {
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, java.math.BigDecimal minSalary, Pageable pageable) {
+    public Page<ProjectDto> searchPublishedProjects(String keyword, Integer categoryId, String workForm, String projectType, java.math.BigDecimal minSalary, java.math.BigDecimal maxSalary, List<Integer> skillIds, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.trim();
-        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, categoryId, minSalary, pageable);
+        String wf = (workForm == null || workForm.trim().isEmpty()) ? null : workForm.trim();
+        String pt = (projectType == null || projectType.trim().isEmpty()) ? null : projectType.trim();
+        List<Integer> finalSkillIds = (skillIds == null || skillIds.isEmpty()) ? null : skillIds;
+        Page<Project> projects = projectRepository.searchProjectsByFilters("PUBLISHED", kw, categoryId, wf, pt, minSalary, maxSalary, finalSkillIds, pageable);
         return projects.map(this::mapToDto);
+    }
+
+    public List<String> getDistinctWorkForms() {
+        return projectRepository.findDistinctWorkForms();
+    }
+
+    public List<String> getDistinctProjectTypes() {
+        return projectRepository.findDistinctProjectTypes();
+    }
+
+    public ProjectDto getProjectById(Integer projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+        return mapToDto(project);
     }
 
     public ProjectDto createProject(Project project) {
@@ -312,21 +286,28 @@ public class ProjectService {
     }
 
     public List<ProjectDto> getSavedProjects(Integer userId, String userRole) {
-        List<SavedJob> savedJobs = savedJobRepository.findByUserIdAndUserRoleOrderBySavedAtDesc(userId, userRole);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            return java.util.Collections.emptyList();
+        }
+        List<SavedJob> savedJobs = savedJobRepository.findByFreelancer_ProfileIdOrderBySavedAtDesc(userId);
         return savedJobs.stream()
                 .map(sj -> mapToDto(sj.getProject()))
                 .collect(Collectors.toList());
     }
 
     public void saveProject(Integer userId, String userRole, Integer projectId) {
-        Optional<SavedJob> existing = savedJobRepository.findByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            throw new RuntimeException("Chỉ tài khoản Freelancer mới có thể lưu việc làm.");
+        }
+        Optional<SavedJob> existing = savedJobRepository.findByFreelancer_ProfileIdAndProject_ProjectId(userId, projectId);
         if (existing.isEmpty()) {
             Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+            Freelancer freelancer = freelancerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Freelancer not found"));
             
             SavedJob savedJob = SavedJob.builder()
-                .userId(userId)
-                .userRole(userRole)
+                .freelancer(freelancer)
                 .project(project)
                 .savedAt(LocalDateTime.now())
                 .build();
@@ -336,7 +317,10 @@ public class ProjectService {
 
     @Transactional
     public void unsaveProject(Integer userId, String userRole, Integer projectId) {
-        savedJobRepository.deleteByUserIdAndUserRoleAndProject_ProjectId(userId, userRole, projectId);
+        if (!"FREELANCER".equalsIgnoreCase(userRole)) {
+            return;
+        }
+        savedJobRepository.deleteByFreelancer_ProfileIdAndProject_ProjectId(userId, projectId);
     }
 
     private ProjectDto mapToDto(Project project) {
@@ -386,15 +370,19 @@ public class ProjectService {
             employerJobs = project.getClient().getProjectsPosted() != null ? project.getClient().getProjectsPosted() : 0;
         }
 
+        List<String> skillNames = project.getSkills() != null
+                ? project.getSkills().stream().map(Skill::getSkillName).toList()
+                : List.of();
+
         return ProjectDto.builder()
                 .id(project.getProjectId())
-                .employerId(project.getClient() != null ? project.getClient().getEmployerId() : null)
                 .title(project.getTitle())
                 .isNew(isNew)
                 .employerName(employerName)
                 .employerAvatar(employerAvatar)
                 .budgetMin(project.getBudgetMin())
                 .budgetMax(project.getBudgetMax())
+                .budgetFixed(project.getBudgetFixed())
                 .deadline(project.getDeadline())
                 .description(project.getDescription())
                 .applications(project.getProposalCount() != null ? project.getProposalCount() : 0)
@@ -407,9 +395,7 @@ public class ProjectService {
                 .employerLocation(employerLoc)
                 .employerJoinDate(employerJoin)
                 .employerJobsPosted(employerJobs)
-                .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
-                .servicePackage(project.getServicePackage())
-                .serviceFee(project.getServiceFee())
+                .skills(skillNames)
                 .build();
     }
 

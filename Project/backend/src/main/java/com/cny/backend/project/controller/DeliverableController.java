@@ -31,6 +31,22 @@ public class DeliverableController {
         }
     }
 
+    // Freelancer chỉnh sửa sản phẩm đã nộp
+    @PutMapping("/{deliverableId}")
+    public ResponseEntity<?> editDeliverable(
+            @PathVariable Integer deliverableId,
+            @RequestParam Integer freelancerId,
+            @RequestBody DeliverableSubmitDto dto) {
+        try {
+            DeliverableDto result = deliverableService.editDeliverable(deliverableId, dto, freelancerId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     // Nhà tuyển dụng duyệt hoặc từ chối sản phẩm đã nộp
     @PostMapping("/{deliverableId}/review")
     public ResponseEntity<?> reviewDeliverable(

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle2, Bookmark, Send, Calendar, Clock, Landmark, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Bookmark, Send, Calendar, Clock, Landmark, Loader2, UserRound, FileText, X } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
-import { getImageUrl } from '../../../utils/imageHelper.js';
 
-export default function JobDetailPage({ job, onNavigate, user }) {
+export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
+  const [job, setJob] = useState(initialJob);
+  const [loadingJob, setLoadingJob] = useState(false);
+  const [jobError, setJobError] = useState('');
+
   const [showModal, setShowModal] = useState(false);
   const { savedJobs, saveJob, unsaveJob, isJobSaved } = useSavedJobs(user);
   const [successToast, setSuccessToast] = useState({ show: false, type: '', message: '' });
@@ -20,9 +23,32 @@ export default function JobDetailPage({ job, onNavigate, user }) {
   const [uploadingCv, setUploadingCv] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
 
+  // Fetch full details of the project by ID
+  useEffect(() => {
+    if (initialJob && initialJob.id) {
+      setLoadingJob(true);
+      fetch(`http://localhost:8080/api/projects/${initialJob.id}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Không thể tải chi tiết công việc.');
+          return res.json();
+        })
+        .then((data) => {
+          setJob(data);
+          setJobError('');
+        })
+        .catch((err) => {
+          console.error(err);
+          setJobError(err.message || 'Lỗi khi tải chi tiết dự án.');
+        })
+        .finally(() => setLoadingJob(false));
+    } else {
+      setJob(initialJob);
+    }
+  }, [initialJob]);
+
   // Check if freelancer already applied
   useEffect(() => {
-    if (user && user.role === 'FREELANCER' && job) {
+    if (user && user.role === 'FREELANCER' && job && job.id) {
       fetch(`http://localhost:8080/api/proposals/project/${job.id}/check?freelancerId=${user.id}`)
         .then((res) => {
           if (!res.ok) throw new Error('Lỗi kiểm tra báo giá.');
@@ -38,10 +64,22 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }
   }, [user, job]);
 
-  if (!job) {
+  if (loadingJob) {
     return (
-      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex justify-center">
-        <p>Không tìm thấy công việc.</p>
+      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex flex-col items-center justify-center gap-2">
+        <Loader2 className="w-8 h-8 text-indigo-650 animate-spin" />
+        <p className="text-slate-550 text-xs">Đang tải chi tiết dự án...</p>
+      </div>
+    );
+  }
+
+  if (jobError || !job) {
+    return (
+      <div className="pt-24 pb-12 bg-slate-50 min-h-screen flex flex-col items-center justify-center gap-3">
+        <p className="text-red-500 text-sm font-medium">{jobError || 'Không tìm thấy công việc.'}</p>
+        <button onClick={() => onNavigate('find_jobs')} className="px-4 py-1.5 bg-indigo-50 text-indigo-650 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
+          Quay lại danh sách
+        </button>
       </div>
     );
   }
@@ -51,15 +89,6 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     setShowModal(true);
   };
 
-  const handleCompanyClick = (e) => {
-    e.preventDefault();
-    if (job.employerId) {
-      onNavigate('view_profile', { targetUserId: job.employerId, targetRole: 'employer' });
-    } else {
-      setShowModal(true);
-    }
-  };
-
   const showToastNotification = (type, message = '') => {
     setSuccessToast({ show: true, type, message });
     setTimeout(() => {
@@ -67,15 +96,19 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     }, 5000);
   };
 
-  const handleBookmarkClick = (e, jobToSave) => {
+  const handleBookmarkClick = async (e, jobToSave) => {
     e.preventDefault();
     e.stopPropagation();
     if (isJobSaved(jobToSave.id)) {
-      unsaveJob(jobToSave.id);
-      showToastNotification('unsave');
+      const success = await unsaveJob(jobToSave.id);
+      if (success) {
+        showToastNotification('unsave');
+      }
     } else {
-      saveJob(jobToSave);
-      showToastNotification('save');
+      const success = await saveJob(jobToSave);
+      if (success) {
+        showToastNotification('save');
+      }
     }
   };
 
@@ -156,6 +189,27 @@ export default function JobDetailPage({ job, onNavigate, user }) {
       }
 
       const result = await response.json();
+      
+      // Lưu vào localStorage để hỗ trợ demo giao diện Freelancer Đã nộp thầu
+      try {
+        const newProposalMock = {
+          proposalId: result.proposalId || Date.now(),
+          projectId: job.id,
+          projectTitle: job.title,
+          employerName: job.employerName || 'Khách hàng',
+          bidAmount: amount,
+          estimatedDays: days,
+          coverLetter: applyForm.coverLetter.trim(),
+          status: 'PENDING',
+          createdAt: new Date().toISOString()
+        };
+        const storedProposals = JSON.parse(localStorage.getItem('submitted_proposals') || '[]');
+        const filteredProposals = storedProposals.filter(p => p.projectId !== job.id);
+        localStorage.setItem('submitted_proposals', JSON.stringify([newProposalMock, ...filteredProposals]));
+      } catch (e) {
+        console.error("Failed to save proposal to localStorage", e);
+      }
+
       setHasApplied(true);
       setUserProposal(result);
       setShowApplyModal(false);
@@ -173,7 +227,8 @@ export default function JobDetailPage({ job, onNavigate, user }) {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
 
-  const formatBudget = (min, max) => {
+  const formatBudget = (min, max, fixed) => {
+    if (fixed) return formatCurrency(fixed);
     if (min && max) return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     if (min) return `${formatCurrency(min)}`;
     return 'Thỏa thuận';
@@ -197,103 +252,117 @@ export default function JobDetailPage({ job, onNavigate, user }) {
   
   const createdAt = job.createdAt || '07/06/2026, 16:33';
   const location = job.location || 'TP. Hồ Chí Minh';
-  const workForm = job.workForm || 'Làm online';
+  const workFormRaw = job.workForm || 'ONLINE';
+  const workForm = workFormRaw === 'ONLINE' ? 'Làm Online (Từ xa)' : workFormRaw === 'OFFLINE' ? 'Làm Offline (Tại chỗ)' : workFormRaw;
   const paymentType = job.paymentType || 'Trả theo dự án';
   
   const employerLocation = job.employerLocation || 'TP. Hồ Chí Minh';
   const employerJoinDate = job.employerJoinDate || '07/06/2026';
-  const employerJobsPosted = job.employerJobsPosted || '1 việc';
-  const skills = job.skills || ['AFTER EFFECT', 'INFOGRAPHIC', 'MOTION GRAPHIC'];
+  const employerJobsPosted = job.employerJobsPosted !== undefined ? `${job.employerJobsPosted} việc đã đăng` : '1 việc đã đăng';
+  const skills = job.skills || [];
 
   return (
-    <div className="pt-24 pb-12 bg-white min-h-screen">
-      <div className="max-w-6xl mx-auto px-6">
-        
-        
-        <div className="text-sm mb-6 flex items-center gap-2 text-slate-500">
-          <button onClick={() => onNavigate('find_jobs')} className="text-blue-500 hover:underline">
-            Việc làm
-          </button>
-          <span>›</span>
-          <button 
-            onClick={() => onNavigate('find_jobs', { category: job.categoryId || 'all' })} 
-            className="text-blue-500 hover:underline"
-          >
-            {job.categoryName || 'Thiết kế'}
-          </button>
+    <div className="min-h-screen bg-slate-100 text-slate-900 pt-20">
+      {/* Breadcrumb Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="text-sm flex items-center gap-2 text-slate-500">
+            <button onClick={() => onNavigate('find_jobs')} className="font-bold text-slate-600 hover:text-slate-900">
+              Việc làm
+            </button>
+            <span>›</span>
+            <button 
+              onClick={() => onNavigate('find_jobs', { category: job.categoryId || 'all' })} 
+              className="font-bold text-slate-600 hover:text-slate-900"
+            >
+              {job.categoryName || 'Thiết kế'}
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      {/* Main Grid Content */}
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
           
-          
-          <div className="lg:col-span-2">
+          {/* Left Column: Job Details */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-start gap-4 mb-6">
-              <h1 className="text-3xl font-bold text-slate-800 leading-tight">
+              <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight leading-tight">
                 {job.title}
               </h1>
               <button 
                 onClick={(e) => handleBookmarkClick(e, job)} 
-                className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 border-2 ${isJobSaved(job.id) ? 'bg-yellow-400 text-white border-yellow-400' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600'}`}
+                className={`p-2 rounded-xl border transition-all ${isJobSaved(job.id) ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600 hover:bg-slate-50'}`}
                 title={isJobSaved(job.id) ? 'Bỏ lưu' : 'Lưu công việc'}
               >
-                <Bookmark className={`w-6 h-6 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
+                <Bookmark className={`w-5 h-5 ${isJobSaved(job.id) ? 'fill-current' : ''}`} />
               </button>
             </div>
 
-            <div className={`bg-slate-50 border rounded-lg p-5 mb-8 transition-colors duration-300 ${isJobSaved(job.id) ? 'border-amber-500 bg-amber-50/20' : 'border-slate-100'}`}>
-              <div className="text-slate-700 font-medium mb-1">
-                Mô tả công việc: <span className="text-blue-600 font-bold">{job.categoryName || 'Dựng motion video'}</span>
-              </div>
-              <div className="text-sm text-slate-500">
-                Bạn có thể cung cấp dịch vụ này? <button onClick={handleShowComingSoon} className="text-blue-500 hover:underline">Thêm vào hồ sơ làm việc</button>.
-              </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-sm text-slate-600 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
+              <span>Lĩnh vực: <strong className="text-slate-900">{job.categoryName || 'Thiết kế'}</strong>. Bạn muốn ứng tuyển dự án này? Hãy chào giá ở cột bên phải.</span>
             </div>
 
-            <div className="text-slate-700 leading-relaxed mb-10 whitespace-pre-line">
+            <div className="text-slate-700 leading-relaxed mb-8 whitespace-pre-line text-sm">
               {job.description || "Chưa có mô tả công việc"}
             </div>
 
-            <button onClick={handleShowComingSoon} className="flex items-center gap-2 text-red-500 text-sm hover:underline">
-              <AlertTriangle className="w-4 h-4" />
-              <span>Phản ánh công việc này</span>
+            {/* Kỹ năng yêu cầu */}
+            {skills && skills.length > 0 && (
+              <div className="mb-8 pt-6 border-t border-slate-200">
+                <h3 className="font-bold text-slate-800 text-sm mb-3">Kỹ năng yêu cầu</h3>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map(skill => (
+                    <span key={skill} className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold uppercase">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button onClick={handleShowComingSoon} className="inline-flex items-center gap-2 text-rose-600 text-xs font-bold hover:underline">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Phản ánh công việc này
             </button>
           </div>
 
-          
+          {/* Right Column: Sidebar */}
           <div className="space-y-6">
 
             {/* Bidding Actions Card */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-              <h3 className="font-bold text-lg text-slate-800 mb-4">Chào giá thầu</h3>
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-extrabold text-base text-slate-900 mb-4 pb-2 border-b border-slate-150">Chào giá thầu</h3>
               
               {!user ? (
                 <div className="space-y-3">
                   <p className="text-xs text-slate-500 leading-relaxed">Đăng nhập tài khoản Freelancer của bạn để nộp đề xuất báo giá thầu cho dự án này.</p>
                   <button 
                     onClick={() => onNavigate('login')}
-                    className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs"
                   >
                     Đăng nhập để ứng tuyển
                   </button>
                 </div>
               ) : user.role === 'FREELANCER' ? (
                 hasApplied ? (
-                  <div className="space-y-4 bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
-                      <CheckCircle2 className="w-4.5 h-4.5" />
+                  <div className="space-y-4 bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                    <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>Đã nộp báo giá thành công</span>
                     </div>
-                    <div className="space-y-1.5 text-xs text-slate-600 border-t border-emerald-100/50 pt-2.5">
+                    <div className="space-y-2 text-xs text-slate-600 border-t border-emerald-200/50 pt-2.5">
                       <div className="flex justify-between">
                         <span>Giá chào:</span>
-                        <span className="font-bold text-slate-800">{formatCurrency(userProposal?.bidAmount)}</span>
+                        <strong className="text-slate-900">{formatCurrency(userProposal?.bidAmount)}</strong>
                       </div>
                       <div className="flex justify-between">
                         <span>Thời gian:</span>
-                        <span className="font-bold text-slate-800">{userProposal?.estimatedDays} ngày</span>
+                        <strong className="text-slate-900">{userProposal?.estimatedDays} ngày</strong>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span>Trạng thái:</span>
                         <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
                           userProposal?.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
@@ -316,95 +385,92 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                         setApplyForm({ bidAmount: job.budgetFixed || '', estimatedDays: '', coverLetter: '' });
                         setShowApplyModal(true);
                       }}
-                      className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-2"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-3.5 h-3.5" />
                       Nộp hồ sơ ứng tuyển
                     </button>
                   </div>
                 )
               ) : (
-                <div className="p-3 bg-slate-50 rounded-lg text-center">
-                  <p className="text-xs text-slate-500 font-medium">Bạn đang đăng nhập bằng tài khoản {user.role}. Chỉ tài khoản Freelancer mới có thể nộp báo giá.</p>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <p className="text-xs text-slate-500 font-semibold">Tài khoản {user.role} không thể ứng tuyển. Vui lòng dùng tài khoản Freelancer.</p>
                 </div>
               )}
             </div>
             
-            
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg text-slate-800 mb-5">Thông tin dự án</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
+            {/* Project Info Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-extrabold text-base text-slate-900 mb-4 pb-2 border-b border-slate-150">Thông tin dự án</h3>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">ID dự án</span>
-                  <span className="font-medium text-slate-700">{job.id}</span>
+                  <span className="font-bold text-slate-700">{job.id}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Ngày đăng</span>
-                  <span className="font-medium text-slate-700">{createdAt}</span>
+                  <span className="font-bold text-slate-700">{createdAt}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Thời hạn</span>
-                  <span className="font-medium text-slate-700">{formatDeadline(job.deadline)}</span>
+                  <span className="font-bold text-slate-700">{formatDeadline(job.deadline)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Địa điểm</span>
-                  <span className="font-medium text-slate-700">{location}</span>
+                  <span className="font-bold text-slate-700">{location}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Ngân sách</span>
-                  <span className="font-medium text-slate-700">{formatBudget(job.budgetMin, job.budgetMax)}</span>
+                  <span className="font-bold text-indigo-600">{formatBudget(job.budgetMin, job.budgetMax, job.budgetFixed)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-500">Hình thức làm việc</span>
-                  <span className="font-medium text-slate-700">{workForm}</span>
+                  <span className="font-bold text-slate-700">{workForm}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1">
                   <span className="text-slate-500">Hình thức trả lương</span>
-                  <span className="font-medium text-slate-700">{paymentType}</span>
+                  <span className="font-bold text-slate-700">{paymentType}</span>
                 </div>
               </div>
             </div>
 
-            
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg text-slate-800 mb-6">Thông tin khách hàng</h3>
+            {/* Client Info Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-extrabold text-base text-slate-900 mb-5 pb-2 border-b border-slate-150">Khách hàng</h3>
               
-              <div className="flex flex-col items-center mb-6">
-                <button onClick={handleCompanyClick} className="mb-3 hover:opacity-90 transition-opacity">
-                  {job.employerAvatar ? (
-                    <img src={getImageUrl(job.employerAvatar)} alt={job.employerName} className="w-20 h-20 rounded-full object-cover shadow-sm" />
-                  ) : (
-                    <div className="w-20 h-20 bg-slate-300 rounded-full flex items-center justify-center text-slate-50 shadow-sm">
-                      <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                    </div>
-                  )}
-                </button>
-                <div className="flex items-center gap-1.5 justify-center">
-                  <button onClick={handleCompanyClick} className="text-blue-500 font-bold hover:underline text-lg">
-                    {job.employerName || 'Nguyễn Nguyễn'}
-                  </button>
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-3 mb-4">
+                {job.employerAvatar ? (
+                  <img src={job.employerAvatar} alt={job.employerName} className="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                ) : (
+                  <div className="w-12 h-12 bg-slate-200 border border-slate-300 rounded-full flex items-center justify-center text-slate-500">
+                    <UserRound className="w-5 h-5" />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={handleShowComingSoon} className="font-bold text-slate-900 hover:text-indigo-600 text-sm hover:underline text-left">
+                      {job.employerName || 'Khách hàng'}
+                    </button>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">{employerLocation}</span>
                 </div>
               </div>
 
-              <div className="space-y-3 text-sm border-t border-slate-100 pt-5">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Đến từ</span>
-                  <span className="font-medium text-slate-700">{employerLocation}</span>
-                </div>
+              <div className="space-y-2 text-xs border-t border-slate-100 pt-4">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Tham gia</span>
-                  <span className="font-medium text-slate-700">{employerJoinDate}</span>
+                  <span className="font-semibold text-slate-700">{employerJoinDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Đã đăng</span>
-                  <span className="font-medium text-blue-500">{employerJobsPosted}</span>
+                  <span className="text-slate-500">Đã đăng tuyển</span>
+                  <span className="font-semibold text-slate-700">{employerJobsPosted}</span>
                 </div>
               </div>
 
               <button 
                 onClick={handleShowComingSoon}
-                className="w-full mt-6 bg-[#22c55e] text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition-all text-xs"
               >
                 Liên hệ trực tiếp
               </button>
@@ -412,24 +478,29 @@ export default function JobDetailPage({ job, onNavigate, user }) {
 
           </div>
         </div>
-      </div>
+      </main>
 
       {showModal && <ComingSoon isPopup={true} onClose={() => setShowModal(false)} />}
       
       {/* Submit Proposal Modal */}
       {showApplyModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl p-6 sm:p-8 animate-in zoom-in-95 duration-200">
-            <h3 className="font-extrabold text-xl text-slate-900 mb-2 flex items-center gap-2">
-              <Landmark className="w-5 h-5 text-blue-600" />
-              Nộp hồ sơ ứng tuyển
-            </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Bạn đang ứng tuyển vào dự án: <strong className="text-slate-700">{job.title}</strong>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-200 shadow-xl p-6 animate-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-150">
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <Landmark className="w-4.5 h-4.5 text-slate-600" />
+                Nộp hồ sơ ứng tuyển
+              </h3>
+              <button onClick={() => { setShowApplyModal(false); setCvUrl(''); setCvFileName(''); }} className="text-slate-400 hover:text-slate-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-550 mb-5 leading-relaxed">
+              Bạn đang ứng tuyển vào dự án: <strong className="text-slate-800">{job.title}</strong>
             </p>
 
             {applyError && (
-              <div className="mb-4 bg-rose-50 text-rose-700 border border-rose-100 text-xs font-semibold p-3.5 rounded-xl">
+              <div className="mb-4 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold p-3 rounded-xl">
                 ⚠️ {applyError}
               </div>
             )}
@@ -437,7 +508,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
             <form onSubmit={handleSubmitProposal} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
-                  <span className="block text-[11px] font-extrabold text-slate-500 uppercase mb-1.5">Giá chào thầu (VND) *</span>
+                  <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Giá chào thầu (VND) *</span>
                   <input 
                     type="number"
                     required
@@ -445,11 +516,11 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                     placeholder="VD: 5000000"
                     value={applyForm.bidAmount}
                     onChange={(e) => setApplyForm(prev => ({ ...prev, bidAmount: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-indigo-600 focus:bg-white"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[11px] font-extrabold text-slate-500 uppercase mb-1.5">Thời gian thực hiện (Ngày) *</span>
+                  <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Thời gian (Ngày) *</span>
                   <input 
                     type="number"
                     required
@@ -457,28 +528,28 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                     placeholder="VD: 7"
                     value={applyForm.estimatedDays}
                     onChange={(e) => setApplyForm(prev => ({ ...prev, estimatedDays: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-indigo-600 focus:bg-white"
                   />
                 </label>
               </div>
 
               <label className="block">
-                <span className="block text-[11px] font-extrabold text-slate-500 uppercase mb-1.5">Thư giới thiệu / Đề xuất công việc *</span>
+                <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Thư giới thiệu *</span>
                 <textarea 
                   required
-                  rows="5"
-                  placeholder="Hãy giới thiệu ngắn gọn năng lực của bạn và phương án triển khai dự án này để thuyết phục Nhà tuyển dụng..."
+                  rows="4"
+                  placeholder="Giới thiệu ngắn gọn năng lực và phương án triển khai dự án này..."
                   value={applyForm.coverLetter}
                   onChange={(e) => setApplyForm(prev => ({ ...prev, coverLetter: e.target.value }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-indigo-600 focus:bg-white resize-none"
                 />
               </label>
 
               <div className="block">
-                <span className="block text-[11px] font-extrabold text-slate-500 uppercase mb-1.5">Tải lên hồ sơ CV (File PDF) *</span>
+                <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tải lên hồ sơ CV (PDF) *</span>
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-750 rounded-xl cursor-pointer text-xs font-bold transition-all border border-blue-100">
-                    <Send className="w-3.5 h-3.5 rotate-45 text-blue-700" />
+                  <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl cursor-pointer text-xs font-bold transition-all">
+                    <FileText className="w-3.5 h-3.5 text-slate-500" />
                     <span>Chọn file PDF</span>
                     <input 
                       type="file" 
@@ -488,16 +559,16 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                       required={!cvUrl}
                     />
                   </label>
-                  {uploadingCv && <span className="text-xs text-slate-500 animate-pulse">Đang tải lên...</span>}
+                  {uploadingCv && <span className="text-xs text-slate-400 animate-pulse">Đang tải lên...</span>}
                   {cvFileName && (
-                    <span className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">
+                    <span className="text-xs font-semibold text-slate-600 truncate max-w-[200px]">
                       {cvFileName} (Đã tải)
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -505,16 +576,16 @@ export default function JobDetailPage({ job, onNavigate, user }) {
                     setCvUrl('');
                     setCvFileName('');
                   }}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-bold flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
                 >
-                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
                   {submitting ? 'Đang nộp...' : 'Gửi báo giá'}
                 </button>
               </div>
@@ -525,7 +596,7 @@ export default function JobDetailPage({ job, onNavigate, user }) {
 
       {/* Global Toast Notification */}
       {successToast.show && (
-        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <CheckCircle2 className="w-5 h-5 text-green-400 fill-green-400" />
           <span className="font-medium text-sm">
             {successToast.message || (successToast.type === 'save' ? 'Đã lưu việc làm thành công!' : 'Đã bỏ lưu việc làm')}

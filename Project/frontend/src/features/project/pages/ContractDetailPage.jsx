@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -15,15 +15,14 @@ import {
   Star
 } from 'lucide-react';
 import { contractApi } from '../../../api/contractApi';
-import { getImageUrl } from '../../../utils/imageHelper.js';
+import { api } from '../../../api/apiClient';
 
 export default function ContractDetailPage({ contractId, user, onNavigate }) {
-  const contractReviewSectionRef = useRef(null);
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeMilestoneId, setActiveMilestoneId] = useState(null); // For submit work form
-  const [contractReviews, setContractReviews] = useState([]);
+  const [editingDeliverableId, setEditingDeliverableId] = useState(null); // For editing
   
   // Submit work form state
   const [submitTitle, setSubmitTitle] = useState('');
@@ -34,25 +33,29 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   // Review form state
   const [reviewFeedback, setReviewFeedback] = useState({});
   const [submittingReview, setSubmittingReview] = useState({});
-  const [contractReviewRating, setContractReviewRating] = useState(5);
-  const [contractReviewComment, setContractReviewComment] = useState('');
-  const [submittingContractReview, setSubmittingContractReview] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const isClient = user && contract && contract.clientId === user.id;
-  const isFreelancer = user && contract && contract.freelancerId === user.id;
+  // Dispute state
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+
+  // Freelancer Review state
+  const [freelancerRating, setFreelancerRating] = useState(5);
+  const [freelancerComment, setFreelancerComment] = useState('');
+  const [submittingContractReview, setSubmittingContractReview] = useState(false);
+  const [freelancerSubmittedReview, setFreelancerSubmittedReview] = useState(null);
+
+  const isClient = user && user.role === 'EMPLOYER' && contract && contract.clientId === user.id;
+  const isFreelancer = user && user.role === 'FREELANCER' && contract && contract.freelancerId === user.id;
 
   const fetchContractDetails = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [contractData, reviewsData] = await Promise.all([
-        contractApi.getContractDetails(contractId, user.id),
-        contractApi.getReviewsForContract(contractId)
-      ]);
-      setContract(contractData);
-      setContractReviews(reviewsData || []);
+      const data = await contractApi.getContractDetails(contractId, user.id);
+      setContract(data);
     } catch (err) {
       setError(err.message || 'Không thể tải thông tin hợp đồng.');
     } finally {
@@ -60,15 +63,32 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
     }
   };
 
+  const fetchFreelancerReview = async () => {
+    if (contractId && user) {
+      try {
+        const list = await api.get(`/reviews/contract/${contractId}`);
+        if (list) {
+          const review = list.find(r => r.reviewerFreelancerId === user.id);
+          if (review) {
+            setFreelancerSubmittedReview(review);
+          }
+        }
+      } catch (err) {
+        console.log("Failed to fetch contract reviews", err);
+      }
+    }
+  };
+
   useEffect(() => {
     if (contractId && user) {
       fetchContractDetails();
+      fetchFreelancerReview();
     }
   }, [contractId, user]);
 
   const handleGoBack = () => {
     if (isClient) {
-      onNavigate('employer_jobs');
+      onNavigate('employer_profile');
     } else {
       onNavigate('your_jobs');
     }
@@ -100,14 +120,20 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
         }] : []
       };
 
-      await contractApi.submitDeliverable(milestoneId, user.id, submitData);
+      if (editingDeliverableId) {
+        await contractApi.editDeliverable(editingDeliverableId, user.id, submitData);
+        showSuccess('Chỉnh sửa sản phẩm thành công! Đang chờ nhà tuyển dụng duyệt lại.');
+      } else {
+        await contractApi.submitDeliverable(milestoneId, user.id, submitData);
+        showSuccess('Nộp sản phẩm thành công! Đang chờ nhà tuyển dụng duyệt.');
+      }
       
       // Reset form
       setSubmitTitle('');
       setSubmitNotes('');
       setSubmitUrl('');
       setActiveMilestoneId(null);
-      showSuccess('Nộp sản phẩm thành công! Đang chờ nhà tuyển dụng duyệt.');
+      setEditingDeliverableId(null);
       
       // Reload details
       fetchContractDetails();
@@ -160,17 +186,36 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
     }
   };
 
-  const handleReviewFreelancerClick = () => {
-    contractReviewSectionRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+  const handleFileDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeReason.trim()) {
+      setActionError('Vui lòng nhập lý do khiếu nại.');
+      return;
+    }
+
+    try {
+      setSubmittingDispute(true);
+      setActionError(null);
+
+      await api.post(`/contracts/${contractId}/dispute?freelancerId=${user.id}`, {
+        reason: disputeReason.trim()
+      });
+
+      setShowDisputeModal(false);
+      setDisputeReason('');
+      showSuccess('Gửi khiếu nại tranh chấp lên Admin thành công! Dự án hiện ở trạng thái TRANH CHẤP.');
+      fetchContractDetails();
+    } catch (err) {
+      setActionError(err.message || 'Lỗi kết nối máy chủ.');
+    } finally {
+      setSubmittingDispute(false);
+    }
   };
 
-  const handleContractReviewSubmit = async (e) => {
+  const handleSubmitContractReview = async (e) => {
     e.preventDefault();
-    if (!contractReviewRating || contractReviewRating < 1 || contractReviewRating > 5) {
-      setActionError('Vui lòng chọn số sao từ 1 đến 5.');
+    if (!freelancerComment.trim()) {
+      setActionError('Vui lòng nhập nhận xét.');
       return;
     }
 
@@ -178,38 +223,17 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       setSubmittingContractReview(true);
       setActionError(null);
 
-      const payload = {
-        rating: contractReviewRating,
-        comment: contractReviewComment
-      };
-
-      if (isClient) {
-        await contractApi.submitEmployerReview(contract.contractId, user.id, payload);
-      }
-
-      setContractReviewRating(5);
-      setContractReviewComment('');
-      showSuccess('Đã gửi đánh giá thành công!');
-      fetchContractDetails();
+      const result = await api.post(`/reviews/contract/${contractId}?freelancerId=${user.id}`, {
+        rating: freelancerRating,
+        comment: freelancerComment.trim()
+      });
+      setFreelancerSubmittedReview(result);
+      showSuccess('Đã gửi đánh giá khách hàng thành công!');
     } catch (err) {
-      setActionError(err.message || 'Lỗi khi gửi đánh giá hợp đồng.');
+      setActionError(err.message || 'Lỗi kết nối máy chủ.');
     } finally {
       setSubmittingContractReview(false);
     }
-  };
-
-  const renderStars = (rating, sizeClass = 'w-4 h-4') => {
-    const numericRating = Number(rating) || 0;
-    return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((value) => (
-          <Star
-            key={value}
-            className={`${sizeClass} ${value <= Math.round(numericRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
-          />
-        ))}
-      </div>
-    );
   };
 
   const getStatusBadgeClass = (status) => {
@@ -220,6 +244,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       case 'SUBMITTED':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'REJECTED':
+      case 'DISPUTED':
         return 'bg-rose-100 text-rose-800 border-rose-200';
       case 'COMPLETED':
       case 'CLOSED':
@@ -236,6 +261,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       case 'SUBMITTED': return 'Đã nộp - Chờ duyệt';
       case 'APPROVED': return 'Đã phê duyệt';
       case 'REJECTED': return 'Yêu cầu làm lại';
+      case 'DISPUTED': return 'Tranh chấp / Khiếu nại';
       case 'COMPLETED': return 'Đã hoàn thành';
       case 'CLOSED': return 'Đã đóng';
       default: return status;
@@ -276,10 +302,6 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   // Check if all milestones are approved to allow project completion
   const allMilestonesApproved = contract.milestones && contract.milestones.length > 0 && 
     contract.milestones.every(m => m.status === 'APPROVED');
-  const myContractReview = contractReviews.find((review) =>
-    review.reviewerType === 'EMPLOYER' && review.reviewerId === user.id
-  );
-  const canReviewContract = contract.status === 'COMPLETED' && isClient;
 
   return (
     <div className="pt-24 pb-16 bg-slate-50 min-h-screen">
@@ -305,13 +327,13 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             </button>
           )}
 
-          {isClient && contract.status === 'COMPLETED' && !myContractReview && (
+          {isFreelancer && contract.status === 'ACTIVE' && (
             <button
-              onClick={handleReviewFreelancerClick}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
+              onClick={() => setShowDisputeModal(true)}
+              className="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
             >
-              <Star className="w-5 h-5 fill-white" />
-              <span>Đánh giá ứng viên</span>
+              <AlertCircle className="w-4 h-4 text-rose-500" />
+              <span>Khiếu nại / Tranh chấp</span>
             </button>
           )}
         </div>
@@ -362,7 +384,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <div className="flex items-center gap-3 bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                 {contract.clientAvatar ? (
-                  <img src={getImageUrl(contract.clientAvatar)} alt="client" className="w-full h-full rounded-full object-cover" />
+                  <img src={contract.clientAvatar} alt="client" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <User className="w-5 h-5 text-blue-600" />
                 )}
@@ -377,7 +399,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <div className="flex items-center gap-3 bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                 {contract.freelancerAvatar ? (
-                  <img src={getImageUrl(contract.freelancerAvatar)} alt="freelancer" className="w-full h-full rounded-full object-cover" />
+                  <img src={contract.freelancerAvatar} alt="freelancer" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <User className="w-5 h-5 text-indigo-600" />
                 )}
@@ -414,86 +436,6 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
           )}
         </div>
 
-        {canReviewContract && (
-          <div ref={contractReviewSectionRef} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 scroll-mt-28">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
-              <div>
-                <h2 className="text-lg font-extrabold text-slate-800">Đánh giá ứng viên</h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Chia sẻ trải nghiệm làm việc với {contract.freelancerName}.
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 w-fit">
-                Hợp đồng đã hoàn thành
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5">
-              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/40">
-                <h3 className="text-sm font-extrabold text-slate-800 mb-3">Đánh giá của bạn</h3>
-                {myContractReview ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      {renderStars(myContractReview.rating, 'w-5 h-5')}
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Bạn đã gửi đánh giá
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-100 rounded-lg p-3">
-                      {myContractReview.comment || 'Không có nhận xét.'}
-                    </p>
-                    <span className="block text-xs text-slate-400">
-                      Gửi lúc {new Date(myContractReview.createdAt).toLocaleString('vi-VN')}
-                    </span>
-                  </div>
-                ) : (
-                  <form onSubmit={handleContractReviewSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-2">Số sao</label>
-                      <div className="flex items-center gap-1.5">
-                        {[1, 2, 3, 4, 5].map((value) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setContractReviewRating(value)}
-                            className="p-1 rounded-lg hover:bg-amber-50 transition-colors"
-                            aria-label={`${value} sao`}
-                          >
-                            <Star className={`w-7 h-7 ${value <= contractReviewRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
-                          </button>
-                        ))}
-                        <span className="ml-2 text-sm font-bold text-slate-600">{contractReviewRating}/5</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét</label>
-                      <textarea
-                        value={contractReviewComment}
-                        onChange={(e) => setContractReviewComment(e.target.value)}
-                        rows={4}
-                        maxLength={2000}
-                        placeholder="Viết nhận xét của bạn về quá trình hợp tác..."
-                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={submittingContractReview}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 inline-flex items-center gap-2"
-                    >
-                      <Star className="w-4 h-4" />
-                      <span>{submittingContractReview ? 'Đang gửi...' : 'Gửi đánh giá'}</span>
-                    </button>
-                  </form>
-                )}
-              </div>
-
-            </div>
-          </div>
-        )}
-
         {/* Milestones / Progress Section */}
         <h2 className="text-lg font-extrabold text-slate-800 mb-4 flex items-center gap-2">
           <span>Tiến độ và các Mốc công việc</span>
@@ -511,6 +453,8 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             contract.milestones.map((milestone, index) => {
               const showSubmitForm = activeMilestoneId === milestone.milestoneId;
               const hasDeliverables = milestone.deliverables && milestone.deliverables.length > 0;
+              const hasSubmittedDeliverable = hasDeliverables && milestone.deliverables.some(d => d.status === 'SUBMITTED');
+              const hasApprovedDeliverable = hasDeliverables && milestone.deliverables.some(d => d.status === 'APPROVED');
               
               return (
                 <div 
@@ -542,15 +486,35 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                           {getStatusText(milestone.status)}
                         </span>
                         
-                        {isFreelancer && contract.status === 'ACTIVE' && milestone.status !== 'APPROVED' && milestone.status !== 'SUBMITTED' && (
+                        {isFreelancer && contract.status === 'ACTIVE' && !hasApprovedDeliverable && milestone.status !== 'COMPLETED' && (
                           <button
                             onClick={() => {
+                              if (hasSubmittedDeliverable) {
+                                const submittedDel = milestone.deliverables.find(d => d.status === 'SUBMITTED');
+                                if (submittedDel) {
+                                  setSubmitTitle(submittedDel.title || '');
+                                  setSubmitNotes(submittedDel.notes || '');
+                                  setSubmitUrl(submittedDel.files && submittedDel.files.length > 0 ? submittedDel.files[0].fileUrl : '');
+                                  setEditingDeliverableId(submittedDel.deliverableId);
+                                  setActiveMilestoneId(showSubmitForm ? null : milestone.milestoneId);
+                                  setActionError(null);
+                                }
+                                return;
+                              }
                               setActiveMilestoneId(showSubmitForm ? null : milestone.milestoneId);
+                              setEditingDeliverableId(null);
+                              setSubmitTitle('');
+                              setSubmitNotes('');
+                              setSubmitUrl('');
                               setActionError(null);
                             }}
-                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                              hasSubmittedDeliverable 
+                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200' 
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
                           >
-                            {showSubmitForm ? 'Hủy' : 'Nộp sản phẩm'}
+                            {hasSubmittedDeliverable ? 'Chỉnh sửa' : (showSubmitForm ? 'Hủy' : 'Nộp sản phẩm')}
                           </button>
                         )}
                       </div>
@@ -574,7 +538,9 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                         onSubmit={(e) => handleWorkSubmit(e, milestone.milestoneId)}
                         className="bg-slate-50/70 p-4 rounded-xl border border-blue-100 space-y-4 animate-in slide-in-from-top-3 duration-200"
                       >
-                        <h4 className="font-extrabold text-slate-800 text-sm">Nộp sản phẩm cho mốc này</h4>
+                        <h4 className="font-extrabold text-slate-800 text-sm">
+                          {editingDeliverableId ? 'Chỉnh sửa sản phẩm đã nộp' : 'Nộp sản phẩm cho mốc này'}
+                        </h4>
                         
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Tiêu đề sản phẩm <span className="text-rose-500">*</span></label>
@@ -623,7 +589,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                             disabled={submittingWork}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                           >
-                            {submittingWork ? 'Đang gửi...' : 'Xác nhận nộp'}
+                            {submittingWork ? 'Đang gửi...' : (editingDeliverableId ? 'Lưu thay đổi' : 'Xác nhận nộp')}
                           </button>
                         </div>
                       </form>
@@ -730,6 +696,126 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             })
           )}
         </div>
+
+        {/* Review Employer Section */}
+        {isFreelancer && (contract.status === 'COMPLETED' || contract.status === 'CLOSED') && (
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mt-8">
+            <h3 className="font-extrabold text-base text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+              Đánh giá Khách hàng
+            </h3>
+            {freelancerSubmittedReview ? (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500">Điểm đánh giá của bạn:</span>
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        className={`w-4 h-4 ${s <= freelancerSubmittedReview.rating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-200'}`} 
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                  <strong className="text-slate-800">Nhận xét:</strong> {freelancerSubmittedReview.comment || 'Không có nhận xét.'}
+                </div>
+                <span className="text-[10px] text-slate-400 block pt-1">
+                  Đã gửi lúc: {new Date(freelancerSubmittedReview.createdAt).toLocaleString('vi-VN')}
+                </span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitContractReview} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">Chấm điểm sao *</label>
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setFreelancerRating(s)}
+                        className="text-slate-350 hover:scale-110 transition-transform focus:outline-none"
+                      >
+                        <Star 
+                          className={`w-7 h-7 ${s <= freelancerRating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-200'}`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét chi tiết *</label>
+                  <textarea
+                    required
+                    rows="3"
+                    value={freelancerComment}
+                    onChange={(e) => setFreelancerComment(e.target.value)}
+                    placeholder="Hãy chia sẻ trải nghiệm làm việc của bạn với khách hàng này..."
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingContractReview}
+                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {submittingContractReview ? 'Đang gửi...' : 'Gửi đánh giá'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Dispute Modal */}
+        {showDisputeModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md border border-slate-200 shadow-xl p-6 animate-in zoom-in-95 duration-150">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 className="font-extrabold text-base text-rose-600 flex items-center gap-1.5">
+                  <AlertCircle className="w-5 h-5" />
+                  Gửi khiếu nại tranh chấp
+                </h3>
+                <button onClick={() => { setShowDisputeModal(false); setDisputeReason(''); }} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                Bạn đang gửi yêu cầu tranh chấp lên Admin cho dự án này. Hãy ghi rõ lý do (ví dụ: Khách hàng không phản hồi, không duyệt sản phẩm dù đã đạt yêu cầu...).
+              </p>
+              <form onSubmit={handleFileDispute} className="space-y-4">
+                <label className="block">
+                  <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Lý do khiếu nại *</span>
+                  <textarea 
+                    required
+                    rows="4"
+                    placeholder="Nhập chi tiết lý do tranh chấp..."
+                    value={disputeReason}
+                    onChange={(e) => setDisputeReason(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-rose-500 focus:bg-white resize-none"
+                  />
+                </label>
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => { setShowDisputeModal(false); setDisputeReason(''); }}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingDispute}
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:bg-slate-350 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                  >
+                    {submittingDispute ? 'Đang gửi...' : 'Gửi khiếu nại'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

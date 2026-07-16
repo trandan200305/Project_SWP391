@@ -38,9 +38,14 @@ export function useSavedJobs(user) {
   const saveJob = async (job) => {
     if (user) {
       try {
-        await fetch(`${API_URL}/${job.id}/save?userId=${user.id}&userRole=${user.role || 'FREELANCER'}`, { method: 'POST' });
+        const res = await fetch(`${API_URL}/${job.id}/save?userId=${user.id}&userRole=${user.role || 'FREELANCER'}`, { method: 'POST' });
+        if (!res.ok) {
+          console.error("Failed to save job to server: status", res.status);
+          return false;
+        }
       } catch (err) {
         console.error("Failed to save job to server", err);
+        return false;
       }
     }
     
@@ -57,9 +62,14 @@ export function useSavedJobs(user) {
   const unsaveJob = async (jobId) => {
     if (user) {
       try {
-        await fetch(`${API_URL}/${jobId}/save?userId=${user.id}&userRole=${user.role || 'FREELANCER'}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/${jobId}/save?userId=${user.id}&userRole=${user.role || 'FREELANCER'}`, { method: 'DELETE' });
+        if (!res.ok) {
+          console.error("Failed to unsave job from server: status", res.status);
+          return false;
+        }
       } catch (err) {
         console.error("Failed to unsave job to server", err);
+        return false;
       }
     }
 
@@ -67,6 +77,7 @@ export function useSavedJobs(user) {
     const updated = current.filter(j => j.id !== jobId);
     localStorage.setItem('saved_jobs', JSON.stringify(updated));
     window.dispatchEvent(new Event('savedJobsChanged'));
+    return true;
   };
 
   const isJobSaved = (jobId) => {

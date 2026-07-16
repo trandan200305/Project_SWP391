@@ -55,7 +55,11 @@ public class ProjectController {
     public ResponseEntity<?> searchProjects(
             @RequestParam(value = "keyword", defaultValue = "") String keyword,
             @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            @RequestParam(value = "workForm", required = false) String workForm,
+            @RequestParam(value = "projectType", required = false) String projectType,
             @RequestParam(value = "minSalary", required = false) java.math.BigDecimal minSalary,
+            @RequestParam(value = "maxSalary", required = false) java.math.BigDecimal maxSalary,
+            @RequestParam(value = "skillIds", required = false) List<Integer> skillIds,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size) {
         if (page == null || size == null) {
@@ -65,7 +69,26 @@ public class ProjectController {
             return ResponseEntity.ok(projectService.searchProjects(keyword.trim()));
         }
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, minSalary, pageable));
+        return ResponseEntity.ok(projectService.searchPublishedProjects(keyword, categoryId, workForm, projectType, minSalary, maxSalary, skillIds, pageable));
+    }
+
+    @GetMapping("/work-forms")
+    public ResponseEntity<List<String>> getWorkForms() {
+        return ResponseEntity.ok(projectService.getDistinctWorkForms());
+    }
+
+    @GetMapping("/project-types")
+    public ResponseEntity<List<String>> getProjectTypes() {
+        return ResponseEntity.ok(projectService.getDistinctProjectTypes());
+    }
+
+    @GetMapping("/{projectId}")
+    public ResponseEntity<?> getProjectById(@PathVariable Integer projectId) {
+        try {
+            return ResponseEntity.ok(projectService.getProjectById(projectId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/employer/{employerId}")

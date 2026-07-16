@@ -23,5 +23,7 @@ public class ProposalDto {
     private String coverLetter;
     private String cvUrl;
     private String status;
+    private String projectTitle;
+    private String employerName;
     private LocalDateTime createdAt;
 }
