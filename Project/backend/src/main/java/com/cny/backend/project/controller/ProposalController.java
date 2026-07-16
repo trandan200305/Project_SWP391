@@ -68,4 +68,29 @@ public class ProposalController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    // Lấy danh sách báo giá của freelancer
+    @GetMapping("/freelancer/{freelancerId}")
+    public ResponseEntity<?> getProposalsByFreelancer(@PathVariable Integer freelancerId) {
+        try {
+            return ResponseEntity.ok(proposalService.getProposalsByFreelancer(freelancerId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Freelancer rút báo giá
+    @DeleteMapping("/{proposalId}/withdraw")
+    public ResponseEntity<?> withdrawProposal(
+            @PathVariable Integer proposalId,
+            @RequestParam Integer freelancerId) {
+        try {
+            proposalService.withdrawProposal(proposalId, freelancerId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }

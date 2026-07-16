@@ -81,4 +81,24 @@ public class ContractManagementController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+    // Freelancer khiếu nại tranh chấp hợp đồng
+    @PostMapping("/{contractId}/dispute")
+    public ResponseEntity<?> fileDispute(
+            @PathVariable Integer contractId,
+            @RequestParam Integer freelancerId,
+            @RequestBody java.util.Map<String, String> payload) {
+        try {
+            String reason = payload.get("reason");
+            if (reason == null || reason.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Lý do tranh chấp không được để trống.");
+            }
+            contractManagementService.fileDispute(contractId, freelancerId, reason);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }

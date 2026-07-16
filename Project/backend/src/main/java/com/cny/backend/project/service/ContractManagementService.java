@@ -9,6 +9,8 @@ import com.cny.backend.project.repository.ContractRepository;
 import com.cny.backend.project.repository.MilestoneRepository;
 import com.cny.backend.project.repository.DeliverableRepository;
 import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.admin.repository.DisputeRepository;
+import com.cny.backend.admin.entity.Dispute;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,9 @@ public class ContractManagementService {
 
     @Autowired
     private DeliverableService deliverableService;
+
+    @Autowired
+    private DisputeRepository disputeRepository;
 
     @Transactional(readOnly = true)
     public List<ContractDetailDto> getEmployerContracts(Integer employerId) {
@@ -159,5 +164,33 @@ public class ContractManagementService {
                 .createdAt(contract.getCreatedAt())
                 .updatedAt(contract.getUpdatedAt())
                 .build();
+    }
+
+    @Transactional
+    public void fileDispute(Integer contractId, Integer freelancerId, String reason) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng ID: " + contractId));
+
+        if (!contract.getFreelancer().getProfileId().equals(freelancerId)) {
+            throw new IllegalArgumentException("Chỉ freelancer thực hiện hợp đồng mới được quyền gửi tranh chấp.");
+        }
+
+        if (!"ACTIVE".equals(contract.getStatus())) {
+            throw new IllegalArgumentException("Chỉ có thể khiếu nại tranh chấp khi hợp đồng đang hoạt động.");
+        }
+
+        contract.setStatus("DISPUTED");
+        contractRepository.save(contract);
+
+        Dispute dispute = Dispute.builder()
+                .projectTitle(contract.getProject().getTitle())
+                .clientName(contract.getClient().getCompanyName() != null ? contract.getClient().getCompanyName() : contract.getClient().getFullName())
+                .freelancerName(contract.getFreelancer().getDisplayName() != null ? contract.getFreelancer().getDisplayName() : contract.getFreelancer().getFullName())
+                .amount(contract.getAgreedAmount())
+                .reason(reason)
+                .priority("HIGH")
+                .status("OPEN")
+                .build();
+        disputeRepository.save(dispute);
     }
 }

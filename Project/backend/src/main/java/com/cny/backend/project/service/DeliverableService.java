@@ -24,6 +24,9 @@ public class DeliverableService {
     @Autowired
     private DeliverableFileRepository deliverableFileRepository;
 
+    @Autowired
+    private ContractRepository contractRepository;
+
     @Transactional
     public DeliverableDto submitDeliverable(Integer milestoneId, DeliverableSubmitDto dto, Integer freelancerId) {
         Milestone milestone = milestoneRepository.findById(milestoneId)
@@ -71,6 +74,47 @@ public class DeliverableService {
     }
 
     @Transactional
+    public DeliverableDto editDeliverable(Integer deliverableId, DeliverableSubmitDto dto, Integer freelancerId) {
+        Deliverable deliverable = deliverableRepository.findById(deliverableId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm nộp ID: " + deliverableId));
+
+        if (!deliverable.getMilestone().getContract().getFreelancer().getProfileId().equals(freelancerId)) {
+            throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa sản phẩm này.");
+        }
+
+        if (!"SUBMITTED".equals(deliverable.getStatus()) && !"REJECTED".equals(deliverable.getStatus())) {
+            throw new IllegalArgumentException("Chỉ có thể chỉnh sửa sản phẩm khi đang chờ duyệt hoặc bị từ chối.");
+        }
+
+        deliverable.setTitle(dto.getTitle());
+        deliverable.setNotes(dto.getNotes());
+        
+        // Remove old files
+        deliverableFileRepository.deleteAll(deliverable.getFiles());
+        deliverable.getFiles().clear();
+
+        // Add new files
+        if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
+            for (DeliverableSubmitDto.AttachmentDto fileDto : dto.getAttachments()) {
+                DeliverableFile df = DeliverableFile.builder()
+                        .deliverable(deliverable)
+                        .fileUrl(fileDto.getFileUrl())
+                        .fileName(fileDto.getFileName())
+                        .fileSize(fileDto.getFileSize())
+                        .build();
+                deliverableFileRepository.save(df);
+                deliverable.getFiles().add(df);
+            }
+        }
+        
+        deliverable.setStatus("SUBMITTED");
+        deliverable.getMilestone().setStatus("SUBMITTED"); 
+        
+        Deliverable saved = deliverableRepository.save(deliverable);
+        return mapToDto(saved);
+    }
+
+    @Transactional
     public DeliverableDto reviewDeliverable(Integer deliverableId, Boolean approve, String feedback, Integer employerId) {
         Deliverable deliverable = deliverableRepository.findById(deliverableId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm nộp ID: " + deliverableId));
@@ -88,7 +132,7 @@ public class DeliverableService {
 
         if (approve) {
             deliverable.setStatus("APPROVED");
-            milestone.setStatus("APPROVED");
+            milestone.setStatus("COMPLETED");
         } else {
             deliverable.setStatus("REJECTED");
             milestone.setStatus("REJECTED");
@@ -97,6 +141,21 @@ public class DeliverableService {
         deliverable.setFeedback(feedback);
         deliverableRepository.save(deliverable);
         milestoneRepository.save(milestone);
+
+        if (approve) {
+            // Check if all milestones are completed
+            boolean allCompleted = true;
+            for (Milestone m : milestoneRepository.findByContractContractIdOrderByMilestoneIdAsc(contract.getContractId())) {
+                if (!"COMPLETED".equals(m.getStatus())) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            if (allCompleted) {
+                contract.setStatus("COMPLETED");
+                contractRepository.save(contract);
+            }
+        }
 
         return mapToDto(deliverable);
     }

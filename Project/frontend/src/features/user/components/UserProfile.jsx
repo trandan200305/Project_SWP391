@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2 } from 'lucide-react';
 import PortfolioSection from './PortfolioSection';
+import { api } from '../../../api/apiClient';
 
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
   <div className="flex justify-between items-center py-1">
@@ -54,6 +55,11 @@ export default function UserProfile({
         {role === 'freelancer' && (
           <PortfolioSection targetId={targetId} isOwner={isOwner} />
         )}
+
+        {/* Reviews Section */}
+        {role === 'freelancer' && (
+          <FreelancerReviewsSection freelancerId={targetId} />
+        )}
       </div>
 
       {/* Right Column for Profile */}
@@ -90,6 +96,77 @@ export default function UserProfile({
         </div>
 
 
+      </div>
+    </div>
+  );
+}
+
+function FreelancerReviewsSection({ freelancerId }) {
+  const [reviews, setReviews] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    api.get(`/reviews/freelancer/${freelancerId}`)
+      .then(data => {
+        setReviews(data || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [freelancerId]);
+
+  if (loading) {
+    return <div className="text-xs text-slate-500 font-medium py-4">Đang tải đánh giá từ khách hàng...</div>;
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center text-slate-400 font-semibold text-sm">
+        Chưa có đánh giá nào từ khách hàng cũ.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
+      <h3 className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
+        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+        Đánh giá từ Khách hàng ({reviews.length})
+      </h3>
+      <div className="divide-y divide-gray-100 space-y-4">
+        {reviews.map((review) => (
+          <div key={review.reviewId} className="pt-4 first:pt-0 space-y-2">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
+                  {review.reviewerEmployerAvatar ? (
+                    <img src={review.reviewerEmployerAvatar} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    review.reviewerEmployerName ? review.reviewerEmployerName.charAt(0).toUpperCase() : 'C'
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-800 text-sm">{review.reviewerEmployerName}</h4>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star 
+                    key={s} 
+                    className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
+              {review.comment || 'Không có nhận xét chi tiết.'}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

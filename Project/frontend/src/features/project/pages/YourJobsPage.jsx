@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bookmark, Briefcase, Calendar, DollarSign, ArrowRight, Trash2, Users, Clock, CheckCircle } from 'lucide-react';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 import { contractApi } from '../../../api/contractApi';
+import { api } from '../../../api/apiClient';
 
 export default function YourJobsPage({ onNavigate, user }) {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved', 'applied', 'received', 'completed'
@@ -61,7 +62,7 @@ export default function YourJobsPage({ onNavigate, user }) {
 
   // Sync contracts
   useEffect(() => {
-    if (user && (activeTab === 'received' || activeTab === 'completed')) {
+    if (user) {
       const fetchContracts = async () => {
         try {
           setLoadingContracts(true);
@@ -76,7 +77,7 @@ export default function YourJobsPage({ onNavigate, user }) {
       };
       fetchContracts();
     }
-  }, [user, activeTab]);
+  }, [user]);
 
   // Sync proposals from API
   useEffect(() => {
@@ -88,9 +89,8 @@ export default function YourJobsPage({ onNavigate, user }) {
       const fetchProposals = async () => {
         try {
           setLoadingProposals(true);
-          const res = await fetch(`http://localhost:8080/api/proposals/freelancer/${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
+          const data = await api.get(`/proposals/freelancer/${user.id}`);
+          if (data) {
             setProposals(data);
             localStorage.setItem('submitted_proposals', JSON.stringify(data));
           }
@@ -102,7 +102,7 @@ export default function YourJobsPage({ onNavigate, user }) {
       };
       fetchProposals();
     }
-  }, [user, activeTab]);
+  }, [user]);
 
   const handleUnsave = async (jobId) => {
     const success = await unsaveJob(jobId);
@@ -114,9 +114,7 @@ export default function YourJobsPage({ onNavigate, user }) {
   const handleWithdrawProposal = async (proposalId) => {
     if (user) {
       try {
-        await fetch(`http://localhost:8080/api/proposals/${proposalId}/withdraw?freelancerId=${user.id}`, {
-          method: 'DELETE'
-        });
+        await api.delete(`/proposals/${proposalId}/withdraw?freelancerId=${user.id}`);
       } catch (err) {
         console.log("Failed to withdraw proposal on server, removing locally for frontend demo.", err);
       }
@@ -180,7 +178,8 @@ export default function YourJobsPage({ onNavigate, user }) {
 
   const getProposalStatusText = (status) => {
     switch (status) {
-      case 'PENDING': return 'Chờ duyệt';
+      case 'PENDING':
+      case 'SUBMITTED': return 'Chờ duyệt';
       case 'ACCEPTED': return 'Đã nhận';
       case 'REJECTED': return 'Từ chối';
       default: return status;
@@ -189,7 +188,8 @@ export default function YourJobsPage({ onNavigate, user }) {
 
   const getProposalStatusClass = (status) => {
     switch (status) {
-      case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'PENDING':
+      case 'SUBMITTED': return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'ACCEPTED': return 'bg-emerald-50 text-emerald-700 border-emerald-250';
       case 'REJECTED': return 'bg-rose-50 text-rose-700 border-rose-200';
       default: return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -439,7 +439,7 @@ export default function YourJobsPage({ onNavigate, user }) {
 
                   {/* Withdraw Action */}
                   <div className="md:col-span-1 flex justify-center items-center">
-                    {proposal.status === 'PENDING' ? (
+                    {proposal.status === 'PENDING' || proposal.status === 'SUBMITTED' ? (
                       <button 
                         onClick={() => handleWithdrawProposal(proposal.proposalId)}
                         className="text-slate-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-xl transition-all"

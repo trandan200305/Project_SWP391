@@ -31,6 +31,10 @@ export const contractApi = {
     return api.post(`/deliverables/milestones/${milestoneId}?freelancerId=${freelancerId}`, submitData);
   },
 
+  editDeliverable: (deliverableId, freelancerId, submitData) => {
+    return api.put(`/deliverables/${deliverableId}?freelancerId=${freelancerId}`, submitData);
+  },
+
   // Nhà tuyển dụng đánh giá và phê duyệt sản phẩm đã nộp
   reviewDeliverable: (deliverableId, employerId, approve, feedback = '') => {
     const encodedFeedback = encodeURIComponent(feedback);
