@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.cny.backend.project.service.JobCategoryService;
+import com.cny.backend.project.dto.JobCategoryDto;
 
 @RestController
 @RequestMapping("/categories")
@@ -30,10 +32,13 @@ public class JobCategoryController {
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
 
+    @Autowired
+    private JobCategoryService jobCategoryService;
+
     
     @GetMapping
-    public ResponseEntity<List<JobCategory>> getAllCategories() {
-        List<JobCategory> categories = jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+    public ResponseEntity<List<JobCategoryDto>> getAllCategories() {
+        List<JobCategoryDto> categories = jobCategoryService.getAllCategoriesWithCount();
         return ResponseEntity.ok(categories);
     }
 

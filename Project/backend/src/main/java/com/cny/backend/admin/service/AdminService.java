@@ -2457,6 +2457,20 @@ public class AdminService {
             writeAuditLog(validAdminId, "APPROVE_PROFILE_REQUEST", "USER_MANAGEMENT", 
                 "Duyệt cập nhật hồ sơ của '" + employer.getDisplayName() + "' thành công.");
             
+            // Notify EMPLOYER
+            try {
+                notificationService.createNotification(
+                    (long) employer.getEmployerId(),
+                    "EMPLOYER",
+                    "Yêu cầu cập nhật hồ sơ được phê duyệt",
+                    "Yêu cầu cập nhật thông tin hồ sơ doanh nghiệp của bạn đã được phê duyệt.",
+                    "SUCCESS",
+                    "PROFILE-EMP-" + req.getRequestId()
+                );
+            } catch (Exception ex) {
+                System.err.println("Failed to send approval notification to employer: " + ex.getMessage());
+            }
+
             response.put("success", true);
             response.put("message", "Đã phê duyệt và cập nhật hồ sơ Employer thành công.");
         } else {
@@ -2465,6 +2479,20 @@ public class AdminService {
             writeAuditLog(validAdminId, "REJECT_PROFILE_REQUEST", "USER_MANAGEMENT", 
                 "Từ chối cập nhật hồ sơ của '" + req.getEmployer().getDisplayName() + "' | Lý do: " + reason);
             
+            // Notify EMPLOYER
+            try {
+                notificationService.createNotification(
+                    (long) req.getEmployer().getEmployerId(),
+                    "EMPLOYER",
+                    "Yêu cầu cập nhật hồ sơ bị từ chối",
+                    "Yêu cầu cập nhật thông tin hồ sơ doanh nghiệp của bạn đã bị từ chối. Lý do: " + reason,
+                    "WARNING",
+                    "PROFILE-EMP-" + req.getRequestId()
+                );
+            } catch (Exception ex) {
+                System.err.println("Failed to send rejection notification to employer: " + ex.getMessage());
+            }
+
             response.put("success", true);
             response.put("message", "Đã từ chối yêu cầu thay đổi thông tin.");
         }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star } from 'lucide-react';
+import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
 const InputRow = ({ label, value, onChange, placeholder, type = 'text', prefix, suffix }) => (
   <div className="flex justify-between items-center sm:block">
@@ -58,7 +59,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
 );
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,6 +119,59 @@ export default function EditProfileForm({
 
             {role === 'employer' && (
               <>
+                {/* Logo Upload */}
+                <div className="col-span-1 sm:col-span-2 flex items-center gap-5 p-4 border border-dashed border-gray-200 rounded-xl bg-gray-50/50 mb-2">
+                  <div className="w-16 h-16 rounded-xl border border-gray-200 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                    {companyLogoUrl ? (
+                      <img src={getImageUrl(companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <span className="text-xs font-bold text-gray-700 block">Logo công ty</span>
+                    <div className="flex items-center gap-2">
+                      <label className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg cursor-pointer transition-colors border border-blue-100">
+                        <span>Tải ảnh lên</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if(!file) return;
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            try {
+                              const res = await fetch('http://localhost:8080/api/upload', {
+                                method: 'POST',
+                                body: formData
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setCompanyLogoUrl(getFilenameFromUrl(data.fileUrl));
+                              } else {
+                                alert('Tải ảnh lên thất bại!');
+                              }
+                            } catch(err) {
+                              alert('Lỗi tải ảnh lên!');
+                            }
+                          }}
+                        />
+                      </label>
+                      {companyLogoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setCompanyLogoUrl('')}
+                          className="px-3 py-1.5 border border-gray-200 text-red-650 hover:bg-red-50 hover:border-red-100 text-xs font-bold rounded-lg transition-colors"
+                        >
+                          Xóa logo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <InputRow label="Tên công ty" value={companyName} onChange={e=>setCompanyName(e.target.value)} placeholder="Công ty ABC..." />
                 <InputRow label="Website" value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." />
                 <InputRow label="Quy mô công ty" value={companySize} onChange={e=>setCompanySize(e.target.value)} placeholder="10-50 nhân viên..." />

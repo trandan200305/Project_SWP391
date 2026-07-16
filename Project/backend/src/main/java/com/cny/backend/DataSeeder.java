@@ -45,6 +45,9 @@ public class DataSeeder implements CommandLineRunner {
     private FreelancerRepository freelancerRepository;
 
     @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
     private EmployerRepository employerRepository;
 
     @Autowired
@@ -190,7 +193,27 @@ public class DataSeeder implements CommandLineRunner {
                     .idCardFrontUrl(frontUrl)
                     .kycSubmittedAt(subTime)
                     .build();
-            freelancerRepository.save(freelancer);
+            Freelancer savedFl = freelancerRepository.save(freelancer);
+            
+            // Seed a matching FreelancerProfile for advanced filtering
+            FreelancerProfile profile = FreelancerProfile.builder()
+                    .freelancer(savedFl)
+                    .professionalTitle(freelancer.getProfessionalTitle())
+                    .bio(freelancer.getBio())
+                    .hourlyRate(freelancer.getHourlyRate())
+                    .address(freelancer.getAddress())
+                    .city(freelancer.getCity())
+                    .country(freelancer.getCountry())
+                    .expertiseField(i == 0 ? "Thiết kế" : i == 1 ? "Lập trình" : i == 2 ? "Marketing" : "Lập trình")
+                    .experienceLevel(i % 2 == 0 ? "Chuyên gia" : "Đã có kinh nghiệm")
+                    .primarySkills(i == 0 ? "Figma, UI/UX, Wireframe" : i == 1 ? "Java, Spring Boot, MySQL" : i == 2 ? "SEO, Google Ads, Copywriting" : "Flutter, React Native, Firebase")
+                    .profileCompleteness(95)
+                    .totalEarnings(BigDecimal.valueOf(earnings[i]))
+                    .projectsCompleted(reviews[i])
+                    .averageRating(BigDecimal.valueOf(ratings[i]))
+                    .isAvailable(true)
+                    .build();
+            freelancerProfileRepository.save(profile);
         }
     }
 
@@ -309,7 +332,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(15000000))
                 .deadline(LocalDate.now().plusDays(10))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -321,7 +344,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(6000000))
                 .deadline(LocalDate.now().plusDays(20))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -333,7 +356,7 @@ public class DataSeeder implements CommandLineRunner {
                 .projectType("MONTHLY")
                 .budgetFixed(BigDecimal.valueOf(4500000))
                 .deadline(LocalDate.now().plusDays(30))
-                .status("PENDING")
+                .status("PUBLISHED")
                 .proposalCount(0)
                 .build());
 
@@ -632,6 +655,13 @@ public class DataSeeder implements CommandLineRunner {
                             .build();
                     staffRepository.save(extraStaff);
                 }
+            }
+
+            com.cny.backend.department.entity.Department modDept = departmentRepository.findByCode("MOD").orElse(null);
+            Staff existingStaff = staffRepository.findByEmail("staff@gmail.com").orElse(null);
+            if (existingStaff != null && modDept != null) {
+                existingStaff.setDepartmentEntity(modDept);
+                staffRepository.save(existingStaff);
             }
         } catch (Exception e) {
             System.err.println("Error seeding staff and managers: " + e.getMessage());

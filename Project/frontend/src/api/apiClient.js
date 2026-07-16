@@ -30,7 +30,13 @@ export async function request(endpoint, options = {}) {
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
   
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorText = await response.text();
+    let errorData = {};
+    try {
+      errorData = errorText ? JSON.parse(errorText) : {};
+    } catch (e) {
+      errorData = { message: errorText };
+    }
     throw new Error(errorData.message || "Co loi xay ra khi ket noi may chu.");
   }
 

@@ -33,7 +33,7 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
   };
 
   const handleBack = () => {
-    if (onNavigate) onNavigate('your_jobs');
+    if (onNavigate) onNavigate('employer_jobs');
   };
 
   const handleRedirectVnpay = () => {

@@ -31,6 +31,7 @@ import java.util.List;
 @Builder
 public class ProjectDto {
     private Integer id;
+    private Integer employerId;
     private String title;
     private Boolean isNew;
     private String employerName;
