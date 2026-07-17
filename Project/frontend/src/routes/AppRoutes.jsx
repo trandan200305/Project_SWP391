@@ -14,6 +14,7 @@ import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
 import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
+import FindFreelancersPage from '../features/project/pages/FindFreelancersPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
@@ -81,6 +82,10 @@ export default function AppRoutes({
 
   if (currentPage === 'find_jobs') {
     return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
+  }
+
+  if (currentPage === 'find_freelancers') {
+    return <FindFreelancersPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
   }
 
   if (currentPage === 'job_details') {

@@ -336,18 +336,18 @@ export default function Navbar({
                 Tìm việc làm
               </a>
               <a
-                href="#post-job"
+                href="#find-freelancers"
                 onClick={(e) => {
                   e.preventDefault();
                   if (onNavigate) {
                     if (!user) {
-                      localStorage.setItem("redirect_after_login", "post_job");
+                      localStorage.setItem("redirect_after_login", "find_freelancers");
                       onNavigate("login");
                     } else if (user.role === "EMPLOYER") {
-                      onNavigate("post_job");
+                      onNavigate("find_freelancers");
                     } else {
                       alert(
-                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                       );
                     }
                   }
@@ -450,15 +450,6 @@ export default function Navbar({
 
                     {user?.role === "EMPLOYER" && (
                       <>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("post_job");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
-                        >
-                          <Plus className="w-4 h-4" /> Đăng dự án mới
-                        </button>
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
@@ -639,19 +630,19 @@ export default function Navbar({
               Tìm việc làm
             </a>
             <a
-              href="#post-job"
+              href="#find-freelancers"
               onClick={(e) => {
                 e.preventDefault();
                 setIsOpen(false);
                 if (onNavigate) {
                   if (!user) {
-                    localStorage.setItem("redirect_after_login", "post_job");
+                    localStorage.setItem("redirect_after_login", "find_freelancers");
                     onNavigate("login");
                   } else if (user.role === "EMPLOYER") {
-                    onNavigate("post_job");
+                    onNavigate("find_freelancers");
                   } else {
                     alert(
-                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                     );
                   }
                 }
