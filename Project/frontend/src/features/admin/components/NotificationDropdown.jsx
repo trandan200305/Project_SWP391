@@ -81,6 +81,9 @@ export default function NotificationDropdown({ userId, role }) {
     if (type === 'TRANSFER_REQUEST' && referenceId) {
       window.dispatchEvent(new CustomEvent('openTransferRequestDetail', { detail: { requestId: parseInt(referenceId, 10) } }));
     }
+    if (type === 'PROFILE_REQUEST' && referenceId) {
+      window.dispatchEvent(new CustomEvent('openProfileRequestDetail', { detail: { requestId: parseInt(referenceId, 10) } }));
+    }
   };
 
   const handleMarkAllAsRead = async () => {

@@ -11,8 +11,10 @@ import UserProfilePage from '../features/user/pages/UserProfilePage.jsx';
 import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
+import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
+import FindFreelancersPage from '../features/project/pages/FindFreelancersPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
@@ -61,12 +63,29 @@ export default function AppRoutes({
     return <UserProfilePage user={user} defaultTab={currentPage} initialTab={initialTab} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
+  if (currentPage === 'view_profile') {
+    return (
+      <UserProfilePage
+        user={user}
+        targetRole={pageParams?.targetRole}
+        targetUserId={pageParams?.targetUserId}
+        defaultTab="profile"
+        onNavigate={handleNavigate}
+        onLogout={onLogout}
+      />
+    );
+  }
+
   if (currentPage === 'coming_soon') {
     return <ComingSoon onNavigateHome={() => handleNavigate('home')} />;
   }
 
   if (currentPage === 'find_jobs') {
     return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
+  }
+
+  if (currentPage === 'find_freelancers') {
+    return <FindFreelancersPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
   }
 
   if (currentPage === 'job_details') {
@@ -105,6 +124,17 @@ export default function AppRoutes({
     );
   }
 
+  if (currentPage === 'employer_jobs') {
+    return (
+      <EmployerJobsPage
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
   if (currentPage === 'post_job') {
     return (
       <PostJobPage
@@ -120,6 +150,7 @@ export default function AppRoutes({
       <PaymentResultPage
         pageParams={pageParams}
         onNavigate={handleNavigate}
+        user={user}
       />
     );
   }

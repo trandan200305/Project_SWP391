@@ -1,5 +1,6 @@
 import React from 'react';
-import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2 } from 'lucide-react';
+import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2, Building2 } from 'lucide-react';
+import { getImageUrl } from '../../../utils/imageHelper.js';
 
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
   <div className="flex justify-between items-center py-1">
@@ -17,28 +18,45 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
 
 export default function UserProfile({
   setActiveTab, onNavigate, role, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
-  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness, taxCode, hideEmail, hidePhone, hideLocation
+  formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness, taxCode, hideEmail, hidePhone, hideLocation, companyLogoUrl, companyName,
+  isOwnProfile
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
       <div className="lg:col-span-2 flex flex-col gap-6">
 
-        <div className="flex justify-end">
-          <button onClick={() => onNavigate('edit_profile')} className="px-5 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-sm">
-            <Edit3 className="w-4 h-4" /> Chỉnh sửa thông tin cá nhân
-          </button>
-        </div>
+        {isOwnProfile && role !== 'employer' && (
+          <div className="flex justify-end">
+            <button onClick={() => onNavigate('edit_profile')} className="px-5 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-sm">
+              <Edit3 className="w-4 h-4" /> Chỉnh sửa thông tin cá nhân
+            </button>
+          </div>
+        )}
 
         
         {(role === 'freelancer' || role === 'employer') && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-              <User className="w-32 h-32" />
+              {role === 'freelancer' ? <User className="w-32 h-32" /> : <Building2 className="w-32 h-32" />}
             </div>
-            <h3 className="font-extrabold text-gray-900 text-xl mb-4 relative z-10">
-              {role === 'freelancer' ? 'Giới thiệu bản thân' : 'Tổng quan Doanh nghiệp'}
-            </h3>
+            
+            <div className="flex items-center gap-4 mb-6 relative z-10">
+              {role === 'employer' && companyLogoUrl && (
+                <div className="w-16 h-16 rounded-2xl border border-gray-205 flex items-center justify-center overflow-hidden shrink-0 bg-slate-50 shadow-sm">
+                  <img src={getImageUrl(companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-xl">
+                  {role === 'freelancer' ? 'Giới thiệu bản thân' : 'Tổng quan Doanh nghiệp'}
+                </h3>
+                {role === 'employer' && companyName && (
+                  <p className="text-xs text-gray-500 font-bold mt-0.5">{companyName}</p>
+                )}
+              </div>
+            </div>
+
             <p className="text-[15px] text-gray-600 font-medium leading-relaxed whitespace-pre-line relative z-10">
               {(role === 'freelancer' ? bio : companyDescription) || 'Chưa có thông tin giới thiệu.'}
             </p>

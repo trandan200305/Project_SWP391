@@ -563,7 +563,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
         }))];
       }
 
-      // Profile requests are excluded as profile verification is handled by KYC
+      // Profile requests are excluded as they are moderated only by the Manager
 
 
       if (Array.isArray(gigsData)) {
@@ -4566,12 +4566,52 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-[#6e7b6c] uppercase block">Nội dung chi tiết</span>
-                <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-sm text-slate-850 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
-                  {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
+              {selectedModerationItem.type === 'PROFILE' && selectedModerationItem.rawRequest ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+                      <p className="font-bold text-slate-500 uppercase pb-2 border-b border-slate-200 mb-2">Thông tin hiện tại</p>
+                      <p><strong>Tên hiển thị:</strong> {selectedModerationItem.rawRequest.employer?.displayName || 'Chưa cập nhật'}</p>
+                      <p><strong>Họ và tên:</strong> {selectedModerationItem.rawRequest.employer?.fullName || 'Chưa cập nhật'}</p>
+                      <p><strong>Số điện thoại:</strong> {selectedModerationItem.rawRequest.employer?.phone || 'Chưa cập nhật'}</p>
+                      <p><strong>Tên công ty:</strong> {selectedModerationItem.rawRequest.employer?.companyName || 'Chưa cập nhật'}</p>
+                      <p><strong>Website:</strong> {selectedModerationItem.rawRequest.employer?.website || 'Chưa cập nhật'}</p>
+                      <p><strong>Quy mô:</strong> {selectedModerationItem.rawRequest.employer?.companySize || 'Chưa cập nhật'}</p>
+                      <p><strong>Ngành nghề:</strong> {selectedModerationItem.rawRequest.employer?.industry || 'Chưa cập nhật'}</p>
+                      <p><strong>Mã số thuế:</strong> {selectedModerationItem.rawRequest.employer?.taxCode || 'Chưa cập nhật'}</p>
+                      <p><strong>Địa chỉ:</strong> {selectedModerationItem.rawRequest.employer?.address ? `${selectedModerationItem.rawRequest.employer.address}, ${selectedModerationItem.rawRequest.employer.city || ''}, ${selectedModerationItem.rawRequest.employer.country || ''}` : 'Chưa cập nhật'}</p>
+                      <p><strong>Mô tả:</strong> {selectedModerationItem.rawRequest.employer?.companyDescription || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100 space-y-1">
+                      <p className="font-bold text-indigo-600 uppercase pb-2 border-b border-indigo-100 mb-2">Thông tin đề xuất</p>
+                      <p><strong>Tên hiển thị:</strong> <span className={selectedModerationItem.rawRequest.displayName !== selectedModerationItem.rawRequest.employer?.displayName ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.displayName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Họ và tên:</strong> <span className={selectedModerationItem.rawRequest.fullName !== selectedModerationItem.rawRequest.employer?.fullName ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.fullName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Số điện thoại:</strong> <span className={selectedModerationItem.rawRequest.phone !== selectedModerationItem.rawRequest.employer?.phone ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.phone || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Tên công ty:</strong> <span className={selectedModerationItem.rawRequest.companyName !== selectedModerationItem.rawRequest.employer?.companyName ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.companyName || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Website:</strong> <span className={selectedModerationItem.rawRequest.website !== selectedModerationItem.rawRequest.employer?.website ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.website || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Quy mô:</strong> <span className={selectedModerationItem.rawRequest.companySize !== selectedModerationItem.rawRequest.employer?.companySize ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.companySize || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Ngành nghề:</strong> <span className={selectedModerationItem.rawRequest.industry !== selectedModerationItem.rawRequest.employer?.industry ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.industry || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Mã số thuế:</strong> <span className={selectedModerationItem.rawRequest.taxCode !== selectedModerationItem.rawRequest.employer?.taxCode ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.taxCode || 'Chưa cập nhật'}</span></p>
+                      <p><strong>Địa chỉ:</strong> <span className={(selectedModerationItem.rawRequest.address !== selectedModerationItem.rawRequest.employer?.address || selectedModerationItem.rawRequest.city !== selectedModerationItem.rawRequest.employer?.city) ? "text-indigo-600 font-bold" : ""}>{selectedModerationItem.rawRequest.address ? `${selectedModerationItem.rawRequest.address}, ${selectedModerationItem.rawRequest.city || ''}, ${selectedModerationItem.rawRequest.country || ''}` : 'Chưa cập nhật'}</span></p>
+                      <p><strong>Mô tả:</strong> <span className={selectedModerationItem.rawRequest.companyDescription !== selectedModerationItem.rawRequest.employer?.companyDescription ? "text-indigo-600 font-bold block whitespace-pre-line" : ""}>{selectedModerationItem.rawRequest.companyDescription || 'Chưa cập nhật'}</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-xs space-y-1">
+                    <p className="font-bold text-slate-700 pb-1.5 border-b border-slate-200 mb-1.5">Thông tin tài khoản ngân hàng thụ hưởng đề xuất</p>
+                    <p><strong>Tên ngân hàng:</strong> {selectedModerationItem.rawRequest.bankName || 'Chưa cập nhật'}</p>
+                    <p><strong>Số tài khoản:</strong> {selectedModerationItem.rawRequest.accountNumber || 'Chưa cập nhật'}</p>
+                    <p><strong>Chủ tài khoản:</strong> {selectedModerationItem.rawRequest.accountHolder || 'Chưa cập nhật'}</p>
+                    <p><strong>Chi nhánh:</strong> {selectedModerationItem.rawRequest.branch || 'Chưa cập nhật'}</p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-[#6e7b6c] uppercase block">Nội dung chi tiết</span>
+                  <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-sm text-slate-850 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                    {selectedModerationItem.detail || 'Không có mô tả chi tiết'}
+                  </div>
+                </div>
+              )}
 
               {showModEscalateForm && (
                 <div className="border border-[#ffdad6] bg-[#fff5f4] rounded-lg p-4 space-y-3">

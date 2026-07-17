@@ -109,9 +109,9 @@ public class ProjectService {
             }
         }
 
-        String projectStatus = "PENDING_PAYMENT";
+        String projectStatus = "PUBLISHED";
         String appliedPackage = "MEDIUM";
-        double serviceFee = 100000.0;
+        double serviceFee = 0.0;
         int durationDays = 7;
 
         // Check if Employer has an active subscription package with available quota
@@ -121,9 +121,7 @@ public class ProjectService {
             client.setPackagePostQuota(client.getPackagePostQuota() - 1);
             employerRepository.save(client);
 
-            projectStatus = "PUBLISHED";
             appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
-            serviceFee = 0.0; // Already paid via subscription
             
             // Get duration from config if possible
             Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
@@ -141,23 +139,14 @@ public class ProjectService {
             }
             
             if ("REGULAR".equals(appliedPackage)) {
-                serviceFee = 200000.0;
                 durationDays = 15;
             } else if ("PREMIUM".equals(appliedPackage)) {
-                serviceFee = 500000.0;
                 durationDays = 30;
             }
 
             Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
             if (configOpt.isPresent()) {
-                serviceFee = configOpt.get().getPrice();
-            } else {
-                servicePackageConfigRepository.save(ServicePackageConfig.builder()
-                    .packageType(appliedPackage)
-                    .price(serviceFee)
-                    .postLimit(10)
-                    .durationDays(30)
-                    .build());
+                durationDays = configOpt.get().getDurationDays();
             }
         }
 
@@ -188,9 +177,9 @@ public class ProjectService {
                 notificationService.createNotification(
                     staff.getStaffId().longValue(),
                     "STAFF",
-                    "Dự án mới cần duyệt",
-                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
-                    "TASK",
+                    "Dự án mới đã đăng",
+                    "Dự án '" + savedProject.getTitle() + "' đã được đăng và xuất bản trực tiếp.",
+                    "INFO",
                     savedProject.getProjectId().toString()
                 );
             }
@@ -399,6 +388,7 @@ public class ProjectService {
 
         return ProjectDto.builder()
                 .id(project.getProjectId())
+                .employerId(project.getClient() != null ? project.getClient().getEmployerId() : null)
                 .title(project.getTitle())
                 .isNew(isNew)
                 .employerName(employerName)

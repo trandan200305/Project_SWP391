@@ -1,5 +1,7 @@
 @echo off
 title LancerPro - Khoi dong du an
+set "JAVA_HOME=C:\Users\PC\.jdks\ms-17.0.18"
+set "PATH=%JAVA_HOME%\bin;%PATH%"
 echo =======================================================
 echo   LancerPro - Dang khoi dong Backend va Frontend...
 echo =======================================================
