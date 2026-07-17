@@ -35,21 +35,27 @@ public class PayOSController {
     public ResponseEntity<?> createPaymentUrl(
             @RequestParam(required = false) Integer projectId,
             @RequestParam(required = false) String packageType,
+            @RequestParam(required = false) Integer employerId,
             HttpServletRequest request) {
         
         if (!payOSService.isPayosHealthy()) {
             System.out.println("PayOS is DOWN. Falling back to VNPay.");
-            return (ResponseEntity<?>) paymentController.createPaymentUrl(projectId, packageType, request);
+            return (ResponseEntity<?>) paymentController.createPaymentUrl(projectId, packageType, employerId, request);
         }
 
         try {
-            CreatePaymentLinkResponse data = payOSService.createPaymentUrl(projectId, packageType);
+            CreatePaymentLinkResponse data = payOSService.createPaymentUrl(projectId, packageType, employerId);
 
-            Map<String, String> response = new HashMap<>();
+            Map<String, Object> response = new HashMap<>();
             response.put("paymentUrl", data.getCheckoutUrl());
             // txnRef in this context is the orderCode string
             response.put("txnRef", String.valueOf(data.getOrderCode()));
             response.put("qrCode", data.getQrCode());
+            response.put("accountName", data.getAccountName());
+            response.put("accountNumber", data.getAccountNumber());
+            response.put("bin", data.getBin());
+            response.put("amount", data.getAmount());
+            response.put("description", data.getDescription());
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -117,6 +123,38 @@ public class PayOSController {
             return ResponseEntity.ok(Map.of("success", true, "message", "Đã hủy thanh toán và vô hiệu hóa QR code PayOS thành công"));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/status/{txnRef}")
+    public ResponseEntity<?> getTransactionStatus(@PathVariable String txnRef) {
+        try {
+            PaymentTransaction txn = payOSService.getTransactionByRef(txnRef);
+            if (txn == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("success", false, "message", "Không tìm thấy giao dịch"));
+            }
+
+            // Tự động đồng bộ trạng thái từ PayOS nếu vẫn đang PENDING (giải quyết triệt để lỗi Webhook trên localhost)
+            if ("PENDING".equals(txn.getStatus())) {
+                try {
+                    String payosStatus = payOSService.queryTransaction(txnRef, 1);
+                    if ("PAID".equalsIgnoreCase(payosStatus) || "SUCCESS".equalsIgnoreCase(payosStatus)) {
+                        txn.setStatus("SUCCESS");
+                    } else if ("CANCELLED".equalsIgnoreCase(payosStatus) || "EXPIRED".equalsIgnoreCase(payosStatus)) {
+                        txn.setStatus("CANCELLED");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Lỗi đồng bộ PayOS: " + e.getMessage());
+                }
+            }
+
+            Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
+            res.put("status", txn.getStatus());
+            return ResponseEntity.ok(res);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "message", "Lỗi: " + e.getMessage()));

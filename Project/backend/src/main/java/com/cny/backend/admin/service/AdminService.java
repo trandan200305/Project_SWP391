@@ -1805,11 +1805,14 @@ public class AdminService {
         }
 
         if (phone != null && !phone.trim().isEmpty()) {
-            if (adminRepository.countByPhone(phone) > 0 ||
-                freelancerRepository.countByPhone(phone) > 0 ||
-                employerRepository.countByPhone(phone) > 0 ||
-                managerRepository.countByPhone(phone) > 0 ||
-                staffRepository.countByPhone(phone) > 0) {
+            String phoneQuery = "SELECT SUM(cnt) FROM (" +
+                "SELECT COUNT(*) as cnt FROM admins WHERE phone = ? AND (is_deleted = 0 OR is_deleted IS NULL) UNION ALL " +
+                "SELECT COUNT(*) as cnt FROM freelancers WHERE phone = ? AND (is_deleted = 0 OR is_deleted IS NULL) UNION ALL " +
+                "SELECT COUNT(*) as cnt FROM employers WHERE phone = ? AND (is_deleted = 0 OR is_deleted IS NULL) UNION ALL " +
+                "SELECT COUNT(*) as cnt FROM managers WHERE phone = ? AND (is_deleted = 0 OR is_deleted IS NULL) UNION ALL " +
+                "SELECT COUNT(*) as cnt FROM staff WHERE phone = ? AND (is_deleted = 0 OR is_deleted IS NULL)) AS t";
+            Integer phoneCount = jdbcTemplate.queryForObject(phoneQuery, Integer.class, phone, phone, phone, phone, phone);
+            if (phoneCount != null && phoneCount > 0) {
                 response.put("success", false);
                 response.put("message", "Số điện thoại đã được sử dụng bởi một tài khoản khác!");
                 return response;
@@ -1817,8 +1820,11 @@ public class AdminService {
         }
 
         if (citizenId != null && !citizenId.trim().isEmpty()) {
-            if (managerRepository.countByCitizenId(citizenId) > 0 ||
-                staffRepository.countByCitizenId(citizenId) > 0) {
+            String citizenIdQuery = "SELECT SUM(cnt) FROM (" +
+                "SELECT COUNT(*) as cnt FROM managers WHERE citizen_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) UNION ALL " +
+                "SELECT COUNT(*) as cnt FROM staff WHERE citizen_id = ? AND (is_deleted = 0 OR is_deleted IS NULL)) AS t";
+            Integer citizenCount = jdbcTemplate.queryForObject(citizenIdQuery, Integer.class, citizenId, citizenId);
+            if (citizenCount != null && citizenCount > 0) {
                 response.put("success", false);
                 response.put("message", "Căn cước công dân đã được sử dụng bởi một tài khoản khác!");
                 return response;

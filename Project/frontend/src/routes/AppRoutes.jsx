@@ -19,6 +19,7 @@ import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
 import PaymentResultPage from '../pages/PaymentResultPage.jsx';
 import CheckoutPage from '../pages/CheckoutPage.jsx';
+import PackageSelectionPage from '../pages/employer/PackageSelectionPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -116,6 +117,15 @@ export default function AppRoutes({
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
+  if (currentPage === 'employer_packages') {
+    return (
+      <PackageSelectionPage 
+        user={user} 
+        onNavigate={handleNavigate} 
       />
     );
   }

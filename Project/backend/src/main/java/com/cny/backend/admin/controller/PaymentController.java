@@ -65,6 +65,7 @@ public class PaymentController {
     public ResponseEntity<?> createPaymentUrl(
             @RequestParam(required = false) Integer projectId,
             @RequestParam(required = false) String packageType,
+            @RequestParam(required = false) Integer employerId,
             HttpServletRequest request) {
         try {
             Project project = null;
@@ -73,19 +74,25 @@ public class PaymentController {
                         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
             }
 
-            Employer client = employerRepository.findAll().stream().findFirst().orElseGet(() -> {
-                Employer dummyEmp = Employer.builder()
-                        .email("employer_test@lancerpro.com")
-                        .passwordHash("hashed")
-                        .displayName("Employer Test")
-                        .fullName("Employer Test")
-                        .status("ACTIVE")
-                        .isVerified(true)
-                        .isDeleted(false)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                return employerRepository.save(dummyEmp);
-            });
+            Employer client = null;
+            if (employerId != null) {
+                client = employerRepository.findById(employerId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Nhà tuyển dụng với ID: " + employerId));
+            } else {
+                client = employerRepository.findAll().stream().findFirst().orElseGet(() -> {
+                    Employer dummyEmp = Employer.builder()
+                            .email("employer_test@lancerpro.com")
+                            .passwordHash("hashed")
+                            .displayName("Employer Test")
+                            .fullName("Employer Test")
+                            .status("ACTIVE")
+                            .isVerified(true)
+                            .isDeleted(false)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    return employerRepository.save(dummyEmp);
+                });
+            }
 
             double price = 0.0;
             if (project != null && project.getServiceFee() != null) {
