@@ -21,7 +21,14 @@ import com.cny.backend.user.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,21 +40,111 @@ public class FreelancerController {
     private FreelancerRepository freelancerRepository;
 
     @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
     private FreelancerService freelancerService;
 
     @Autowired
     private EmployerRepository employerRepository;
 
     @Autowired
+    private ContractRepository contractRepository;
+
+    @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
+    @Autowired
+    private com.cny.backend.project.repository.JobCategoryRepository jobCategoryRepository;
+
+    /** Lấy danh sách tất cả freelancer (mặc định không filter) */
     @GetMapping
-    public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
+    public ResponseEntity<List<FreelancerDto>> getAllFreelancers(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "experienceLevel", required = false) String experienceLevel,
+            @RequestParam(value = "minRate", required = false) java.math.BigDecimal minRate,
+            @RequestParam(value = "maxRate", required = false) java.math.BigDecimal maxRate,
+            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating) {
+        
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         List<FreelancerDto> dtos = freelancers.stream().map(this::mapToDto).collect(Collectors.toList());
+        
+        // Filter in memory
+        if ((keyword != null && !keyword.trim().isEmpty()) || 
+            (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) ||
+            (experienceLevel != null && !experienceLevel.trim().isEmpty()) ||
+            minRate != null || maxRate != null || minRating != null) {
+            
+            dtos = dtos.stream().filter(f -> {
+                boolean matches = true;
+                
+                // Category match (expertiseField)
+                if (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) {
+                    String catLower = category.trim().toLowerCase();
+                    String expField = f.getExpertiseField();
+                    if (expField == null || !expField.toLowerCase().contains(catLower)) {
+                        matches = false;
+                    }
+                }
+                
+                // Keyword match (name, bio, professional title, primary skills)
+                if (matches && keyword != null && !keyword.trim().isEmpty()) {
+                    String kwLower = keyword.trim().toLowerCase();
+                    boolean nameMatch = f.getDisplayName() != null && f.getDisplayName().toLowerCase().contains(kwLower);
+                    boolean fullNameMatch = f.getFullName() != null && f.getFullName().toLowerCase().contains(kwLower);
+                    boolean bioMatch = f.getBio() != null && f.getBio().toLowerCase().contains(kwLower);
+                    boolean titleMatch = f.getProfessionalTitle() != null && f.getProfessionalTitle().toLowerCase().contains(kwLower);
+                    boolean skillsMatch = f.getPrimarySkills() != null && f.getPrimarySkills().toLowerCase().contains(kwLower);
+                    
+                    if (!nameMatch && !fullNameMatch && !bioMatch && !titleMatch && !skillsMatch) {
+                        matches = false;
+                    }
+                }
+                
+                // Experience level match
+                if (matches && experienceLevel != null && !experienceLevel.trim().isEmpty()) {
+                    String expLower = experienceLevel.trim().toLowerCase();
+                    String flExp = f.getExperienceLevel();
+                    if (flExp == null || !flExp.toLowerCase().contains(expLower)) {
+                        matches = false;
+                    }
+                }
+                
+                // Hourly rate match
+                if (matches) {
+                    java.math.BigDecimal rate = f.getHourlyRate();
+                    if (rate != null) {
+                        if (minRate != null && rate.compareTo(minRate) < 0) {
+                            matches = false;
+                        }
+                        if (maxRate != null && rate.compareTo(maxRate) > 0) {
+                            matches = false;
+                        }
+                    } else {
+                        // if rate is null, exclude if min/max filters are active
+                        if (minRate != null || maxRate != null) {
+                            matches = false;
+                        }
+                    }
+                }
+                
+                // Rating filter (averageRating)
+                if (matches && minRating != null) {
+                    java.math.BigDecimal rating = f.getAverageRating();
+                    if (rating == null || rating.compareTo(minRating) < 0) {
+                        matches = false;
+                    }
+                }
+                
+                return matches;
+            }).collect(Collectors.toList());
+        }
+        
         return ResponseEntity.ok(dtos);
     }
 
+    /** Lấy danh sách top freelancer (legacy, giới hạn 4) */
     @GetMapping("/top")
     public ResponseEntity<List<FreelancerDto>> getTopFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();
@@ -56,6 +153,68 @@ public class FreelancerController {
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(topFreelancers);
+    }
+
+    /**
+     * Tìm kiếm freelancer với bộ lọc:
+     * - keyword: tên hoặc professional title
+     * - category: tên danh mục/chuyên môn
+     * - minRate / maxRate: mức giá theo giờ
+     * - minRating: đánh giá tối thiểu
+     * - page, size, sort
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchFreelancers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minRate,
+            @RequestParam(required = false) BigDecimal maxRate,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "averageRating") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        String cat = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
+
+        Page<Freelancer> result = freelancerRepository.searchFreelancers(kw, cat, minRate, maxRate, minRating, pageable);
+
+        List<FreelancerDto> dtos = result.getContent().stream().map(this::mapToDto).collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("freelancers", dtos);
+        response.put("currentPage", result.getNumber());
+        response.put("totalPages", result.getTotalPages());
+        response.put("totalElements", result.getTotalElements());
+        response.put("pageSize", result.getSize());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách tất cả danh mục công việc (dùng cho dropdown filter trên UI)
+     */
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, Object>>> getCategories() {
+        List<Map<String, Object>> categories = jobCategoryRepository
+                .findByIsActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getCategoryId());
+                    m.put("name", c.getCategoryName());
+                    m.put("description", c.getDescription());
+                    m.put("iconUrl", c.getIconUrl());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/{id}")
@@ -190,6 +349,19 @@ public class FreelancerController {
     }
 
     private FreelancerDto mapToDto(Freelancer f) {
+        FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
+        
+        java.util.List<Contract> contracts = contractRepository.findByFreelancerProfileId(f.getProfileId());
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        if (contracts != null) {
+            counts = contracts.stream()
+                    .filter(c -> "COMPLETED".equals(c.getStatus()) && c.getProject() != null && c.getProject().getCategory() != null)
+                    .collect(Collectors.groupingBy(
+                            c -> c.getProject().getCategory().getCategoryName(),
+                            Collectors.counting()
+                    ));
+        }
+
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
                 .email(f.getEmail())
@@ -199,20 +371,20 @@ public class FreelancerController {
                 .avatarUrl(f.getAvatarUrl())
                 .status(f.getStatus())
                 .emailVerified(f.getEmailVerified())
-                .professionalTitle(f.getProfessionalTitle())
-                .bio(f.getBio())
-                .hourlyRate(f.getHourlyRate())
-                .address(f.getAddress())
-                .city(f.getCity())
-                .country(f.getCountry())
+                .professionalTitle(profile != null && profile.getProfessionalTitle() != null ? profile.getProfessionalTitle() : f.getProfessionalTitle())
+                .bio(profile != null && profile.getBio() != null ? profile.getBio() : f.getBio())
+                .hourlyRate(profile != null && profile.getHourlyRate() != null ? profile.getHourlyRate() : f.getHourlyRate())
+                .address(profile != null && profile.getAddress() != null ? profile.getAddress() : f.getAddress())
+                .city(profile != null && profile.getCity() != null ? profile.getCity() : f.getCity())
+                .country(profile != null && profile.getCountry() != null ? profile.getCountry() : f.getCountry())
                 .hideEmail(f.getHideEmail())
                 .hidePhone(f.getHidePhone())
                 .hideLocation(f.getHideLocation())
-                .profileCompleteness(f.getProfileCompleteness())
-                .totalEarnings(f.getTotalEarnings())
-                .projectsCompleted(f.getProjectsCompleted())
-                .averageRating(f.getAverageRating())
-                .isAvailable(f.getIsAvailable())
+                .profileCompleteness(profile != null && profile.getProfileCompleteness() != null ? profile.getProfileCompleteness() : f.getProfileCompleteness())
+                .totalEarnings(profile != null && profile.getTotalEarnings() != null ? profile.getTotalEarnings() : f.getTotalEarnings())
+                .projectsCompleted(profile != null && profile.getProjectsCompleted() != null ? profile.getProjectsCompleted() : f.getProjectsCompleted())
+                .averageRating(profile != null && profile.getAverageRating() != null ? profile.getAverageRating() : f.getAverageRating())
+                .isAvailable(profile != null && profile.getIsAvailable() != null ? profile.getIsAvailable() : f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
                 .lastLoginAt(f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null)
@@ -225,6 +397,11 @@ public class FreelancerController {
                 .kycReviewedByStaffId(f.getKycReviewedByStaffId())
                 .kycRejectedReason(f.getKycRejectedReason())
                 .isVerified(f.getIsVerified())
+                .expertiseField(profile != null ? profile.getExpertiseField() : null)
+                .experienceLevel(profile != null ? profile.getExperienceLevel() : null)
+                .primarySkills(profile != null ? profile.getPrimarySkills() : null)
+                .servicesOffered(profile != null ? profile.getServicesOffered() : null)
+                .categoryProjectCounts(counts)
                 .build();
     }
 }

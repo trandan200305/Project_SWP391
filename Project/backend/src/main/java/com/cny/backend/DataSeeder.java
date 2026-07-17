@@ -45,6 +45,9 @@ public class DataSeeder implements CommandLineRunner {
     private FreelancerRepository freelancerRepository;
 
     @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
     private EmployerRepository employerRepository;
 
     @Autowired
@@ -190,7 +193,27 @@ public class DataSeeder implements CommandLineRunner {
                     .idCardFrontUrl(frontUrl)
                     .kycSubmittedAt(subTime)
                     .build();
-            freelancerRepository.save(freelancer);
+            Freelancer savedFl = freelancerRepository.save(freelancer);
+            
+            // Seed a matching FreelancerProfile for advanced filtering
+            FreelancerProfile profile = FreelancerProfile.builder()
+                    .freelancer(savedFl)
+                    .professionalTitle(freelancer.getProfessionalTitle())
+                    .bio(freelancer.getBio())
+                    .hourlyRate(freelancer.getHourlyRate())
+                    .address(freelancer.getAddress())
+                    .city(freelancer.getCity())
+                    .country(freelancer.getCountry())
+                    .expertiseField(i == 0 ? "Thiết kế" : i == 1 ? "Lập trình" : i == 2 ? "Marketing" : "Lập trình")
+                    .experienceLevel(i % 2 == 0 ? "Chuyên gia" : "Đã có kinh nghiệm")
+                    .primarySkills(i == 0 ? "Figma, UI/UX, Wireframe" : i == 1 ? "Java, Spring Boot, MySQL" : i == 2 ? "SEO, Google Ads, Copywriting" : "Flutter, React Native, Firebase")
+                    .profileCompleteness(95)
+                    .totalEarnings(BigDecimal.valueOf(earnings[i]))
+                    .projectsCompleted(reviews[i])
+                    .averageRating(BigDecimal.valueOf(ratings[i]))
+                    .isAvailable(true)
+                    .build();
+            freelancerProfileRepository.save(profile);
         }
     }
 
