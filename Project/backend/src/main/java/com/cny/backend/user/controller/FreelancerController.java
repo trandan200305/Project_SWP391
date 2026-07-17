@@ -21,7 +21,14 @@ import com.cny.backend.user.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -47,6 +54,10 @@ public class FreelancerController {
     @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
+    @Autowired
+    private com.cny.backend.project.repository.JobCategoryRepository jobCategoryRepository;
+
+    /** Lấy danh sách tất cả freelancer (mặc định không filter) */
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers(
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -133,7 +144,7 @@ public class FreelancerController {
         return ResponseEntity.ok(dtos);
     }
 
-
+    /** Lấy danh sách top freelancer (legacy, giới hạn 4) */
     @GetMapping("/top")
     public ResponseEntity<List<FreelancerDto>> getTopFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();
@@ -142,6 +153,68 @@ public class FreelancerController {
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(topFreelancers);
+    }
+
+    /**
+     * Tìm kiếm freelancer với bộ lọc:
+     * - keyword: tên hoặc professional title
+     * - category: tên danh mục/chuyên môn
+     * - minRate / maxRate: mức giá theo giờ
+     * - minRating: đánh giá tối thiểu
+     * - page, size, sort
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchFreelancers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minRate,
+            @RequestParam(required = false) BigDecimal maxRate,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "averageRating") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        String cat = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
+
+        Page<Freelancer> result = freelancerRepository.searchFreelancers(kw, cat, minRate, maxRate, minRating, pageable);
+
+        List<FreelancerDto> dtos = result.getContent().stream().map(this::mapToDto).collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("freelancers", dtos);
+        response.put("currentPage", result.getNumber());
+        response.put("totalPages", result.getTotalPages());
+        response.put("totalElements", result.getTotalElements());
+        response.put("pageSize", result.getSize());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách tất cả danh mục công việc (dùng cho dropdown filter trên UI)
+     */
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, Object>>> getCategories() {
+        List<Map<String, Object>> categories = jobCategoryRepository
+                .findByIsActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getCategoryId());
+                    m.put("name", c.getCategoryName());
+                    m.put("description", c.getDescription());
+                    m.put("iconUrl", c.getIconUrl());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/{id}")
