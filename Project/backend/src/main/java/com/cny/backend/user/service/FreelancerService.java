@@ -50,6 +50,15 @@ public class FreelancerService {
 
         profile = profileRepository.save(profile);
 
+        // Synchronize back to Freelancer entity
+        Freelancer freelancer = profile.getFreelancer();
+        if (freelancer != null) {
+            freelancer.setProfessionalTitle(dto.getProfessionalTitle());
+            freelancer.setBio(dto.getBio());
+            freelancer.setIsAvailable(dto.getIsAvailable() != null ? dto.getIsAvailable() : true);
+            freelancerRepository.save(freelancer);
+        }
+
         return mapToWorkProfileDto(profile);
     }
 

@@ -67,6 +67,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
   // ================= FREELANCER STATE =================
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
+  const [expertiseField, setExpertiseField] = useState('');
   const [bio, setBio] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [address, setAddress] = useState('');
@@ -182,7 +183,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
     
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
-    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
+    setProfessionalTitle(''); setExpertiseField(''); setAddress(''); setCity(''); setCountry('');
     setHideEmail(false); setHidePhone(false); setHideLocation(false);
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
@@ -225,6 +226,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
+          if (data.expertiseField) setExpertiseField(data.expertiseField);
           if (data.bio) setBio(data.bio);
           if (data.hourlyRate) setHourlyRate(data.hourlyRate);
           if (data.address) setAddress(data.address);
@@ -323,7 +325,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
     const endpoint = role === 'admin' ? `http://localhost:8080/api/admin/${targetId}/profile` : `http://localhost:8080/api/${role}s/${targetId}/profile`;
     let payload = {};
     if (role === 'freelancer') {
-       payload = { displayName, fullName, phone, professionalTitle, bio, hourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
+        payload = { displayName, fullName, phone, professionalTitle, expertiseField, bio, hourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
     } else if (role === 'employer') {
        payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation, taxCode, companyLogoUrl };
     } else if (role === 'admin') {
@@ -635,13 +637,13 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
     kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     taxCode, setTaxCode, businessLicenseUrl, setBusinessLicenseUrl, representativeIdCardUrl, setRepresentativeIdCardUrl,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry, companyLogoUrl, setCompanyLogoUrl,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
     handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency,
-    isOwnProfile
+    isOwnProfile, categories
   };
 
   const tabs = isOwnProfile
@@ -829,17 +831,68 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
 
                       <div className="space-y-6">
                         <div className="flex flex-col md:flex-row gap-6">
-                          <div className="w-48 font-semibold text-slate-700 pt-2">Chức danh <span className="text-red-500">*</span></div>
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Chức danh / Lĩnh vực <span className="text-red-500">*</span></div>
                           <div className="flex-1">
-                            <input 
-                              type="text" 
-                              placeholder="Giới thiệu ngắn gọn" 
-                              value={workProfile.professionalTitle}
-                              onChange={(e) => setWorkProfile({...workProfile, professionalTitle: e.target.value})}
-                              disabled={!isEditingWorkProfile}
-                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
-                            />
-                            <p className="text-xs text-slate-400 mt-1">VD: Lập trình viên web PHP / Chuyên gia thiết kế đồ hoạ với 6 năm kinh nghiệm / v.v...</p>
+                            {isEditingWorkProfile ? (
+                              <div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border border-slate-300 rounded-lg p-4 bg-white">
+                                  {((categories && categories.length > 0) ? categories : [
+                                    { categoryId: 1, categoryName: "Lập trình & Công nghệ" },
+                                    { categoryId: 2, categoryName: "Thiết kế & Đồ họa" },
+                                    { categoryId: 3, categoryName: "Marketing & Bán hàng" },
+                                    { categoryId: 4, categoryName: "Viết lách & Dịch thuật" },
+                                    { categoryId: 5, categoryName: "Video, Ảnh & Âm thanh" },
+                                    { categoryId: 6, categoryName: "Hành chính & Trợ lý ảo" },
+                                    { categoryId: 7, categoryName: "Kế toán & Tư vấn" }
+                                  ]).map(cat => {
+                                    const catId = String(cat.categoryId || cat.id);
+                                    const catName = cat.categoryName || cat.name;
+                                    const isChecked = workProfile.expertiseField && workProfile.expertiseField.split(/,\s*/).includes(catId);
+                                    return (
+                                      <label key={catId} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm font-medium text-slate-700 transition-colors">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={!!isChecked}
+                                          onChange={(e) => {
+                                            let currentIds = workProfile.expertiseField ? workProfile.expertiseField.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                                            let currentNames = workProfile.professionalTitle ? workProfile.professionalTitle.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                                            if (e.target.checked) {
+                                              if (!currentIds.includes(catId)) {
+                                                currentIds.push(catId);
+                                                currentNames.push(catName);
+                                              }
+                                            } else {
+                                              currentIds = currentIds.filter(id => id !== catId);
+                                              currentNames = currentNames.filter(name => name !== catName);
+                                            }
+                                            setWorkProfile({
+                                              ...workProfile, 
+                                              expertiseField: currentIds.join(','),
+                                              professionalTitle: currentNames.join(', ')
+                                            });
+                                          }}
+                                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span>{catName}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">Chọn những lĩnh vực hoạt động chính của bạn.</p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2 pt-1.5">
+                                {workProfile.professionalTitle ? (
+                                  workProfile.professionalTitle.split(/,\s*/).map((title, index) => (
+                                    <span key={index} className="bg-blue-50 text-blue-600 font-semibold px-3 py-1 rounded-lg text-xs border border-blue-100">
+                                      {title}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-slate-400 text-sm italic">Chưa cập nhật</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -870,37 +923,6 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
                               disabled={!isEditingWorkProfile}
                               className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
                             />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="w-full h-px bg-slate-100"></div>
-
-                    <div>
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
-                          2
-                        </div>
-                        <h2 className="text-lg font-bold text-slate-800 uppercase">Kinh nghiệm làm việc</h2>
-                      </div>
-
-                      <div className="space-y-6">
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <div className="w-48 font-semibold text-slate-700 pt-2">Lĩnh vực chuyên môn <span className="text-red-500">*</span></div>
-                          <div className="flex-1">
-                            <select 
-                              value={workProfile.expertiseField}
-                              onChange={(e) => setWorkProfile({...workProfile, expertiseField: e.target.value})}
-                              disabled={!isEditingWorkProfile}
-                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
-                            >
-                              <option value="">Chọn lĩnh vực chuyên môn</option>
-                              {categories.map(cat => (
-                                <option key={cat.categoryId} value={cat.categoryName}>{cat.categoryName}</option>
-                              ))}
-                            </select>
-                            <p className="text-xs text-slate-400 mt-1">Lĩnh vực chính mà bạn đang làm việc hoặc có nhiều kinh nghiệm nhất.</p>
                           </div>
                         </div>
 

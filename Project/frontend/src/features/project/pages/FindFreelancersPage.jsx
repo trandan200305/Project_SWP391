@@ -171,8 +171,8 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
                 >
                   <option value="">Tất cả ngành nghề</option>
                   {categories.map(cat => (
-                    <option key={cat.categoryId} value={cat.categoryName}>
-                      {cat.categoryName}
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -349,12 +349,17 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
                       </div>
                       <div>•</div>
                       <div>Thu nhập đã nhận: <span className="font-semibold text-slate-600">{formatEarnings(fl.totalEarnings)}</span></div>
-                      {fl.expertiseField && (
-                        <>
-                          <div>•</div>
-                          <div className="bg-blue-50 text-blue-600 font-medium px-2 py-0.5 rounded text-[11px]">{fl.expertiseField}</div>
-                        </>
-                      )}
+                      {fl.expertiseField && fl.expertiseField.split(/,\s*/).map(id => {
+                        const cat = categories.find(c => String(c.id) === String(id));
+                        return cat ? cat.name : null;
+                      }).filter(Boolean).map((fieldName, idx) => (
+                        <React.Fragment key={idx}>
+                          <div className="text-slate-300">•</div>
+                          <div className="bg-blue-50 text-blue-600 font-medium px-2 py-0.5 rounded text-[11px]">
+                            {fieldName}
+                          </div>
+                        </React.Fragment>
+                      ))}
                       {selectedCategory && (
                         <>
                           <div>•</div>

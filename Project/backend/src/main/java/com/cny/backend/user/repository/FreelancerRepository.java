@@ -49,11 +49,15 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Integer>
      * Tìm kiếm freelancer theo keyword (tên, professional title) và/hoặc expertiseField (danh mục),
      * chỉ lấy những freelancer đang active (isDeleted != true), hỗ trợ phân trang.
      */
-    @Query("SELECT f FROM Freelancer f WHERE " +
+    @Query("SELECT f FROM Freelancer f LEFT JOIN FreelancerProfile p ON p.freelancer = f WHERE " +
            "(f.isDeleted IS NULL OR f.isDeleted = false) " +
            "AND (f.isAvailable IS NULL OR f.isAvailable = true) " +
            "AND (:keyword IS NULL OR :keyword = '' OR LOWER(f.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(f.professionalTitle) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:category IS NULL OR :category = '' OR LOWER(f.professionalTitle) LIKE LOWER(CONCAT('%', :category, '%'))) " +
+           "AND (:category IS NULL OR :category = '' " +
+           "OR p.expertiseField = :category " +
+           "OR p.expertiseField LIKE CONCAT(:category, ',%') " +
+           "OR p.expertiseField LIKE CONCAT('%,', :category) " +
+           "OR p.expertiseField LIKE CONCAT('%,', :category, ',%')) " +
            "AND (:minRate IS NULL OR f.hourlyRate >= :minRate) " +
            "AND (:maxRate IS NULL OR f.hourlyRate <= :maxRate) " +
            "AND (:minRating IS NULL OR f.averageRating >= :minRating)")
@@ -68,10 +72,14 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Integer>
     /**
      * Tìm top freelancer theo kỹ năng / danh mục, sắp xếp theo rating và số dự án hoàn thành.
      */
-    @Query("SELECT f FROM Freelancer f WHERE " +
+    @Query("SELECT f FROM Freelancer f LEFT JOIN FreelancerProfile p ON p.freelancer = f WHERE " +
            "(f.isDeleted IS NULL OR f.isDeleted = false) " +
            "AND (f.isAvailable IS NULL OR f.isAvailable = true) " +
-           "AND (:category IS NULL OR :category = '' OR LOWER(f.professionalTitle) LIKE LOWER(CONCAT('%', :category, '%'))) " +
+           "AND (:category IS NULL OR :category = '' " +
+           "OR p.expertiseField = :category " +
+           "OR p.expertiseField LIKE CONCAT(:category, ',%') " +
+           "OR p.expertiseField LIKE CONCAT('%,', :category) " +
+           "OR p.expertiseField LIKE CONCAT('%,', :category, ',%')) " +
            "ORDER BY COALESCE(f.averageRating, 0) DESC, COALESCE(f.projectsCompleted, 0) DESC")
     Page<Freelancer> findTopFreelancers(
             @Param("category") String category,
