@@ -150,6 +150,7 @@ export default function AppRoutes({
       <PaymentResultPage
         pageParams={pageParams}
         onNavigate={handleNavigate}
+        user={user}
       />
     );
   }

@@ -469,6 +469,16 @@ export default function Navbar({
                         >
                           <Bookmark className="w-4 h-4" /> Quản lý dự án
                         </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("find_freelancers");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all mt-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+                          Tim kiem Freelancer
+                        </button>
                       </>
                     )}
 
@@ -721,6 +731,16 @@ export default function Navbar({
                   className="w-full text-center bg-amber-50 text-amber-700 border border-amber-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Bookmark className="w-4 h-4" /> Quản lý dự án
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("find_freelancers");
+                  }}
+                  className="w-full text-center bg-purple-50 text-purple-700 border border-purple-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+                  Tim kiem Freelancer
                 </button>
               </>
             )}
