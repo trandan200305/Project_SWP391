@@ -3,6 +3,7 @@ import { Camera, CheckCircle, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
+import RevenueDashboard from './RevenueDashboard.jsx';
 
 export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate }) {
   const [role, setRole] = useState(user.role.toLowerCase());
@@ -409,6 +410,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
               {activeTab === 'profile' && <UserProfile {...allProps} />}
               {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
               {activeTab === 'preferences' && <UserSettings {...allProps} />}
+              {activeTab === 'revenue' && <RevenueDashboard {...allProps} />}
             </div>
           </div>
         </main>

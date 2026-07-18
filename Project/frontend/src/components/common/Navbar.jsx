@@ -470,15 +470,26 @@ export default function Navbar({
                     )}
 
                     {user?.role === "FREELANCER" && (
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("your_jobs");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
-                      >
-                        <Bookmark className="w-4 h-4" /> Công việc của bạn
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("your_jobs");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
+                        >
+                          <Bookmark className="w-4 h-4" /> Công việc của bạn
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("revenue");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                        >
+                          <DollarSign className="w-4 h-4" /> Thống kê doanh thu
+                        </button>
+                      </>
                     )}
 
                     <button
@@ -725,15 +736,26 @@ export default function Navbar({
                   <User className="w-4 h-4" /> Hồ sơ cá nhân
                 </button>
                 {user?.role === "FREELANCER" && (
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      if (onNavigate) onNavigate("edit_profile");
-                    }}
-                    className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                  >
-                    <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        if (onNavigate) onNavigate("edit_profile");
+                      }}
+                      className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                    >
+                      <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        if (onNavigate) onNavigate("revenue");
+                      }}
+                      className="w-full text-center bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                    >
+                      <DollarSign className="w-4 h-4" /> Thống kê doanh thu
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => {
