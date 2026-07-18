@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2 } from 'lucide-react';
+import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
 import PortfolioSection from './PortfolioSection';
 import { api } from '../../../api/apiClient';
 
@@ -123,6 +123,7 @@ export default function UserProfile({
 function FreelancerReviewsSection({ freelancerId }) {
   const [reviews, setReviews] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
   React.useEffect(() => {
     api.get(`/reviews/freelancer/${freelancerId}`)
@@ -134,6 +135,14 @@ function FreelancerReviewsSection({ freelancerId }) {
         setLoading(false);
       });
   }, [freelancerId]);
+
+  const handlePrev = () => {
+    setCurrentIndex(prev => (prev === 0 ? reviews.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => (prev === reviews.length - 1 ? 0 : prev + 1));
+  };
 
   if (loading) {
     return <div className="text-xs text-slate-500 font-medium py-4">Đang tải đánh giá từ khách hàng...</div>;
@@ -147,56 +156,95 @@ function FreelancerReviewsSection({ freelancerId }) {
     );
   }
 
+  const activeReview = reviews[currentIndex];
+  if (!activeReview) return null;
+
+  const reviewerName = activeReview.reviewerName || activeReview.reviewerEmployerName || "Khách hàng";
+  const reviewerAvatar = activeReview.reviewerAvatar || activeReview.reviewerEmployerAvatar;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-      <h3 className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
-        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-        Đánh giá từ Khách hàng ({reviews.length})
-      </h3>
-      <div className="divide-y divide-gray-100 space-y-4">
-        {reviews.map((review) => {
-          const reviewerName = review.reviewerName || review.reviewerEmployerName || "Khách hàng";
-          const reviewerAvatar = review.reviewerAvatar || review.reviewerEmployerAvatar;
-          return (
-            <div key={review.reviewId} className="pt-4 first:pt-0 space-y-2">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
-                    {reviewerAvatar ? (
-                      <img src={reviewerAvatar} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      reviewerName.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-800 text-sm">{reviewerName}</h4>
-                    <span className="text-[10px] text-gray-400 font-medium flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span>{new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
-                      {review.contractTitle && (
-                        <>
-                          <span className="text-gray-300">•</span>
-                          <span>Dự án: <span className="text-indigo-600 font-semibold">{review.contractTitle}</span></span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star 
-                      key={s} 
-                      className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
-                    />
-                  ))}
-                </div>
-              </div>
-              <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
-                {review.comment || 'Không có nhận xét chi tiết.'}
-              </p>
-            </div>
-          );
-        })}
+      <div className="flex justify-between items-center">
+        <h3 className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
+          <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+          Đánh giá từ Khách hàng ({reviews.length})
+        </h3>
+        
+        {reviews.length > 1 && (
+          <div className="flex items-center gap-2">
+            <button 
+              type="button"
+              onClick={handlePrev}
+              className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors shadow-sm"
+              title="Đánh giá trước"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-gray-400 select-none px-1">
+              {currentIndex + 1} / {reviews.length}
+            </span>
+            <button 
+              type="button"
+              onClick={handleNext}
+              className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors shadow-sm"
+              title="Đánh giá tiếp theo"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
+
+      <div className="space-y-4 min-h-[120px] transition-all duration-300">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
+              {reviewerAvatar ? (
+                <img src={reviewerAvatar} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                reviewerName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800 text-sm">{reviewerName}</h4>
+              <span className="text-[10px] text-gray-400 font-medium flex flex-wrap items-center gap-1.5 mt-0.5">
+                <span>{new Date(activeReview.createdAt).toLocaleDateString('vi-VN')}</span>
+                {activeReview.contractTitle && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span>Dự án: <span className="text-indigo-650 font-bold">{activeReview.contractTitle}</span></span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star 
+                key={s} 
+                className={`w-3.5 h-3.5 ${s <= activeReview.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
+              />
+            ))}
+          </div>
+        </div>
+        <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11 italic bg-gray-50/50 p-4 rounded-xl border border-gray-100/50">
+          "{activeReview.comment || 'Không có nhận xét chi tiết.'}"
+        </p>
+      </div>
+
+      {reviews.length > 1 && (
+        <div className="flex justify-center gap-1.5 pt-2">
+          {reviews.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setCurrentIndex(idx)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-indigo-600 w-4' : 'bg-gray-200 hover:bg-gray-300'}`}
+              title={`Xem đánh giá ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
