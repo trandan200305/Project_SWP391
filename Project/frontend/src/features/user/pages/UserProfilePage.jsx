@@ -375,23 +375,48 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
                     {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
                     {(kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" />}
                   </h2>
-                  <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                    {role === 'freelancer' && professionalTitle && (
-                      <span className="flex items-center gap-1">
-                        {professionalTitle}
-                      </span>
-                    )}
+                  <div className="flex flex-col gap-2 mt-1.5 text-sm text-gray-500 font-medium">
+                    <div className="flex items-center gap-2">
+                      {role === 'freelancer' && professionalTitle && (
+                        <span className="flex items-center gap-1 font-semibold text-gray-700">
+                          {professionalTitle}
+                        </span>
+                      )}
 
-                    {role === 'employer' && (
-                      <span className="flex items-center gap-1 text-indigo-600 font-bold">
-                        Doanh nghiệp
-                      </span>
-                    )}
+                      {role === 'freelancer' && professionalTitle && <span className="text-gray-300">•</span>}
 
-                    <div className="flex items-center gap-1" title="Đánh giá trung bình">
-                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                      <span className="font-bold text-gray-900 text-sm">{averageRating || '0.0'}</span>
+                      {role === 'employer' && (
+                        <span className="flex items-center gap-1 text-indigo-600 font-bold">
+                          Doanh nghiệp
+                        </span>
+                      )}
+
+                      <div className="flex items-center gap-1" title="Đánh giá trung bình">
+                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                        <span className="font-bold text-gray-900 text-sm">{averageRating || '0.0'}</span>
+                      </div>
                     </div>
+
+                    {role === 'freelancer' && (expertiseField || primarySkills) && (
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                        {expertiseField && expertiseField !== 'Khác' && (
+                          <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-bold rounded-lg border border-blue-100/50 shadow-sm">
+                            {expertiseField}
+                          </span>
+                        )}
+                        {primarySkills && primarySkills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map((skill, index) => (
+                          <span 
+                            key={index} 
+                            className="px-2.5 py-1 bg-gray-100/70 text-gray-600 text-[11px] font-bold rounded-lg border border-gray-200/50 shadow-sm"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {primarySkills && primarySkills.split(',').map(s => s.trim()).filter(Boolean).length > 4 && (
+                          <span className="text-xs text-gray-400 italic">+{primarySkills.split(',').map(s => s.trim()).filter(Boolean).length - 4}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
