@@ -57,16 +57,21 @@ export default function UserProfile({
             <h3 className="font-extrabold text-gray-900 text-lg mb-4">
               Kỹ năng chuyên môn
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
-                <span 
-                  key={index} 
-                  className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
+            
+            {primarySkills && (
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
+                    <span 
+                      key={index} 
+                      className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
