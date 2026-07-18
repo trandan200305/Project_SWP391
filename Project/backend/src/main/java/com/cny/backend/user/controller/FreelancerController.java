@@ -149,14 +149,15 @@ public class FreelancerController {
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
 
-            if (updated.getPrimarySkills() != null) {
+            if (updated.getPrimarySkills() != null || updated.getExpertiseField() != null) {
                 FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(id)
                         .orElseGet(() -> {
                             FreelancerProfile newProfile = new FreelancerProfile();
                             newProfile.setFreelancer(saved);
                             return newProfile;
                         });
-                profile.setPrimarySkills(updated.getPrimarySkills());
+                if (updated.getPrimarySkills() != null) profile.setPrimarySkills(updated.getPrimarySkills());
+                if (updated.getExpertiseField() != null) profile.setExpertiseField(updated.getExpertiseField());
                 profile.setUpdatedAt(java.time.LocalDateTime.now());
                 freelancerProfileRepository.save(profile);
             }
@@ -221,9 +222,9 @@ public class FreelancerController {
     }
 
     private FreelancerDto mapToDto(Freelancer f) {
-        String primarySkills = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId())
-                .map(FreelancerProfile::getPrimarySkills)
-                .orElse(null);
+        FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
+        String primarySkills = profile != null ? profile.getPrimarySkills() : null;
+        String expertiseField = profile != null ? profile.getExpertiseField() : null;
 
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -261,6 +262,7 @@ public class FreelancerController {
                 .kycRejectedReason(f.getKycRejectedReason())
                 .isVerified(f.getIsVerified())
                 .primarySkills(primarySkills)
+                .expertiseField(expertiseField)
                 .build();
     }
 }

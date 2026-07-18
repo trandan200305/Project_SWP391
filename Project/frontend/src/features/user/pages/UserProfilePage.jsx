@@ -57,6 +57,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   const [primarySkills, setPrimarySkills] = useState('');
+  const [expertiseField, setExpertiseField] = useState('Khác');
 
   // Freelancer Read-only Stats
   const [profileCompleteness, setProfileCompleteness] = useState(0);
@@ -133,6 +134,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           if (data.projectsCompleted) setProjectsCompleted(data.projectsCompleted);
           if (data.averageRating) setAverageRating(data.averageRating);
           if (data.primarySkills) setPrimarySkills(data.primarySkills);
+          if (data.expertiseField) setExpertiseField(data.expertiseField);
         } else if (role === 'employer') {
           if (data.companyName) setCompanyName(data.companyName);
           if (data.fullName) setFullName(data.fullName);
@@ -164,7 +166,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
     let payload = {};
     if (role === 'freelancer') {
-      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills };
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField };
     } else if (role === 'employer') {
       payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
@@ -286,7 +288,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills, expertiseField, setExpertiseField,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,

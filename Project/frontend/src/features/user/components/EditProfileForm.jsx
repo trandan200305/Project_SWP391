@@ -44,6 +44,19 @@ const VIETNAM_PROVINCES = [
   "Thái Bình", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang"
 ];
 
+const EXPERTISE_FIELDS = [
+  "IT & Lập trình",
+  "Thiết kế & Đồ họa",
+  "Marketing & Bán hàng",
+  "Viết lách & Dịch thuật",
+  "Video & Nhiếp ảnh",
+  "Hành chính & Trợ lý",
+  "Tài chính & Kế toán",
+  "Kỹ thuật & Kiến trúc",
+  "Pháp lý",
+  "Khác"
+];
+
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
   <div className="flex justify-between items-center py-1 gap-2" title={title}>
     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
@@ -214,7 +227,7 @@ const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
 };
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills, expertiseField, setExpertiseField
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -268,6 +281,7 @@ export default function EditProfileForm({
             {role === 'freelancer' && (
               <>
                 <InputRow label="Chức danh nghề nghiệp" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
+                <SelectRow label="Lĩnh vực chuyên môn" value={expertiseField} onChange={e=>setExpertiseField(e.target.value)} options={EXPERTISE_FIELDS} />
                 <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
                 <SkillTagSelector primarySkills={primarySkills} setPrimarySkills={setPrimarySkills} />
               </>
