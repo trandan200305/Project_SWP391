@@ -62,6 +62,9 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private SkillRepository skillRepository;
+
     @Override
     public void run(String... args) throws Exception {
         
@@ -69,6 +72,10 @@ public class DataSeeder implements CommandLineRunner {
         
         if (jobCategoryRepository.count() == 0) {
             seedCategories();
+        }
+
+        if (skillRepository.count() == 0) {
+            seedSkills();
         }
 
         if (adminRepository.count() == 0) {
@@ -246,6 +253,14 @@ public class DataSeeder implements CommandLineRunner {
 
         if (client == null) return;
 
+        List<Skill> allSkills = skillRepository.findAll();
+        Skill figma = allSkills.stream().filter(s -> s.getSkillName().equals("Figma")).findFirst().orElse(null);
+        Skill photoshop = allSkills.stream().filter(s -> s.getSkillName().equals("Photoshop")).findFirst().orElse(null);
+        Skill seo = allSkills.stream().filter(s -> s.getSkillName().equals("SEO")).findFirst().orElse(null);
+        Skill reactjs = allSkills.stream().filter(s -> s.getSkillName().equals("ReactJS")).findFirst().orElse(null);
+        Skill wordpress = allSkills.stream().filter(s -> s.getSkillName().equals("WordPress")).findFirst().orElse(null);
+        Skill googleAds = allSkills.stream().filter(s -> s.getSkillName().equals("Google Ads")).findFirst().orElse(null);
+
         List<Project> projects = new ArrayList<>();
 
         
@@ -254,12 +269,13 @@ public class DataSeeder implements CommandLineRunner {
                 .category(design != null ? design : tech)
                 .title("Thiết kế Landing Page cho dự án SaaS")
                 .description("Cần tìm chuyên gia thiết kế giao diện landing page chuyên nghiệp, hiện đại, chuẩn UI/UX cho nền tảng quản trị tài chính doanh nghiệp.")
-                .projectType("FIXED_PRICE")
+                .projectType("RANGE")
                 .budgetMin(BigDecimal.valueOf(5000000))
                 .budgetMax(BigDecimal.valueOf(7000000))
                 .deadline(LocalDate.now().plusDays(15))
                 .status("PUBLISHED")
                 .proposalCount(12)
+                .skills(filterNonNullSkills(figma, photoshop))
                 .build());
 
         projects.add(Project.builder()
@@ -267,11 +283,12 @@ public class DataSeeder implements CommandLineRunner {
                 .category(marketing != null ? marketing : tech)
                 .title("Quản trị Fanpage & Sáng tạo nội dung")
                 .description("Tìm đối tác lâu dài để quản lý Fanpage thương hiệu, viết content đăng bài hàng ngày và thiết kế visual cơ bản theo bộ nhận diện.")
-                .projectType("MONTHLY")
+                .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(10000000))
                 .deadline(LocalDate.now().plusDays(30))
                 .status("PUBLISHED")
                 .proposalCount(8)
+                .skills(filterNonNullSkills(seo))
                 .build());
 
         projects.add(Project.builder()
@@ -279,7 +296,7 @@ public class DataSeeder implements CommandLineRunner {
                 .category(translation != null ? translation : tech)
                 .title("Biên dịch tài liệu Kỹ thuật (Anh - Việt)")
                 .description("Biên dịch bộ tài liệu hướng dẫn lắp ráp và vận hành máy móc công nghiệp từ tiếng Anh sang tiếng Việt. Yêu cầu dịch chính xác thuật ngữ chuyên ngành.")
-                .projectType("FIXED_PRICE")
+                .projectType("RANGE")
                 .budgetMin(BigDecimal.valueOf(3000000))
                 .budgetMax(BigDecimal.valueOf(5000000))
                 .deadline(LocalDate.now().plusDays(7))
@@ -293,11 +310,13 @@ public class DataSeeder implements CommandLineRunner {
                 .title("Sửa lỗi giao diện website WordPress")
                 .description("Website bán hàng đang bị lỗi hiển thị thanh menu và giỏ hàng trên thiết bị di động, cần coder tối ưu responsive gấp trong ngày.")
                 .projectType("FIXED_PRICE")
+                .workForm("OFFLINE")
                 .budgetMin(BigDecimal.valueOf(1000000))
                 .budgetMax(BigDecimal.valueOf(2000000))
                 .deadline(LocalDate.now().plusDays(2))
                 .status("PUBLISHED")
                 .proposalCount(15)
+                .skills(filterNonNullSkills(wordpress))
                 .build());
 
         
@@ -311,6 +330,7 @@ public class DataSeeder implements CommandLineRunner {
                 .deadline(LocalDate.now().plusDays(10))
                 .status("PUBLISHED")
                 .proposalCount(0)
+                .skills(filterNonNullSkills(reactjs))
                 .build());
 
         projects.add(Project.builder()
@@ -319,10 +339,12 @@ public class DataSeeder implements CommandLineRunner {
                 .title("Thiết kế bộ nhận diện thương hiệu Specialty Coffee")
                 .description("Thiết kế logo, menu, bao bì, bảng hiệu cho quán Specialty Coffee mới mở.")
                 .projectType("FIXED_PRICE")
+                .workForm("OFFLINE")
                 .budgetFixed(BigDecimal.valueOf(6000000))
                 .deadline(LocalDate.now().plusDays(20))
                 .status("PUBLISHED")
                 .proposalCount(0)
+                .skills(filterNonNullSkills(figma, photoshop))
                 .build());
 
         projects.add(Project.builder()
@@ -330,11 +352,12 @@ public class DataSeeder implements CommandLineRunner {
                 .category(marketing != null ? marketing : tech)
                 .title("Tối ưu hóa chiến dịch Google Ads cho thời trang")
                 .description("Chạy và tối ưu hóa quảng cáo chuyển đổi cho thương hiệu thời trang thiết kế.")
-                .projectType("MONTHLY")
+                .projectType("FIXED_PRICE")
                 .budgetFixed(BigDecimal.valueOf(4500000))
                 .deadline(LocalDate.now().plusDays(30))
                 .status("PUBLISHED")
                 .proposalCount(0)
+                .skills(filterNonNullSkills(googleAds))
                 .build());
 
         for (Project p : projects) {
@@ -643,5 +666,45 @@ public class DataSeeder implements CommandLineRunner {
         } catch (Exception e) {
             System.err.println("Error seeding staff and managers: " + e.getMessage());
         }
+    }
+
+    private void seedSkills() {
+        JobCategory tech = jobCategoryRepository.findAll().stream()
+                .filter(c -> c.getCategoryName().equals("Lập trình")).findFirst().orElse(null);
+        JobCategory design = jobCategoryRepository.findAll().stream()
+                .filter(c -> c.getCategoryName().equals("Thiết kế")).findFirst().orElse(null);
+        JobCategory marketing = jobCategoryRepository.findAll().stream()
+                .filter(c -> c.getCategoryName().equals("Marketing")).findFirst().orElse(null);
+        JobCategory translation = jobCategoryRepository.findAll().stream()
+                .filter(c -> c.getCategoryName().equals("Dịch thuật")).findFirst().orElse(null);
+
+        if (tech != null) {
+            skillRepository.save(Skill.builder().skillName("ReactJS").categoryId(tech.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("Spring Boot").categoryId(tech.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("WordPress").categoryId(tech.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("Flutter").categoryId(tech.getCategoryId()).build());
+        }
+        if (design != null) {
+            skillRepository.save(Skill.builder().skillName("Figma").categoryId(design.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("Photoshop").categoryId(design.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("UI/UX Design").categoryId(design.getCategoryId()).build());
+        }
+        if (marketing != null) {
+            skillRepository.save(Skill.builder().skillName("Google Ads").categoryId(marketing.getCategoryId()).build());
+            skillRepository.save(Skill.builder().skillName("SEO").categoryId(marketing.getCategoryId()).build());
+        }
+        if (translation != null) {
+            skillRepository.save(Skill.builder().skillName("English Translation").categoryId(translation.getCategoryId()).build());
+        }
+    }
+
+    private List<Skill> filterNonNullSkills(Skill... skills) {
+        List<Skill> list = new ArrayList<>();
+        for (Skill s : skills) {
+            if (s != null) {
+                list.add(s);
+            }
+        }
+        return list;
     }
 }

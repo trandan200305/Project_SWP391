@@ -183,6 +183,8 @@ public class ContractManagementService {
         contractRepository.save(contract);
 
         Dispute dispute = Dispute.builder()
+                .contractId(contractId)
+                .raisedByFreelancerId(freelancerId)
                 .projectTitle(contract.getProject().getTitle())
                 .clientName(contract.getClient().getCompanyName() != null ? contract.getClient().getCompanyName() : contract.getClient().getFullName())
                 .freelancerName(contract.getFreelancer().getDisplayName() != null ? contract.getFreelancer().getDisplayName() : contract.getFreelancer().getFullName())

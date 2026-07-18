@@ -323,10 +323,7 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
               </div>
             )}
 
-            <button onClick={handleShowComingSoon} className="inline-flex items-center gap-2 text-rose-600 text-xs font-bold hover:underline">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Phản ánh công việc này
-            </button>
+
           </div>
 
           {/* Right Column: Sidebar */}
@@ -371,6 +368,21 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
                           {userProposal?.status === 'ACCEPTED' ? 'Được chọn' :
                            userProposal?.status === 'REJECTED' ? 'Từ chối' : 'Chờ phản hồi'}
                         </span>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          onClick={() => onNavigate('messenger', {
+                            id: job.employerId,
+                            role: 'EMPLOYER',
+                            name: job.employerName || 'Khách hàng',
+                            avatar: job.employerAvatar
+                          })}
+                          className="w-full py-2 bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Send className="w-3 h-3 text-emerald-700 transform rotate-45 -translate-y-0.5" />
+                          Nhắn tin trao đổi
+                        </button>
                       </div>
                     </div>
                   </div>

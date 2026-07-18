@@ -64,4 +64,5 @@ public class FreelancerDto {
     private Integer kycReviewedByStaffId;
     private String kycRejectedReason;
     private Boolean isVerified;
+    private String primarySkills;
 }

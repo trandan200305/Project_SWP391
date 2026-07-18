@@ -104,6 +104,20 @@ public class EmployerController {
             return ResponseEntity.notFound().build();
         }
 
+        if (payload.containsKey("email")) {
+            String email = text(payload.get("email"));
+            if (!isBlank(email) && !email.equals(employer.getEmail())) {
+                if (employerRepository.countByEmail(email) > 0 ||
+                        freelancerRepository.countByEmail(email) > 0) {
+                    Map<String, Object> errResponse = new HashMap<>();
+                    errResponse.put("success", false);
+                    errResponse.put("message", "Email này đã được sử dụng trên hệ thống. Vui lòng nhập email khác!");
+                    return ResponseEntity.badRequest().body(errResponse);
+                }
+                employer.setEmail(email);
+            }
+        }
+
         // Intercept direct avatar update
         if (payload.containsKey("avatarUrl") && (payload.size() == 1 || (payload.size() == 2 && payload.containsKey("employerId")))) {
             String newAvatarUrl = text(payload.get("avatarUrl"));

@@ -327,19 +327,27 @@ export default function FindJobsPage({ onNavigate, user }) {
                   />
                   <span className={activeProjectType === '' ? "font-bold text-slate-800" : ""}>Tất cả</span>
                 </label>
-                {projectTypes.map(pt => (
-                  <label key={pt} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer font-semibold">
-                    <input 
-                      type="radio" 
-                      name="projectType" 
-                      value={pt} 
-                      checked={activeProjectType === pt}
-                      onChange={() => handleProjectTypeChange(pt)}
-                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                    />
-                    <span className={activeProjectType === pt ? "font-bold text-slate-800" : ""}>{translateProjectType(pt)}</span>
-                  </label>
-                ))}
+                {(() => {
+                  const seen = new Set();
+                  return projectTypes.filter(pt => {
+                    const trans = translateProjectType(pt);
+                    if (seen.has(trans)) return false;
+                    seen.add(trans);
+                    return true;
+                  }).map(pt => (
+                    <label key={pt} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer font-semibold">
+                      <input 
+                        type="radio" 
+                        name="projectType" 
+                        value={pt} 
+                        checked={activeProjectType === pt || (pt === 'FIXED_PRICE' && activeProjectType === 'FIXED') || (pt === 'FIXED' && activeProjectType === 'FIXED_PRICE')}
+                        onChange={() => handleProjectTypeChange(pt)}
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                      />
+                      <span className={(activeProjectType === pt || (pt === 'FIXED_PRICE' && activeProjectType === 'FIXED') || (pt === 'FIXED' && activeProjectType === 'FIXED_PRICE')) ? "font-bold text-slate-800" : ""}>{translateProjectType(pt)}</span>
+                    </label>
+                  ));
+                })()}
               </div>
             </div>
 

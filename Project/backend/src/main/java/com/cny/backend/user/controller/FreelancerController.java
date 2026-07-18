@@ -33,6 +33,9 @@ public class FreelancerController {
     private FreelancerRepository freelancerRepository;
 
     @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
     private FreelancerService freelancerService;
 
     @Autowired
@@ -95,6 +98,21 @@ public class FreelancerController {
     @PutMapping("/{id}/profile")
     public ResponseEntity<?> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
         return freelancerRepository.findById(id).map(f -> {
+            if (updated.getEmail() != null) {
+                String email = updated.getEmail().trim();
+                if (!email.isEmpty()) {
+                    if (!email.equals(f.getEmail())) {
+                        if (freelancerRepository.countByEmail(email) > 0 ||
+                                employerRepository.countByEmail(email) > 0) {
+                            java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
+                            errResponse.put("success", false);
+                            errResponse.put("message", "Email này đã được sử dụng trên hệ thống. Vui lòng nhập email khác!");
+                            return ResponseEntity.badRequest().body(errResponse);
+                        }
+                        f.setEmail(email);
+                    }
+                }
+            }
             if (updated.getPhone() != null) {
                 String phone = updated.getPhone().trim();
                 if (!phone.isEmpty()) {
@@ -130,6 +148,19 @@ public class FreelancerController {
             if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
+
+            if (updated.getPrimarySkills() != null) {
+                FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(id)
+                        .orElseGet(() -> {
+                            FreelancerProfile newProfile = new FreelancerProfile();
+                            newProfile.setFreelancer(saved);
+                            return newProfile;
+                        });
+                profile.setPrimarySkills(updated.getPrimarySkills());
+                profile.setUpdatedAt(java.time.LocalDateTime.now());
+                freelancerProfileRepository.save(profile);
+            }
+
             return ResponseEntity.ok(mapToDto(saved));
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -190,6 +221,10 @@ public class FreelancerController {
     }
 
     private FreelancerDto mapToDto(Freelancer f) {
+        String primarySkills = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId())
+                .map(FreelancerProfile::getPrimarySkills)
+                .orElse(null);
+
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
                 .email(f.getEmail())
@@ -225,6 +260,7 @@ public class FreelancerController {
                 .kycReviewedByStaffId(f.getKycReviewedByStaffId())
                 .kycRejectedReason(f.getKycRejectedReason())
                 .isVerified(f.getIsVerified())
+                .primarySkills(primarySkills)
                 .build();
     }
 }

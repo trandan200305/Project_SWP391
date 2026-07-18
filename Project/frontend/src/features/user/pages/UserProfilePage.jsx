@@ -8,7 +8,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [role, setRole] = useState(user.role.toLowerCase());
   const [targetId, setTargetId] = useState(user.id);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
-  const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger'
+  const [prefTab, setPrefTab] = useState('privacy'); // 'privacy', 'security', 'danger'
 
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -25,6 +25,9 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [hideLocation, setHideLocation] = useState(false);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // ================= KYC STATE =================
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
@@ -53,6 +56,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+  const [primarySkills, setPrimarySkills] = useState('');
 
   // Freelancer Read-only Stats
   const [profileCompleteness, setProfileCompleteness] = useState(0);
@@ -79,7 +83,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
-    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry('');
+    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry(''); setPrimarySkills('');
     setHideEmail(false); setHidePhone(false); setHideLocation(false);
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
@@ -128,6 +132,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           if (data.totalEarnings) setTotalEarnings(data.totalEarnings);
           if (data.projectsCompleted) setProjectsCompleted(data.projectsCompleted);
           if (data.averageRating) setAverageRating(data.averageRating);
+          if (data.primarySkills) setPrimarySkills(data.primarySkills);
         } else if (role === 'employer') {
           if (data.companyName) setCompanyName(data.companyName);
           if (data.fullName) setFullName(data.fullName);
@@ -159,9 +164,9 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
     let payload = {};
     if (role === 'freelancer') {
-      payload = { displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills };
     } else if (role === 'employer') {
-      payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
+      payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
 
     fetch(endpoint, {
@@ -171,8 +176,12 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     })
       .then(async res => {
         const data = await res.json();
-        if (res.ok && data.success) {
-          alert('Đã lưu thông tin hồ sơ thành công!');
+        if (res.ok) {
+          if (role === 'employer') {
+            alert(data.message || 'Yêu cầu thay đổi thông tin của bạn đã được gửi tới Manager để phê duyệt.');
+          } else {
+            alert('Đã lưu thông tin hồ sơ thành công!');
+          }
         } else {
           alert(data.message || 'Lỗi kết nối máy chủ!');
         }
@@ -183,6 +192,63 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   };
 
 
+
+  const handleDeleteAccount = () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác!")) {
+      return;
+    }
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}?confirmationText=DELETE`;
+    fetch(endpoint, {
+      method: 'DELETE'
+    })
+      .then(async res => {
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert('Tài khoản của bạn đã được xóa thành công.');
+          onLogout();
+        } else {
+          alert(data.message || 'Lỗi khi xóa tài khoản.');
+        }
+      })
+      .catch(err => {
+        alert('Lỗi kết nối máy chủ!');
+      });
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert('Mật khẩu mới phải có ít nhất 6 ký tự!');
+      return;
+    }
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: targetId,
+          role: role.toUpperCase(),
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert(data.message || 'Mật khẩu hiện tại không chính xác.');
+      }
+    } catch (err) {
+      alert('Lỗi kết nối máy chủ!');
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
@@ -220,11 +286,12 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
-    handleSaveProfile, formatDate, formatDateTime, formatCurrency, formatCompactCurrency
+    handleSaveProfile, formatDate, formatDateTime, formatCurrency, formatCompactCurrency, handleDeleteAccount,
+    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, handleSavePassword
   };
 
   return (

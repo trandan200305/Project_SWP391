@@ -68,7 +68,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       try {
         const list = await api.get(`/reviews/contract/${contractId}`);
         if (list) {
-          const review = list.find(r => r.reviewerFreelancerId === user.id);
+          const review = list.find(r => r.reviewerId === user.id && r.reviewerType === 'FREELANCER');
           if (review) {
             setFreelancerSubmittedReview(review);
           }
@@ -223,7 +223,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       setSubmittingContractReview(true);
       setActionError(null);
 
-      const result = await api.post(`/reviews/contract/${contractId}?freelancerId=${user.id}`, {
+      const result = await api.post(`/reviews/contract/${contractId}/freelancer?freelancerId=${user.id}`, {
         rating: freelancerRating,
         comment: freelancerComment.trim()
       });

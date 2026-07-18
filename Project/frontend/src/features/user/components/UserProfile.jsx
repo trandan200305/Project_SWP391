@@ -21,7 +21,7 @@ export default function UserProfile({
   user, role, targetId,
   setActiveTab, onNavigate, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
   formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness,
-  hideEmail, hidePhone, hideLocation
+  hideEmail, hidePhone, hideLocation, primarySkills
 }) {
   const isOwner = user && targetId === user.id;
 
@@ -48,6 +48,25 @@ export default function UserProfile({
             <p className="text-[15px] text-gray-600 font-medium leading-relaxed whitespace-pre-line relative z-10">
               {(role === 'freelancer' ? bio : companyDescription) || 'Chưa có thông tin giới thiệu.'}
             </p>
+          </div>
+        )}
+
+        {/* Skills Section */}
+        {role === 'freelancer' && primarySkills && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
+            <h3 className="font-extrabold text-gray-900 text-lg mb-4">
+              Kỹ năng chuyên môn
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
+                <span 
+                  key={index} 
+                  className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
