@@ -58,6 +58,161 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
   </div>
 );
 
+const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
+  const [allSkills, setAllSkills] = React.useState([]);
+  const [searchText, setSearchText] = React.useState('');
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    fetch('http://localhost:8080/api/skills')
+      .then(res => res.json())
+      .then(data => {
+        setAllSkills(data || []);
+      })
+      .catch(err => console.error("Lỗi tải danh mục kỹ năng:", err));
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedSkills = React.useMemo(() => {
+    return primarySkills ? primarySkills.split(',').map(s => s.trim()).filter(Boolean) : [];
+  }, [primarySkills]);
+
+  const suggestions = React.useMemo(() => {
+    if (!searchText.trim()) {
+      return allSkills.filter(s => !selectedSkills.some(sel => sel.toLowerCase() === s.skillName.toLowerCase())).slice(0, 10);
+    }
+    const query = searchText.toLowerCase();
+    return allSkills.filter(s => 
+      s.skillName.toLowerCase().includes(query) &&
+      !selectedSkills.some(sel => sel.toLowerCase() === s.skillName.toLowerCase())
+    );
+  }, [allSkills, selectedSkills, searchText]);
+
+  const handleSelectSkill = (skillName) => {
+    const newSelected = [...selectedSkills, skillName];
+    setPrimarySkills(newSelected.join(', '));
+    setSearchText('');
+    setShowDropdown(false);
+  };
+
+  const handleRemoveSkill = (skillName) => {
+    const newSelected = selectedSkills.filter(s => s !== skillName);
+    setPrimarySkills(newSelected.join(', '));
+  };
+
+  const handleCreateNewSkill = async () => {
+    const cleanText = searchText.trim();
+    if (!cleanText) return;
+    
+    try {
+      const response = await fetch('http://localhost:8080/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skillName: cleanText })
+      });
+      if (response.ok) {
+        const newSkill = await response.json();
+        setAllSkills(prev => [...prev, newSkill]);
+        handleSelectSkill(newSkill.skillName);
+        alert(`Đã đề xuất kỹ năng "${newSkill.skillName}" thành công! Kỹ năng này đang ở trạng thái chờ duyệt và chỉ hiển thị trên hồ sơ của bạn.`);
+      } else {
+        alert("Không thể đề xuất kỹ năng mới.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi tạo kỹ năng mới.");
+    }
+  };
+
+  const isExactMatch = allSkills.some(s => s.skillName.toLowerCase() === searchText.trim().toLowerCase());
+
+  return (
+    <div className="flex justify-between items-start sm:block relative" ref={dropdownRef}>
+      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-1 block">Kỹ năng chuyên môn</span>
+      <div className="w-[160px] sm:w-full">
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selectedSkills.map((skill, index) => (
+            <span 
+              key={index}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-lg border border-indigo-100/50 shadow-sm"
+            >
+              {skill}
+              <button 
+                type="button"
+                onClick={() => handleRemoveSkill(skill)}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-indigo-400 hover:text-indigo-650 hover:bg-indigo-100 transition-colors font-extrabold text-[10px]"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {selectedSkills.length === 0 && (
+            <span className="text-xs text-gray-400 italic font-medium py-1">Chưa chọn kỹ năng nào</span>
+          )}
+        </div>
+
+        <div className="relative">
+          <input 
+            type="text"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Tìm kiếm hoặc gõ kỹ năng mới..."
+            className="text-sm font-semibold text-gray-900 border border-gray-100 hover:border-gray-200 focus:border-blue-500 bg-gray-50/20 focus:bg-white rounded px-2.5 py-1.5 transition-all outline-none w-full text-right sm:text-left focus:shadow-sm"
+          />
+
+          {showDropdown && (
+            <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-100 shadow-xl rounded-xl max-h-[220px] overflow-y-auto divide-y divide-gray-50">
+              {suggestions.map((skill) => (
+                <button
+                  key={skill.skillId}
+                  type="button"
+                  onClick={() => handleSelectSkill(skill.skillName)}
+                  className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-indigo-50/60 hover:text-indigo-600 transition-colors flex items-center justify-between"
+                >
+                  <span>{skill.skillName}</span>
+                  {!skill.isActive && (
+                    <span className="text-[10px] font-semibold text-amber-500 bg-amber-50 px-1 py-0.5 rounded border border-amber-100/50">Chờ duyệt</span>
+                  )}
+                </button>
+              ))}
+
+              {searchText.trim() && !isExactMatch && (
+                <button
+                  type="button"
+                  onClick={handleCreateNewSkill}
+                  className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-blue-600 bg-blue-50/40 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-1.5"
+                >
+                  <span className="text-sm font-light">+</span> Đề xuất thêm: "{searchText.trim()}" (Chờ duyệt)
+                </button>
+              )}
+
+              {suggestions.length === 0 && (!searchText.trim() || isExactMatch) && (
+                <div className="px-4 py-2.5 text-xs text-gray-400 italic text-center font-medium">
+                  Không tìm thấy gợi ý nào thêm
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function EditProfileForm({
   role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills
 }) {
@@ -114,7 +269,7 @@ export default function EditProfileForm({
               <>
                 <InputRow label="Chức danh nghề nghiệp" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
                 <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
-                <InputRow label="Kỹ năng chuyên môn" value={primarySkills} onChange={e=>setPrimarySkills(e.target.value)} placeholder="VD: React, Java, Photoshop, SEO (cách nhau bởi dấu phẩy)..." />
+                <SkillTagSelector primarySkills={primarySkills} setPrimarySkills={setPrimarySkills} />
               </>
             )}
 

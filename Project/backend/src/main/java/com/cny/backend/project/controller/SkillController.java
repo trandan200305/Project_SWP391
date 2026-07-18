@@ -19,4 +19,23 @@ public class SkillController {
     public ResponseEntity<List<Skill>> getAllSkills() {
         return ResponseEntity.ok(skillRepository.findByIsActiveTrueOrderBySkillNameAsc());
     }
+
+    @PostMapping
+    public ResponseEntity<Skill> createSkill(@RequestBody Skill newSkill) {
+        if (newSkill.getSkillName() == null || newSkill.getSkillName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        String normalizedName = newSkill.getSkillName().trim();
+        java.util.Optional<Skill> existing = skillRepository.findBySkillNameIgnoreCase(normalizedName);
+        if (existing.isPresent()) {
+            return ResponseEntity.ok(existing.get());
+        }
+        Skill skillToSave = Skill.builder()
+                .skillName(normalizedName)
+                .categoryId(newSkill.getCategoryId() != null ? newSkill.getCategoryId() : 1)
+                .isActive(false) // Mặc định là false để chờ Staff duyệt
+                .build();
+        Skill saved = skillRepository.save(skillToSave);
+        return ResponseEntity.ok(saved);
+    }
 }
