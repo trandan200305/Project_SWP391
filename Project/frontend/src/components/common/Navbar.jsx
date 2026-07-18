@@ -13,6 +13,7 @@ import {
   Edit3,
   Settings,
   CheckCircle,
+  DollarSign,
 } from "lucide-react";
 import { authApi } from "../../features/auth/api/authApi.js";
 import { getImageUrl } from "../../utils/imageHelper.js";
