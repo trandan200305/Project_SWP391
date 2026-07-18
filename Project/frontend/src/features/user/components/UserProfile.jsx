@@ -154,38 +154,48 @@ function FreelancerReviewsSection({ freelancerId }) {
         Đánh giá từ Khách hàng ({reviews.length})
       </h3>
       <div className="divide-y divide-gray-100 space-y-4">
-        {reviews.map((review) => (
-          <div key={review.reviewId} className="pt-4 first:pt-0 space-y-2">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
-                  {review.reviewerEmployerAvatar ? (
-                    <img src={review.reviewerEmployerAvatar} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    review.reviewerEmployerName ? review.reviewerEmployerName.charAt(0).toUpperCase() : 'C'
-                  )}
+        {reviews.map((review) => {
+          const reviewerName = review.reviewerName || review.reviewerEmployerName || "Khách hàng";
+          const reviewerAvatar = review.reviewerAvatar || review.reviewerEmployerAvatar;
+          return (
+            <div key={review.reviewId} className="pt-4 first:pt-0 space-y-2">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
+                    {reviewerAvatar ? (
+                      <img src={reviewerAvatar} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      reviewerName.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800 text-sm">{reviewerName}</h4>
+                    <span className="text-[10px] text-gray-400 font-medium flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span>{new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
+                      {review.contractTitle && (
+                        <>
+                          <span className="text-gray-300">•</span>
+                          <span>Dự án: <span className="text-indigo-600 font-semibold">{review.contractTitle}</span></span>
+                        </>
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-800 text-sm">{review.reviewerEmployerName}</h4>
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {new Date(review.createdAt).toLocaleDateString('vi-VN')}
-                  </span>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star 
+                      key={s} 
+                      className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star 
-                    key={s} 
-                    className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
-                  />
-                ))}
-              </div>
+              <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
+                {review.comment || 'Không có nhận xét chi tiết.'}
+              </p>
             </div>
-            <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
-              {review.comment || 'Không có nhận xét chi tiết.'}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

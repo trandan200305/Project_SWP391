@@ -25,5 +25,6 @@ public class ReviewDto {
     private String revieweeAvatar;
     private BigDecimal rating;
     private String comment;
+    private String contractTitle;
     private LocalDateTime createdAt;
 }

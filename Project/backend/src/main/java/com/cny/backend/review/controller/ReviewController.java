@@ -62,4 +62,13 @@ public class ReviewController {
             return ResponseEntity.internalServerError().body("Unable to load reviews.");
         }
     }
+
+    @GetMapping("/freelancer/{freelancerId}")
+    public ResponseEntity<?> getReviewsForFreelancer(@PathVariable Integer freelancerId) {
+        try {
+            return ResponseEntity.ok(reviewService.getReviewsForFreelancer(freelancerId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Unable to load freelancer reviews.");
+        }
+    }
 }
