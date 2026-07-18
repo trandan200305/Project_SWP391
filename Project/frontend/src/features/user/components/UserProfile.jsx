@@ -52,36 +52,21 @@ export default function UserProfile({
         )}
 
         {/* Skills Section */}
-        {role === 'freelancer' && (primarySkills || expertiseField) && (
+        {role === 'freelancer' && primarySkills && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
             <h3 className="font-extrabold text-gray-900 text-lg mb-4">
-              Chuyên môn & Kỹ năng
+              Kỹ năng chuyên môn
             </h3>
-            
-            {expertiseField && expertiseField !== 'Khác' && (
-              <div className="mb-4">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Lĩnh vực chuyên môn</span>
-                <span className="inline-block px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-bold rounded-lg border border-blue-100/50 shadow-sm">
-                  {expertiseField}
+            <div className="flex flex-wrap gap-2">
+              {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
+                <span 
+                  key={index} 
+                  className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
+                >
+                  {skill}
                 </span>
-              </div>
-            )}
-
-            {primarySkills && (
-              <div>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Kỹ năng cốt lõi</span>
-                <div className="flex flex-wrap gap-2">
-                  {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
-                    <span 
-                      key={index} 
-                      className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
 

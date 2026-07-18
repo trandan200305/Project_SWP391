@@ -388,12 +388,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
                       </span>
                     )}
 
-                    {!hideLocation && (
-                      <div className="flex items-center gap-1.5" title="Khu vực làm việc">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span>{city && country ? `${city}, ${country}` : (country || 'Việt Nam')}</span>
-                      </div>
-                    )}
+
 
                     <div className="flex items-center gap-1.5" title="Đánh giá trung bình & Số dự án">
                       <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 rounded text-yellow-700 font-bold border border-yellow-100">
