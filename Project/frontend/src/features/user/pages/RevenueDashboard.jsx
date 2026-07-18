@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import apiService from '../../../services/apiService';
 
 export default function RevenueDashboard({ user }) {
   const [overview, setOverview] = useState(null);
