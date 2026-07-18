@@ -42,7 +42,7 @@ public class FreelancerProfile {
     @JoinColumn(name = "freelancer_id", nullable = false, unique = true)
     private Freelancer freelancer;
 
-    @Column(name = "professional_title", length = 200)
+    @Column(name = "professional_title", columnDefinition = "NVARCHAR(200)")
     private String professionalTitle;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
@@ -51,19 +51,19 @@ public class FreelancerProfile {
     @Column(name = "hourly_rate", precision = 15, scale = 2)
     private BigDecimal hourlyRate;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String address;
 
-    @Column(length = 100)
+    @Column(columnDefinition = "NVARCHAR(100)")
     private String city;
 
-    @Column(length = 100)
+    @Column(columnDefinition = "NVARCHAR(100)")
     private String country;
 
     @Column(name = "personal_website")
     private String personalWebsite;
 
-    @Column(name = "expertise_field")
+    @Column(name = "expertise_field", columnDefinition = "NVARCHAR(255)")
     private String expertiseField;
 
     @Column(name = "experience_level")
