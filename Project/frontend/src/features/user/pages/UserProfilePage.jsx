@@ -375,48 +375,35 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
                     {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
                     {(kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" />}
                   </h2>
-                  <div className="flex flex-col gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                    <div className="flex items-center gap-2">
-                      {role === 'freelancer' && professionalTitle && (
-                        <span className="flex items-center gap-1 font-semibold text-gray-700">
-                          {professionalTitle}
-                        </span>
-                      )}
+                  <div className="flex items-center flex-wrap gap-x-5 gap-y-2 mt-2 text-sm text-gray-600 font-medium">
+                    {role === 'freelancer' && (
+                      <span className="flex items-center gap-1.5 text-gray-800 font-bold bg-gray-100/80 px-2.5 py-1 rounded-md border border-gray-200/50 shadow-sm">
+                        {professionalTitle || expertiseField || 'Freelancer'}
+                      </span>
+                    )}
 
-                      {role === 'freelancer' && professionalTitle && <span className="text-gray-300">•</span>}
+                    {role === 'employer' && (
+                      <span className="flex items-center gap-1.5 text-indigo-700 bg-indigo-50 font-bold px-2.5 py-1 rounded-md border border-indigo-100 shadow-sm">
+                        Doanh nghiệp
+                      </span>
+                    )}
 
-                      {role === 'employer' && (
-                        <span className="flex items-center gap-1 text-indigo-600 font-bold">
-                          Doanh nghiệp
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-1" title="Đánh giá trung bình">
-                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                        <span className="font-bold text-gray-900 text-sm">{averageRating || '0.0'}</span>
-                      </div>
-                    </div>
-
-                    {role === 'freelancer' && (expertiseField || primarySkills) && (
-                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                        {expertiseField && expertiseField !== 'Khác' && (
-                          <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-bold rounded-lg border border-blue-100/50 shadow-sm">
-                            {expertiseField}
-                          </span>
-                        )}
-                        {primarySkills && primarySkills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map((skill, index) => (
-                          <span 
-                            key={index} 
-                            className="px-2.5 py-1 bg-gray-100/70 text-gray-600 text-[11px] font-bold rounded-lg border border-gray-200/50 shadow-sm"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {primarySkills && primarySkills.split(',').map(s => s.trim()).filter(Boolean).length > 4 && (
-                          <span className="text-xs text-gray-400 italic">+{primarySkills.split(',').map(s => s.trim()).filter(Boolean).length - 4}</span>
-                        )}
+                    {!hideLocation && (
+                      <div className="flex items-center gap-1.5" title="Khu vực làm việc">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>{city && country ? `${city}, ${country}` : (country || 'Việt Nam')}</span>
                       </div>
                     )}
+
+                    <div className="flex items-center gap-1.5" title="Đánh giá trung bình & Số dự án">
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 rounded text-yellow-700 font-bold border border-yellow-100">
+                        <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+                        <span>{averageRating || '0.0'}</span>
+                      </div>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wide">
+                        ({role === 'freelancer' ? (projectsCompleted || 0) : (projectsPosted || 0)} dự án)
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
