@@ -46,6 +46,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [customSkillInput, setCustomSkillInput] = useState('');
   const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [dbSkills, setDbSkills] = useState([]);
 
   useEffect(() => {
     if (!user || user.role !== 'EMPLOYER') {
@@ -66,12 +67,32 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         console.error('Error fetching categories:', err);
         setLoadingCategories(false);
       });
+
+    // Tải danh sách kỹ năng từ bảng skills trong CSDL
+    fetch('http://localhost:8080/api/skills')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDbSkills(data);
+        }
+      })
+      .catch(err => console.error('Error fetching skills from DB:', err));
   }, [user]);
 
-  // Available skills based on selected category
-  const availableSkills = newProject.categoryId && SKILLS_BY_CATEGORY[newProject.categoryId]
-    ? SKILLS_BY_CATEGORY[newProject.categoryId]
-    : DEFAULT_SKILLS;
+  // Available skills based on skills table in database
+  const availableSkills = React.useMemo(() => {
+    if (dbSkills && dbSkills.length > 0) {
+      if (newProject.categoryId) {
+        const catId = parseInt(newProject.categoryId);
+        const filtered = dbSkills.filter(s => s.categoryId === catId).map(s => s.skillName);
+        if (filtered.length > 0) return filtered;
+      }
+      return dbSkills.map(s => s.skillName);
+    }
+    return newProject.categoryId && SKILLS_BY_CATEGORY[newProject.categoryId]
+      ? SKILLS_BY_CATEGORY[newProject.categoryId]
+      : DEFAULT_SKILLS;
+  }, [dbSkills, newProject.categoryId]);
 
   const toggleSkill = (skill) => {
     setSelectedSkills(prev =>
