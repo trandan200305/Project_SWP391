@@ -278,11 +278,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       } else if (res && res.paymentUrl) {
         window.open(res.paymentUrl, '_blank');
       } else {
-        showToast('Không tạo được URL thanh toán VNPay', 'error');
+        showToast('Không tạo được URL thanh toán PayOS', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Lỗi tạo URL thanh toán VNPay.', 'error');
+      showToast('Lỗi tạo URL thanh toán PayOS.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -805,15 +805,15 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     try {
       const data = await adminApi.saveVnpayConfig(vnpayConfig);
       if (data) {
-        setVnpaySuccessMessage("Đã lưu cấu hình kết nối VNPay thành công!");
-        showToast("Cập nhật cấu hình VNPay thành công!", "success");
+        setVnpaySuccessMessage("Đã lưu cấu hình kết nối PayOS thành công!");
+        showToast("Cập nhật cấu hình PayOS thành công!", "success");
         const freshConfig = await adminApi.getVnpayConfig();
         if (freshConfig) setVnpayConfig(freshConfig);
         setIsEditingVnpay(false);
       }
     } catch (err) {
-      setVnpayErrorMessage(err.message || "Lỗi lưu cấu hình VNPay");
-      showToast("Lỗi cập nhật cấu hình VNPay", "error");
+      setVnpayErrorMessage(err.message || "Lỗi lưu cấu hình PayOS");
+      showToast("Lỗi cập nhật cấu hình PayOS", "error");
     } finally {
       setVnpaySaving(false);
     }
@@ -1012,7 +1012,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       setIsLoading(true);
       Promise.all([
         adminApi.getVnpayConfig(),
-        adminApi.getVnpayTransactions()
+        adminApi.getVnpayTransactions(vnpayPage, 10)
       ]).then(([config, txns]) => {
         if (config) {
           setVnpayConfig(config);
@@ -2811,7 +2811,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
               {activeTab === 'finance_dashboard' && 'Báo cáo doanh thu và đối soát các giao dịch phân bổ dòng tiền.'}
-              {activeTab === 'finance_banking' && 'Cài đặt tham số kết nối VNPay / VietQR và cấu hình Gói Dịch vụ.'}
+              {activeTab === 'finance_banking' && 'Cài đặt tham số kết nối PayOS / VietQR và cấu hình Gói Dịch vụ.'}
               {activeTab === 'finance_history' && 'Sao kê giao dịch, lịch sử truy vấn và kiểm tra trạng thái thanh toán.'}
             </p>
           </div>
@@ -4636,7 +4636,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-primary text-lg">Cấu hình Cổng Thanh toán VNPay / VietQR</h3>
+                    <h3 className="font-bold text-primary text-lg">Cấu hình Cổng Thanh toán VietQR (PayOS)</h3>
                     <p className="text-[12px] text-slate-400 mt-1">Cài đặt mã Ngân hàng, Số tài khoản nhận tiền và Secret Key tích hợp thanh toán.</p>
                   </div>
                   <div>
@@ -4680,7 +4680,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
                       >
                         <option value="">Chọn ngân hàng...</option>
-                        <option value="VNPAY">Ví VNPAY</option>
+                        
                         <option value="NCB">NCB - Ngân hàng Quốc Dân</option>
                         <option value="VISA">Thẻ Quốc tế VISA</option>
                         <option value="MASTERCARD">Thẻ Quốc tế MasterCard</option>
@@ -6444,7 +6444,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           
           <div className="bg-slate-50 p-4 rounded-2xl mb-6">
             <p className="text-body-sm text-slate-600 leading-relaxed">
-              Bạn có chắc chắn muốn mở khóa và chỉnh sửa cấu hình kết nối VNPay không? Vui lòng cẩn thận khi thay đổi các thông số kết nối thanh toán của hệ thống.
+              Bạn có chắc chắn muốn mở khóa và chỉnh sửa cấu hình kết nối PayOS không? Vui lòng cẩn thận khi thay đổi các thông số kết nối thanh toán của hệ thống.
             </p>
           </div>
 

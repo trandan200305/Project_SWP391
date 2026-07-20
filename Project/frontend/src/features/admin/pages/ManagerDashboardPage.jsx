@@ -3790,8 +3790,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             return (
               <div className="space-y-6 max-w-7xl mx-auto">
                 <div>
-                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Đối soát giao dịch VNPay</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Quản lý và đối soát các giao dịch thanh toán từ ví VNPay.</p>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Đối soát giao dịch PayOS</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Quản lý và đối soát các giao dịch thanh toán từ ví PayOS.</p>
                 </div>
 
                 <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">

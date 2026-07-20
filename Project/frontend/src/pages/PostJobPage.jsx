@@ -251,7 +251,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         } catch (payErr) {
           setNotice({ 
             type: 'error', 
-            message: `Dự án đã được lưu ở trạng thái chờ thanh toán, nhưng lỗi khởi tạo VNPay: ${payErr.message}. Vui lòng thanh toán sau trong quản lý dự án.` 
+            message: `Dự án đã được lưu ở trạng thái chờ thanh toán, nhưng lỗi khởi tạo thanh toán: ${payErr.message}. Vui lòng thanh toán sau trong quản lý dự án.` 
           });
           setTimeout(() => {
             if (onNavigate) onNavigate('employer_jobs');
