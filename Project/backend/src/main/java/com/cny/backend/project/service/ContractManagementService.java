@@ -170,12 +170,10 @@ public class ContractManagementService {
             });
         }
 
-        // Cập nhật tổng chi tiêu (totalSpent) cho Employer
+        // Cập nhật tổng chi tiêu (totalSpent) & Hạng thành viên (tier) cho Employer
         Employer client = contract.getClient();
         if (client != null && contract.getAgreedAmount() != null) {
-            java.math.BigDecimal curSpent = client.getTotalSpent() != null ? client.getTotalSpent() : java.math.BigDecimal.ZERO;
-            client.setTotalSpent(curSpent.add(contract.getAgreedAmount()));
-            employerRepository.save(client);
+            com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(client, contract.getAgreedAmount(), employerRepository);
         }
     }
 

@@ -50,6 +50,9 @@ public class EmployerDto {
     private String industry;
     private Integer profileCompleteness;
     private BigDecimal totalSpent;
+    private String tier;
+    private Integer tierDiscount;
+    private String lastSpentAt;
     private Integer projectsPosted;
     private BigDecimal averageRating;
     private String createdAt;

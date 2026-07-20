@@ -74,7 +74,7 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createProject(@RequestBody ProjectCreateDto dto) {
+    public ResponseEntity<?> createProject(@jakarta.validation.Valid @RequestBody ProjectCreateDto dto) {
         try {
             Project saved = projectService.createProject(dto);
             return ResponseEntity.ok(saved);

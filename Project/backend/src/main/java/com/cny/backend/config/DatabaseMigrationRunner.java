@@ -27,6 +27,15 @@ public class DatabaseMigrationRunner {
         } catch (Exception e) {}
 
         try {
+            // Thêm cột tier và last_spent_at vào bảng employers nếu chưa có
+            jdbcTemplate.execute("ALTER TABLE employers ADD tier VARCHAR(20) DEFAULT 'BRONZE';");
+        } catch (Exception e) {}
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE employers ADD last_spent_at DATETIME NULL;");
+        } catch (Exception e) {}
+
+        try {
             String defaultPassword = passwordEncoder.encode("123456");
 
             // Cập nhật lại toàn bộ mật khẩu của 4 tài khoản test về 123456 để đảm bảo khớp mã hóa BCrypt
@@ -62,6 +71,11 @@ public class DatabaseMigrationRunner {
                 jdbcTemplate.update("INSERT INTO staff (email, password_hash, display_name, full_name, status, is_deleted, specialization, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())",
                     "staff@lancerpro.com", defaultPassword, "Staff", "Test Staff", "ACTIVE", 0, "GENERAL");
             }
+
+            // Upgrade All Employers to top package PREMIUM
+            jdbcTemplate.update(
+                "UPDATE employers SET current_package_type = 'PREMIUM', package_post_quota = 99, package_expiry_date = '2030-12-31 23:59:59', total_spent = 10000000.00, tier = 'PLATINUM'"
+            );
 
             System.out.println("SUCCESS: Đã khởi tạo các tài khoản test thành công!");
         } catch (Exception e) {

@@ -208,17 +208,35 @@ public class PaymentController {
                 txn.setVnpTransactionNo(transactionNo);
                 paymentTransactionRepository.save(txn);
                 
+                if (txn.getEmployerId() != null && txn.getAmount() != null) {
+                    employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                        com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
+                    });
+                }
+
                 // Publish project and log platform fee if this was a project payment
                 if (txn.getProjectId() != null) {
                     projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                 } else if (txn.getPackageType() != null) {
                     employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
-                        servicePackageConfigRepository.findByPackageType(txn.getPackageType().toUpperCase()).ifPresent(config -> {
-                            employer.setCurrentPackageType(txn.getPackageType().toUpperCase());
-                            employer.setPackagePostQuota(config.getPostLimit());
-                            employer.setPackageExpiryDate(LocalDateTime.now().plusDays(config.getDurationDays()));
-                            employerRepository.save(employer);
-                        });
+                        String pkgUpper = txn.getPackageType().toUpperCase();
+                        int postLimit = 10;
+                        int durationDays = 30;
+
+                        Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(pkgUpper);
+                        if (configOpt.isPresent()) {
+                            postLimit = configOpt.get().getPostLimit();
+                            durationDays = configOpt.get().getDurationDays();
+                        } else {
+                            if ("REGULAR".equals(pkgUpper)) { postLimit = 5; durationDays = 15; }
+                            else if ("PREMIUM".equals(pkgUpper)) { postLimit = 20; durationDays = 30; }
+                        }
+
+                        int currentQuota = employer.getPackagePostQuota() != null && employer.getPackagePostQuota() > 0 ? employer.getPackagePostQuota() : 0;
+                        employer.setCurrentPackageType(pkgUpper);
+                        employer.setPackagePostQuota(currentQuota + postLimit);
+                        employer.setPackageExpiryDate(LocalDateTime.now().plusDays(durationDays));
+                        employerRepository.save(employer);
                     });
                 }
             } else {
@@ -259,6 +277,12 @@ public class PaymentController {
                             txn.setStatus("SUCCESS");
                             txn.setVnpTransactionNo(allParams.get("vnp_TransactionNo"));
                             paymentTransactionRepository.save(txn);
+
+                            if (txn.getEmployerId() != null && txn.getAmount() != null) {
+                                employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                                    com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
+                                });
+                            }
                             if (txn.getProjectId() != null) {
                                 projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                             } else if (txn.getPackageType() != null) {

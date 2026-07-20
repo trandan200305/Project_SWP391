@@ -177,6 +177,17 @@ export default function EmployerInvoices({ user }) {
         }
     };
 
+    const [employerProfile, setEmployerProfile] = useState(null);
+
+    useEffect(() => {
+        if (employerId) {
+            fetch(`http://localhost:8080/api/employers/${employerId}/profile`)
+                .then(res => res.json())
+                .then(data => setEmployerProfile(data))
+                .catch(err => console.error(err));
+        }
+    }, [employerId]);
+
     const handlePrint = (invoice) => {
         setSelectedInvoice(invoice);
         setTimeout(() => {
@@ -228,30 +239,30 @@ export default function EmployerInvoices({ user }) {
 
                 {/* Compact Statistics Bar */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 border-t border-slate-100">
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="flex items-center justify-between px-3 py-2 bg-blue-50/70 border border-blue-200/80 rounded-xl">
                         <div className="flex items-center gap-2">
                             <Receipt className="w-4 h-4 text-blue-600" />
-                            <span className="text-xs font-bold text-slate-600">Tổng hóa đơn:</span>
+                            <span className="text-xs font-bold text-blue-800">Gói hiện tại:</span>
                         </div>
-                        <span className="text-xs font-black text-slate-900">{totalElements || invoices.length} chứng từ</span>
+                        <span className="text-xs font-black text-blue-900 uppercase">
+                            {employerProfile?.currentPackageType || 'CHƯA MUA GÓI'} (Còn {employerProfile?.packagePostQuota || 0} bài)
+                        </span>
                     </div>
 
                     <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60 border border-emerald-200/80 rounded-xl">
                         <div className="flex items-center gap-2">
                             <Coins className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-bold text-emerald-800">Đã thanh toán:</span>
+                            <span className="text-xs font-bold text-emerald-800">Tổng đã chi:</span>
                         </div>
-                        <span className="text-xs font-black text-emerald-700">{formatCurrency(totalAmountSpent)}</span>
+                        <span className="text-xs font-black text-emerald-700">{formatCurrency(employerProfile?.totalSpent || totalAmountSpent)}</span>
                     </div>
 
                     <div className="flex items-center justify-between px-3 py-2 bg-purple-50/60 border border-purple-200/80 rounded-xl">
                         <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-purple-600" />
-                            <span className="text-xs font-bold text-purple-800">HĐ mới nhất:</span>
+                            <span className="text-xs font-bold text-purple-800">Tổng chứng từ:</span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-purple-900 truncate max-w-[130px]">
-                            {latestInvoice ? latestInvoice.invoiceNumber : 'N/A'}
-                        </span>
+                        <span className="text-xs font-black text-purple-900">{totalElements || invoices.length} hóa đơn</span>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X } from 'lucide-react';
+import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X, Package } from 'lucide-react';
 
 const SKILLS_BY_CATEGORY = {
   1: ['ReactJS', 'Spring Boot', 'Node.js', 'Java', 'Python', 'SQL Server', 'VueJS', 'Tailwind CSS', 'Mobile App', 'RESTful API'],
@@ -48,11 +48,20 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [customSkillInput, setCustomSkillInput] = useState('');
   const [dbSkills, setDbSkills] = useState([]);
+  const [employerQuota, setEmployerQuota] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'EMPLOYER') {
       if (onNavigate) onNavigate('home');
       return;
+    }
+
+    const empId = user?.employerId || user?.id || user?.userId;
+    if (empId) {
+      fetch(`http://localhost:8080/api/employers/${empId}/profile`)
+        .then(res => res.json())
+        .then(data => setEmployerQuota(data))
+        .catch(err => console.error('Error fetching employer quota:', err));
     }
 
     fetch('http://localhost:8080/api/categories')
@@ -123,6 +132,21 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
+    if (newProject.title.trim().length < 8) {
+      setNotice({ type: 'error', message: 'Tiêu đề công việc phải có ít nhất 8 ký tự.' });
+      return;
+    }
+
+    if (newProject.description.trim().length <= 50) {
+      setNotice({ type: 'error', message: 'Mô tả công việc phải có nhiều hơn 50 ký tự.' });
+      return;
+    }
+
+    if (employerQuota && (!employerQuota.packagePostQuota || employerQuota.packagePostQuota <= 0)) {
+      setNotice({ type: 'error', message: 'Tài khoản của bạn đã hết lượt đăng bài. Vui lòng mua gói dịch vụ mới để tiếp tục đăng tin.' });
+      return;
+    }
+
     // Validate budget range
     if (newProject.projectType === 'RANGE') {
       const minStr = newProject.budgetMin ? String(newProject.budgetMin).trim() : '';
@@ -173,8 +197,10 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       finalDescription += `\n\n--- KỸ NĂNG YÊU CẦU ---\n• ` + selectedSkills.join('\n• ');
     }
 
+    const empId = user?.employerId || user?.id || user?.userId;
+
     const payload = {
-      clientId: user.id,
+      clientId: empId,
       categoryId: parseInt(newProject.categoryId),
       title: newProject.title.trim(),
       description: finalDescription,
@@ -310,6 +336,37 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           }`}>
             <span className="text-base">{notice.type === 'success' ? '✓' : '⚠️'}</span>
             {notice.message}
+          </div>
+        )}
+
+        {employerQuota && (
+          <div className={`p-4 rounded-2xl mb-6 flex items-center justify-between border shadow-sm ${
+            (employerQuota.packagePostQuota > 0)
+              ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950'
+              : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 text-amber-950'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                <Package className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">
+                  Gói dịch vụ: <span className="uppercase text-indigo-700 font-extrabold">{employerQuota.currentPackageType || 'CHƯA DÙNG GÓI'}</span> — 
+                  Lượt còn lại: <strong className="text-emerald-700 font-black text-base ml-1">{employerQuota.packagePostQuota || 0} bài đăng</strong>
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Hạn dùng gói: {employerQuota.packageExpiryDate ? new Date(employerQuota.packageExpiryDate).toLocaleDateString('vi-VN') : 'Không có'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate('employer_packages')}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Mua gói / Nâng cấp
+            </button>
           </div>
         )}
 

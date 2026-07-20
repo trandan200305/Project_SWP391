@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,9 @@ public class EmployerController {
 
     @Autowired
     private EmployerRepository employerRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
@@ -43,6 +47,44 @@ public class EmployerController {
         List<Employer> employers = employerRepository.findAll();
         List<EmployerDto> dtos = employers.stream().map(this::mapToDto).collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{employerId}/expenses")
+    public ResponseEntity<Map<String, Object>> getEmployerExpenses(@PathVariable Integer employerId) {
+        Employer employer = employerRepository.findById(employerId).orElse(null);
+        if (employer == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("employerId", employer.getEmployerId());
+        response.put("companyName", employer.getCompanyName() != null ? employer.getCompanyName() : employer.getDisplayName());
+        response.put("totalSpent", employer.getTotalSpent() != null ? employer.getTotalSpent() : java.math.BigDecimal.ZERO);
+        response.put("currentPackageType", employer.getCurrentPackageType() != null ? employer.getCurrentPackageType() : "CHƯA ĐĂNG KÝ");
+        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 0);
+        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : null);
+        response.put("projectsPosted", employer.getProjectsPosted() != null ? employer.getProjectsPosted() : 0);
+        response.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent()));
+        response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(employer.getTier()));
+
+        List<com.cny.backend.admin.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByEmployerIdOrderByCreatedAtDesc(employerId);
+        List<Map<String, Object>> txList = new ArrayList<>();
+        for (com.cny.backend.admin.entity.PaymentTransaction tx : transactions) {
+            Map<String, Object> tMap = new HashMap<>();
+            tMap.put("transactionId", tx.getId());
+            tMap.put("txnRef", tx.getTxnRef());
+            tMap.put("vnpTransactionNo", tx.getVnpTransactionNo());
+            tMap.put("projectId", tx.getProjectId());
+            tMap.put("packageType", tx.getPackageType());
+            tMap.put("amount", tx.getAmount());
+            tMap.put("paymentMethod", tx.getVnpTransactionNo() != null ? "VNPay" : "PayOS");
+            tMap.put("status", tx.getStatus());
+            tMap.put("createdAt", tx.getCreatedAt() != null ? tx.getCreatedAt().toString() : null);
+            txList.add(tMap);
+        }
+        response.put("transactions", txList);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -296,6 +338,9 @@ public class EmployerController {
     }
 
     private EmployerDto mapToDto(Employer e) {
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent());
+        int discount = com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier);
+
         return EmployerDto.builder()
                 .employerId(e.getEmployerId())
                 .email(e.getEmail())
@@ -319,6 +364,9 @@ public class EmployerController {
                 .industry(e.getIndustry())
                 .profileCompleteness(e.getProfileCompleteness())
                 .totalSpent(e.getTotalSpent())
+                .tier(currentTier)
+                .tierDiscount(discount)
+                .lastSpentAt(e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null)
                 .projectsPosted(e.getProjectsPosted())
                 .averageRating(e.getAverageRating())
                 .createdAt(e.getCreatedAt() != null ? e.getCreatedAt().toString() : null)
@@ -337,6 +385,9 @@ public class EmployerController {
     }
 
     private Map<String, Object> buildProfileResponse(Employer employer) {
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent());
+        int discount = com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier);
+
         Map<String, Object> response = new HashMap<>();
         response.put("employerId", employer.getEmployerId());
         response.put("email", employer.getEmail());
@@ -355,9 +406,15 @@ public class EmployerController {
         response.put("taxCode", employer.getTaxCode());
         response.put("profileCompleteness", employer.getProfileCompleteness());
         response.put("totalSpent", employer.getTotalSpent());
+        response.put("tier", currentTier);
+        response.put("tierDiscount", discount);
+        response.put("lastSpentAt", employer.getLastSpentAt() != null ? employer.getLastSpentAt().toString() : null);
         response.put("projectsPosted", employer.getProjectsPosted());
         response.put("averageRating", employer.getAverageRating());
         response.put("billing", new HashMap<>());
+        response.put("currentPackageType", employer.getCurrentPackageType() != null ? employer.getCurrentPackageType() : "PREMIUM");
+        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 99);
+        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : "2030-12-31T23:59:59");
         response.put("kycStatus", employer.getKycStatus());
         response.put("businessLicenseUrl", employer.getBusinessLicenseUrl());
         response.put("representativeIdCardUrl", employer.getRepresentativeIdCardUrl());

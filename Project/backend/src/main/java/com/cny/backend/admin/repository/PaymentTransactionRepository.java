@@ -11,6 +11,7 @@ import java.util.List;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Integer> {
     Optional<PaymentTransaction> findByTxnRef(String txnRef);
     List<PaymentTransaction> findByProjectIdAndStatus(Integer projectId, String status);
+    List<PaymentTransaction> findByEmployerIdOrderByCreatedAtDesc(Integer employerId);
 
     @Query(value = "SELECT SUM(amount) FROM payment_transactions WHERE status = 'SUCCESS' AND CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)", nativeQuery = true)
     Double calculateInstantRevenue();

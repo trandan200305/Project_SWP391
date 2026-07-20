@@ -122,6 +122,13 @@ public class Employer {
     @Column(name = "total_spent", precision = 15, scale = 2)
     private BigDecimal totalSpent;
 
+    @Builder.Default
+    @Column(name = "tier", length = 20)
+    private String tier = "BRONZE";
+
+    @Column(name = "last_spent_at")
+    private LocalDateTime lastSpentAt;
+
     @Column(name = "projects_posted")
     private Integer projectsPosted;
 
