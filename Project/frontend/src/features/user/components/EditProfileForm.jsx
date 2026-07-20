@@ -227,8 +227,47 @@ const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
 };
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills, expertiseField, setExpertiseField
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills, expertiseField, setExpertiseField, avatarUrl
 }) {
+  const [showCompleteness, setShowCompleteness] = React.useState(false);
+  const completenessRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (completenessRef.current && !completenessRef.current.contains(e.target)) {
+        setShowCompleteness(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const completenessItems = React.useMemo(() => {
+    let score = 0;
+    if (avatarUrl) score += 10;
+    if (bio && bio.trim().length >= 30) score += 15;
+    if (professionalTitle && professionalTitle.trim()) score += 10;
+    if (hourlyRate && hourlyRate > 0) score += 10;
+    if (country && city && city !== 'Chờ cập nhật') score += 10;
+    if (expertiseField && expertiseField.trim()) score += 10;
+    if (primarySkills && primarySkills.trim()) score += 10;
+    if (kycStatus === 'APPROVED') score += 15;
+
+    const portfolioDone = profileCompleteness >= (score + 10); 
+    
+    return [
+      { name: 'Ảnh đại diện', points: 10, done: !!avatarUrl },
+      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 15, done: !!(bio && bio.trim().length >= 30) },
+      { name: 'Chức danh nghề nghiệp', points: 10, done: !!(professionalTitle && professionalTitle.trim()) },
+      { name: 'Mức lương kỳ vọng', points: 10, done: !!(hourlyRate && hourlyRate > 0) },
+      { name: 'Vị trí địa lý', points: 10, done: !!(country && city && city !== 'Chờ cập nhật') },
+      { name: 'Lĩnh vực chuyên môn', points: 10, done: !!(expertiseField && expertiseField.trim()) },
+      { name: 'Kỹ năng chuyên môn', points: 10, done: !!(primarySkills && primarySkills.trim()) },
+      { name: 'Dự án mẫu (Portfolio)', points: 10, done: portfolioDone },
+      { name: 'Xác thực (KYC)', points: 15, done: kycStatus === 'APPROVED' },
+    ];
+  }, [avatarUrl, bio, professionalTitle, hourlyRate, country, city, expertiseField, primarySkills, kycStatus, profileCompleteness]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column (Main Editable Info) */}
@@ -357,12 +396,16 @@ export default function EditProfileForm({
             {/* Vị trí địa lý - Chung cho Freelancer & Employer */}
             {(role === 'freelancer' || role === 'employer') && (
               <>
-                <SelectRow label="Quốc gia" value={country} onChange={e=>{setCountry(e.target.value); if(e.target.value === 'Việt Nam') setCity(VIETNAM_PROVINCES[0]); else setCity('Chờ cập nhật');}} options={['Việt Nam', 'Chờ cập nhật']} />
-                <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={country === 'Việt Nam' ? VIETNAM_PROVINCES : ['Chờ cập nhật']} />
+                <div className="flex justify-between items-center sm:block">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-1 block">Quốc gia</span>
+                  <div className="text-sm font-semibold text-gray-700 bg-gray-50/50 border border-gray-100 rounded px-2.5 py-1.5 w-full text-right sm:text-left cursor-not-allowed">
+                    Việt Nam
+                  </div>
+                </div>
+                <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={VIETNAM_PROVINCES} />
                 <InputRow label="Địa chỉ cụ thể" value={address} onChange={e=>setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã..." />
               </>
             )}
-            <InputRow label="Múi giờ (Timezone)" value={timezone} onChange={e=>setTimezone(e.target.value)} placeholder="Asia/Ho_Chi_Minh..." />
           </div>
         </div>
 
@@ -415,7 +458,43 @@ export default function EditProfileForm({
            
            {role === 'freelancer' ? (
              <div className="space-y-4 relative z-10">
-               <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
+               <div className="relative" ref={completenessRef}>
+                 <div 
+                   onClick={() => setShowCompleteness(!showCompleteness)}
+                   className="cursor-pointer hover:bg-blue-50/50 -mx-2 px-2 py-1 rounded-lg transition-colors group flex justify-between items-center"
+                   title="Xem chi tiết các mục cần hoàn thiện"
+                 >
+                   <span className="text-[11px] font-bold text-gray-400 group-hover:text-blue-600 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
+                     Độ hoàn thiện hồ sơ
+                   </span>
+                   <span className="text-sm font-extrabold text-blue-600 group-hover:underline whitespace-nowrap">{profileCompleteness}%</span>
+                 </div>
+                 
+                 {showCompleteness && (
+                   <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 shadow-xl rounded-xl z-50 p-4">
+                     <h4 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider border-b border-gray-100 pb-2">Tiêu chí hoàn thiện ({profileCompleteness}%)</h4>
+                     <ul className="space-y-2.5">
+                       {completenessItems.map((item, idx) => (
+                         <li key={idx} className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             {item.done ? (
+                               <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                             ) : (
+                               <div className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0" />
+                             )}
+                             <span className={`text-[11px] font-semibold ${item.done ? 'text-gray-800' : 'text-gray-400'}`}>
+                               {item.name}
+                             </span>
+                           </div>
+                           <span className={`text-[10px] font-bold ${item.done ? 'text-green-600' : 'text-gray-400'}`}>
+                             +{item.points}%
+                           </span>
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                 )}
+               </div>
                <ReadOnlyRow label="Tổng thu nhập" value={`${totalEarnings} VNĐ`} icon={DollarSign} badgeClass="text-sm font-extrabold text-green-600" />
                <ReadOnlyRow label="Dự án hoàn thành" value={projectsCompleted} icon={Briefcase} />
                <ReadOnlyRow label="Đánh giá trung bình" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />
