@@ -3062,25 +3062,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           )}
 
           {}
-          {activeTab === 'dashboard' && (
+          {activeTab.startsWith('dashboard_') && (
             <div className="animate-in fade-in duration-300">
-              {/* Sub-Tabs Navigation */}
-              <div className="flex justify-center mb-8">
-                <div className="radio-inputs">
-                  <label className="radio">
-                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'overview'} onChange={() => setDashboardSubTab('overview')} />
-                    <span className="name">Tổng quan & Cảnh báo</span>
-                  </label>
-                  <label className="radio">
-                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'financials'} onChange={() => setDashboardSubTab('financials')} />
-                    <span className="name">Biểu đồ & Tài chính</span>
-                  </label>
-                  <label className="radio">
-                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'activity'} onChange={() => setDashboardSubTab('activity')} />
-                    <span className="name">Nhật ký Hoạt động</span>
-                  </label>
-                </div>
-              </div>
 
               {activeTab === 'dashboard_overview' && (
               <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
