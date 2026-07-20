@@ -38,7 +38,22 @@ export default function EmployerPackages({ user }) {
     PREMIUM: new Audio('/premium.mp4')
   });
 
-  if (loading || packages.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="py-20 flex justify-center items-center">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (packages.length === 0) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-slate-500 font-semibold mb-2">Hệ thống đang bảo trì hoặc chưa cấu hình các gói dịch vụ.</p>
+        <p className="text-sm text-slate-400">Vui lòng liên hệ Admin để được hỗ trợ.</p>
+      </div>
+    );
+  }
 
   const handleMouseEnter = (pkgType) => {
     const audio = audioRefs.current[pkgType];

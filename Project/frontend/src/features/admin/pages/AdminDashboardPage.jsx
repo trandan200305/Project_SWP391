@@ -2629,7 +2629,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('overview') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {[
                   { id: 'home', icon: Home, label: 'Trang chủ' },
-                  { id: 'dashboard', icon: LayoutDashboard, label: 'Báo cáo Hệ thống' }
+                  { id: 'dashboard_overview', icon: AlertTriangle, label: 'Tổng quan & Cảnh báo' },
+                  { id: 'dashboard_financials', icon: BadgeDollarSign, label: 'Biểu đồ & Tài chính' },
+                  { id: 'dashboard_activity', icon: Activity, label: 'Nhật ký Hoạt động' }
                 ].map(item => (
                   <div 
                     key={item.id}
@@ -2788,7 +2790,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           <div>
             <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-3">
               {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hệ thống Quản trị LancerPro</>}
-              {activeTab === 'dashboard' && <><Settings className="w-6 h-6 text-blue-600" /> Báo cáo & Thống kê Tổng quan</>}
+              {activeTab === 'dashboard_overview' && <><AlertTriangle className="w-6 h-6 text-blue-600" /> Tổng quan & Cảnh báo</>}
+              {activeTab === 'dashboard_financials' && <><BadgeDollarSign className="w-6 h-6 text-blue-600" /> Biểu đồ & Tài chính</>}
+              {activeTab === 'dashboard_activity' && <><Activity className="w-6 h-6 text-blue-600" /> Nhật ký Hoạt động</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
               {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
@@ -2798,7 +2802,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </h1>
             <p className="text-body-sm text-muted mt-1 ml-9">
               {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
-              {activeTab === 'dashboard' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
+              {activeTab === 'dashboard_overview' && 'Giám sát các chỉ số tổng quan, tranh chấp và công việc cần xử lý ngay.'}
+              {activeTab === 'dashboard_financials' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
+              {activeTab === 'dashboard_activity' && 'Theo dõi các hoạt động mới nhất trên hệ thống theo thời gian thực.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
@@ -3076,7 +3082,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               </div>
 
-              {dashboardSubTab === 'overview' && (
+              {activeTab === 'dashboard_overview' && (
               <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
                 
                 <div className="space-y-8">
@@ -3214,7 +3220,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
               )}
-              {dashboardSubTab === 'activity' && (
+              {activeTab === 'dashboard_activity' && (
               <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
 
                   <div className="bg-white border border-slate-200 rounded-[24px] shadow-sm overflow-hidden flex flex-col h-[700px]">
@@ -3262,7 +3268,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               )}
 
-              {dashboardSubTab === 'financials' && (
+              {activeTab === 'dashboard_financials' && (
               <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Financials */}
@@ -3419,7 +3425,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
               )}
 
-              {dashboardSubTab === 'overview' && (
+              {activeTab === 'dashboard_overview' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
@@ -3560,7 +3566,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
               )}
 
-              {dashboardSubTab === 'financials' && (
+              {activeTab === 'dashboard_financials' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
@@ -3613,7 +3619,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
               )}
 
-              {dashboardSubTab === 'activity' && (
+              {activeTab === 'dashboard_activity' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
