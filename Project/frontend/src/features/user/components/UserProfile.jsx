@@ -51,23 +51,25 @@ export default function UserProfile({
           </div>
         )}
 
-        {/* Skills Section */}
+        {/* Skills & Expertise Section */}
         {role === 'freelancer' && (primarySkills || expertiseField) && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
-            <h3 className="font-extrabold text-gray-900 text-lg mb-4">
-              Lĩnh vực & Kỹ năng chuyên môn
-            </h3>
-            
             {expertiseField && (
-              <div className="mb-5">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Lĩnh vực</span>
-                <span className="text-[14px] font-bold text-gray-800">{expertiseField}</span>
+              <div className={primarySkills ? "mb-8" : ""}>
+                <h3 className="font-extrabold text-gray-900 text-lg mb-4">
+                  Lĩnh vực chuyên môn
+                </h3>
+                <span className="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-bold rounded-xl border border-blue-100/50 shadow-sm transition-transform hover:scale-105 duration-200 inline-block">
+                  {expertiseField}
+                </span>
               </div>
             )}
-            
+
             {primarySkills && (
               <div>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Kỹ năng</span>
+                <h3 className="font-extrabold text-gray-900 text-lg mb-4">
+                  Kỹ năng chuyên môn
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
                     <span 
