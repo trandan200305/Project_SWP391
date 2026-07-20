@@ -3292,14 +3292,15 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     
                     <div className="p-5 flex-1 overflow-y-auto">
                       <div className="relative border-l-2 border-slate-100 ml-4 space-y-4 pb-4">
-                        {auditLogs && auditLogs.filter(log => (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter)).length > 0 ? (
+                        {Array.isArray(auditLogs) && auditLogs.filter(log => log && (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter)).length > 0 ? (
                           auditLogs
-                            .filter(log => (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter))
+                            .filter(log => log && (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter))
                             .slice(0, 50).map((log, idx) => {
-                            const time = new Date(log.timestamp).toLocaleString('vi-VN', {
+                            if (!log) return null;
+                            const time = log.timestamp ? new Date(log.timestamp).toLocaleString('vi-VN', {
                                 day: '2-digit', month: '2-digit', year: 'numeric',
                                 hour: '2-digit', minute: '2-digit'
-                            });
+                            }) : '';
                             
                             return (
                               <div 
@@ -3312,8 +3313,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{time}</span>
                                   {log.role && <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 rounded">{log.role}</span>}
                                 </div>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">{log.source}</p>
-                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 group-hover:bg-white p-2.5 rounded-lg border border-slate-100 transition-colors line-clamp-2">{log.detail}</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{log.source || 'Hệ thống'}</p>
+                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 group-hover:bg-white p-2.5 rounded-lg border border-slate-100 transition-colors line-clamp-2">{log.detail || ''}</p>
                               </div>
                             );
                           })
