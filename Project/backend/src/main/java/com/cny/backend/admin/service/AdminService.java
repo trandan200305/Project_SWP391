@@ -954,6 +954,7 @@ public class AdminService {
                 .detail(detail)
                 .timestamp(p.getTimestamp())
                 .source(p.getSource())
+                .role(p.getRole())
                 .build();
         }).collect(Collectors.toList());
     }

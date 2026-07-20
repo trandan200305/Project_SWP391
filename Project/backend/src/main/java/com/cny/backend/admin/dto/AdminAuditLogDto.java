@@ -33,4 +33,5 @@ public class AdminAuditLogDto {
     private String detail;
     private Object timestamp;
     private String source;
+    private String role;
 }
