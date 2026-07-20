@@ -6,7 +6,8 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity
+  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity,
+  PieChart, Landmark, Receipt, ChevronUp
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -32,6 +33,7 @@ const VIETQR_BANKS = [
 export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onLogout }) {
   
   const [activeTab, setActiveTab] = useState('home');
+  const [expandedMenus, setExpandedMenus] = useState(['overview', 'management', 'finance', 'system']);
   const [dashboardSubTab, setDashboardSubTab] = useState('overview');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -2610,106 +2612,142 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
+            
             {/* OVERVIEW Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
-                <span>Overview</span>
-              </p>
+              <div 
+                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
+                onClick={() => setExpandedMenus(prev => prev.includes('overview') ? prev.filter(m => m !== 'overview') : [...prev, 'overview'])}
+              >
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
+                  Overview
+                </p>
+                {expandedMenus.includes('overview') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+              </div>
               
-              {[
-                { id: 'home', icon: Home, label: 'Trang chủ' },
-                { id: 'dashboard', icon: LayoutDashboard, label: 'Báo cáo & Thống kê' }
-              ].map(item => (
-                <div 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('overview') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {[
+                  { id: 'home', icon: Home, label: 'Trang chủ' },
+                  { id: 'dashboard', icon: LayoutDashboard, label: 'Báo cáo Hệ thống' }
+                ].map(item => (
+                  <div 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* MANAGEMENT Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
-                <span>Management</span>
-              </p>
+              <div 
+                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
+                onClick={() => setExpandedMenus(prev => prev.includes('management') ? prev.filter(m => m !== 'management') : [...prev, 'management'])}
+              >
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
+                  Management
+                </p>
+                {expandedMenus.includes('management') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+              </div>
               
-              {[
-                { id: 'users', icon: Users, label: 'Người dùng' },
-                { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' }
-              ].map(item => (
-                <div 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                    {item.label}
-                  </span>
-                  {item.id === 'users' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
-                </div>
-              ))}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('management') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {[
+                  { id: 'users', icon: Users, label: 'Người dùng' },
+                  { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' }
+                ].map(item => (
+                  <div 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                      {item.label}
+                    </span>
+                    {item.id === 'users' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* FINANCE Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
-                <span>Finance</span>
-              </p>
+              <div 
+                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
+                onClick={() => setExpandedMenus(prev => prev.includes('finance') ? prev.filter(m => m !== 'finance') : [...prev, 'finance'])}
+              >
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
+                  Finance
+                </p>
+                {expandedMenus.includes('finance') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+              </div>
               
-              {[
-                { id: 'vnpay', icon: BadgeDollarSign, label: 'Giao dịch VNPay' }
-              ].map(item => (
-                <div 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('finance') ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {[
+                  { id: 'finance_dashboard', icon: PieChart, label: 'Dashboard Tài chính' },
+                  { id: 'finance_banking', icon: Landmark, label: 'Cấu hình Ngân hàng' },
+                  { id: 'finance_history', icon: Receipt, label: 'Lịch sử Giao dịch' }
+                ].map(item => (
+                  <div 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
             
             {/* SYSTEM Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
-                <span>System</span>
-              </p>
+              <div 
+                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
+                onClick={() => setExpandedMenus(prev => prev.includes('system') ? prev.filter(m => m !== 'system') : [...prev, 'system'])}
+              >
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
+                  System
+                </p>
+                {expandedMenus.includes('system') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+              </div>
               
-              {[
-                { id: 'cms', icon: Settings, label: 'Cấu hình (CMS)' }
-              ].map(item => (
-                <div 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('system') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {[
+                  { id: 'cms', icon: Settings, label: 'Cấu hình (CMS)' }
+                ].map(item => (
+                  <div 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
         </div>
 
         <div className="space-y-1 mt-6 pt-4 border-t border-slate-100">
@@ -2754,7 +2792,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
               {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
-              {activeTab === 'vnpay' && <><BadgeDollarSign className="w-6 h-6 text-emerald-600" /> Cấu hình & Giao dịch VNPay</>}
+              {activeTab === 'finance_dashboard' && <><PieChart className="w-6 h-6 text-emerald-600" /> Dashboard Tài chính</>}
+              {activeTab === 'finance_banking' && <><Landmark className="w-6 h-6 text-emerald-600" /> Cấu hình Ngân hàng</>}
+              {activeTab === 'finance_history' && <><Receipt className="w-6 h-6 text-emerald-600" /> Lịch sử Giao dịch Ngân hàng</>}
             </h1>
             <p className="text-body-sm text-muted mt-1 ml-9">
               {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
@@ -2762,7 +2802,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
-              {activeTab === 'vnpay' && 'Quản lý tham số kết nối VNPay và đối soát các giao dịch đóng phí nền tảng của nhà tuyển dụng.'}
+              {activeTab === 'finance_dashboard' && 'Báo cáo doanh thu và đối soát các giao dịch phân bổ dòng tiền.'}
+              {activeTab === 'finance_banking' && 'Cài đặt tham số kết nối VNPay / VietQR và cấu hình Gói Dịch vụ.'}
+              {activeTab === 'finance_history' && 'Sao kê giao dịch, lịch sử truy vấn và kiểm tra trạng thái thanh toán.'}
             </p>
           </div>
 
@@ -3034,36 +3076,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               </div>
 
-              {/* TOP BANNER */}
-              <div className="bg-[#0f4c5c] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center text-white mb-8 shadow-[0_4px_20px_rgb(15,76,92,0.15)]">
-                <div>
-                  <p className="text-teal-100/80 font-medium text-[13px] mb-1.5">Total Balance</p>
-                  <div className="flex items-baseline gap-3">
-                    <h2 className="text-3xl md:text-[40px] font-bold tracking-tight">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
-                    </h2>
-                    <span className="text-emerald-400 text-sm font-semibold flex items-center gap-0.5">
-                      <ArrowUpRight className="w-4 h-4" /> {stats.revenueGrowthPercent || 0}%
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 mt-6 md:mt-0">
-                  <button className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-bold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm shadow-sm">
-                    <Plus className="w-4 h-4" /> Add
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
-                    <ArrowUpRight className="w-4 h-4" /> Send
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
-                    <RefreshCw className="w-4 h-4" /> Request
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold p-2.5 rounded-xl transition-colors flex items-center justify-center backdrop-blur-sm">
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
               {dashboardSubTab === 'overview' && (
               <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
                 
@@ -3201,9 +3213,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                   </div>
                 </div>
-              </div>
               )}
-
               {dashboardSubTab === 'activity' && (
               <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
 
@@ -3250,7 +3260,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                   </div>
                 </div>
-              </div>
               )}
 
               {dashboardSubTab === 'financials' && (
@@ -3407,7 +3416,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                   </div>
                 </div>
-              </div>
               </div>
               )}
 
@@ -3671,6 +3679,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </tbody>
                   </table>
                 </div>
+              </div>
               </div>
               )}
             </div>
@@ -4540,7 +4549,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           )}
 
-          {activeTab === 'vnpay' && (
+          {activeTab === 'finance_banking' && (
             <div className="space-y-8 animate-in fade-in duration-300">
               
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -4845,7 +4854,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </button>
                 </div>
               </div>
+            </div>
+          )}
 
+          {activeTab === 'finance_dashboard' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
               {/* === FINANCIAL DASHBOARD BLOCK === */}
               <div className="bg-[#242424] rounded-2xl p-6 shadow-sm mb-6 animate-in fade-in duration-300">
                 {/* Time Filters */}
@@ -5011,7 +5024,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
+          {activeTab === 'finance_history' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <div>
@@ -5572,7 +5589,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
             </div>
           )}
-
         </div>
 
       </main>
