@@ -253,6 +253,24 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     }
   };
 
+  const handleSavePrivacy = (privacyUpdates) => {
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
+    let payload = {};
+    if (role === 'freelancer') {
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, ...privacyUpdates };
+    } else if (role === 'employer') {
+      payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, ...privacyUpdates };
+    }
+
+    fetch(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(err => {
+      console.error('Lỗi khi lưu quyền riêng tư:', err);
+    });
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
@@ -293,7 +311,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
-    handleSaveProfile, formatDate, formatDateTime, formatCurrency, formatCompactCurrency, handleDeleteAccount,
+    handleSaveProfile, handleSavePrivacy, formatDate, formatDateTime, formatCurrency, formatCompactCurrency, handleDeleteAccount,
     currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, handleSavePassword
   };
 
