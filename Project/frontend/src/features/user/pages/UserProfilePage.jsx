@@ -59,6 +59,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [country, setCountry] = useState('');
   const [primarySkills, setPrimarySkills] = useState('');
   const [expertiseField, setExpertiseField] = useState('Khác');
+  const [hourlyRate, setHourlyRate] = useState(0);
 
   // Freelancer Read-only Stats
   const [profileCompleteness, setProfileCompleteness] = useState(0);
@@ -86,7 +87,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
     setProfessionalTitle(''); setAddress(''); setCity(''); setCountry(''); setPrimarySkills('');
-    setHideEmail(false); setHidePhone(false); setHideLocation(false);
+    setHideEmail(false); setHidePhone(false); setHideLocation(false); setHourlyRate(0);
     setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
     setTotalSpent(0); setProjectsPosted(0);
     setKycStatus('UNVERIFIED'); setKycRejectedReason('');
@@ -136,6 +137,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           if (data.averageRating) setAverageRating(data.averageRating);
           if (data.primarySkills) setPrimarySkills(data.primarySkills);
           if (data.expertiseField) setExpertiseField(data.expertiseField);
+          if (data.hourlyRate) setHourlyRate(data.hourlyRate);
         } else if (role === 'employer') {
           if (data.companyName) setCompanyName(data.companyName);
           if (data.fullName) setFullName(data.fullName);
@@ -167,7 +169,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
     let payload = {};
     if (role === 'freelancer') {
-      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField };
+      const parsedHourlyRate = hourlyRate ? Number(hourlyRate) : null;
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, hourlyRate: parsedHourlyRate };
     } else if (role === 'employer') {
       payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
@@ -257,7 +260,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
     let payload = {};
     if (role === 'freelancer') {
-      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, ...privacyUpdates };
+      const parsedHourlyRate = hourlyRate ? Number(hourlyRate) : null;
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, hourlyRate: parsedHourlyRate, ...privacyUpdates };
     } else if (role === 'employer') {
       payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, ...privacyUpdates };
     }
@@ -307,7 +311,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills, expertiseField, setExpertiseField,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills, expertiseField, setExpertiseField, hourlyRate, setHourlyRate,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,

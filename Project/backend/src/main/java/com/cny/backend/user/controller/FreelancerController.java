@@ -50,7 +50,14 @@ public class FreelancerController {
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
-        List<FreelancerDto> dtos = freelancers.stream().map(this::mapToDto).collect(Collectors.toList());
+        List<FreelancerDto> dtos = freelancers.stream().map(f -> {
+            FreelancerDto dto = mapToDto(f);
+            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+            dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+            dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+            return dto;
+        }).collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
 
@@ -59,7 +66,14 @@ public class FreelancerController {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();
         List<FreelancerDto> topFreelancers = freelancers.stream()
                 .limit(4)
-                .map(this::mapToDto)
+                .map(f -> {
+                    FreelancerDto dto = mapToDto(f);
+                    java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+                    Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+                    return dto;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(topFreelancers);
     }
@@ -71,6 +85,8 @@ public class FreelancerController {
                     FreelancerDto dto = mapToDto(f);
                     java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
                     dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+                    Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
                     return dto;
                 })
                 .map(ResponseEntity::ok)
@@ -173,7 +189,13 @@ public class FreelancerController {
             saved.setProfileCompleteness(calculateCompleteness(saved));
             freelancerRepository.save(saved);
 
-            return ResponseEntity.ok(mapToDto(saved));
+            FreelancerDto dto = mapToDto(saved);
+            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(saved.getProfileId(), "COMPLETED");
+            dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(saved.getProfileId(), "COMPLETED");
+            dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+
+            return ResponseEntity.ok(dto);
         }).orElse(ResponseEntity.notFound().build());
     }
 
