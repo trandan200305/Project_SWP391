@@ -314,6 +314,7 @@ public class AuthController {
         }
 
         String code = String.format("%06d", (int) (Math.random() * 1000000));
+        System.out.println("[FORGOT PASSWORD OTP] Email: " + email + ", OTP: " + code);
         verificationCodes.put(email, code);
         codeTimestamps.put(email, System.currentTimeMillis());
         SimpleMailMessage message = new SimpleMailMessage();
@@ -323,7 +324,7 @@ public class AuthController {
         String emailContent = "Chào bạn,\n\n"
                 + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại LancerPro.\n\n"
                 + "Mã xác nhận của bạn là: " + code + "\n\n"
-                + "Mã này có hiệu lực trong vòng 5 phút. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
+                + "Mã này có hiệu lực trong vòng 1 phút. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.\n\n"
                 + "Trân trọng,\n"
                 + "Đội ngũ LancerPro";
 
@@ -345,13 +346,14 @@ public class AuthController {
 
         
         Long timestamp = codeTimestamps.get(email);
-        if (timestamp == null || System.currentTimeMillis() - timestamp > 300000) {
+        if (timestamp == null || System.currentTimeMillis() - timestamp > 60000) {
             response.put("success", false);
-            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 5 phút)!");
+            response.put("message", "Mã xác nhận đã hết hạn (chỉ có hiệu lực trong 1 phút)!");
             return ResponseEntity.badRequest().body(response);
         }
 
         String savedCode = verificationCodes.get(email);
+        System.out.println("[VERIFY OTP] Email: " + email + ", Input Code: " + code + ", Saved Code: " + savedCode);
         if (savedCode != null && savedCode.equals(code)) {
             verificationCodes.remove(email);
             codeTimestamps.remove(email);

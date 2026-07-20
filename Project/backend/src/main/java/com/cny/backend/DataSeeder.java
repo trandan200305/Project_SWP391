@@ -63,6 +63,9 @@ public class DataSeeder implements CommandLineRunner {
     private com.cny.backend.department.repository.DepartmentRepository departmentRepository;
 
     @Autowired
+    private com.cny.backend.department.repository.DepartmentTransferRequestRepository departmentTransferRequestRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
@@ -520,11 +523,46 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedFixedDepartments() {
         try {
-            
+            // Soft-delete and detach staff/managers from FIN to clean up
+            try {
+                // First, clean up any staff/managers with 'finance' in their email
+                try {
+                    jdbcTemplate.update("UPDATE staff SET is_deleted = 1, department_id = NULL WHERE email LIKE '%finance%'");
+                } catch (Exception e) {
+                    System.out.println("Clean up finance staff email warning: " + e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("UPDATE managers SET is_deleted = 1, department_id = NULL WHERE email LIKE '%finance%'");
+                } catch (Exception e) {
+                    System.out.println("Clean up finance manager email warning: " + e.getMessage());
+                }
+
+                Integer finId = null;
+                try {
+                    finId = jdbcTemplate.queryForObject(
+                        "SELECT department_id FROM departments WHERE code = 'FIN'", Integer.class);
+                } catch (Exception e) {
+                    System.out.println("FIN department not found: " + e.getMessage());
+                }
+
+                if (finId != null) {
+                    try { jdbcTemplate.update("UPDATE staff SET is_deleted = 1, department_id = NULL WHERE department_id = ?", finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("UPDATE managers SET is_deleted = 1, department_id = NULL WHERE department_id = ?", finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM department_sessions WHERE department_id = ?", finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM department_activity_logs WHERE department_id = ?", finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM department_task_signoffs WHERE department_id = ?", finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM department_transfer_history WHERE from_department_id = ? OR to_department_id = ?", finId, finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM department_transfer_requests WHERE from_department_id = ? OR to_department_id = ?", finId, finId); } catch (Exception e) {}
+                    try { jdbcTemplate.update("DELETE FROM departments WHERE department_id = ?", finId); } catch (Exception e) {}
+                    System.out.println("CLEANUP: Soft-deleted FIN staff/managers and deleted FIN department successfully.");
+                }
+            } catch (Exception ex) {
+                System.out.println("INFO: FIN department clean up skipped: " + ex.getMessage());
+            }
+
             String[][] departments = {
-                {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, MOD"},
-                {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
-                {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
+                {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: CS"},
+                {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: MOD"},
                 {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
                 {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
             };
@@ -551,36 +589,66 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
+    private Manager seedManager(String email, String displayName, String fullName, com.cny.backend.department.entity.Department dept, Admin admin) {
+        Optional<Manager> existing = managerRepository.findByEmail(email);
+        if (existing.isPresent()) {
+            Manager m = existing.get();
+            if (dept != null) {
+                m.setDepartment(dept.getName());
+                m.setDepartmentEntity(dept);
+                managerRepository.save(m);
+            }
+            return m;
+        }
+        
+        Manager manager = Manager.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode("123456"))
+                .displayName(displayName)
+                .fullName(fullName)
+                .phone("0987654321")
+                .avatarUrl("https://ui-avatars.com/api/?name=" + displayName.replace(" ", "+") + "&background=006b2c&color=fff")
+                .status("ACTIVE")
+                .department(dept != null ? dept.getName() : null)
+                .departmentEntity(dept)
+                .managedByAdmin(admin != null ? admin.getAdminId() : 1)
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        return managerRepository.save(manager);
+    }
+
     private void seedStaffAndManagers() {
         try {
             com.cny.backend.department.entity.Department csDept = departmentRepository.findByCode("CS").orElse(null);
             com.cny.backend.department.entity.Department itDept = departmentRepository.findByCode("IT").orElse(null);
-            com.cny.backend.department.entity.Department primaryDept = csDept != null ? csDept : itDept;
+            com.cny.backend.department.entity.Department modDept = departmentRepository.findByCode("MOD").orElse(null);
+            com.cny.backend.department.entity.Department disDept = departmentRepository.findByCode("DIS").orElse(null);
 
             Admin admin = adminRepository.findByEmail("admin@lancerpro.com").orElse(null);
 
-            if (managerRepository.count() == 0 && primaryDept != null) {
-                Manager manager = Manager.builder()
-                        .email("managerstaff@gmail.com")
-                        .passwordHash(passwordEncoder.encode("123456"))
-                        .displayName("ManagerStaff")
-                        .fullName("Customer Support Manager")
-                        .phone("0987654321")
-                        .avatarUrl("https://ui-avatars.com/api/?name=ManagerStaff&background=006b2c&color=fff")
-                        .status("ACTIVE")
-                        .department(primaryDept.getName())
-                        .departmentEntity(primaryDept)
-                        .managedByAdmin(admin != null ? admin.getAdminId() : 1)
-                        .isDeleted(false)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build();
-                managerRepository.save(manager);
+            // Seed 4 Managers for 4 Departments
+            Manager modManager = seedManager("manager.mod@lancerpro.com", "ManagerMod", "Moderation Manager", modDept, admin);
+            Manager disManager = seedManager("manager.dis@lancerpro.com", "ManagerDis", "Dispute Manager", disDept, admin);
+            Manager csManager = seedManager("manager.cs@lancerpro.com", "ManagerCS", "Customer Support Manager", csDept, admin);
+            Manager itManager = seedManager("manager.it@lancerpro.com", "ManagerIT", "IT Manager", itDept, admin);
+
+            // Clean up old managerstaff if exists
+            Optional<Manager> oldManagerOpt = managerRepository.findByEmail("managerstaff@gmail.com");
+            if (oldManagerOpt.isPresent()) {
+                Manager oldManager = oldManagerOpt.get();
+                jdbcTemplate.update("UPDATE staff SET manager_id = ? WHERE manager_id = ?", csManager.getManagerId(), oldManager.getManagerId());
+                try {
+                    jdbcTemplate.update("UPDATE login_history SET manager_id = ? WHERE manager_id = ?", csManager.getManagerId(), oldManager.getManagerId());
+                    jdbcTemplate.update("UPDATE department_sessions SET user_id = ? WHERE user_id = ? AND user_role = 'MANAGER'", csManager.getManagerId(), oldManager.getManagerId());
+                } catch (Exception ex) {
+                    System.out.println("Warning migrating old manager login/session history: " + ex.getMessage());
+                }
+                managerRepository.delete(oldManager);
             }
 
-            Manager manager = managerRepository.findByEmail("managerstaff@gmail.com").orElse(null);
-
-            if (staffRepository.count() == 0 && csDept != null && manager != null) {
+            if (staffRepository.count() == 0 && csDept != null) {
                 
                 Staff staff1 = Staff.builder()
                         .email("staff@gmail.com")
@@ -592,7 +660,7 @@ public class DataSeeder implements CommandLineRunner {
                         .status("ACTIVE")
                         .specialization("Senior Analyst")
                         .departmentEntity(csDept)
-                        .manager(manager)
+                        .manager(csManager)
                         .isDeleted(false)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
@@ -610,7 +678,7 @@ public class DataSeeder implements CommandLineRunner {
                         .status("ACTIVE")
                         .specialization("Ops Lead")
                         .departmentEntity(csDept)
-                        .manager(manager)
+                        .manager(csManager)
                         .isDeleted(false)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
@@ -628,7 +696,7 @@ public class DataSeeder implements CommandLineRunner {
                         .status("ACTIVE")
                         .specialization("Developer")
                         .departmentEntity(itDept != null ? itDept : csDept)
-                        .manager(manager)
+                        .manager(itManager)
                         .isDeleted(false)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
@@ -648,7 +716,7 @@ public class DataSeeder implements CommandLineRunner {
                             .status(status)
                             .specialization("Support Agent")
                             .departmentEntity(csDept)
-                            .manager(manager)
+                            .manager(csManager)
                             .isDeleted(false)
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
@@ -657,12 +725,45 @@ public class DataSeeder implements CommandLineRunner {
                 }
             }
 
-            com.cny.backend.department.entity.Department modDept = departmentRepository.findByCode("MOD").orElse(null);
             Staff existingStaff = staffRepository.findByEmail("staff@gmail.com").orElse(null);
             if (existingStaff != null && modDept != null) {
                 existingStaff.setDepartmentEntity(modDept);
+                existingStaff.setManager(modManager);
                 staffRepository.save(existingStaff);
             }
+
+            // Sync staff manager relationships based on department matches
+            try {
+                jdbcTemplate.update("UPDATE staff SET manager_id = (SELECT manager_id FROM managers m WHERE m.department_id = staff.department_id) WHERE manager_id IS NULL");
+            } catch (Exception ex) {
+                System.out.println("Sync staff manager id warning: " + ex.getMessage());
+            }
+
+            // Seed sample transfer requests if empty
+            try {
+                if (departmentTransferRequestRepository.count() == 0 && modDept != null && disDept != null) {
+                    Staff sampleStaff = staffRepository.findAll().stream().findFirst().orElse(null);
+                    if (sampleStaff != null) {
+                        com.cny.backend.department.entity.DepartmentTransferRequest req1 = com.cny.backend.department.entity.DepartmentTransferRequest.builder()
+                            .userType("STAFF")
+                            .userId(sampleStaff.getStaffId())
+                            .userEmail(sampleStaff.getEmail())
+                            .userDisplayName(sampleStaff.getDisplayName())
+                            .fromDepartment(sampleStaff.getDepartmentEntity() != null ? sampleStaff.getDepartmentEntity() : modDept)
+                            .toDepartment(disDept)
+                            .reason("Lý do điều chuyển: Muốn mở rộng kỹ năng sang mảng giải quyết tranh chấp hợp đồng.\nPhòng ban mong muốn: Phòng Tranh chấp (DIS)\nVị trí mong muốn: Chuyên viên xử lý tranh chấp\nNgày mong muốn bắt đầu: 2026-08-01\nLoại điều chuyển: Chuyển phòng ban\nKỹ năng liên quan & kinh nghiệm trước đây: 2 năm kiểm duyệt dự án và tư vấn pháp lý hợp đồng\nThành tích nổi bật & lý do bạn phù hợp: Đạt hiệu suất 98% xử lý đơn hàng năm 2025\nTệp đính kèm: don_xin_dieu_chuyen_dis.pdf")
+                            .status("PENDING")
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build();
+                        departmentTransferRequestRepository.save(req1);
+                        System.out.println("SEEDED sample transfer request ID #" + req1.getRequestId());
+                    }
+                }
+            } catch (Exception reqEx) {
+                System.out.println("Warning seeding sample transfer request: " + reqEx.getMessage());
+            }
+
         } catch (Exception e) {
             System.err.println("Error seeding staff and managers: " + e.getMessage());
         }

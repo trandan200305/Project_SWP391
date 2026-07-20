@@ -11,6 +11,7 @@ export const ENDPOINTS = {
     VERIFY_INVITATION: '/auth/invitation/verify',
     SEND_INVITATION_CODE: '/auth/invitation/send-code',
     ACCEPT_INVITATION: '/auth/invitation/accept',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   ADMIN: {
     STATS: '/admin/stats',

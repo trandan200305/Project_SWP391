@@ -32,11 +32,11 @@ public class DatabaseMigrationRunner {
         try {
             String defaultPassword = passwordEncoder.encode("123456");
 
-            // Cập nhật lại toàn bộ mật khẩu của 4 tài khoản test về 123456 để đảm bảo khớp mã hóa BCrypt
+            // Cập nhật lại toàn bộ mật khẩu của các tài khoản test về 123456 để đảm bảo khớp mã hóa BCrypt
             jdbcTemplate.update("UPDATE employers SET password_hash = ? WHERE email = 'employer@lancerpro.com'", defaultPassword);
             jdbcTemplate.update("UPDATE freelancers SET password_hash = ? WHERE email = 'freelancer@lancerpro.com'", defaultPassword);
-            jdbcTemplate.update("UPDATE managers SET password_hash = ? WHERE email = 'manager@lancerpro.com'", defaultPassword);
-            jdbcTemplate.update("UPDATE staff SET password_hash = ? WHERE email = 'staff@lancerpro.com'", defaultPassword);
+            jdbcTemplate.update("UPDATE managers SET password_hash = ? WHERE email = 'manager@lancerpro.com' OR email LIKE 'manager.%'", defaultPassword);
+            jdbcTemplate.update("UPDATE staff SET password_hash = ? WHERE email = 'staff@lancerpro.com' OR email LIKE 'staff%' OR email = 'staff@gmail.com'", defaultPassword);
 
             // Seed Employer
             int empCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM employers WHERE email = 'employer@lancerpro.com'", Integer.class);

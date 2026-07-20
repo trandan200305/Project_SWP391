@@ -36,7 +36,7 @@ public class ChatController {
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessage) {
         boolean shouldSendAutoReply = false;
-        // auto reply
+        
         boolean isSupportAgent = "ADMIN".equals(chatMessage.getSenderRole())
                 || "STAFF".equals(chatMessage.getSenderRole());
         if (!isSupportAgent) {

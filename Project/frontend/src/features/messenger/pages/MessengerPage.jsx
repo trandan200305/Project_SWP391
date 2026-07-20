@@ -160,7 +160,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   }, [activeDirectChat, isConnected]);
 
-  // 1. 1. Kết nối, subscribe và xử lý realtime WebSocket
+  // 1. 1. Kết nối WebSocket
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/api/ws");
     const client = new Client({
@@ -268,6 +268,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           }
         });
       } else {
+        // user
         client.subscribe(`/topic/user.${user?.id}`, (message) => {
           const receivedMessage = JSON.parse(message.body);
           console.log("Received on user private channel", receivedMessage);
@@ -325,7 +326,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 2. Load danh sách
+  // getAllOpenTickets
   const fetchTickets = async () => {
     try {
       const data = await messengerApi.getTickets();
@@ -356,7 +357,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
   // 3. Chọn hội thoại và load lịch sử
 
-  // 3.1 mở hoặc tạo ticket support cho user
   const getOrCreateUserTicket = async () => {
     setIsLoading(true);
     try {
@@ -407,7 +407,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // 3.3 subscribe REALTIME cho support đã chọn
+  //
   const subscribeToTicket = (ticketId) => {
     if (!stompClientRef.current || !stompClientRef.current.connected) return;
     if (ticketSubscriptionRef.current) {
@@ -420,7 +420,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
       (message) => {
         const receivedMessage = JSON.parse(message.body);
-        // cập nhật trạng thái đã đọc của tin nhắn
+
         if (receivedMessage.readerRole) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -432,7 +432,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
           );
           return;
         }
-        // xử lý khi có thông báo khóa tài khoản
+
         if (receivedMessage.senderRole === "SYSTEM") {
           if (
             receivedMessage.messageText &&
@@ -710,8 +710,6 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     setAttachedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // 5. Quản lý support ticket ChatRestController
-  // 5.1 chan nguoi dung
   const handleBlockUser = async (days) => {
     if (!activeTicket) return;
 
@@ -971,7 +969,7 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
     }
   };
 
-  // 7. Quản lý direct chat (giong khoi so 5)
+  // 7. Quản lý direct chat 
   const handleDeleteDirectChat = async (chatId) => {
     setConfirmConfig({
       title: "Xóa cuộc trò chuyện",
@@ -1536,206 +1534,208 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
                 </>
               )}
 
-              {(isAgent || navSection === "direct_chats") && (
-                <>
-                  <div className="relative mt-4">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Tìm theo tên hoặc email..."
-                      value={
-                        navSection === "chat" || navSection === "direct_chats"
-                          ? searchQuery
-                          : userSearchQuery
-                      }
-                      onChange={(e) =>
-                        navSection === "chat" || navSection === "direct_chats"
-                          ? setSearchQuery(e.target.value)
-                          : setUserSearchQuery(e.target.value)
-                      }
-                      className="pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl text-sm font-medium w-full transition-all outline-none"
-                    />
-                  </div>
+              <div className="relative mt-4">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={
+                    navSection === "freelancer"
+                      ? "Tìm freelancer theo tên hoặc email..."
+                      : navSection === "employer"
+                      ? "Tìm employer theo tên hoặc email..."
+                      : "Tìm theo tên hoặc email..."
+                  }
+                  value={
+                    navSection === "chat" || navSection === "direct_chats"
+                      ? searchQuery
+                      : userSearchQuery
+                  }
+                  onChange={(e) =>
+                    navSection === "chat" || navSection === "direct_chats"
+                      ? setSearchQuery(e.target.value)
+                      : setUserSearchQuery(e.target.value)
+                  }
+                  className="pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl text-sm font-medium w-full transition-all outline-none"
+                />
+              </div>
 
-                  {navSection === "chat" && isAgent && (
-                    <div className="flex gap-1.5 mt-4 items-center justify-between">
-                      <button
-                        onClick={() => {
-                          setActiveTab("active");
-                          setActiveTicket(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+              {navSection === "chat" && isAgent && (
+                <div className="flex gap-1.5 mt-4 items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setActiveTab("active");
+                      setActiveTicket(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeTab === "active"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đang xử lý
+                    {activeTickets.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeTab === "active"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25"
+                            : "bg-blue-500 text-white"
                         }`}
                       >
-                        Đang xử lý
-                        {activeTickets.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "active"
-                                ? "bg-white/25"
-                                : "bg-blue-500 text-white"
-                            }`}
-                          >
-                            {activeTickets.length}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab("pending");
-                          setActiveTicket(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                        {activeTickets.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("pending");
+                      setActiveTicket(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeTab === "pending"
+                        ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Chờ phản hồi
+                    {pendingTickets.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeTab === "pending"
-                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25 text-white"
+                            : "bg-amber-500 text-white"
                         }`}
                       >
-                        Chờ phản hồi
-                        {pendingTickets.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "pending"
-                                ? "bg-white/25 text-white"
-                                : "bg-amber-500 text-white"
-                            }`}
-                          >
-                            {pendingTickets.length}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab("blocked");
-                          setActiveTicket(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                        {pendingTickets.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("blocked");
+                      setActiveTicket(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeTab === "blocked"
+                        ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đã chặn
+                    {blockedTickets.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeTab === "blocked"
-                            ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25 text-white"
+                            : "bg-slate-500 text-white"
                         }`}
                       >
-                        Đã chặn
-                        {blockedTickets.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "blocked"
-                                ? "bg-white/25 text-white"
-                                : "bg-slate-500 text-white"
-                            }`}
-                          >
-                            {blockedTickets.length}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab("deleted");
-                          setActiveTicket(null);
-                          fetchDeletedTickets();
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                        {blockedTickets.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("deleted");
+                      setActiveTicket(null);
+                      fetchDeletedTickets();
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeTab === "deleted"
+                        ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đã xoá
+                    {deletedTickets.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeTab === "deleted"
-                            ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25 text-white"
+                            : "bg-rose-500 text-white"
                         }`}
                       >
-                        Đã xoá
-                        {deletedTickets.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeTab === "deleted"
-                                ? "bg-white/25 text-white"
-                                : "bg-rose-500 text-white"
-                            }`}
-                          >
-                            {deletedTickets.length}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                        {deletedTickets.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
 
-                  {navSection === "direct_chats" && (
-                    <div className="flex gap-2.5 mt-4 items-center justify-start">
-                      <button
-                        onClick={() => {
-                          setActiveDirectTab("active");
-                          setActiveDirectChat(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+              {navSection === "direct_chats" && (
+                <div className="flex gap-2.5 mt-4 items-center justify-start">
+                  <button
+                    onClick={() => {
+                      setActiveDirectTab("active");
+                      setActiveDirectChat(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeDirectTab === "active"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đang chat
+                    {activeDirectChats.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeDirectTab === "active"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25"
+                            : "bg-blue-500 text-white"
                         }`}
                       >
-                        Đang chat
-                        {activeDirectChats.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "active"
-                                ? "bg-white/25"
-                                : "bg-blue-500 text-white"
-                            }`}
-                          >
-                            {activeDirectChats.length}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveDirectTab("blocked");
-                          setActiveDirectChat(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                        {activeDirectChats.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveDirectTab("blocked");
+                      setActiveDirectChat(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeDirectTab === "blocked"
+                        ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đã chặn
+                    {blockedDirectChats.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeDirectTab === "blocked"
-                            ? "bg-slate-700 text-white border-slate-700 shadow-md shadow-slate-700/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25"
+                            : "bg-slate-500 text-white"
                         }`}
                       >
-                        Đã chặn
-                        {blockedDirectChats.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "blocked"
-                                ? "bg-white/25"
-                                : "bg-slate-500 text-white"
-                            }`}
-                          >
-                            {blockedDirectChats.length}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveDirectTab("deleted");
-                          setActiveDirectChat(null);
-                        }}
-                        className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                        {blockedDirectChats.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveDirectTab("deleted");
+                      setActiveDirectChat(null);
+                    }}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border flex items-center gap-1 ${
+                      activeDirectTab === "deleted"
+                        ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Đã xoá
+                    {deletedDirectChats.length > 0 && (
+                      <span
+                        className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
                           activeDirectTab === "deleted"
-                            ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white/25"
+                            : "bg-rose-500 text-white"
                         }`}
                       >
-                        Đã xoá
-                        {deletedDirectChats.length > 0 && (
-                          <span
-                            className={`w-4 h-4 text-[9px] font-black rounded-full flex items-center justify-center ${
-                              activeDirectTab === "deleted"
-                                ? "bg-white/25"
-                                : "bg-rose-500 text-white"
-                            }`}
-                          >
-                            {deletedDirectChats.length}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </>
+                        {deletedDirectChats.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
             <div className="flex-1 overflow-y-auto">
