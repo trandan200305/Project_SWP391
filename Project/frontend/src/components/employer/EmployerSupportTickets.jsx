@@ -65,7 +65,8 @@ export default function EmployerSupportTickets({ user, defaultOpenModal = false 
         throw new Error(errJson.error || errJson.message || 'Không thể tải danh sách ticket hỗ trợ.');
       }
       const data = await res.json();
-      setTickets(data || []);
+      const list = Array.isArray(data) ? data : (data?.content || []);
+      setTickets(list);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Lỗi kết nối máy chủ.');

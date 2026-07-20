@@ -489,7 +489,7 @@ public class SupportChatService {
                      "FROM support_tickets t " +
                      "LEFT JOIN staff s ON t.assigned_staff_id = s.staff_id " +
                      "WHERE t.employer_id = ? " +
-                     "ORDER BY t.updated_at DESC";
+                     "ORDER BY t.created_at DESC";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, employerId);
         List<Map<String, Object>> tickets = new ArrayList<>();
@@ -510,6 +510,60 @@ public class SupportChatService {
             tickets.add(ticket);
         }
         return tickets;
+    }
+
+    public Map<String, Object> getTicketsByEmployerIdPaginated(Integer employerId, int page, int size) {
+        if (employerId == null || employerId <= 0) {
+            throw new IllegalArgumentException("Mã nhà tuyển dụng (employerId) không hợp lệ.");
+        }
+
+        int validPage = Math.max(1, page);
+        int validSize = Math.max(1, Math.min(100, size));
+        int offset = (validPage - 1) * validSize;
+
+        String countSql = "SELECT COUNT(*) FROM support_tickets WHERE employer_id = ?";
+        Integer totalElements = jdbcTemplate.queryForObject(countSql, Integer.class, employerId);
+        if (totalElements == null) totalElements = 0;
+
+        int totalPages = (int) Math.ceil((double) totalElements / validSize);
+
+        String sql = "SELECT t.ticket_id, t.employer_id, t.subject, t.description, t.status, t.priority, t.created_at, t.updated_at, t.assigned_staff_id, " +
+                     "s.display_name as staff_name, s.avatar_url as staff_avatar, " +
+                     "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
+                     "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND (sender_admin_id IS NOT NULL OR sender_staff_id IS NOT NULL) AND is_read = 0) as unread_count " +
+                     "FROM support_tickets t " +
+                     "LEFT JOIN staff s ON t.assigned_staff_id = s.staff_id " +
+                     "WHERE t.employer_id = ? " +
+                     "ORDER BY t.created_at DESC " +
+                     "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, employerId, offset, validSize);
+        List<Map<String, Object>> tickets = new ArrayList<>();
+
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> ticket = new HashMap<>(row);
+            if (row.get("created_at") != null) {
+                ticket.put("created_at", row.get("created_at").toString());
+            }
+            if (row.get("updated_at") != null) {
+                ticket.put("updated_at", row.get("updated_at").toString());
+            }
+            if (row.get("last_message_at") != null) {
+                ticket.put("last_message_at", row.get("last_message_at").toString());
+            }
+            Object unreadCount = row.get("unread_count");
+            ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
+            tickets.add(ticket);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", tickets);
+        response.put("totalElements", totalElements);
+        response.put("totalPages", totalPages);
+        response.put("currentPage", validPage);
+        response.put("pageSize", validSize);
+        return response;
     }
 
     @Transactional

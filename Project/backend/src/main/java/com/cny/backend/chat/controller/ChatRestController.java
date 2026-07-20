@@ -113,8 +113,14 @@ public class ChatRestController {
     }
 
     @GetMapping("/tickets/employer/{employerId}")
-    public ResponseEntity<?> getEmployerTickets(@PathVariable("employerId") Integer employerId) {
+    public ResponseEntity<?> getEmployerTickets(
+            @PathVariable("employerId") Integer employerId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
         try {
+            if (page != null && size != null) {
+                return ResponseEntity.ok(chatService.getTicketsByEmployerIdPaginated(employerId, page, size));
+            }
             return ResponseEntity.ok(chatService.getTicketsByEmployerId(employerId));
         } catch (Exception e) {
             Map<String, Object> err = new HashMap<>();
