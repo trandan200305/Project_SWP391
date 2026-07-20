@@ -231,6 +231,7 @@ public class FreelancerController {
             f.setKycStatus("PENDING");
             f.setKycSubmittedAt(java.time.LocalDateTime.now());
             f.setUpdatedAt(java.time.LocalDateTime.now());
+            f.setProfileCompleteness(calculateCompleteness(f));
             
             freelancerRepository.save(f);
             
@@ -277,7 +278,7 @@ public class FreelancerController {
                 .hideEmail(f.getHideEmail())
                 .hidePhone(f.getHidePhone())
                 .hideLocation(f.getHideLocation())
-                .profileCompleteness(f.getProfileCompleteness())
+                .profileCompleteness(calculateCompleteness(f))
                 .totalEarnings(f.getTotalEarnings())
                 .projectsCompleted(f.getProjectsCompleted())
                 .averageRating(f.getAverageRating())
