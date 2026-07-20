@@ -109,6 +109,13 @@ export default function UserProfile({
               icon={Mail}
               value={hideEmail ? <span className="text-gray-400 italic">Đã ẩn</span> : (email || 'Chưa cập nhật')}
             />
+            {role === 'freelancer' && (
+              <ReadOnlyRow
+                label="Lĩnh vực chuyên môn"
+                icon={Briefcase}
+                value={expertiseField || 'Chưa cập nhật'}
+              />
+            )}
             {role === 'employer' && (
               <ReadOnlyRow
                 label="Website"
