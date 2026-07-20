@@ -52,14 +52,22 @@ export default function UserProfile({
         )}
 
         {/* Skills Section */}
-        {role === 'freelancer' && primarySkills && (
+        {role === 'freelancer' && (primarySkills || expertiseField) && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
             <h3 className="font-extrabold text-gray-900 text-lg mb-4">
-              Kỹ năng chuyên môn
+              Lĩnh vực & Kỹ năng chuyên môn
             </h3>
+            
+            {expertiseField && (
+              <div className="mb-5">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Lĩnh vực</span>
+                <span className="text-[14px] font-bold text-gray-800">{expertiseField}</span>
+              </div>
+            )}
             
             {primarySkills && (
               <div>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Kỹ năng</span>
                 <div className="flex flex-wrap gap-2">
                   {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
                     <span 
@@ -109,13 +117,6 @@ export default function UserProfile({
               icon={Mail}
               value={hideEmail ? <span className="text-gray-400 italic">Đã ẩn</span> : (email || 'Chưa cập nhật')}
             />
-            {role === 'freelancer' && (
-              <ReadOnlyRow
-                label="Lĩnh vực chuyên môn"
-                icon={Briefcase}
-                value={expertiseField || 'Chưa cập nhật'}
-              />
-            )}
             {role === 'employer' && (
               <ReadOnlyRow
                 label="Website"
