@@ -29,5 +29,13 @@ export const ENDPOINTS = {
     TICKETS: '/admin/tickets',
     SEO_CONFIGS: '/admin/seo-configs',
     PLATFORM_FEE: '/admin/platform-fee',
-  }
+  },
+  FREELANCERS: {
+    ALL: '/freelancers',
+    TOP: '/freelancers/top',
+    SEARCH: '/freelancers/search',
+    CATEGORIES: '/freelancers/categories',
+    BY_ID: (id) => `/freelancers/${id}`,
+  },
 };
+
