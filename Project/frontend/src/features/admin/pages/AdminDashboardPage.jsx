@@ -3220,31 +3220,73 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         </div>
                         <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <select
-                          value={timelineModuleFilter}
-                          onChange={(e) => setTimelineModuleFilter(e.target.value)}
-                          className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
-                        >
-                          <option value="ALL">Tất cả chức năng</option>
-                          <option value="USER_MANAGEMENT">Tài khoản & Người dùng</option>
-                          <option value="PROJECTS">Kiểm duyệt Dự án</option>
-                          <option value="FINANCE">Quản lý Tài chính</option>
-                          <option value="SYSTEM">Hệ thống</option>
-                        </select>
-                        <select
-                          value={timelineRoleFilter}
-                          onChange={(e) => setTimelineRoleFilter(e.target.value)}
-                          className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
-                        >
-                          <option value="ALL">Tất cả Roles</option>
-                          <option value="ADMIN">ADMIN</option>
-                          <option value="MANAGER">MANAGER</option>
-                          <option value="STAFF">STAFF</option>
-                          <option value="EMPLOYER">EMPLOYER</option>
-                          <option value="FREELANCER">FREELANCER</option>
-                          <option value="SYSTEM">SYSTEM</option>
-                        </select>
+                      <div className="relative filter-wrapper w-max z-10">
+                        <div className="filter-main px-4 py-2 bg-white rounded-lg border border-slate-200 cursor-pointer flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors shadow-sm">
+                          <Filter className="w-4 h-4" /> 
+                          {timelineModuleFilter === 'ALL' && timelineRoleFilter === 'ALL' ? 'Bộ lọc hiển thị' : 'Đang lọc...'}
+                          <div className="filter-bar ml-2 scale-[0.65]">
+                            <span className="filter-top filter-bar-list" />
+                            <span className="filter-middle filter-bar-list" />
+                            <span className="filter-bottom filter-bar-list" />
+                          </div>
+                        </div>
+
+                        <section className="filter-menu-container -left-4 w-[480px] origin-top-left" onClick={e => e.stopPropagation()}>
+                          <div className="grid grid-cols-2 gap-6 text-left">
+                            <div className="filter-item-list space-y-2">
+                              <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chức năng (Module)</span>
+                              <div className="grid grid-cols-1 gap-1.5">
+                                {[
+                                  { value: 'ALL', label: 'Tất cả chức năng' },
+                                  { value: 'USER_MANAGEMENT', label: 'Tài khoản & Người dùng' },
+                                  { value: 'PROJECTS', label: 'Kiểm duyệt Dự án' },
+                                  { value: 'FINANCE', label: 'Quản lý Tài chính' },
+                                  { value: 'SYSTEM', label: 'Hệ thống' }
+                                ].map(mod => (
+                                  <button
+                                    key={mod.value}
+                                    onClick={() => setTimelineModuleFilter(mod.value)}
+                                    className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
+                                      timelineModuleFilter === mod.value
+                                        ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <span className={`w-2 h-2 rounded-full ${timelineModuleFilter === mod.value ? 'bg-blue-500' : 'bg-slate-300'}`}></span>
+                                    {mod.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="filter-item-list space-y-2">
+                              <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Vai trò (Role)</span>
+                              <div className="grid grid-cols-1 gap-1.5">
+                                {[
+                                  { value: 'ALL', label: 'Tất cả Roles' },
+                                  { value: 'ADMIN', label: 'ADMIN' },
+                                  { value: 'MANAGER', label: 'MANAGER' },
+                                  { value: 'STAFF', label: 'STAFF' },
+                                  { value: 'EMPLOYER', label: 'EMPLOYER' },
+                                  { value: 'FREELANCER', label: 'FREELANCER' },
+                                  { value: 'SYSTEM', label: 'SYSTEM' }
+                                ].map(role => (
+                                  <button
+                                    key={role.value}
+                                    onClick={() => setTimelineRoleFilter(role.value)}
+                                    className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
+                                      timelineRoleFilter === role.value
+                                        ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <span className={`w-2 h-2 rounded-full ${timelineRoleFilter === role.value ? 'bg-blue-500' : 'bg-slate-300'}`}></span>
+                                    {role.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </section>
                       </div>
                     </div>
                     
@@ -5632,7 +5674,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           <div className="p-6 space-y-4">
             <div>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Thời Gian</span>
-              <span className="text-body-md font-medium text-slate-800">{selectedActivity?.timestamp}</span>
+              <span className="text-body-md font-medium text-slate-800">
+                {selectedActivity?.timestamp && new Date(selectedActivity.timestamp).toLocaleString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                })}
+              </span>
             </div>
             <div>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Nguồn Hoạt Động (Actor)</span>
