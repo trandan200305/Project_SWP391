@@ -433,6 +433,8 @@ public class EmployerController {
         response.put("averageRating", employer.getAverageRating());
         response.put("billing", findDefaultBankAccount(employer.getEmployerId()));
         response.put("kycStatus", employer.getKycStatus());
+        response.put("businessLicenseUrl", employer.getBusinessLicenseUrl());
+        response.put("representativeIdCardUrl", employer.getRepresentativeIdCardUrl());
         response.put("idCardFrontUrl", employer.getIdCardFrontUrl());
         response.put("idCardBackUrl", employer.getIdCardBackUrl());
         response.put("portraitUrl", employer.getPortraitUrl());

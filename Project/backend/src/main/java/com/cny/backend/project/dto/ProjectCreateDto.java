@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,6 +18,7 @@ public class ProjectCreateDto {
     private String title;
     private String workForm;
     private String description;
+    private List<String> skills;
     private String projectType;
     private BigDecimal budgetMin;
     private BigDecimal budgetMax;

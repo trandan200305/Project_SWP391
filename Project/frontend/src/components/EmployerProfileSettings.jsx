@@ -56,6 +56,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [notice, setNotice] = useState(null);
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
+    // KYC Verification (GPKD & CCCD) States
+    const [gpkdUrl, setGpkdUrl] = useState('');
+    const [cccdUrl, setCccdUrl] = useState('');
+    const [kycStatus, setKycStatus] = useState('');
+    const [kycRejectedReason, setKycRejectedReason] = useState('');
+    const [submittingKyc, setSubmittingKyc] = useState(false);
+    const [uploadingGpkd, setUploadingGpkd] = useState(false);
+    const [uploadingCccd, setUploadingCccd] = useState(false);
+
     
     const [activeTab, setActiveTab] = useState('company'); 
     const [projects, setProjects] = useState([]);
@@ -108,7 +117,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [loadingProposals, setLoadingProposals] = useState(false);
 
     const completion = useMemo(() => {
-        const keys = ['displayName', 'fullName', 'phone', 'companyName', 'companyDescription', 'website', 'address', 'city', 'country', 'companySize', 'industry'];
+        const keys = ['displayName', 'fullName', 'phone', 'companyName', 'companyDescription', 'address', 'taxCode'];
         const filled = keys.filter((key) => String(form[key] || '').trim()).length;
         return Math.round((filled / keys.length) * 100);
     }, [form]);
@@ -388,12 +397,132 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         branch: data.billing?.branch || ''
                     }
                 });
+                setGpkdUrl(data.businessLicenseUrl || '');
+                setCccdUrl(data.representativeIdCardUrl || '');
+                setKycStatus(data.kycStatus || 'UNVERIFIED');
+                setKycRejectedReason(data.kycRejectedReason || '');
             })
             .catch((error) => {
                 setNotice({type: 'error', message: error.message || 'Không thể tải hồ sơ công ty.'});
             })
             .finally(() => setLoading(false));
     }, [user]);
+
+    // Validation helper for verification files (Allows any file type for Staff review)
+    const validateVerificationFile = (file, label) => {
+        if (!file) return { valid: false, message: 'Vui lòng chọn file đính kèm.' };
+        const maxMB = 50;
+        if (file.size > maxMB * 1024 * 1024) {
+            return {
+                valid: false,
+                message: `File ${label} dung lượng vượt quá ${maxMB}MB.`
+            };
+        }
+        return { valid: true };
+    };
+
+    const handleUploadGpkd = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const check = validateVerificationFile(file, 'Giấy phép kinh doanh (GPKD)');
+        if (!check.valid) {
+            setNotice({ type: 'error', message: check.message });
+            return;
+        }
+        setUploadingGpkd(true);
+        setNotice(null);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const filename = getFilenameFromUrl(data.fileUrl);
+                setGpkdUrl(filename);
+                setNotice({ type: 'success', message: 'Tải file Giấy phép kinh doanh (GPKD) lên thành công!' });
+            } else {
+                throw new Error('Không thể tải file GPKD lên máy chủ.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi hệ thống khi tải file GPKD.' });
+        } finally {
+            setUploadingGpkd(false);
+        }
+    };
+
+    const handleUploadCccd = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const check = validateVerificationFile(file, 'Căn cước công dân (CCCD)');
+        if (!check.valid) {
+            setNotice({ type: 'error', message: check.message });
+            return;
+        }
+        setUploadingCccd(true);
+        setNotice(null);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const filename = getFilenameFromUrl(data.fileUrl);
+                setCccdUrl(filename);
+                setNotice({ type: 'success', message: 'Tải file Căn cước công dân (CCCD) lên thành công!' });
+            } else {
+                throw new Error('Không thể tải file CCCD lên máy chủ.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi hệ thống khi tải file CCCD.' });
+        } finally {
+            setUploadingCccd(false);
+        }
+    };
+
+    const handleKycSubmit = async (e) => {
+        e.preventDefault();
+        if (!gpkdUrl || !cccdUrl) {
+            setNotice({
+                type: 'error',
+                message: 'Vui lòng đính kèm đầy đủ file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) hợp lệ trước khi nộp hồ sơ xác thực.'
+            });
+            return;
+        }
+        setSubmittingKyc(true);
+        setNotice(null);
+        try {
+            const res = await fetch(`http://localhost:8080/api/employers/${user.id}/kyc/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taxCode: form.taxCode,
+                    businessLicenseUrl: gpkdUrl,
+                    representativeIdCardUrl: cccdUrl
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success !== false) {
+                setKycStatus('PENDING');
+                setNotice({
+                    type: 'success',
+                    message: 'Đã gửi hồ sơ xác thực GPKD & CCCD thành công. Ban quản trị sẽ đối soát và phê duyệt.'
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                throw new Error(data.message || 'Nộp hồ sơ xác thực không thành công.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi gửi hồ sơ xác thực.' });
+        } finally {
+            setSubmittingKyc(false);
+        }
+    };
 
     const updateField = (field, value) => {
         setForm((prev) => ({...prev, [field]: value}));
@@ -407,12 +536,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         }));
     };
     const validateForm = () => {
-        if (!form.displayName || form.displayName.trim().length < 3 || form.displayName.trim().length > 50) {
-            setNotice({type: 'error', message: 'Tên hiển thị phải từ 3 đến 50 ký tự.'});
-            return false;
-        }
-        if (form.fullName && (form.fullName.trim().length < 3 || form.fullName.trim().length > 50)) {
-            setNotice({type: 'error', message: 'Họ và tên người đại diện phải từ 3 đến 50 ký tự.'});
+        if (!form.fullName || form.fullName.trim().length < 2 || form.fullName.trim().length > 100) {
+            setNotice({type: 'error', message: 'Vui lòng nhập Họ tên thật của người đại diện (từ 2 đến 100 ký tự).'});
             return false;
         }
 
@@ -425,23 +550,10 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9]*\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\d+)?(\/.*)?$/;
-        if (form.website && !urlRegex.test(form.website.trim())) {
-            setNotice({type: 'error', message: 'Địa chỉ Website không hợp lệ (ví dụ: https://company.com).'});
-            return false;
-        }
-
         // Validate MST (Tax Code)
         const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
         if (form.taxCode && !taxCodeRegex.test(form.taxCode.trim())) {
             setNotice({type: 'error', message: 'Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.'});
-            return false;
-        }
-
-        // Validate Quy mô công ty
-        const companySizeRegex = /^(Hơn\s+|Dưới\s+)?([1-9][0-9]*)(\s*-\s*[1-9][0-9]*)?(\s*\+)?(\s*(nhân viên|người))?$/i;
-        if (form.companySize && !companySizeRegex.test(form.companySize.trim())) {
-            setNotice({type: 'error', message: 'Quy mô công ty không hợp lệ (ví dụ: 10-50, 50+, Hơn 100 nhân viên).'});
             return false;
         }
 
@@ -713,39 +825,134 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     <TextInput label="Mã số thuế" value={form.taxCode}
                                                onChange={(value) => updateField('taxCode', value)}
                                                placeholder="VD: 0102030405"/>
-                                    <TextInput label="Ngành nghề" value={form.industry}
-                                               onChange={(value) => updateField('industry', value)}
-                                               placeholder="VD: Software, Marketing, Design"/>
-                                    <TextInput label="Quy mô công ty" value={form.companySize}
-                                               onChange={(value) => updateField('companySize', value)}
-                                               placeholder="VD: 11-50"/>
-                                    <TextInput label="Website" value={form.website}
-                                               onChange={(value) => updateField('website', value)}
-                                               icon={<Globe2 className="w-4 h-4"/>}
-                                               placeholder="https://company.com"/>
-
-                                    <TextInput label="Quốc gia" value={form.country}
-                                               onChange={(value) => updateField('country', value)}
-                                               icon={<MapPin className="w-4 h-4"/>}/>
-                                    <TextInput label="Thành phố" value={form.city}
-                                               onChange={(value) => updateField('city', value)}/>
-                                    <TextInput label="Địa chỉ" value={form.address}
-                                               onChange={(value) => updateField('address', value)}/>
                                 </div>
-                                <TextArea label="Mô tả công ty" value={form.companyDescription}
+                                <TextArea label="Mô tả ngắn về công ty" value={form.companyDescription}
                                           onChange={(value) => updateField('companyDescription', value)}/>
                             </FormSection>
 
                             <FormSection icon={<UserRound className="w-5 h-5"/>} title="Người đại diện">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <TextInput label="Tên hiển thị" value={form.displayName}
-                                               onChange={(value) => updateField('displayName', value)} required/>
-                                    <TextInput label="Họ tên" value={form.fullName}
-                                               onChange={(value) => updateField('fullName', value)}/>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <TextInput label="Họ tên thật (người đại diện)" value={form.fullName}
+                                               onChange={(value) => updateField('fullName', value)} required
+                                               placeholder="VD: Nguyễn Văn A"/>
                                     <TextInput label="Số điện thoại" value={form.phone}
                                                onChange={(value) => updateField('phone', value)}
-                                               icon={<Phone className="w-4 h-4"/>}/>
+                                               icon={<Phone className="w-4 h-4"/>}
+                                               placeholder="VD: 0987654321"/>
                                 </div>
+                            </FormSection>
+
+                            {/* Section Xác thực doanh nghiệp (GPKD & CCCD) */}
+                            <FormSection icon={<ShieldCheck className="w-5 h-5 text-emerald-600"/>} title="Xác thực doanh nghiệp (Giấy phép KD & CCCD)">
+                                <div className="mb-4">
+                                    {kycStatus === 'VERIFIED' ? (
+                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold">
+                                            <BadgeCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-emerald-900">Doanh nghiệp đã được xác thực chính thức (Verified)</p>
+                                                <p className="font-medium text-emerald-700 mt-0.5">Giấy phép kinh doanh và CCCD người đại diện đã được kiểm duyệt thành công.</p>
+                                            </div>
+                                        </div>
+                                    ) : kycStatus === 'PENDING' ? (
+                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-xs font-bold">
+                                            <Clock className="w-5 h-5 text-amber-600 shrink-0 animate-pulse" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-amber-900">Hồ sơ xác thực đang chờ Staff kiểm duyệt (Pending)</p>
+                                                <p className="font-medium text-amber-700 mt-0.5">Tài liệu GPKD & CCCD đã được tải lên cơ sở dữ liệu. Nhân viên (Staff) sẽ tiến hành kiểm duyệt sau.</p>
+                                            </div>
+                                        </div>
+                                    ) : kycStatus === 'REJECTED' ? (
+                                        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3 text-rose-800 text-xs font-bold">
+                                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-rose-900">Hồ sơ xác thực bị từ chối</p>
+                                                <p className="font-medium text-rose-700 mt-0.5">Lý do: {kycRejectedReason || 'File đính kèm không hợp lệ hoặc thông tin không trùng khớp. Vui lòng tải lại file mới.'}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-slate-700 text-xs font-bold">
+                                            <ShieldCheck className="w-5 h-5 text-slate-400 shrink-0" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-slate-800">Chưa gửi hồ sơ xác thực doanh nghiệp</p>
+                                                <p className="font-medium text-slate-500 mt-0.5">Tải lên file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) để lưu database gửi Nhân viên (Staff) duyệt sau.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* GPKD Upload */}
+                                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-extrabold uppercase text-slate-700 flex items-center gap-1.5">
+                                                <FileText className="w-4 h-4 text-cyan-600" />
+                                                1. Giấy phép kinh doanh (GPKD) *
+                                            </label>
+                                            <span className="text-[10px] font-bold text-slate-400">Tất cả loại file (Max 50MB)</span>
+                                        </div>
+
+                                        {gpkdUrl ? (
+                                            <div className="flex items-center justify-between p-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+                                                <a href={getImageUrl(gpkdUrl)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline text-cyan-700 font-bold flex items-center gap-1.5">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                    {gpkdUrl}
+                                                </a>
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                                    <button type="button" onClick={() => setGpkdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
+                                                {uploadingGpkd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <FileText className="w-4 h-4 text-slate-400" />}
+                                                <span>{uploadingGpkd ? 'Đang tải file GPKD lên DB...' : 'Chọn file GPKD bất kỳ'}</span>
+                                                <input type="file" onChange={handleUploadGpkd} disabled={uploadingGpkd || kycStatus === 'VERIFIED' || kycStatus === 'PENDING'} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+
+                                    {/* CCCD Upload */}
+                                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-extrabold uppercase text-slate-700 flex items-center gap-1.5">
+                                                <UserRound className="w-4 h-4 text-cyan-600" />
+                                                2. Căn cước công dân (CCCD) *
+                                            </label>
+                                            <span className="text-[10px] font-bold text-slate-400">Tất cả loại file (Max 50MB)</span>
+                                        </div>
+
+                                        {cccdUrl ? (
+                                            <div className="flex items-center justify-between p-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+                                                <a href={getImageUrl(cccdUrl)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline text-cyan-700 font-bold flex items-center gap-1.5">
+                                                    <UserRound className="w-3.5 h-3.5" />
+                                                    {cccdUrl}
+                                                </a>
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                                    <button type="button" onClick={() => setCccdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
+                                                {uploadingCccd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <UserRound className="w-4 h-4 text-slate-400" />}
+                                                <span>{uploadingCccd ? 'Đang tải file CCCD lên DB...' : 'Chọn file CCCD bất kỳ'}</span>
+                                                <input type="file" onChange={handleUploadCccd} disabled={uploadingCccd || kycStatus === 'VERIFIED' || kycStatus === 'PENDING'} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleKycSubmit}
+                                            disabled={submittingKyc || !gpkdUrl || !cccdUrl}
+                                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm"
+                                        >
+                                            {submittingKyc ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                            {submittingKyc ? 'Đang gửi...' : 'Gửi hồ sơ xác thực (GPKD & CCCD)'}
+                                        </button>
+                                    </div>
+                                )}
                             </FormSection>
 
                             <div className="flex justify-end border-t border-slate-200 pt-5">
