@@ -4633,121 +4633,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           {activeTab === 'finance_banking' && (
             <div className="space-y-8 animate-in fade-in duration-300">
               
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-bold text-primary text-lg">Cấu hình Cổng Thanh toán VietQR (PayOS)</h3>
-                    <p className="text-[12px] text-slate-400 mt-1">Cài đặt mã Ngân hàng, Số tài khoản nhận tiền và Secret Key tích hợp thanh toán.</p>
-                  </div>
-                  <div>
-                    {!isEditingVnpay ? (
-                      <button 
-                        onClick={() => setShowVnpayEditConfirmModal(true)}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[13px] rounded-xl transition-all flex items-center gap-2"
-                      >
-                        <Edit3 className="w-4 h-4" /> Chỉnh sửa cấu hình
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => {
-                            setVnpayConfig(tempVnpayConfig || vnpayConfig);
-                            setIsEditingVnpay(false);
-                          }}
-                          className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[13px] rounded-xl transition-all"
-                        >
-                          Hủy
-                        </button>
-                        <button 
-                          onClick={handleSaveVnpayConfig}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] rounded-xl transition-all shadow-sm flex items-center gap-2"
-                        >
-                          <Save className="w-4 h-4" /> Lưu cấu hình
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Mã Ngân hàng (Bank Name)</label>
-                      <select 
-                        value={vnpayConfig?.bankName || ''}
-                        onChange={(e) => setVnpayConfig({...vnpayConfig, bankName: e.target.value})}
-                        disabled={!isEditingVnpay}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
-                      >
-                        <option value="">Chọn ngân hàng...</option>
-                        
-                        <option value="NCB">NCB - Ngân hàng Quốc Dân</option>
-                        <option value="VISA">Thẻ Quốc tế VISA</option>
-                        <option value="MASTERCARD">Thẻ Quốc tế MasterCard</option>
-                        <option value="JCB">Thẻ Quốc tế JCB</option>
-                        <option value="VCB">Vietcombank</option>
-                        <option value="TECHCOMBANK">Techcombank</option>
-                        <option value="MB">MBBank</option>
-                        <option value="ACB">ACB</option>
-                        <option value="VPBANK">VPBank</option>
-                        <option value="BIDV">BIDV</option>
-                        <option value="CTG">VietinBank</option>
-                        <option value="VIB">VIB</option>
-                        <option value="TPBANK">TPBank</option>
-                        <option value="HDBANK">HDBank</option>
-                        <option value="SACOMBANK">Sacombank</option>
-                        <option value="MSB">MSB</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Số Tài khoản (Bank Account No)</label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          value={vnpayConfig?.bankAccountNo || ''}
-                          onChange={(e) => setVnpayConfig({...vnpayConfig, bankAccountNo: e.target.value})}
-                          disabled={!isEditingVnpay}
-                          placeholder="VD: 1234567890"
-                          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        />
-                        {isEditingVnpay && (
-                          <button
-                            onClick={handleLookupBank}
-                            disabled={isLookingUp || !vnpayConfig?.bankName || !vnpayConfig?.bankAccountNo}
-                            className="px-4 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-[13px] rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
-                          >
-                            {isLookingUp ? 'Đang dò...' : 'Kiểm tra'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Tên Chủ Tài khoản</label>
-                      <input 
-                        type="text" 
-                        value={vnpayConfig?.bankAccountName || ''}
-                        onChange={(e) => setVnpayConfig({...vnpayConfig, bankAccountName: e.target.value.toUpperCase()})}
-                        disabled={!isEditingVnpay}
-                        placeholder="Tự động điền khi bấm Kiểm tra"
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-
-
-                    <div className="flex items-center gap-3 pt-6">
-                      <div className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${vnpayConfig?.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                           onClick={() => isEditingVnpay && setVnpayConfig({...vnpayConfig, isActive: !vnpayConfig.isActive})}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${vnpayConfig?.isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                      </div>
-                      <span className="text-[13px] font-medium text-slate-600">
-                        {vnpayConfig?.isActive ? 'Cổng thanh toán đang hoạt động' : 'Tạm khóa cổng thanh toán'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Sandbox Test Area */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
@@ -4912,13 +4798,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <button 
-                    onClick={() => setShowQrZoomModal(true)}
-                    disabled={isLoading}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
-                  >
-                    Hiển thị mã VietQR ({testPackageType})
-                  </button>
+
                   <button 
                     onClick={() => setShowInvoicePreviewModal(true)}
                     disabled={isLoading}
