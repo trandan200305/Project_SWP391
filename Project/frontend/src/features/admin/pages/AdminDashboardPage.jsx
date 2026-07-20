@@ -6,7 +6,7 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal
+  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -32,6 +32,7 @@ const VIETQR_BANKS = [
 export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onLogout }) {
   
   const [activeTab, setActiveTab] = useState('home');
+  const [dashboardSubTab, setDashboardSubTab] = useState('overview');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('30days'); 
@@ -2595,31 +2596,30 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       
       {}
       <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between p-5 shrink-0">
-        <div className="space-y-8">
+        <div className="space-y-8 flex-1 overflow-y-auto overflow-x-hidden">
           {/* Top Logo Section */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-[#0f4c5c] rounded-[8px] flex items-center justify-center text-white shadow-sm">
                 <ShieldAlert className="w-4 h-4" />
               </div>
               <span className="font-extrabold text-slate-800 text-[15px] tracking-tight">vLance Admin</span>
             </div>
-            {/* Mock Collapse Button */}
             <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors">
               <ChevronsLeft className="w-3.5 h-3.5 text-slate-400" />
             </div>
           </div>
 
           <div className="space-y-6">
-            {/* GENERAL Section */}
+            {/* OVERVIEW Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">General</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Overview</span>
+              </p>
               
               {[
-                { id: 'home', icon: Home, label: 'Dashboard' },
-                { id: 'dashboard', icon: LayoutDashboard, label: 'Analytics' },
-                { id: 'vnpay', icon: BadgeDollarSign, label: 'Payment' },
-                { id: 'users', icon: Users, label: 'Users' }
+                { id: 'home', icon: Home, label: 'Trang chủ' },
+                { id: 'dashboard', icon: LayoutDashboard, label: 'Báo cáo & Thống kê' }
               ].map(item => (
                 <div 
                   key={item.id}
@@ -2638,10 +2638,62 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
             {/* MANAGEMENT Section */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Management</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Management</span>
+              </p>
               
               {[
-                { id: 'departments', icon: Sliders, label: 'Departments' }
+                { id: 'users', icon: Users, label: 'Người dùng' },
+                { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                  {item.id === 'users' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
+                </div>
+              ))}
+            </div>
+
+            {/* FINANCE Section */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Finance</span>
+              </p>
+              
+              {[
+                { id: 'vnpay', icon: BadgeDollarSign, label: 'Giao dịch VNPay' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            {/* SYSTEM Section */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>System</span>
+              </p>
+              
+              {[
+                { id: 'cms', icon: Settings, label: 'Cấu hình (CMS)' }
               ].map(item => (
                 <div 
                   key={item.id}
@@ -2660,25 +2712,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           </div>
         </div>
 
-        <div className="space-y-1 mt-auto pb-4">
-          <div 
-            onClick={() => setActiveTab('cms')}
-            className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-              activeTab === 'cms' ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-            }`}
-          >
-            <Settings className={`w-4 h-4 ${activeTab === 'cms' ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-            <span className={`text-[13px] ${activeTab === 'cms' ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-              Settings
-            </span>
-          </div>
-          
-          <div className="px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-            <HelpCircle className="w-4 h-4 text-slate-400" />
-            <span className="text-[13px] font-medium text-slate-600">Help</span>
-          </div>
-
-          <div className="px-3 py-3 flex items-center justify-between">
+        <div className="space-y-1 mt-6 pt-4 border-t border-slate-100">
+          <div className="px-3 py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Sparkles className="w-4 h-4 text-slate-400" />
               <span className="text-[13px] font-medium text-slate-600">Pro Mode</span>
@@ -2980,7 +3015,25 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
           {}
           {activeTab === 'dashboard' && (
-            <>
+            <div className="animate-in fade-in duration-300">
+              {/* Sub-Tabs Navigation */}
+              <div className="flex justify-center mb-8">
+                <div className="radio-inputs">
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'overview'} onChange={() => setDashboardSubTab('overview')} />
+                    <span className="name">Tổng quan & Cảnh báo</span>
+                  </label>
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'financials'} onChange={() => setDashboardSubTab('financials')} />
+                    <span className="name">Biểu đồ & Tài chính</span>
+                  </label>
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'activity'} onChange={() => setDashboardSubTab('activity')} />
+                    <span className="name">Nhật ký Hoạt động</span>
+                  </label>
+                </div>
+              </div>
+
               {/* TOP BANNER */}
               <div className="bg-[#0f4c5c] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center text-white mb-8 shadow-[0_4px_20px_rgb(15,76,92,0.15)]">
                 <div>
@@ -3011,104 +3064,245 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               </div>
 
-              {/* STATS CARDS */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+              {dashboardSubTab === 'overview' && (
+              <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
                 
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-500 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="space-y-8">
+                  {/* ALERTS SECTION */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-rose-500" />
+                      Công việc Giám sát & Xử lý
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                {/* Tranh chấp */}
+                <div className="bg-white p-5 rounded-xl border border-rose-100 shadow-sm border-l-[4px] border-l-rose-500 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                      <ArrowUpRight className="w-3 h-3" /> +{stats.usersGrowthPercent}%
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.totalUsers}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng người dùng</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-emerald-500 flex flex-col justify-between hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                      <ArrowUpRight className="w-3 h-3" /> +{stats.projectsGrowthPercent}%
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeProjects}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Dự án In Progress</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-cyan-500 flex flex-col justify-between hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                      <BadgeDollarSign className="w-5 h-5" />
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                      <ArrowUpRight className="w-3 h-3" /> +{stats.revenueGrowthPercent}%
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue)}
-                    </p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu tháng (GMV)</p>
-                  </div>
-                </div>
-
-                {/* Thẻ Instant Revenue Mới */}
-                <div className="bg-gradient-to-br from-yellow-50 to-amber-100 p-5 rounded-xl border border-amber-200 shadow-sm border-l-[4px] border-l-amber-500 flex flex-col justify-between hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-inner">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5 animate-pulse">
-                      Hôm nay
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-amber-600 font-mono">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
-                    </p>
-                    <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tức thì</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-violet-500 flex flex-col justify-between hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
-                    <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                      <ArrowDownRight className="w-3 h-3" /> -2%
+                    <span className="bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold animate-pulse">
+                      XỬ LÝ NGAY
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeDisputes}</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeDisputes || 0}</p>
                     <p className="text-[12px] font-semibold text-slate-500 mt-1">Tranh chấp đang mở</p>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-amber-500 flex flex-col justify-between hover:shadow-md transition-shadow">
+                {/* Yêu cầu rút tiền */}
+                <div className="bg-white p-5 rounded-xl border border-amber-100 shadow-sm border-l-[4px] border-l-amber-500 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
                       <RefreshCw className="w-5 h-5" />
                     </div>
                     <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
-                      Chờ duyệt
+                      CHỜ DUYỆT
                     </span>
                   </div>
                   <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingWithdrawals}</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingWithdrawals || 0}</p>
                     <p className="text-[12px] font-semibold text-slate-500 mt-1">Yêu cầu rút tiền</p>
                   </div>
                 </div>
+
+                  {/* Chờ duyệt KYC */}
+                  <div className="bg-white p-5 rounded-xl border border-blue-100 shadow-sm border-l-[4px] border-l-blue-500 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold truncate">
+                        KYC
+                      </span>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingKyc || 0}</p>
+                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Profile chờ duyệt</p>
+                    </div>
+                  </div>
+
+                  {/* Task Kiểm duyệt (Staff/Manager) */}
+                  <div className="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm border-l-[4px] border-l-indigo-500 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <Settings className="w-5 h-5" />
+                      </div>
+                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold truncate">
+                        TASKS
+                      </span>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingVerificationTasks || 0}</p>
+                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Task đang chờ xử lý</p>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+                  {/* FINANCIAL SECTION MOVED TO FINANCIALS TAB */}
+
+                    {/* Users & Projects */}
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-indigo-500" />
+                        Người dùng & Dự án
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* Users */}
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                              <Users className="w-5 h-5" />
+                            </div>
+                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
+                              <ArrowUpRight className="w-3 h-3" /> +{stats.usersGrowthPercent || 0}%
+                            </span>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.totalUsers || 0}</p>
+                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng người dùng</p>
+                          </div>
+                        </div>
+
+                        {/* Projects */}
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                              <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
+                              <ArrowUpRight className="w-3 h-3" /> +{stats.projectsGrowthPercent || 0}%
+                            </span>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeProjects || 0}</p>
+                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Dự án In Progress</p>
+                          </div>
+                        </div>
+
+                        {/* Instant Revenue */}
+                        <div className="bg-gradient-to-br from-yellow-50 to-amber-100 p-5 rounded-xl border border-amber-200 shadow-sm col-span-1 sm:col-span-2">
+                          <div className="flex justify-between items-start">
+                            <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-inner">
+                              <Sparkles className="w-5 h-5" />
+                            </div>
+                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">Hôm nay</span>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-2xl font-extrabold text-amber-600 font-mono">
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
+                            </p>
+                            <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tức thì</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {dashboardSubTab === 'activity' && (
+              <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
+
+                  <div className="bg-white border border-slate-200 rounded-[24px] shadow-sm overflow-hidden flex flex-col h-[700px]">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative">
+                          <Activity className="w-4 h-4" />
+                          <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border-2 border-white rounded-full animate-ping"></span>
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-[15px]">Live Activity Feed</h3>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
+                    </div>
+                    
+                    <div className="p-5 flex-1 overflow-y-auto">
+                      <div className="relative border-l-2 border-slate-100 ml-4 space-y-8 pb-4">
+                        {stats.recentActivities && stats.recentActivities.length > 0 ? (
+                          stats.recentActivities.map((activity, idx) => {
+                            const parts = activity.split(" | ");
+                            const time = parts[0];
+                            const content = parts.length > 1 ? parts[1] : activity;
+                            const authorParts = content.split(" - ");
+                            const author = authorParts[0];
+                            const actionDetail = authorParts.length > 1 ? authorParts[1] : content;
+                            
+                            return (
+                              <div key={idx} className="relative pl-6">
+                                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-[3px] border-emerald-400"></span>
+                                <div className="mb-1">
+                                  <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{time}</span>
+                                </div>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{author}</p>
+                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">{actionDetail}</p>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-10">
+                            <p className="text-sm text-slate-500 italic">Chưa có hoạt động nào gần đây.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {dashboardSubTab === 'financials' && (
+              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Financials */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <BadgeDollarSign className="w-5 h-5 text-[#0f4c5c]" />
+                      Tổng quan Tài chính
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {/* Doanh thu */}
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow col-span-1 sm:col-span-2">
+                        <div className="flex justify-between items-start">
+                          <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <BadgeDollarSign className="w-5 h-5" />
+                          </div>
+                          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
+                            <ArrowUpRight className="w-3 h-3" /> +{stats.revenueGrowthPercent || 0}%
+                          </span>
+                        </div>
+                        <div className="mt-4">
+                          <p className="text-2xl font-extrabold text-slate-800 font-mono">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu hệ thống (Commission/Fees)</p>
+                        </div>
+                      </div>
+
+                      {/* GMV */}
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="mt-2">
+                          <p className="text-xl font-extrabold text-slate-800 font-mono">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalGmv || 0)}
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng GMV</p>
+                        </div>
+                      </div>
+
+                      {/* Escrow */}
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="mt-2">
+                          <p className="text-xl font-extrabold text-slate-800 font-mono">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.escrowBalance || 0)}
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Số dư Ví Escrow</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
               {/* Sequence-style Cash Flow Chart */}
               <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-[0_2px_20px_rgb(0,0,0,0.04)] col-span-full">
@@ -3210,15 +3404,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> Hôm nay</span>
                       </div>
                     </div>
+                    </div>
                   </div>
                 </div>
               </div>
+              </div>
+              )}
 
-              {}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+              {dashboardSubTab === 'overview' && (
+              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
@@ -3354,8 +3549,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     ))}
                   </div>
                 </div>
+              </div>
+              )}
 
-                {}
+              {dashboardSubTab === 'financials' && (
+              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
@@ -3405,9 +3603,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
               </div>
+              )}
 
-              {}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              {dashboardSubTab === 'activity' && (
+              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)
@@ -3472,7 +3672,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </table>
                 </div>
               </div>
-            </>
+              )}
+            </div>
           )}
 
           {}

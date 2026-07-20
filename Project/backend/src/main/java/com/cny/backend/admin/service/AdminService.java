@@ -193,6 +193,38 @@ public class AdminService {
                 if (ir != null) instantRevenue = ir;
             } catch(Exception e) {}
 
+            double totalGmv = 0.0;
+            try {
+                Double dbGmv = dashboardRepository.calculateTotalGmv();
+                if (dbGmv != null) totalGmv = dbGmv;
+            } catch(Exception e) {}
+
+            double escrowBalance = 0.0;
+            try {
+                Double dbEscrow = dashboardRepository.calculateEscrowBalance();
+                if (dbEscrow != null) escrowBalance = dbEscrow;
+            } catch(Exception e) {}
+
+            int pendingKyc = 0;
+            try {
+                pendingKyc = dashboardRepository.countPendingKycFreelancers() + dashboardRepository.countPendingKycEmployers();
+            } catch(Exception e) {}
+
+            int pendingVerificationTasks = 0;
+            try {
+                pendingVerificationTasks = dashboardRepository.countPendingVerificationTasks();
+            } catch(Exception e) {}
+
+            List<String> recentActivities = new ArrayList<>();
+            try {
+                List<com.cny.backend.admin.repository.DashboardRepository.AuditLogProjection> logs = dashboardRepository.getAuditLogs();
+                for (int i = 0; i < Math.min(5, logs.size()); i++) {
+                    com.cny.backend.admin.repository.DashboardRepository.AuditLogProjection log = logs.get(i);
+                    String timeStr = log.getTimestamp() != null ? log.getTimestamp().toString().substring(0, 16) : "";
+                    recentActivities.add(timeStr + " | " + log.getSource() + " - " + log.getDetail());
+                }
+            } catch(Exception e) {}
+
             return AdminStatsDto.builder()
                     .totalUsers(totalUsers)
                     .activeProjects(activeProjects)
@@ -203,6 +235,11 @@ public class AdminService {
                     .projectsGrowthPercent(0.0)
                     .revenueGrowthPercent(0.0)
                     .instantRevenue(instantRevenue)
+                    .totalGmv(totalGmv)
+                    .escrowBalance(escrowBalance)
+                    .pendingKyc(pendingKyc)
+                    .pendingVerificationTasks(pendingVerificationTasks)
+                    .recentActivities(recentActivities)
                     .build();
         } catch (Exception e) {
             return AdminStatsDto.builder()
@@ -215,6 +252,11 @@ public class AdminService {
                     .projectsGrowthPercent(5.0)
                     .revenueGrowthPercent(8.2)
                     .instantRevenue(0.0)
+                    .totalGmv(1285000.0)
+                    .escrowBalance(500000.0)
+                    .pendingKyc(5)
+                    .pendingVerificationTasks(3)
+                    .recentActivities(new ArrayList<>())
                     .build();
         }
     }

@@ -48,6 +48,22 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     @Query(value = "SELECT SUM(amount) FROM transactions WHERE type = 'PLATFORM_FEE' AND created_at >= DATEADD(day, :days, GETDATE())", nativeQuery = true)
     Double calculateTotalRevenue(@Param("days") int days);
 
+    @Query(value = "SELECT SUM(amount) FROM payment_transactions WHERE status = 'SUCCESS'", nativeQuery = true)
+    Double calculateTotalGmv();
+
+    @Query(value = "SELECT SUM(COALESCE(budget_fixed, budget_min)) FROM projects WHERE status = 'IN_PROGRESS' AND is_deleted = 0", nativeQuery = true)
+    Double calculateEscrowBalance();
+
+    @Query(value = "SELECT COUNT(*) FROM freelancers WHERE kyc_status = 'PENDING'", nativeQuery = true)
+    int countPendingKycFreelancers();
+
+    @Query(value = "SELECT COUNT(*) FROM employers WHERE kyc_status = 'PENDING'", nativeQuery = true)
+    int countPendingKycEmployers();
+
+    @Query(value = "SELECT COUNT(*) FROM department_verification_tasks WHERE status = 'PENDING'", nativeQuery = true)
+    int countPendingVerificationTasks();
+
+
     
     @Query(value = "SELECT FORMAT(DATEADD(month, :monthOffset, GETDATE()), 'MMM')", nativeQuery = true)
     String getMonthLabel(@Param("monthOffset") int monthOffset);
