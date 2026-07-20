@@ -186,7 +186,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
         "CASE " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM admins) OR a.email IS NOT NULL THEN 'ADMIN' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM managers) THEN 'MANAGER' " +
-        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM staffs) THEN 'STAFF' " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM staff) THEN 'STAFF' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM employers) THEN 'EMPLOYER' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM freelancers) THEN 'FREELANCER' " +
         "ELSE 'SYSTEM' END as role " +
