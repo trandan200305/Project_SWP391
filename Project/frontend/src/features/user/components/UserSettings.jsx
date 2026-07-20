@@ -310,7 +310,7 @@ export default function UserSettings({
               <ul className="list-disc list-inside text-sm text-orange-700 space-y-1.5 ml-1">
                 {role === 'freelancer' ? (
                   <>
-                    <li>Không có hợp đồng/dự án nào đang trong trạng thái <span className="font-semibold">Đang thực hiện</span> hoặc <span className="font-semibold">Chờ bắt đầu</span>.</li>
+                    <li>Không có hợp đồng/dự án nào đang trong trạng thái <span className="font-semibold">Đang thực hiện</span> hoặc <span className="font-semibold">Đã nộp thầu</span>.</li>
                     <li>Không có <span className="font-semibold">tranh chấp hoặc khiếu nại</span> nào đang mở.</li>
                   </>
                 ) : (
