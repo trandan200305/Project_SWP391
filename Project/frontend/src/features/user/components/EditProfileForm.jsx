@@ -448,10 +448,12 @@ export default function EditProfileForm({
 
         {/* Role Specific Stats */}
         {(role === 'freelancer' || role === 'employer') && (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative">
            {/* Background Deco */}
-           <div className="absolute -right-4 -top-4 text-gray-50 opacity-50 pointer-events-none">
-             <BarChart2 className="w-24 h-24" />
+           <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+             <div className="absolute -right-4 -top-4 text-gray-50 opacity-50">
+               <BarChart2 className="w-24 h-24" />
+             </div>
            </div>
 
            <h3 className="font-bold text-gray-900 text-base mb-5 relative z-10">Thống kê Hoạt động</h3>
