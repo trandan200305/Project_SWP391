@@ -142,7 +142,7 @@ public class Freelancer {
     @Column(name = "kyc_reviewed_by_staff_id")
     private Integer kycReviewedByStaffId;
 
-    @Column(name = "kyc_rejected_reason", length = 500)
+    @Column(name = "kyc_rejected_reason", length = 500, columnDefinition = "NVARCHAR(500)")
     private String kycRejectedReason;
 
     @Column(name = "is_verified", nullable = false)

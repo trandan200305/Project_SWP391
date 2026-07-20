@@ -627,11 +627,27 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     <ArrowLeft className="w-4 h-4"/>
                     Trang chủ
                 </button>
-                <div
-                    className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">
-                    <ShieldCheck className="w-4 h-4"/>
-                    Trust profile
-                </div>
+                {kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' ? (
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3.5 py-1.5 shadow-sm">
+                        <BadgeCheck className="w-4 h-4 text-emerald-600 fill-emerald-100" />
+                        <span>🟢 Đã xác thực doanh nghiệp</span>
+                    </div>
+                ) : kycStatus === 'PENDING' ? (
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-3.5 py-1.5 shadow-sm">
+                        <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+                        <span>🟡 Đang chờ Staff duyệt</span>
+                    </div>
+                ) : kycStatus === 'REJECTED' ? (
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-rose-800 bg-rose-50 border border-rose-200 rounded-full px-3.5 py-1.5 shadow-sm">
+                        <XCircle className="w-4 h-4 text-rose-600" />
+                        <span>🔴 Bị từ chối xác thực</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5">
+                        <ShieldCheck className="w-4 h-4 text-slate-400" />
+                        <span>Chưa xác thực KYC</span>
+                    </div>
+                )}
             </div>
         </div>
 
@@ -781,36 +797,46 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                             {/* Section Xác thực doanh nghiệp (GPKD & CCCD) */}
                             <FormSection icon={<ShieldCheck className="w-5 h-5 text-emerald-600"/>} title="Xác thực doanh nghiệp (Giấy phép KD & CCCD)">
                                 <div className="mb-4">
-                                    {kycStatus === 'VERIFIED' ? (
-                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold">
-                                            <BadgeCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                                    {kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' ? (
+                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold shadow-sm">
+                                            <BadgeCheck className="w-6 h-6 text-emerald-600 shrink-0 fill-emerald-100" />
                                             <div>
-                                                <p className="font-extrabold text-sm text-emerald-900">Doanh nghiệp đã được xác thực chính thức (Verified)</p>
+                                                <p className="font-extrabold text-sm text-emerald-900 flex items-center gap-1.5">
+                                                    🟢 Đã xác thực doanh nghiệp (Verified)
+                                                </p>
                                                 <p className="font-medium text-emerald-700 mt-0.5">Giấy phép kinh doanh và CCCD người đại diện đã được kiểm duyệt thành công.</p>
                                             </div>
                                         </div>
                                     ) : kycStatus === 'PENDING' ? (
-                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-xs font-bold">
-                                            <Clock className="w-5 h-5 text-amber-600 shrink-0 animate-pulse" />
+                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-xs font-bold shadow-sm">
+                                            <Clock className="w-6 h-6 text-amber-600 shrink-0 animate-pulse" />
                                             <div>
-                                                <p className="font-extrabold text-sm text-amber-900">Hồ sơ xác thực đang chờ Staff kiểm duyệt (Pending)</p>
-                                                <p className="font-medium text-amber-700 mt-0.5">Tài liệu GPKD & CCCD đã được tải lên cơ sở dữ liệu. Nhân viên (Staff) sẽ tiến hành kiểm duyệt sau.</p>
+                                                <p className="font-extrabold text-sm text-amber-900 flex items-center gap-1.5">
+                                                    🟡 Đang chờ Staff duyệt (Pending)
+                                                </p>
+                                                <p className="font-medium text-amber-700 mt-0.5">Tài liệu GPKD & CCCD đã được tải lên cơ sở dữ liệu. Hồ sơ của bạn đang được Nhân viên (Staff) xem xét và đối soát.</p>
                                             </div>
                                         </div>
                                     ) : kycStatus === 'REJECTED' ? (
-                                        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3 text-rose-800 text-xs font-bold">
-                                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                                            <div>
-                                                <p className="font-extrabold text-sm text-rose-900">Hồ sơ xác thực bị từ chối</p>
-                                                <p className="font-medium text-rose-700 mt-0.5">Lý do: {kycRejectedReason || 'File đính kèm không hợp lệ hoặc thông tin không trùng khớp. Vui lòng tải lại file mới.'}</p>
+                                        <div className="p-4.5 rounded-xl bg-rose-50 border border-rose-200 space-y-2 text-rose-800 text-xs font-bold shadow-sm">
+                                            <div className="flex items-center gap-2 text-rose-900">
+                                                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                                                <p className="font-extrabold text-sm">🔴 Hồ sơ xác thực bị từ chối (Rejected)</p>
                                             </div>
+                                            <div className="text-xs font-semibold text-rose-800 bg-white/80 p-3 rounded-lg border border-rose-200 shadow-2xs">
+                                                <span className="font-extrabold text-rose-950">Lý do từ chối từ Staff: </span>
+                                                <span className="text-rose-900 italic font-bold">{kycRejectedReason || 'File đính kèm không hợp lệ hoặc thông tin chưa đầy đủ. Vui lòng kiểm tra lại tài liệu và gửi lại yêu cầu.'}</span>
+                                            </div>
+                                            <p className="text-[11px] text-rose-700 font-medium">
+                                                * Bạn có thể thay đổi hoặc giữ nguyên tài liệu GPKD / CCCD bên dưới và bấm nút <strong>"Gửi lại hồ sơ xác thực"</strong> để gửi lại cho Staff duyệt.
+                                            </p>
                                         </div>
                                     ) : (
                                         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-slate-700 text-xs font-bold">
                                             <ShieldCheck className="w-5 h-5 text-slate-400 shrink-0" />
                                             <div>
                                                 <p className="font-extrabold text-sm text-slate-800">Chưa gửi hồ sơ xác thực doanh nghiệp</p>
-                                                <p className="font-medium text-slate-500 mt-0.5">Tải lên file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) để lưu database gửi Nhân viên (Staff) duyệt sau.</p>
+                                                <p className="font-medium text-slate-500 mt-0.5">Tải lên file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) để lưu database gửi Nhân viên (Staff) duyệt.</p>
                                             </div>
                                         </div>
                                     )}
@@ -824,7 +850,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                 <FileText className="w-4 h-4 text-cyan-600" />
                                                 1. Giấy phép kinh doanh (GPKD) *
                                             </label>
-                                            <span className="text-[10px] font-bold text-slate-400">Tất cả loại file (Max 50MB)</span>
+                                            <span className="text-[10px] font-bold text-slate-500">Hỗ trợ PDF, Ảnh, Word, ZIP (Max 50MB)</span>
                                         </div>
 
                                         {gpkdUrl ? (
@@ -833,15 +859,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                     <FileText className="w-3.5 h-3.5" />
                                                     {gpkdUrl}
                                                 </a>
-                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
                                                     <button type="button" onClick={() => setGpkdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
                                                 )}
                                             </div>
                                         ) : (
                                             <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
                                                 {uploadingGpkd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <FileText className="w-4 h-4 text-slate-400" />}
-                                                <span>{uploadingGpkd ? 'Đang tải file GPKD lên DB...' : 'Chọn file GPKD bất kỳ'}</span>
-                                                <input type="file" onChange={handleUploadGpkd} disabled={uploadingGpkd || kycStatus === 'VERIFIED' || kycStatus === 'PENDING'} className="hidden" />
+                                                <span>{uploadingGpkd ? 'Đang tải file GPKD lên DB...' : 'Chọn file GPKD (PDF, Ảnh, Word...)'}</span>
+                                                <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.zip,.rar" onChange={handleUploadGpkd} disabled={uploadingGpkd || kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' || kycStatus === 'PENDING'} className="hidden" />
                                             </label>
                                         )}
                                     </div>
@@ -853,7 +879,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                 <UserRound className="w-4 h-4 text-cyan-600" />
                                                 2. Căn cước công dân (CCCD) *
                                             </label>
-                                            <span className="text-[10px] font-bold text-slate-400">Tất cả loại file (Max 50MB)</span>
+                                            <span className="text-[10px] font-bold text-slate-500">Hỗ trợ PNG, JPG, WEBP, PDF (Max 50MB)</span>
                                         </div>
 
                                         {cccdUrl ? (
@@ -862,21 +888,21 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                                     <UserRound className="w-3.5 h-3.5" />
                                                     {cccdUrl}
                                                 </a>
-                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
                                                     <button type="button" onClick={() => setCccdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
                                                 )}
                                             </div>
                                         ) : (
                                             <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
                                                 {uploadingCccd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <UserRound className="w-4 h-4 text-slate-400" />}
-                                                <span>{uploadingCccd ? 'Đang tải file CCCD lên DB...' : 'Chọn file CCCD bất kỳ'}</span>
-                                                <input type="file" onChange={handleUploadCccd} disabled={uploadingCccd || kycStatus === 'VERIFIED' || kycStatus === 'PENDING'} className="hidden" />
+                                                <span>{uploadingCccd ? 'Đang tải file CCCD lên DB...' : 'Chọn file CCCD (PNG, JPG, PDF...)'}</span>
+                                                <input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.heic" onChange={handleUploadCccd} disabled={uploadingCccd || kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' || kycStatus === 'PENDING'} className="hidden" />
                                             </label>
                                         )}
                                     </div>
                                 </div>
 
-                                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
                                     <div className="flex justify-end pt-2">
                                         <button
                                             type="button"
@@ -885,7 +911,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm"
                                         >
                                             {submittingKyc ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                                            {submittingKyc ? 'Đang gửi...' : 'Gửi hồ sơ xác thực (GPKD & CCCD)'}
+                                            {submittingKyc ? 'Đang gửi...' : kycStatus === 'REJECTED' ? 'Gửi lại hồ sơ xác thực (GPKD & CCCD)' : 'Gửi hồ sơ xác thực (GPKD & CCCD)'}
                                         </button>
                                     </div>
                                 )}

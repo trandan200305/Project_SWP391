@@ -339,15 +339,54 @@ public class EmployerController {
     @PostMapping("/{id}/kyc/submit")
     public ResponseEntity<Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.EmployerKycSubmitDto dto) {
         Map<String, Object> response = new HashMap<>();
+
+        // 1. Backend Validation: DTO & File URLs
+        if (dto == null) {
+            response.put("success", false);
+            response.put("message", "Lỗi gửi dữ liệu: Dữ liệu hồ sơ gửi lên rỗng (null).");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getBusinessLicenseUrl() == null || dto.getBusinessLicenseUrl().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Lỗi Backend Validation: Vui lòng đính kèm file Giấy phép kinh doanh (GPKD) hợp lệ trước khi gửi xác thực.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getRepresentativeIdCardUrl() == null || dto.getRepresentativeIdCardUrl().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Lỗi Backend Validation: Vui lòng đính kèm file Căn cước công dân (CCCD) hợp lệ trước khi gửi xác thực.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getTaxCode() != null && !dto.getTaxCode().trim().isEmpty()) {
+            String taxCodeStr = dto.getTaxCode().trim();
+            if (!taxCodeStr.matches("^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$")) {
+                response.put("success", false);
+                response.put("message", "Lỗi Backend Validation: Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+
         return employerRepository.findById(id).map(e -> {
-            e.setTaxCode(dto.getTaxCode());
-            e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl());
-            e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl());
+            e.setTaxCode(dto.getTaxCode() != null ? dto.getTaxCode().trim() : null);
+            e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl().trim());
+            e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl().trim());
             e.setKycStatus("PENDING");
+            e.setKycRejectedReason(null);
             e.setKycSubmittedAt(LocalDateTime.now());
             e.setUpdatedAt(LocalDateTime.now());
 
             employerRepository.save(e);
+
+            try {
+                jdbcTemplate.update(
+                    "INSERT INTO kyc_requests (employer_id, status, created_at, updated_at) VALUES (?, 'PENDING', GETDATE(), GETDATE())",
+                    e.getEmployerId()
+                );
+            } catch (Exception ex) {
+                // Table might not exist or schema differs, ignore safely
+            }
             
             // Notify STAFF
             notificationService.createNotification(
@@ -364,8 +403,8 @@ public class EmployerController {
             return ResponseEntity.ok(response);
         }).orElseGet(() -> {
             response.put("success", false);
-            response.put("message", "Không tìm thấy người dùng.");
-            return ResponseEntity.notFound().build();
+            response.put("message", "Không tìm thấy người dùng trong cơ sở dữ liệu.");
+            return ResponseEntity.status(404).body(response);
         });
     }
 
