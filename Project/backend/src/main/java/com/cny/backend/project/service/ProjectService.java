@@ -59,6 +59,9 @@ public class ProjectService {
     @Autowired
     private ServicePackageConfigRepository servicePackageConfigRepository;
 
+    @Autowired
+    private ProjectSkillRepository projectSkillRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -170,6 +173,19 @@ public class ProjectService {
                 .build();
         Project savedProject = projectRepository.save(project);
 
+        // Lưu danh sách kỹ năng được chọn vào bảng project_skills trong CSDL
+        if (dto.getSkills() != null && !dto.getSkills().isEmpty()) {
+            for (String skillName : dto.getSkills()) {
+                if (skillName != null && !skillName.trim().isEmpty()) {
+                    ProjectSkill ps = ProjectSkill.builder()
+                            .project(savedProject)
+                            .skillName(skillName.trim())
+                            .build();
+                    projectSkillRepository.save(ps);
+                }
+            }
+        }
+
         // Notify all staff
         try {
             List<Staff> allStaff = staffRepository.findAll();
@@ -266,6 +282,23 @@ public class ProjectService {
         
         project.setDeadline(dto.getDeadline());
 
+        if (dto.getSkills() != null) {
+            try {
+                projectSkillRepository.deleteByProjectProjectId(projectId);
+                for (String skillName : dto.getSkills()) {
+                    if (skillName != null && !skillName.trim().isEmpty()) {
+                        ProjectSkill ps = ProjectSkill.builder()
+                                .project(project)
+                                .skillName(skillName.trim())
+                                .build();
+                        projectSkillRepository.save(ps);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to update project skills: " + e.getMessage());
+            }
+        }
+
         return projectRepository.save(project);
     }
 
@@ -282,21 +315,27 @@ public class ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
 
-        if ("IN_PROGRESS".equals(project.getStatus())) {
-            throw new IllegalArgumentException("Không thể xóa dự án đã giao cho Freelancer (đang thực hiện).");
-        }
-
         project.setIsDeleted(true);
         return projectRepository.save(project);
     }
 
-    public Page<ProjectDto> getAllPublishedProjects(Pageable pageable) {
+    public Page<ProjectDto> getPublishedProjects(Pageable pageable) {
         Page<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED", pageable);
         return projects.map(this::mapToDto);
     }
 
-    public Page<ProjectDto> getLatestPublishedProjects(Pageable pageable) {
-        Page<Project> projects = projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED", pageable);
+    public Page<ProjectDto> getAllPublishedProjects(Pageable pageable) {
+        return getPublishedProjects(pageable);
+    }
+
+    public List<ProjectDto> searchProjects(String keyword) {
+        List<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", (keyword == null) ? "" : keyword.trim());
+        return projects.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    public Page<ProjectDto> searchProjects(String keyword, Pageable pageable) {
+        String kw = (keyword == null) ? "" : keyword.trim();
+        Page<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", kw, pageable);
         return projects.map(this::mapToDto);
     }
 
@@ -386,6 +425,17 @@ public class ProjectService {
             employerJobs = project.getClient().getProjectsPosted() != null ? project.getClient().getProjectsPosted() : 0;
         }
 
+        // Lấy danh sách kỹ năng thực tế từ bảng project_skills trong CSDL
+        List<String> projectSkills = new java.util.ArrayList<>();
+        try {
+            List<ProjectSkill> psList = projectSkillRepository.findByProjectProjectId(project.getProjectId());
+            if (psList != null && !psList.isEmpty()) {
+                projectSkills = psList.stream().map(ProjectSkill::getSkillName).collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading skills for project " + project.getProjectId() + ": " + e.getMessage());
+        }
+
         return ProjectDto.builder()
                 .id(project.getProjectId())
                 .employerId(project.getClient() != null ? project.getClient().getEmployerId() : null)
@@ -407,7 +457,7 @@ public class ProjectService {
                 .employerLocation(employerLoc)
                 .employerJoinDate(employerJoin)
                 .employerJobsPosted(employerJobs)
-                .skills(Arrays.asList("AFTER EFFECT", "INFOGRAPHIC", "MOTION GRAPHIC"))
+                .skills(projectSkills)
                 .servicePackage(project.getServicePackage())
                 .serviceFee(project.getServiceFee())
                 .build();

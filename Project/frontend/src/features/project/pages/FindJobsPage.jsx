@@ -329,11 +329,16 @@ export default function FindJobsPage({ onNavigate, initialCategory = 'all', init
                     </button>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-50 border-dashed">
-                    <div>
+                  <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-50 border-dashed gap-3 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button onClick={handleAction} className="bg-[#1e40af] text-white text-xs font-semibold px-2.5 py-1 rounded shadow-sm hover:bg-blue-900 transition-colors uppercase">
                         {job.categoryName}
                       </button>
+                      {job.skills && job.skills.length > 0 && job.skills.map((skill, idx) => (
+                        <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded border border-slate-200">
+                          {skill}
+                        </span>
+                      ))}
                     </div>
                     <div className="text-sm font-medium text-slate-600">
                       <>{job.applications} người đã ứng tuyển</>
