@@ -336,18 +336,18 @@ export default function Navbar({
                 Tìm việc làm
               </a>
               <a
-                href="#post-job"
+                href="#find-freelancers"
                 onClick={(e) => {
                   e.preventDefault();
                   if (onNavigate) {
                     if (!user) {
-                      localStorage.setItem("redirect_after_login", "post_job");
+                      localStorage.setItem("redirect_after_login", "find_freelancers");
                       onNavigate("login");
                     } else if (user.role === "EMPLOYER") {
-                      onNavigate("post_job");
+                      onNavigate("find_freelancers");
                     } else {
                       alert(
-                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                       );
                     }
                   }
@@ -374,15 +374,26 @@ export default function Navbar({
           {}
           <div className="hidden md:flex items-center gap-5">
             {user?.role === "EMPLOYER" && (
-              <button
-                onClick={() => {
-                  if (onNavigate) onNavigate("post_job");
-                }}
-                className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" />
-                Đăng dự án mới
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    if (onNavigate) onNavigate("employer_packages");
+                  }}
+                  className="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 px-4 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-sm flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Nâng cấp
+                </button>
+                <button
+                  onClick={() => {
+                    if (onNavigate) onNavigate("post_job");
+                  }}
+                  className="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-large font-bold text-body-md transition-all duration-200 shadow-md shadow-secondary/10 hover:shadow-secondary/20 flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Đăng dự án mới
+                </button>
+              </>
             )}
 
             {user ? (
@@ -442,15 +453,6 @@ export default function Navbar({
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("post_job");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-secondary-dark hover:bg-secondary-light rounded-xl transition-all"
-                        >
-                          <Plus className="w-4 h-4" /> Đăng dự án mới
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
                             if (onNavigate) onNavigate("employer_profile");
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
@@ -466,6 +468,16 @@ export default function Navbar({
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
                         >
                           <Bookmark className="w-4 h-4" /> Quản lý dự án
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("find_freelancers");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all mt-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+                          Tim kiem Freelancer
                         </button>
                       </>
                     )}
@@ -639,19 +651,19 @@ export default function Navbar({
               Tìm việc làm
             </a>
             <a
-              href="#post-job"
+              href="#find-freelancers"
               onClick={(e) => {
                 e.preventDefault();
                 setIsOpen(false);
                 if (onNavigate) {
                   if (!user) {
-                    localStorage.setItem("redirect_after_login", "post_job");
+                    localStorage.setItem("redirect_after_login", "find_freelancers");
                     onNavigate("login");
                   } else if (user.role === "EMPLOYER") {
-                    onNavigate("post_job");
+                    onNavigate("find_freelancers");
                   } else {
                     alert(
-                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể đăng dự án!",
+                      "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
                     );
                   }
                 }
@@ -698,6 +710,15 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setIsOpen(false);
+                    if (onNavigate) onNavigate("employer_packages");
+                  }}
+                  className="w-full text-center bg-amber-50 text-amber-600 border border-amber-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mb-2"
+                >
+                  <Sparkles className="w-4 h-4" /> Nâng cấp tài khoản
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
                     if (onNavigate) onNavigate("post_job");
                   }}
                   className="w-full text-center bg-secondary hover:bg-secondary-dark text-white py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-md mb-2"
@@ -721,6 +742,16 @@ export default function Navbar({
                   className="w-full text-center bg-amber-50 text-amber-700 border border-amber-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Bookmark className="w-4 h-4" /> Quản lý dự án
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("find_freelancers");
+                  }}
+                  className="w-full text-center bg-purple-50 text-purple-700 border border-purple-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+                  Tim kiem Freelancer
                 </button>
               </>
             )}

@@ -141,6 +141,7 @@ export const adminApi = {
   getTransferRequests: () => api.get('/admin/transfers/requests'),
   submitTransferRequest: (payload, adminId) => api.post('/admin/transfers/requests', payload, { headers: { 'X-Admin-Id': adminId } }),
   approveTransferRequest: (id, status, reason, adminId) => api.put(`/admin/transfers/requests/${id}/approve?status=${status}&reason=${reason}`, null, { headers: { 'X-Admin-Id': adminId } }),
+  completeTransferHandover: (id, notes, staffId) => api.post(`/admin/transfers/requests/${id}/complete-handover`, { notes }, { headers: staffId ? { 'X-Admin-Id': staffId.toString() } : {} }),
   lookupBankAccount: (bankCode, accountNumber) => api.post('/admin/payment/lookup-account', { bankCode, accountNumber }),
   createTestVnpayUrl: (projectId, packageType) => {
     let url = '/payment/create-url';

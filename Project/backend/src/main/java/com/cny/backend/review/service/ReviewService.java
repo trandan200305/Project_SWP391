@@ -20,7 +20,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Service("generalReviewService")
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;

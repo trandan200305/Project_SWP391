@@ -43,4 +43,13 @@ public class TransferController {
             @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
         return ResponseEntity.ok(adminService.approveTransferRequest(id, status, reason, adminId));
     }
+
+    @PostMapping("/requests/{id}/complete-handover")
+    public ResponseEntity<Map<String, Object>> completeTransferHandover(
+            @PathVariable("id") int id,
+            @RequestBody(required = false) Map<String, Object> body,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        String notes = body != null && body.containsKey("notes") ? String.valueOf(body.get("notes")) : "";
+        return ResponseEntity.ok(adminService.completeTransferHandover(id, notes, adminId));
+    }
 }

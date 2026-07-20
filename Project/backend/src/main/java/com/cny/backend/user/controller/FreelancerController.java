@@ -21,7 +21,14 @@ import com.cny.backend.user.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -50,8 +57,19 @@ public class FreelancerController {
     @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
+    @Autowired
+    private com.cny.backend.project.repository.JobCategoryRepository jobCategoryRepository;
+
+    /** Lấy danh sách tất cả freelancer (mặc định không filter) */
     @GetMapping
-    public ResponseEntity<List<FreelancerDto>> getAllFreelancers() {
+    public ResponseEntity<List<FreelancerDto>> getAllFreelancers(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "experienceLevel", required = false) String experienceLevel,
+            @RequestParam(value = "minRate", required = false) java.math.BigDecimal minRate,
+            @RequestParam(value = "maxRate", required = false) java.math.BigDecimal maxRate,
+            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating) {
+        
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         List<FreelancerDto> dtos = freelancers.stream().map(f -> {
             FreelancerDto dto = mapToDto(f);
@@ -64,6 +82,7 @@ public class FreelancerController {
         return ResponseEntity.ok(dtos);
     }
 
+    /** Lấy danh sách top freelancer (legacy, giới hạn 4) */
     @GetMapping("/top")
     public ResponseEntity<List<FreelancerDto>> getTopFreelancers() {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();
@@ -79,6 +98,68 @@ public class FreelancerController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(topFreelancers);
+    }
+
+    /**
+     * Tìm kiếm freelancer với bộ lọc:
+     * - keyword: tên hoặc professional title
+     * - category: tên danh mục/chuyên môn
+     * - minRate / maxRate: mức giá theo giờ
+     * - minRating: đánh giá tối thiểu
+     * - page, size, sort
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchFreelancers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minRate,
+            @RequestParam(required = false) BigDecimal maxRate,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "averageRating") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        String cat = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
+
+        Page<Freelancer> result = freelancerRepository.searchFreelancers(kw, cat, minRate, maxRate, minRating, pageable);
+
+        List<FreelancerDto> dtos = result.getContent().stream().map(this::mapToDto).collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("freelancers", dtos);
+        response.put("currentPage", result.getNumber());
+        response.put("totalPages", result.getTotalPages());
+        response.put("totalElements", result.getTotalElements());
+        response.put("pageSize", result.getSize());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách tất cả danh mục công việc (dùng cho dropdown filter trên UI)
+     */
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, Object>>> getCategories() {
+        List<Map<String, Object>> categories = jobCategoryRepository
+                .findByIsActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getCategoryId());
+                    m.put("name", c.getCategoryName());
+                    m.put("description", c.getDescription());
+                    m.put("iconUrl", c.getIconUrl());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/{id}")
@@ -286,12 +367,12 @@ public class FreelancerController {
                 .avatarUrl(f.getAvatarUrl())
                 .status(f.getStatus())
                 .emailVerified(f.getEmailVerified())
-                .professionalTitle(f.getProfessionalTitle())
-                .bio(f.getBio())
-                .hourlyRate(f.getHourlyRate())
-                .address(f.getAddress())
-                .city(f.getCity())
-                .country(f.getCountry())
+                .professionalTitle(profile != null && profile.getProfessionalTitle() != null ? profile.getProfessionalTitle() : f.getProfessionalTitle())
+                .bio(profile != null && profile.getBio() != null ? profile.getBio() : f.getBio())
+                .hourlyRate(profile != null && profile.getHourlyRate() != null ? profile.getHourlyRate() : f.getHourlyRate())
+                .address(profile != null && profile.getAddress() != null ? profile.getAddress() : f.getAddress())
+                .city(profile != null && profile.getCity() != null ? profile.getCity() : f.getCity())
+                .country(profile != null && profile.getCountry() != null ? profile.getCountry() : f.getCountry())
                 .hideEmail(f.getHideEmail())
                 .hidePhone(f.getHidePhone())
                 .hideLocation(f.getHideLocation())

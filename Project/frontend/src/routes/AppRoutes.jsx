@@ -14,11 +14,13 @@ import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
 import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
+import FindFreelancersPage from '../features/project/pages/FindFreelancersPage.jsx';
 import JobDetailPage from '../features/project/pages/JobDetailPage.jsx';
 import YourJobsPage from '../features/project/pages/YourJobsPage.jsx';
 import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx';
 import PaymentResultPage from '../pages/PaymentResultPage.jsx';
 import CheckoutPage from '../pages/CheckoutPage.jsx';
+import PackageSelectionPage from '../pages/employer/PackageSelectionPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -82,6 +84,10 @@ export default function AppRoutes({
     return <FindJobsPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
   }
 
+  if (currentPage === 'find_freelancers') {
+    return <FindFreelancersPage onNavigate={handleNavigate} initialCategory={pageParams?.category} initialKeyword={pageParams?.query} user={user} />;
+  }
+
   if (currentPage === 'job_details') {
     return <JobDetailPage job={pageParams?.job} onNavigate={handleNavigate} user={user} />;
   }
@@ -116,6 +122,15 @@ export default function AppRoutes({
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+
+  if (currentPage === 'employer_packages') {
+    return (
+      <PackageSelectionPage 
+        user={user} 
+        onNavigate={handleNavigate} 
       />
     );
   }

@@ -11,6 +11,7 @@ export const ENDPOINTS = {
     VERIFY_INVITATION: '/auth/invitation/verify',
     SEND_INVITATION_CODE: '/auth/invitation/send-code',
     ACCEPT_INVITATION: '/auth/invitation/accept',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   ADMIN: {
     STATS: '/admin/stats',
@@ -28,5 +29,13 @@ export const ENDPOINTS = {
     TICKETS: '/admin/tickets',
     SEO_CONFIGS: '/admin/seo-configs',
     PLATFORM_FEE: '/admin/platform-fee',
-  }
+  },
+  FREELANCERS: {
+    ALL: '/freelancers',
+    TOP: '/freelancers/top',
+    SEARCH: '/freelancers/search',
+    CATEGORIES: '/freelancers/categories',
+    BY_ID: (id) => `/freelancers/${id}`,
+  },
 };
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Calendar, Loader2, Sparkles } from 'lucide-react';
+import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles } from 'lucide-react';
 
 export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
   const [categories, setCategories] = useState([]);
@@ -20,25 +20,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     workForm: 'ONLINE'
   });
 
-  const [servicePackages, setServicePackages] = useState([
-    { packageType: 'MEDIUM', price: 100000 },
-    { packageType: 'REGULAR', price: 200000 },
-    { packageType: 'PREMIUM', price: 500000 }
-  ]);
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/admin/service-packages')
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error();
-      })
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setServicePackages(data);
-        }
-      })
-      .catch(err => console.log('Sử dụng bảng giá gói dịch vụ mặc định'));
-  }, []);
 
   useEffect(() => {
     if (!user || user.role !== 'EMPLOYER') {
@@ -425,80 +406,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
               </div>
             </label>
 
-            
-            {/* Service Package Selection */}
-            <div className="border-t border-slate-100 pt-6 mt-6">
-              <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-505" /> Chọn gói dịch vụ dự án *
-              </span>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {servicePackages.map((pkg) => {
-                  const type = pkg.packageType;
-                  const price = pkg.price;
-                  const durationDays = pkg.durationDays || 30;
-                  const postLimit = pkg.postLimit || 10;
-                  
-                  let label = 'Trung bình';
-                  let days = `${durationDays} ngày`;
-                  let desc = `Hiển thị tối đa ${durationDays} ngày. Phù hợp dự án quy mô nhỏ.`;
-                  let badge = null;
-                  let borderStyle = 'border-slate-200 hover:border-slate-300';
-                  let activeStyle = 'border-secondary bg-secondary-light/10 ring-2 ring-secondary/15';
-                  let iconBg = 'bg-slate-100 text-slate-600';
-                  
-                  if (type === 'REGULAR') {
-                    label = 'Thường';
-                    desc = `Hiển thị tối đa ${durationDays} ngày, tiếp cận lượng lớn Freelancer.`;
-                    iconBg = 'bg-indigo-50 text-indigo-600';
-                  } else if (type === 'PREMIUM') {
-                    label = 'Cao cấp';
-                    desc = `Hiển thị tối đa ${durationDays} ngày. Đóng dấu nổi bật thu hút Freelancer chuyên nghiệp nhất.`;
-                    badge = 'Phổ biến nhất';
-                    iconBg = 'bg-amber-50 text-amber-600';
-                  }
-
-                  const isActive = newProject.servicePackage === type;
-
-                  return (
-                    <div
-                      key={type}
-                      onClick={() => setNewProject(prev => ({ ...prev, servicePackage: type }))}
-                      className={`relative p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
-                        isActive ? activeStyle : borderStyle
-                      }`}
-                    >
-                      {badge && (
-                        <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
-                          {badge}
-                        </span>
-                      )}
-                      
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className={`p-2 rounded-xl ${iconBg}`}>
-                            <Briefcase className="w-4 h-4" />
-                          </div>
-                          <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">
-                            Hạn {days}
-                          </span>
-                        </div>
-                        
-                        <h4 className="text-sm font-extrabold text-slate-900 mb-1">{label}</h4>
-                        <p className="text-[11px] font-medium text-slate-500 leading-relaxed mb-4">{desc}</p>
-                      </div>
-
-                      <div className="border-t border-slate-100/70 pt-3 mt-auto">
-                        <span className="text-xs font-semibold text-slate-400 block mb-0.5">Giá gói</span>
-                        <span className="text-base font-extrabold text-slate-900">
-                          {price.toLocaleString('vi-VN')} <span className="text-xs font-bold text-slate-500">VND</span>
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
 
             <label className="block">
               <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Mô tả công việc & Yêu cầu chi tiết *</span>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>vLance Package Diagram Builder</title>
+    <!-- Use plantuml-encoder to convert text to URL -->
+    <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; margin: 0; padding: 40px 20px; text-align: center; }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+        }
+        h1 { color: #1e293b; margin-top: 0; margin-bottom: 5px; font-size: 24px; }
+        p.subtitle { color: #64748b; margin-bottom: 30px; font-size: 14px; }
+        .diagram-wrapper { 
+            display: flex; 
+            justify-content: center; 
+            min-height: 400px;
+            align-items: center;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        img#plantuml-img {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 15px; }
+        .btn { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 15px; 
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn svg { width: 18px; height: 18px; }
+        
+        .loading { color: #64748b; font-weight: 500; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="diagram-container">
+    <h1>vLance Application Architecture</h1>
+    <p class="subtitle">Classic Package Diagram (UML Standard)</p>
+    
+    <div class="diagram-wrapper">
+        <div id="loading" class="loading">Đang vẽ sơ đồ từ máy chủ PlantUML...</div>
+        <img id="plantuml-img" style="display: none;" alt="PlantUML Diagram" onload="document.getElementById('loading').style.display='none'; this.style.display='block';" />
+    </div>
+</div>
+
+<div class="btn-group">
+    <a id="download-btn" class="btn" href="#" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Mở & Tải Ảnh PNG
+    </a>
+</div>
+
+<script>
+// PlantUML Source Code
+const umlSource = `
+@startuml
+skinparam packageStyle folder
+skinparam backgroundColor white
+skinparam linetype ortho
+skinparam defaultFontName "Segoe UI"
+skinparam arrowColor #475569
+skinparam nodesep 60
+skinparam ranksep 60
+
+skinparam package {
+    BackgroundColor #f1f5f9
+    BorderColor #64748b
+    FontColor #0f172a
+    FontSize 14
+    FontStyle bold
+}
+
+package "vLance Application" {
+    package "Frontend (React SPA) - src/" as FE {
+        package pages
+        package features
+        package components
+        package api
+        package context
+        package utils
+        package assets
+        
+        pages ..> features
+        features ..> components
+        features ..> api
+        features ..> context
+        api ..> utils
+        components ..> assets
+    }
+
+    package "Backend (Spring Boot) - com.cny.backend" as BE {
+        package controller
+        package service
+        package dto
+        package repository
+        package entity
+        package config
+        package security
+        package exception
+        
+        controller ..> service
+        controller ..> dto
+        service ..> repository
+        service ..> entity
+        repository ..> entity
+        config ..> security
+        security ..> service
+        exception ..> controller
+    }
+
+    FE -[hidden]down- BE
+
+    api ..> controller : HTTPS / REST (JSON)
+    pages ..> controller : WebSocket (STOMP)
+}
+@enduml
+`;
+
+// Encode using plantuml-encoder
+const encoded = plantumlEncoder.encode(umlSource);
+
+// Construct URL (use PNG format for download)
+const plantUmlUrl = 'https://www.plantuml.com/plantuml/png/' + encoded;
+
+// Set image source
+document.getElementById('plantuml-img').src = plantUmlUrl;
+
+// Set download button link
+// We set target="_blank" so the user can easily right-click -> Save As in a new tab if direct download fails due to CORS
+document.getElementById('download-btn').href = plantUmlUrl;
+</script>
+</body>
+</html>

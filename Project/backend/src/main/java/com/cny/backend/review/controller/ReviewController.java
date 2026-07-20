@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@RestController("generalReviewController")
 @RequestMapping("/reviews")
 @CrossOrigin(origins = "*")
 public class ReviewController {
@@ -52,7 +52,7 @@ public class ReviewController {
         }
     }
 
-    @GetMapping("/contract/{contractId}")
+    @GetMapping("/contract/{contractId}/general")
     public ResponseEntity<?> getReviewsByContract(@PathVariable Integer contractId) {
         try {
             return ResponseEntity.ok(reviewService.getReviewsByContract(contractId));

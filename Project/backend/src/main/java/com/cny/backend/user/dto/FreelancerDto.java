@@ -67,3 +67,4 @@ public class FreelancerDto {
     private String primarySkills;
     private String expertiseField;
 }
+

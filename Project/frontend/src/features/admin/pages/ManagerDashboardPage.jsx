@@ -4,7 +4,7 @@ import {
   BadgeDollarSign, Gavel, FileText, Settings, Search, HelpCircle, 
   Grid, Plus, ArrowRight, ArrowUpRight, ArrowDownRight, MoreVertical, Filter, 
   Check, X, Send, Eye, ShieldCheck, AlertCircle, Clock, ChevronRight,
-  TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip,
+  TrendingUp, Activity, User, LogOut, CheckCircle2, AlertTriangle, Paperclip, XCircle,
   Users, UserPlus, Move, Zap, Calendar, Download, Edit3, Shield, ChevronDown, ArrowLeftRight, Bell
 } from 'lucide-react';
 import NotificationDropdown from '../components/NotificationDropdown.jsx';
@@ -116,7 +116,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeNote, setDisputeNote] = useState('');
+  const [selectedAssignStaffEmail, setSelectedAssignStaffEmail] = useState("");
+  const [showAssignStaffDrawer, setShowAssignStaffDrawer] = useState(false);
   const [queueTab, setQueueTab] = useState('ALL');
+  const [queueSearch, setQueueSearch] = useState('');
+  const [moderationView, setModerationView] = useState('queue');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,15 +143,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     waitingUserPercent: 0
   });
 
-  
   const [createForm, setCreateForm] = useState({
     taskType: 'KYC_VERIFICATION',
     title: '',
     requiredDepartments: 'CS',
     description: '',
-    referenceId: ''
+    referenceId: '',
+    assignedToEmail: ''
   });
-
   const [inviteForm, setInviteForm] = useState({
     email: '',
     role: 'STAFF',
@@ -181,6 +184,51 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [rejectReason, setRejectReason] = useState('');
   const [selectedTransferRequest, setSelectedTransferRequest] = useState(null);
   const [showTransferDetailModal, setShowTransferDetailModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [reportActionLoading, setReportActionLoading] = useState(false);
+
+  // Resolve manager's active department & ID
+  const activeDeptId = (() => {
+    if (myProfile?.departmentId) return myProfile.departmentId;
+    if (user?.departmentId) return user.departmentId;
+    // Fallback: match by parsing the email prefix (e.g. manager.mod@... -> MOD, manager.cs@... -> CS)
+    const email = String(user?.email || '').toLowerCase();
+    let code = 'ALL';
+    if (email.startsWith('manager.mod') || email.startsWith('staff.moderation')) code = 'MOD';
+    else if (email.startsWith('manager.dis')) code = 'DIS';
+    else if (email.startsWith('manager.cs')) code = 'CS';
+    else if (email.startsWith('manager.it')) code = 'IT';
+    
+    if (code !== 'ALL') {
+      const match = departments.find(d => String(d.code).toUpperCase() === code);
+      if (match) return match.id;
+    }
+    return null;
+  })();
+
+  const activeDeptCode = (() => {
+    if (activeDeptId) {
+      const match = departments.find(d => d.id === activeDeptId);
+      if (match) return String(match.code).toUpperCase();
+    }
+    // Fallback directly to email prefix
+    const email = String(user?.email || '').toLowerCase();
+    if (email.startsWith('manager.mod') || email.startsWith('staff.moderation')) return 'MOD';
+    if (email.startsWith('manager.dis')) return 'DIS';
+    if (email.startsWith('manager.cs')) return 'CS';
+    if (email.startsWith('manager.it')) return 'IT';
+    return 'ALL';
+  })();
+
+  // Helper helper to get staff department code
+  const getStaffDeptCode = (s) => {
+    if (s.departmentCode) return s.departmentCode;
+    if (s.departmentId) {
+      const match = departments.find(d => d.id === s.departmentId);
+      if (match) return String(match.code).toUpperCase();
+    }
+    return '';
+  };
 
   const fetchMyProfile = () => {
     if (!user?.id) return;
@@ -239,6 +287,186 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         setIsSubmittingTransferRequest(false);
         showToast(err.response?.data?.message || 'Có lỗi xảy ra khi thực hiện điều chuyển.', 'error');
       });
+  };
+
+  const handleClaimDispute = () => {
+    if (!selectedDispute) return;
+    const rawId = selectedDispute.raw?.id || selectedDispute.idRaw || selectedDispute.id || 1;
+    const disputeTitle = selectedDispute.raw?.projectTitle || selectedDispute.title || 'Tranh chấp hợp đồng';
+    const clientName = selectedDispute.raw?.clientName || 'Client';
+    const freelancerName = selectedDispute.raw?.freelancerName || 'Freelancer';
+    const amount = selectedDispute.raw?.amount || 0;
+    const reason = selectedDispute.raw?.reason || disputeNote || 'Tranh chấp chưa có thông tin chi tiết';
+
+    const existingTask = tasks.find(
+      (t) =>
+        t.taskType === 'DISPUTE_RESOLUTION' &&
+        Number(t.referenceId) === Number(rawId),
+    );
+
+    let apiCall;
+    if (existingTask) {
+      apiCall = adminApi.claimVerificationTask(
+        existingTask.taskId,
+        user?.email || 'manager@gmail.com',
+      );
+    } else {
+      const taskPayload = {
+        taskType: 'DISPUTE_RESOLUTION',
+        referenceId: rawId,
+        title: `Xử lý Khiếu nại / Tranh chấp: ${disputeTitle}`,
+        description: `Bên Client (Thuê): ${clientName}. Bên Freelancer: ${freelancerName}. Số tiền tranh chấp: ${amount.toLocaleString('vi-VN')} VND. Nội dung: ${reason}`,
+        requiredDepartments: activeDeptCode || 'DIS',
+        status: 'IN_PROGRESS',
+        assignedToEmail: user?.email,
+      };
+      apiCall = adminApi.createVerificationTask(taskPayload);
+    }
+
+    apiCall
+      .then((res) => {
+        if (res.success !== false) {
+          showToast(
+            'Đã tiếp nhận khiếu nại thành công! Nhiệm vụ hiện đã được chuyển vào mục "Công việc của tôi".',
+            'success',
+          );
+          fetchTasks();
+          setShowDisputeModal(false);
+          setSelectedDispute(null);
+          setDisputeNote('');
+          setActiveTab('Tasks');
+        } else {
+          showToast(res.message || 'Thao tác thất bại.', 'error');
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const handleAssignDisputeToStaff = (targetStaffEmail) => {
+    if (!selectedDispute) return;
+    if (!targetStaffEmail) {
+      showToast('Vui lòng chọn nhân viên để phân công!', 'error');
+      return;
+    }
+    const rawId = selectedDispute.raw?.id || selectedDispute.idRaw || selectedDispute.id || 1;
+    const disputeTitle = selectedDispute.raw?.projectTitle || selectedDispute.title || 'Tranh chấp hợp đồng';
+    const clientName = selectedDispute.raw?.clientName || 'Client';
+    const freelancerName = selectedDispute.raw?.freelancerName || 'Freelancer';
+    const amount = selectedDispute.raw?.amount || 0;
+    const reason = selectedDispute.raw?.reason || 'Tranh chấp chưa có thông tin chi tiết';
+
+    const existingTask = tasks.find(
+      (t) =>
+        t.taskType === 'DISPUTE_RESOLUTION' &&
+        Number(t.referenceId) === Number(rawId),
+    );
+
+    let apiCall;
+    if (existingTask) {
+      apiCall = adminApi.claimVerificationTask(
+        existingTask.taskId,
+        targetStaffEmail,
+      );
+    } else {
+      const taskPayload = {
+        taskType: 'DISPUTE_RESOLUTION',
+        referenceId: rawId,
+        title: `Xử lý Khiếu nại / Tranh chấp: ${disputeTitle}`,
+        description: `Bên Client (Thuê): ${clientName}. Bên Freelancer: ${freelancerName}. Số tiền tranh chấp: ${amount.toLocaleString('vi-VN')} VND. Nội dung: ${reason}`,
+        requiredDepartments: activeDeptCode || 'DIS',
+        status: 'IN_PROGRESS',
+        assignedToEmail: targetStaffEmail,
+      };
+      apiCall = adminApi.createVerificationTask(taskPayload);
+    }
+
+    apiCall
+      .then((res) => {
+        if (res.success !== false) {
+          showToast(
+            `Đã phân công nhiệm vụ cho nhân viên ${targetStaffEmail} thành công!`,
+            'success',
+          );
+          fetchTasks();
+          setShowDisputeModal(false);
+          setSelectedDispute(null);
+          setShowAssignStaffDrawer(false);
+          setSelectedAssignStaffEmail('');
+        } else {
+          showToast(res.message || 'Phân công thất bại.', 'error');
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      });
+  };
+
+  const getSidebarItems = () => {
+    const common = [
+      { id: 'Dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard }
+    ];
+
+    const openDisputeCount = escalationCases.filter(
+      (esc) => esc.raw?.status === 'OPEN' || esc.raw?.status === 'PENDING'
+    ).length;
+
+    const pendingTasksCount = tasks.filter(
+      (t) => t.status === 'Pending' || t.status === 'IN_PROGRESS' || t.status === 'Escalated'
+    ).length;
+
+    if (activeDeptCode === 'MOD') {
+      common.push(
+        { id: 'Tasks', label: 'Nhiệm vụ kiểm duyệt', icon: CheckSquare, badge: pendingTasksCount },
+        { id: 'Moderation', label: 'Hàng đợi kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
+        { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText, badge: violationReports.filter(r => r.status === 'Chờ xử lý').length },
+        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length },
+        { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: Clock }
+      );
+    } else if (activeDeptCode === 'DIS') {
+      common.push(
+        { id: 'Disputes', label: 'Tranh chấp Freelancer - Employer', icon: ShieldAlert, badge: openDisputeCount },
+        { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
+
+      );
+    } else if (activeDeptCode === 'FIN') {
+      common.push(
+        { id: 'Tasks', label: 'Nhiệm vụ tài chính', icon: CheckSquare, badge: pendingTasksCount },
+        { id: 'Withdrawals', label: 'Quản lý Rút tiền', icon: BadgeDollarSign, badge: withdrawals.filter(w => w.statusRaw === 'PENDING').length },
+        { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
+        { id: 'FailedTransactions', label: 'Đối soát VNPay', icon: Activity },
+        { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: Clock }
+      );
+    } else if (activeDeptCode === 'CS') {
+      common.push(
+        { id: 'Tasks', label: 'Nhiệm vụ CSKH', icon: CheckSquare, badge: pendingTasksCount },
+        { id: 'Support', label: 'Hỗ trợ khách hàng', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + (c.unread || 0), 0) },
+        { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: Clock }
+      );
+    } else {
+      // General Manager / ALL
+      common.push(
+        { id: 'Tasks', label: 'Nhiệm vụ phòng ban', icon: CheckSquare, badge: pendingTasksCount },
+        { id: 'Disputes', label: 'Giải quyết tranh chấp', icon: ShieldAlert, badge: openDisputeCount },
+        { id: 'PaymentComplaints', label: 'Khiếu nại thanh toán', icon: BadgeDollarSign },
+        { id: 'Moderation', label: 'Hàng đợi kiểm duyệt', icon: Gavel },
+        { id: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
+        { id: 'KYC', label: 'Xác thực KYC', icon: UserCheck },
+        { id: 'Support', label: 'Hỗ trợ khách hàng', icon: MessageSquare },
+        { id: 'ModHistory', label: 'Lịch sử hoạt động', icon: Clock }
+      );
+    }
+
+    // Always include Staff Management for their department
+    const deptStaffCount = activeDeptCode === 'ALL' ? staffList.length : staffList.filter(s => s.departmentId === activeDeptId).length;
+    common.push(
+      { id: 'Staff Management', label: 'Quản lý nhân sự', icon: Users, badge: deptStaffCount }
+    );
+
+    return common;
   };
 
   const supportSubTabRef = useRef(supportSubTab);
@@ -328,7 +556,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       })
       .catch(err => console.error('Error fetching stats:', err));
   };
-
   const fetchTasks = () => {
     adminApi.getVerificationTasks()
       .then(data => {
@@ -338,23 +565,26 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             const firstDept = reqDepts[0] || 'CS';
             
             let displayStatus = 'Pending';
-            if (t.status === 'APPROVED') displayStatus = 'Completed';
+            if (t.status === 'APPROVED') displayStatus = 'Manager đã ký duyệt';
             else if (t.status === 'REJECTED') displayStatus = 'Rejected';
             else if (t.status === 'IN_PROGRESS') displayStatus = 'In Progress';
+            else if (t.status === 'ESCALATED') displayStatus = 'Escalated';
 
             return {
               id: `#TSK-${t.taskId}`,
               taskId: t.taskId,
               type: t.taskType || 'Verification Request',
               title: t.title || 'Verification Request',
-              user: t.verifierEmail || `Dept: ${firstDept}`,
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.taskType || 'V')}&background=006b2c&color=fff`,
+              user: t.assignedToEmail || t.verifierEmail || `Dept: ${firstDept}`,
+              assignedToEmail: t.assignedToEmail || null,
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.assignedToEmail || t.verifierEmail || firstDept)}&background=006b2c&color=fff`,
               priority: t.taskType === 'Payment Processing' ? 'High' : t.taskType === 'Dispute Resolution' ? 'High' : 'Medium',
               status: displayStatus,
-              deadline: t.status === 'APPROVED' ? 'Completed' : 'Pending Review',
+              deadline: t.status === 'APPROVED' ? 'Manager đã ký duyệt' : 'Pending Review',
               description: t.description || 'No description provided.',
               requiredDepartments: t.requiredDepartments,
-              signoffs: t.signoffs
+              signoffs: t.signoffs,
+              referenceId: t.referenceId
             };
           });
           setTasks(mapped);
@@ -362,7 +592,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       })
       .catch(err => console.error('Error fetching tasks:', err));
   };
-
   const fetchKycRequests = () => {
     adminApi.getKycRequests()
       .then(data => {
@@ -383,30 +612,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       })
       .catch(err => console.error('Error fetching kyc:', err));
   };
-
   const fetchModerationItems = () => {
     Promise.all([
-      adminApi.getPendingProjects().catch(() => []),
       adminApi.getProfileRequests().catch(() => []),
-      adminApi.getWithdrawals().catch(() => []),
-      adminApi.getPendingGigs().catch(() => []),
-      adminApi.getReports().catch(() => [])
-    ]).then(([projectsData, profilesData, withdrawalsData, gigsData, reportsData]) => {
+      adminApi.getPendingProjects().catch(() => [])
+    ]).then(([profilesData, projectsData]) => {
       let mapped = [];
-
-      if (Array.isArray(projectsData)) {
-        mapped = [...mapped, ...projectsData.map(p => ({
-          id: p.id,
-          idRaw: p.id,
-          title: p.title,
-          type: 'PROJECT',
-          author: p.clientName || 'Employer',
-          detail: p.description,
-          reason: 'Dự án mới cần duyệt',
-          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : '',
-          status: 'Pending'
-        }))];
-      }
 
       if (Array.isArray(profilesData)) {
         mapped = [...mapped, ...profilesData.map(pr => ({
@@ -423,53 +634,24 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         }))];
       }
 
-      if (Array.isArray(withdrawalsData)) {
-        mapped = [...mapped, ...withdrawalsData.filter(w => w.status === 'PENDING').map(w => ({
-          id: `WTH-${w.id}`,
-          idRaw: w.id,
-          title: `Yêu cầu rút tiền: ${w.amount?.toLocaleString('vi-VN')} VND`,
-          type: 'WITHDRAWAL',
-          author: `Freelancer #${w.freelancerId}`,
-          detail: `Rút tiền về ${w.bankName} - ${w.accountNumber}`,
-          reason: 'Rút tiền',
-          subDate: w.createdAt ? String(w.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
-          status: 'Pending'
-        }))];
-      }
-
-      if (Array.isArray(gigsData)) {
-        mapped = [...mapped, ...gigsData.map(g => ({
-          id: `GIG-${g.id}`,
-          idRaw: g.id,
-          title: g.title,
-          type: 'GIG',
-          author: g.freelancerName || 'Freelancer',
-          detail: g.description,
-          reason: 'Dịch vụ mới',
-          subDate: g.createdAt ? String(g.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
-          status: 'Pending'
-        }))];
-      }
-
-      if (Array.isArray(reportsData)) {
-        const reviewReports = reportsData.filter(r => r.targetType === 'REVIEW' && r.status === 'PENDING');
-        mapped = [...mapped, ...reviewReports.map(r => ({
-          id: `REV-${r.id}`,
-          idRaw: r.id,
-          title: `Đánh giá bị báo cáo: ID #${r.id}`,
-          type: 'REVIEW',
-          author: r.reporterName || 'User',
-          detail: r.reason,
-          reason: 'Báo cáo vi phạm',
-          subDate: r.createdAt ? String(r.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
-          status: 'Pending'
+      if (Array.isArray(projectsData)) {
+        mapped = [...mapped, ...projectsData.map(p => ({
+          id: `PROJ-${p.id}`,
+          idRaw: p.id,
+          title: p.title || 'Dự án chưa đặt tên',
+          type: 'PROJECT',
+          author: p.employerName || p.clientName || 'Employer',
+          detail: p.description || '',
+          reason: 'Dự án mới',
+          subDate: p.createdAt ? String(p.createdAt).substring(0, 10) : new Date().toISOString().substring(0, 10),
+          status: 'Pending',
+          rawProject: p
         }))];
       }
 
       setModerationItems(mapped);
     }).catch(err => console.error('Error fetching moderation items:', err));
   };
-
   const fetchSupportChats = () => {
     messengerApi.getTickets()
       .then(data => {
@@ -634,6 +816,17 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           showToast(res.message || 'Xử lý đơn điều chuyển thành công!', 'success');
           fetchTransferRequests();
           fetchStaffAndDepartments();
+
+          // Dispatch real-time notification event to immediately update notification bell
+          window.dispatchEvent(new CustomEvent('newNotification', {
+            detail: {
+              title: status === 'APPROVED' ? 'Yêu cầu bàn giao & Điều chuyển phòng ban' : 'Đơn điều chuyển bị từ chối',
+              message: status === 'APPROVED'
+                ? 'Đã gửi yêu cầu bàn giao công việc & duyệt đơn điều chuyển cho staff.'
+                : `Đơn điều chuyển #${requestId} đã bị từ chối.`,
+              createdAt: new Date().toISOString()
+            }
+          }));
         } else {
           showToast(res.message || 'Lỗi khi xử lý đơn điều chuyển.', 'error');
         }
@@ -650,12 +843,25 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       setRejectReason('');
       setShowTransferRejectModal(true);
     } else {
+      const req = transferRequests.find(r => r.requestId === requestId) || selectedTransferRequest;
+      const staffEmail = req?.userEmail || '';
+      const staffName = req?.userDisplayName || staffEmail || 'Nhân viên';
+
+      const unfinishedCount = tasks.filter(t => {
+        const isAssigned = (t.assignedToEmail && t.assignedToEmail.toLowerCase() === staffEmail.toLowerCase()) ||
+                           (t.assignedTo && t.assignedTo.toLowerCase() === staffEmail.toLowerCase());
+        const isFinished = t.status === 'Completed' || t.status === 'Manager đã ký duyệt' || t.status === 'Approved' || t.status === 'Rejected';
+        return isAssigned && !isFinished;
+      }).length;
+
       setConfirmConfig({
-        title: 'Xác nhận duyệt',
-        message: 'Bạn có chắc chắn muốn DUYỆT đơn điều chuyển này không?',
-        confirmText: 'Duyệt đơn',
+        title: unfinishedCount > 0 ? '⚠️ Cảnh báo bàn giao công việc' : 'Xác nhận duyệt điều chuyển',
+        message: unfinishedCount > 0
+          ? `Nhân viên ${staffName} (${staffEmail}) hiện đang có ${unfinishedCount} công việc CHƯA HOÀN THÀNH.\n\nYêu cầu staff cần bàn giao lại toàn bộ công việc cho phòng ban trước khi điều chuyển.\n\nBạn có chắc chắn muốn gửi yêu cầu bàn giao và tiếp tục duyệt điều chuyển này không?`
+          : `Nhân viên ${staffName} hiện có 0 công việc dở dang (đã hoàn thành toàn bộ công việc).\n\nBạn có chắc chắn muốn DUYỆT yêu cầu điều chuyển này không?`,
+        confirmText: unfinishedCount > 0 ? 'Gửi yêu cầu bàn giao' : 'Xác nhận Duyệt',
         cancelText: 'Hủy',
-        type: 'success',
+        type: unfinishedCount > 0 ? 'danger' : 'success',
         onConfirm: () => {
           setShowConfirmModal(false);
           executeTransferRequestAction(requestId, 'APPROVED', '');
@@ -683,16 +889,47 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       if (Array.isArray(data)) {
         setViolationReports(data.map(r => ({
           id: `RPT-${r.id}`,
+          idRaw: r.id,
           target: r.targetType,
+          targetId: r.targetId,
           reporter: r.reporterName,
           accused: r.reportedName,
           severity: r.severity === 'HIGH' ? 'Cao' : r.severity === 'LOW' ? 'Thấp' : 'Trung bình',
           type: r.targetType === 'PROJECT' ? 'Dự án' : 'Hồ sơ',
-          status: r.status === 'PENDING' ? 'Chờ xử lý' : 'Đã xử lý',
-          evidence: r.reason + (r.evidence ? ` - Link: ${r.evidence}` : '')
+          status:
+            r.status === "PENDING"
+              ? "Chờ xử lý"
+              : r.status === "ESCALATED"
+                ? "Đã chuyển cấp"
+                : "Đã xử lý",
+          evidence: r.reason + (r.evidence ? ` - Link: ${r.evidence}` : ''),
+          reason: r.reason,
+          evidenceUrl: r.evidence
         })));
       }
     }).catch(console.error);
+  };
+
+  const handleManagerResolveReport = (report, status) => {
+    const rawId = report.idRaw || (report.id ? String(report.id).replace('RPT-', '') : report.id);
+    const adminId = user?.id || 1;
+    setReportActionLoading(true);
+    adminApi.resolveReport(rawId, status, adminId)
+      .then(res => {
+        setReportActionLoading(false);
+        if (res.success !== false) {
+          showToast(status === 'RESOLVED' ? 'Đã phê duyệt và ký duyệt báo cáo thành công!' : 'Đã từ chối báo cáo thành công!', 'success');
+          fetchReports();
+          setSelectedReport(null);
+        } else {
+          showToast(res.message || 'Lỗi khi xử lý báo cáo.', 'error');
+        }
+      })
+      .catch(err => {
+        setReportActionLoading(false);
+        console.error(err);
+        showToast('Có lỗi xảy ra khi xử lý báo cáo.', 'error');
+      });
   };
 
   const fetchDisputes = () => {
@@ -847,6 +1084,26 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   }, [transferRequests]);
 
   useEffect(() => {
+    const handleTransferUpdate = () => {
+      fetchTransferRequests();
+      fetchStaffAndDepartments();
+    };
+    window.addEventListener('transferRequestUpdated', handleTransferUpdate);
+    window.addEventListener('newNotification', handleTransferUpdate);
+
+    const intervalId = setInterval(() => {
+      fetchTransferRequests();
+      fetchStaffAndDepartments();
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('transferRequestUpdated', handleTransferUpdate);
+      window.removeEventListener('newNotification', handleTransferUpdate);
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleOpenProfileDetail = (e) => {
       const { requestId } = e.detail;
       // Navigate to Moderation queue and filter by PROFILE
@@ -925,7 +1182,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     };
   }, [selectedChatId, socketConnected]);
 
-  
   const handleCreateTaskSubmit = (e) => {
     e.preventDefault();
     if (!createForm.title.trim()) return;
@@ -935,7 +1191,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
       referenceId: parseInt(createForm.referenceId || "1", 10),
       title: createForm.title.trim(),
       description: createForm.description.trim(),
-      requiredDepartments: createForm.requiredDepartments
+      requiredDepartments: createForm.requiredDepartments,
+      assignedToEmail: createForm.assignedToEmail || null
     };
 
     adminApi.createVerificationTask(payload)
@@ -949,7 +1206,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             title: '',
             requiredDepartments: 'CS',
             description: '',
-            referenceId: ''
+            referenceId: '',
+            assignedToEmail: ''
           });
         } else {
           showToast(res.message || 'Lỗi khi tạo tác vụ.', 'error');
@@ -1017,7 +1275,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
     setIsLoading(true);
     adminApi.submitTaskSignoff(selectedTask.taskId, {
-      status: newStatus === 'Completed' ? 'APPROVED' : 'PENDING',
+      status: (newStatus === 'Completed' || newStatus === 'Manager đã ký duyệt') ? 'APPROVED' : 'PENDING',
       note: `Ký duyệt trạng thái ${newStatus} bởi Manager`,
       departmentCode: deptCode
     }, user?.email || 'manager@gmail.com')
@@ -1036,6 +1294,27 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
         setIsLoading(false);
         console.error(err);
         showToast('Có lỗi xảy ra khi ký duyệt tác vụ.', 'error');
+      });
+  };
+
+  const handleAssignTask = (taskId, staffEmail) => {
+    setIsLoading(true);
+    adminApi.claimVerificationTask(taskId, staffEmail)
+      .then(res => {
+        setIsLoading(false);
+        if (res.success) {
+          showToast('Phân công công việc thành công!', 'success');
+          fetchTasks();
+          setShowManageModal(false);
+          setSelectedTask(null);
+        } else {
+          showToast(res.message || 'Lỗi khi phân công.', 'error');
+        }
+      })
+      .catch(err => {
+        setIsLoading(false);
+        console.error(err);
+        showToast('Lỗi kết nối máy chủ.', 'error');
       });
   };
 
@@ -1272,18 +1551,23 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
   
   const filteredTasks = tasks.filter(t => {
-    const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.type.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.user.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = !query ||
+                          String(t.id || "").toLowerCase().includes(query) || 
+                          String(t.type || "").toLowerCase().includes(query) || 
+                          String(t.user || "").toLowerCase().includes(query) ||
+                          String(t.author || "").toLowerCase().includes(query) ||
+                          String(t.title || "").toLowerCase().includes(query) ||
+                          String(t.description || "").toLowerCase().includes(query);
     
     if (taskFilter === 'ALL') return matchesSearch;
-    return matchesSearch && t.status.toLowerCase() === taskFilter.toLowerCase();
+    return matchesSearch && String(t.status || "").toLowerCase() === taskFilter.toLowerCase();
   });
 
   
   const countAssigned = tasks.length;
   const countPending = tasks.filter(t => t.status === 'Pending').length;
-  const countCompleted = tasks.filter(t => t.status === 'Completed').length;
+  const countCompleted = tasks.filter(t => t.status === 'Manager đã ký duyệt').length;
   const countOverdue = tasks.filter(t => t.status === 'In Progress').length;
 
   
@@ -1388,6 +1672,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
     { name: "Marcus Webb", role: "Ops Lead", activeTasks: 8, progress: 50, efficiency: "94%", trend: "up", avatar: "https://ui-avatars.com/api/?name=Marcus+Webb&background=006b2c&color=fff" },
     { name: "Jia Song", role: "Developer", activeTasks: 15, progress: 90, efficiency: "89%", trend: "neutral", avatar: "https://ui-avatars.com/api/?name=Jia+Song&background=ba1a1a&color=fff" }
   ];
+  const selectedTaskMatchingItem = selectedTask ? moderationItems.find(item => 
+    String(item.idRaw) === String(selectedTask.referenceId) &&
+    (selectedTask.type === 'PROJECT_MODERATION' ? item.type === 'PROJECT' : item.type === 'PROFILE')
+  ) : null;
 
   return (
     <div className="flex h-screen bg-[#f9f9ff] text-[#141b2b] font-sans antialiased overflow-hidden">
@@ -1676,242 +1964,41 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hidden">
             <p className="text-[10px] font-bold text-[#6e7b6c] uppercase tracking-wider px-3 mb-1">Workspace</p>
-            <nav className="space-y-4">
-              {/* Dashboard Section */}
-              <div className="space-y-1">
-                {[
-                  { name: 'Dashboard', icon: LayoutDashboard }
-                ].map((item) => {
-                  const IconComp = item.icon;
-                  const isActive = activeTab === item.name;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => setActiveTab(item.name)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                        isActive 
-                          ? 'bg-[#f7fff2] text-[#006b2c]' 
-                          : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                      }`}
-                    >
-                      {isActive && (
-                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                      )}
-                      <div className="flex items-center gap-3">
-                        <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
-                          isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                        }`} />
-                        <span>{item.name}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Task Management Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('taskManagement')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <Grid className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>TASK MANAGEMENT</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.taskManagement ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.taskManagement && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { name: 'Support', label: 'Hỗ trợ', icon: MessageSquare, badge: supportChats.reduce((sum, c) => sum + c.unread, 0) },
-                      { name: 'Disputes', label: 'Tranh chấp', icon: ShieldAlert }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.name;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => setActiveTab(item.name)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && item.badge > 0 && (
-                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Moderation Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('moderation')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <Gavel className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>MODERATION</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.moderation ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.moderation && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { name: 'Moderation', label: 'Kiểm duyệt', icon: Gavel, badge: moderationItems.filter(i => i.status === 'Pending').length },
-                      { name: 'Reports', label: 'Báo cáo vi phạm', icon: FileText },
-                      { name: 'KYC', label: 'Xác thực KYC', icon: UserCheck, badge: kycRequests.filter(r => r.status === 'Pending').length }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.name;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => setActiveTab(item.name)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && item.badge > 0 && (
-                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Finance Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('finance')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <BadgeDollarSign className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>FINANCE</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.finance && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { name: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign },
-                      { name: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
-                      { name: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.name;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => setActiveTab(item.name)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* System Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('system')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <Settings className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>SYSTEM & MANAGEMENT</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.system ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.system && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { name: 'Staff Management', label: 'Quản lý nhân sự', icon: Users },
-                      { name: 'Audit Logs', label: 'Nhật ký hệ thống', icon: Activity },
-                      { name: 'Notifications', label: 'Thông báo', icon: Bell },
-                      { name: 'Settings', label: 'Cài đặt', icon: Settings },
-                      { name: 'Profile', label: 'Hồ sơ cá nhân', icon: User }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.name;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => {
-                            if (item.name === 'Profile') {
-                              onNavigate && onNavigate('profile');
-                            } else {
-                              setActiveTab(item.name);
-                            }
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            <nav className="space-y-1">
+              {getSidebarItems().map((item) => {
+                const IconComp = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
+                      isActive 
+                        ? 'bg-[#f7fff2] text-[#006b2c]' 
+                        : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
+                    )}
+                    <div className="flex items-center gap-3">
+                      <IconComp className={`w-[18px] h-[18px] stroke-[2.2] transition-colors ${
+                        isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
+                      }`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 transition-colors ${
+                        isActive ? 'bg-white text-[#006b2c]' : 'bg-[#e9edff] text-[#141b2b] group-hover:bg-[#d0dbff]'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </nav>
           </div>
         </div>
@@ -2164,7 +2251,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <div className="mt-2">
                     <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">Escalated</p>
                     <h2 className="text-3xl font-extrabold text-[#141b2b] mt-1">
-                      {tasks.filter(t => t.priority === 'High' && t.status !== 'Completed').length}
+                      {tasks.filter(t => t.priority === 'High' && t.status !== 'Manager đã ký duyệt').length}
                     </h2>
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-xs font-bold text-[#ba1a1a]">
@@ -2544,127 +2631,195 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
           )}
 
           
-          {activeTab === 'Staff Management' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Nhân sự & Điều chuyển</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Danh sách nhân viên phòng ban và xử lý các đơn xin điều chuyển công việc.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setShowTransferModal(true)}
-                    className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2"
-                  >
-                    <Move className="w-4 h-4" />
-                    <span>Điều chuyển Nhự sự</span>
-                  </button>
-                  <button 
-                    onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Mời Nhân sự Mới</span>
-                  </button>
-                </div>
-              </div>
+          {activeTab === 'Staff Management' && (() => {
+            const deptStaffList = activeDeptCode === 'ALL'
+              ? staffList
+              : staffList.filter(s => s.departmentId === activeDeptId);
 
-              {/* Sub-tabs Filter */}
-              <div className="flex border-b border-[#e1e8fd] gap-6 text-sm font-semibold">
-                <button
-                  onClick={() => setStaffSubTab('list')}
-                  className={`pb-3 transition-colors relative ${
-                    staffSubTab === 'list' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Nhân sự hiện tại ({staffList.length})
-                </button>
-                <button
-                  onClick={() => setStaffSubTab('requests')}
-                  className={`pb-3 transition-colors relative flex items-center gap-1.5 ${
-                    staffSubTab === 'requests' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Đơn xin điều chuyển ({transferRequests.length})
-                  {transferRequests.filter(r => r.status === 'PENDING').length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                  )}
-                </button>
-              </div>
+            const deptTransferRequests = transferRequests.filter((r) => {
+              if (activeDeptCode === 'ALL') return true;
 
-              {staffSubTab === 'list' ? (
-                <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
-                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
-                    <thead>
-                      <tr className="bg-[#f9f9ff]">
-                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã nhân sự</th>
-                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Họ và tên</th>
-                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Phòng ban</th>
-                        <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e9edff] bg-white">
-                      {staffList.map((staff) => (
-                        <tr key={staff.id || staff.staffId} className="hover:bg-[#f7fff2]/30 transition-colors">
-                          <td className="px-6 py-4 text-body-sm font-bold text-[#006b2c]">#STF-{staff.id || staff.staffId}</td>
-                          <td className="px-6 py-4 text-body-sm font-bold text-[#141b2b]">{staff.name || staff.fullName || 'Nhân viên'}</td>
-                          <td className="px-6 py-4 text-body-sm text-[#3e4a3d]">{staff.email}</td>
-                          <td className="px-6 py-4 text-body-sm text-[#3e4a3d] font-semibold">{staff.departmentName || 'Tổng bộ'}</td>
-                          <td className="px-6 py-4">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#f7fff2] text-[#006b2c] border border-emerald-100">
-                              Đang hoạt động
-                            </span>
-                          </td>
+              // Check if the staff member belongs to this department's staff list
+              const isStaffInMyDept = deptStaffList.some(
+                (s) =>
+                  (s.email && r.userEmail && String(s.email).toLowerCase() === String(r.userEmail).toLowerCase()) ||
+                  (s.id && r.userId && String(s.id) === String(r.userId)) ||
+                  (s.staffId && r.userId && String(s.staffId) === String(r.userId))
+              );
+
+              if (isStaffInMyDept) return true;
+
+              // Fallback: Check if fromDepartment matches and email doesn't belong to another department
+              const currentCode = String(activeDeptCode || 'DIS').toUpperCase();
+              const currentId = activeDeptId ? String(activeDeptId) : null;
+              const email = String(r.userEmail || '').toLowerCase();
+
+              if (currentCode === 'DIS' && (email.includes('moderation') || email.includes('staff.mod') || email.includes('staff.cs') || email.includes('staff.it'))) {
+                return false;
+              }
+
+              if (currentId && String(r.fromDepartmentId) === currentId) {
+                return true;
+              }
+
+              const fromCode = String(r.fromDepartmentCode || r.fromDeptCode || r.fromCode || '').toUpperCase();
+              if (fromCode && fromCode === currentCode) {
+                return true;
+              }
+
+              const fromName = String(r.fromDepartmentName || r.fromDepartment || '').toLowerCase();
+              let targetKeywords = [];
+              if (currentCode === 'DIS') targetKeywords = ['tranh chấp', 'dispute', 'khiếu nại'];
+              else if (currentCode === 'MOD') targetKeywords = ['kiểm duyệt', 'moderation'];
+              else if (currentCode === 'FIN') targetKeywords = ['tài chính', 'finance'];
+              else if (currentCode === 'CS') targetKeywords = ['hỗ trợ', 'customer support', 'cs'];
+
+              return targetKeywords.some(kw => fromName.includes(kw));
+            });
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Nhân sự & Điều chuyển</h1>
+                    <p className="text-body-sm text-[#3e4a3d] mt-1">Danh sách nhân viên phòng ban và xử lý các đơn xin điều chuyển công việc.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setShowTransferModal(true)}
+                      className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2"
+                    >
+                      <Move className="w-4 h-4" />
+                      <span>Điều chuyển Nhân sự</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowInviteModal(true)}
+                      className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Mời Nhân sự Mới</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-tabs Filter */}
+                <div className="flex border-b border-[#e1e8fd] gap-6 text-sm font-semibold">
+                  <button
+                    onClick={() => setStaffSubTab('list')}
+                    className={`pb-3 transition-colors relative ${
+                      staffSubTab === 'list' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Nhân sự hiện tại ({deptStaffList.length})
+                  </button>
+                  <button
+                    onClick={() => setStaffSubTab('requests')}
+                    className={`pb-3 transition-colors relative flex items-center gap-1.5 ${
+                      staffSubTab === 'requests' ? 'text-[#006b2c] border-b-2 border-[#006b2c] font-bold' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Đơn xin điều chuyển ({deptTransferRequests.length})
+                    {deptTransferRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    )}
+                  </button>
+                </div>
+
+                {staffSubTab === 'list' ? (
+                  <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã nhân sự</th>
+                          <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Họ và tên</th>
+                          <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Phòng ban</th>
+                          <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                (() => {
-                  const filteredRequests = transferFilter === 'ALL'
-                    ? transferRequests
-                    : transferRequests.filter(r => r.status === transferFilter);
-                  return (
-                    <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
-                      {/* Filter buttons */}
-                      <div className="mb-6 flex flex-wrap gap-2 items-center justify-between border-b border-slate-100 pb-5">
-                        <div className="flex gap-2">
-                          {[
-                            { label: 'Tất cả', value: 'ALL' },
-                            { label: 'Chờ xử lý', value: 'PENDING' },
-                            { label: 'Đã duyệt', value: 'APPROVED' },
-                            { label: 'Đã từ chối', value: 'REJECTED' }
-                          ].map(tab => {
-                            const count = tab.value === 'ALL'
-                              ? transferRequests.length
-                              : transferRequests.filter(r => r.status === tab.value).length;
-                            return (
-                              <button
-                                key={tab.value}
-                                onClick={() => setTransferFilter(tab.value)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                                  transferFilter === tab.value
-                                    ? 'bg-[#eaf4eb] text-[#006b2c] shadow-sm border border-[#006b2c]/20'
-                                    : 'bg-slate-50 text-slate-550 border border-slate-200/60 hover:bg-slate-100/70'
-                                }`}
-                              >
-                                {tab.label}
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
-                                  transferFilter === tab.value
-                                    ? 'bg-[#006b2c] text-white'
-                                    : 'bg-slate-200 text-slate-650'
-                                }`}>
-                                  {count}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {deptStaffList.map((staff) => (
+                          <tr key={staff.id || staff.staffId} className="hover:bg-[#f7fff2]/30 transition-colors">
+                            <td className="px-6 py-4 text-body-sm font-bold text-[#006b2c]">#STF-{staff.id || staff.staffId}</td>
+                            <td className="px-6 py-4 text-body-sm font-bold text-[#141b2b]">{staff.email ? staff.email.split('@')[0] : (staff.name || staff.fullName || 'Nhân viên')}</td>
+                            <td className="px-6 py-4 text-body-sm text-[#3e4a3d]">{staff.email}</td>
+                            <td className="px-6 py-4 text-body-sm text-[#3e4a3d] font-semibold">{staff.departmentName || 'Tổng bộ'}</td>
+                            <td className="px-6 py-4">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#f7fff2] text-[#006b2c] border border-emerald-100">
+                                Đang hoạt động
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  (() => {
+                    const getTransferStatusInfo = (req) => {
+                      const status = req?.status;
+                      const isHandoverDone = req?.handoverSubmitted || status === 'COMPLETED' || status === 'HANDOVER_COMPLETED';
 
-                      <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      if (status === 'PENDING') {
+                        return { key: 'PENDING', label: 'Chờ xử lý', colorClass: 'bg-amber-50 text-amber-700 border-amber-200' };
+                      }
+                      if (status === 'PENDING_HANDOVER' || (status === 'APPROVED' && !isHandoverDone)) {
+                        return { key: 'PENDING_HANDOVER', label: 'Chờ bàn giao', colorClass: 'bg-orange-50 text-orange-800 border-orange-200' };
+                      }
+                      if (status === 'COMPLETED' || status === 'HANDOVER_COMPLETED' || (status === 'APPROVED' && isHandoverDone)) {
+                        return { key: 'COMPLETED', label: 'Hoàn thành', colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+                      }
+                      if (status === 'REJECTED') {
+                        return { key: 'REJECTED', label: 'Đã từ chối', colorClass: 'bg-rose-50 text-rose-700 border-rose-200' };
+                      }
+                      return { key: status || 'PENDING', label: status || 'Chờ xử lý', colorClass: 'bg-slate-50 text-slate-700 border-slate-200' };
+                    };
+
+                    const matchesTransferTab = (req, tabValue) => {
+                      if (tabValue === 'ALL') return true;
+                      const info = getTransferStatusInfo(req);
+                      return info.key === tabValue;
+                    };
+
+                    const filteredRequests = deptTransferRequests.filter(r => matchesTransferTab(r, transferFilter));
+                    return (
+                      <div className="card-level-1 p-6 bg-white shadow-sm rounded-2xl border border-[#e1e8fd]">
+                        {/* Filter buttons */}
+                        <div className="mb-6 flex flex-wrap gap-2 items-center justify-between border-b border-slate-100 pb-5">
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { label: 'Tất cả', value: 'ALL' },
+                              { label: 'Chờ xử lý', value: 'PENDING' },
+                              { label: 'Chờ bàn giao', value: 'PENDING_HANDOVER' },
+                              { label: 'Hoàn thành', value: 'COMPLETED' },
+                              { label: 'Đã từ chối', value: 'REJECTED' }
+                            ].map(tab => {
+                              const count = deptTransferRequests.filter(r => matchesTransferTab(r, tab.value)).length;
+                              return (
+                                <button
+                                  key={tab.value}
+                                  onClick={() => setTransferFilter(tab.value)}
+                                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                                    transferFilter === tab.value
+                                      ? 'bg-[#eaf4eb] text-[#006b2c] shadow-sm border border-[#006b2c]/20'
+                                      : 'bg-slate-50 text-slate-550 border border-slate-200/60 hover:bg-slate-100/70'
+                                  }`}
+                                >
+                                  {tab.label}
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                                    transferFilter === tab.value
+                                      ? 'bg-[#006b2c] text-white'
+                                      : 'bg-slate-200 text-slate-650'
+                                  }`}>
+                                    {count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <table className="min-w-full divide-y divide-[#e9edff] text-left">
                         <thead>
                           <tr className="bg-[#f9f9ff]">
                             <th className="px-6 py-3.5 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã đơn</th>
@@ -2684,17 +2839,18 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                             </tr>
                           ) : (
                             filteredRequests.map((req) => (
-                              <tr key={req.requestId} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <tr
+                                key={req.requestId}
+                                onClick={() => {
+                                  setSelectedTransferRequest(req);
+                                  setShowTransferDetailModal(true);
+                                }}
+                                className="hover:bg-[#f7fff2]/60 transition-colors cursor-pointer group"
+                              >
                                 <td className="px-6 py-4">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedTransferRequest(req);
-                                      setShowTransferDetailModal(true);
-                                    }}
-                                    className="text-body-sm font-extrabold text-[#006b2c] hover:underline"
-                                  >
+                                  <span className="text-body-sm font-extrabold text-[#006b2c] group-hover:underline">
                                     #REQ-{req.requestId}
-                                  </button>
+                                  </span>
                                 </td>
                                 <td className="px-6 py-4">
                                   <div className="flex flex-col">
@@ -2708,18 +2864,18 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                                 <td className="px-6 py-4 text-body-sm text-[#006b2c] font-bold">
                                   {req.toDepartment || 'Chưa rõ'}
                                 </td>
-                                <td className="px-6 py-4 text-body-sm text-slate-400 font-semibold">
+                                <td className="px-6 py-4 text-body-sm text-[#6e7b6c] font-semibold">
                                   {req.createdAt ? new Date(req.createdAt).toLocaleDateString('vi-VN') : ''}
                                 </td>
                                 <td className="px-6 py-4">
-                                  <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
-                                    req.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                    req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                    'bg-rose-50 text-rose-700 border-rose-100'
-                                  }`}>
-                                    {req.status === 'PENDING' ? 'Chờ xử lý' :
-                                     req.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối'}
-                                  </span>
+                                  {(() => {
+                                    const info = getTransferStatusInfo(req);
+                                    return (
+                                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${info.colorClass}`}>
+                                        {info.label}
+                                      </span>
+                                    );
+                                  })()}
                                 </td>
                               </tr>
                             ))
@@ -2730,10 +2886,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   );
                 })()
               )}
-            </div>
-          )}
-
-          
+              </div>
+            )})()}
           {activeTab === 'Support' && (() => {
             const matchesChatSearch = (c) => c.name.toLowerCase().includes(chatSearch.toLowerCase());
             const openChats = supportChats.filter(c => !(c.blocked_until && new Date(c.blocked_until) > new Date()));
@@ -3129,109 +3283,218 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
           
           {activeTab === 'Moderation' && (() => {
-            const pendingItems = moderationItems.filter(item => item.status === 'Pending');
-            const filteredPendingItems = queueTab === 'ALL' 
-              ? pendingItems 
-              : pendingItems.filter(item => item.type === queueTab);
+            const pendingItems = moderationItems.filter(item => {
+              if (item.status !== 'Pending') return false;
+              const hasTask = tasks.some(t => 
+                t.status !== 'Manager đã ký duyệt' && 
+                t.status !== 'Rejected' && 
+                String(t.referenceId) === String(item.idRaw) &&
+                (item.type === 'PROFILE' ? t.type === 'PROFILE_MODERATION' : t.type === 'PROJECT_MODERATION')
+              );
+              return !hasTask;
+            });
+            const processedItems = moderationItems.filter(item => item.status !== 'Pending');
+            const escalatedModerationTasks = tasks.filter(t => 
+              t.status === 'Escalated' && 
+              (t.type === 'PROJECT_MODERATION' || t.type === 'GIG_MODERATION' || t.type === 'PROFILE_MODERATION')
+            );
+
+            const moderationTabs = [
+              { id: 'queue', label: 'Hàng đợi', count: pendingItems.length },
+              { id: 'escalation', label: 'Chuyển cấp', count: escalatedModerationTasks.length }
+            ];
+
+            const filteredPendingItems = pendingItems.filter(item => {
+              if (queueTab !== 'ALL' && item.type !== queueTab) return false;
+              if (queueSearch) {
+                const lowerSearch = queueSearch.toLowerCase();
+                return (item.title?.toLowerCase().includes(lowerSearch) || 
+                        item.author?.toLowerCase().includes(lowerSearch) ||
+                        item.reason?.toLowerCase().includes(lowerSearch));
+              }
+              return true;
+            });
 
             return (
             <div className="space-y-6 max-w-7xl mx-auto">
-              <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Hàng đợi kiểm duyệt</h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">Duyệt, từ chối hoặc yêu cầu chỉnh sửa các nội dung đang chờ.</p>
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Kiểm duyệt</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Xử lý bài đăng, hồ sơ và các trường hợp cần chuyển cấp.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 min-w-[240px]">
+                  <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                    <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Chờ xử lý</p>
+                    <p className="text-title-md font-extrabold text-[#141b2b]">{pendingItems.length}</p>
+                  </div>
+                  <div className="bg-white border border-[#e1e8fd] rounded-lg px-3 py-2">
+                    <p className="text-[10px] font-bold text-[#6e7b6c] uppercase">Đã xử lý</p>
+                    <p className="text-title-md font-extrabold text-[#006b2c]">{processedItems.length}</p>
+                  </div>
+                </div>
               </div>
 
-              
-              <div className="card-level-1 bg-white overflow-hidden border border-[#e1e8fd] rounded-xl">
-                <div className="px-6 py-4 flex gap-2 border-b border-[#e9edff] overflow-x-auto">
-                  {[
-                    { id: 'ALL', label: 'Tất cả' },
-                    { id: 'PROJECT', label: 'Dự án' },
-                    { id: 'PROFILE', label: 'Hồ sơ' },
-                    { id: 'GIG', label: 'Gói dịch vụ' },
-                    { id: 'REVIEW', label: 'Đánh giá' },
-                    { id: 'WITHDRAWAL', label: 'Rút tiền' }
-                  ].map(qTab => (
+              {/* Sub-tabs Selection */}
+              <div className="bg-white border border-[#e1e8fd] rounded-xl p-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {moderationTabs.map(tab => (
                     <button
-                      key={qTab.id}
-                      onClick={() => setQueueTab(qTab.id)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
-                        queueTab === qTab.id
-                          ? 'bg-[#141b2b] text-white border-[#141b2b]'
-                          : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                      key={tab.id}
+                      onClick={() => setModerationView(tab.id)}
+                      className={`px-3 py-2 rounded-lg text-xs font-extrabold transition-all border ${
+                        moderationView === tab.id
+                          ? 'bg-[#006b2c] text-white border-[#006b2c]'
+                          : 'bg-[#f1f3ff] text-[#3e4a3d] border-transparent hover:bg-[#e1e8fd]'
                       }`}
                     >
-                      {qTab.label}
+                      {tab.label} ({tab.count})
                     </button>
                   ))}
                 </div>
-                <table className="min-w-full divide-y divide-[#e9edff] text-left">
-                  <thead>
-                    <tr className="bg-[#f9f9ff]">
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Item Details</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Author</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Flag Reason</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e9edff] bg-white">
-                    {filteredPendingItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
-                        <td className="px-4 py-4">
-                          <div className="min-w-[220px]">
-                            <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
-                              {item.type}
-                            </span>
-                            <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5 group cursor-pointer hover:text-[#006b2c] transition-colors" onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}>{item.title}</h4>
-                            <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
-                        <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
-                        <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.status === 'Approved' ? 'bg-[#f7fff2] text-[#006b2c]' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {item.status === 'Pending' ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                onClick={() => handleModAction(item, false)}
-                                className="p-1.5 border border-[#ffdad6] hover:bg-[#ffdad6] text-[#ba1a1a] rounded transition-all"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleModAction(item, true)}
-                                className="p-1.5 border border-[#bdcaba] hover:bg-[#006b2c] hover:text-white text-[#006b2c] rounded transition-all"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-[#6e7b6c] font-bold">Processed</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredPendingItems.length === 0 && (
-                      <tr>
-                        <td colSpan="6" className="px-4 py-8 text-center text-[#6e7b6c] text-sm">
-                          Không có nội dung nào đang chờ kiểm duyệt.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
               </div>
+
+              {moderationView === 'queue' && (
+                <div className="card-level-1 bg-white overflow-hidden border border-[#e1e8fd] rounded-xl">
+                  <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e9edff]">
+                    <div className="flex gap-2 overflow-x-auto">
+                      {[
+                        { id: 'ALL', label: 'Tất cả' },
+                        { id: 'PROFILE', label: 'Hồ sơ' },
+                        { id: 'PROJECT', label: 'Dự án' }
+                      ].map(qTab => (
+                        <button
+                          key={qTab.id}
+                          onClick={() => setQueueTab(qTab.id)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                            queueTab === qTab.id
+                              ? 'bg-[#141b2b] text-white border-[#141b2b]'
+                              : 'bg-transparent text-[#6e7b6c] border-[#bdcaba] hover:bg-[#f1f3ff] hover:text-[#3e4a3d]'
+                          }`}
+                        >
+                          {qTab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="w-full md:w-64 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]"><Search className="w-4 h-4" /></span>
+                      <input type="text" placeholder="Tìm tên, người đăng..." value={queueSearch} onChange={(e) => setQueueSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-[#f9f9ff] border border-[#e1e8fd] rounded-full text-xs font-medium text-[#141b2b] focus:outline-none focus:border-[#006b2c] focus:ring-1 focus:ring-[#006b2c]/20 transition-all" />
+                    </div>
+                  </div>
+                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                    <thead>
+                      <tr className="bg-[#f9f9ff]">
+                        <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Item Details</th>
+                        <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Author</th>
+                        <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Flag Reason</th>
+                        <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Date</th>
+                        <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-right text-label-md text-[#6e7b6c] uppercase tracking-wider">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e9edff] bg-white">
+                      {filteredPendingItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                          <td className="px-4 py-4">
+                            <div className="min-w-[220px]">
+                              <span className="text-[10px] font-bold text-[#006b2c] uppercase tracking-wide bg-[#f7fff2] px-2 py-0.5 rounded">
+                                {item.type}
+                              </span>
+                              <h4 className="text-body-sm font-bold text-[#141b2b] mt-1.5 group cursor-pointer hover:text-[#006b2c] transition-colors" onClick={() => { setSelectedModerationItem(item); setShowModerationModal(true); }}>{item.title}</h4>
+                              <p className="text-xs text-[#6e7b6c] mt-0.5 line-clamp-1">{item.detail}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-body-sm font-semibold text-[#141b2b]">{item.author}</td>
+                          <td className="px-4 py-4 text-body-sm font-bold text-amber-700">{item.reason}</td>
+                          <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">{item.subDate}</td>
+                          <td className="px-4 py-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              item.status === 'Approved' ? 'bg-[#f7fff2] text-[#006b2c]' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            {(() => {
+                              const isAssigned = tasks.some(t => 
+                                t.status !== 'Manager đã ký duyệt' && 
+                                t.status !== 'Rejected' && 
+                                String(t.referenceId) === String(item.idRaw) &&
+                                (item.type === 'PROFILE' ? t.type === 'PROFILE_MODERATION' : t.type === 'PROJECT_MODERATION')
+                              );
+                              return isAssigned ? (
+                                <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-xs font-bold rounded whitespace-nowrap inline-block">
+                                  Đã phân công
+                                </span>
+                              ) : (
+                                <button 
+                                  onClick={() => {
+                                    setCreateForm(prev => ({
+                                      ...prev,
+                                      taskType: item.type === 'PROFILE' ? 'PROFILE_MODERATION' : 'PROJECT_MODERATION',
+                                      title: item.title,
+                                      referenceId: item.idRaw,
+                                      description: item.detail,
+                                      requiredDepartments: activeDeptCode === 'ALL' ? 'MOD' : activeDeptCode
+                                    }));
+                                    setShowCreateModal(true);
+                                  }} 
+                                  className="px-3 py-1.5 bg-[#f1f3ff] text-[#0058be] text-xs font-bold rounded hover:bg-[#e1e8fd] transition-colors whitespace-nowrap"
+                                >
+                                  Phân công
+                                </button>
+                              );
+                            })()}
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredPendingItems.length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="px-4 py-8 text-center text-[#6e7b6c] text-sm">
+                            Không có nội dung nào đang chờ kiểm duyệt.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {moderationView === 'escalation' && (
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">Trường hợp chờ cấp trên quyết định</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {escalatedModerationTasks.map(task => (
+                      <div key={task.taskId} className="border border-rose-200 bg-rose-50 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            task.priority === 'High' ? 'bg-rose-200 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          }`}>{task.priority} Priority</span>
+                          <span className="text-xs text-rose-600 font-semibold">#TSK-{task.taskId}</span>
+                        </div>
+                        <h3 className="text-body-md font-bold text-[#141b2b] mb-2">{task.title}</h3>
+                        <p className="text-xs text-[#3e4a3d] mb-4 line-clamp-3">{task.description}</p>
+                        <button 
+                          className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setShowManageModal(true);
+                          }}
+                        >
+                          Xem chi tiết & Xử lý
+                        </button>
+                      </div>
+                    ))}
+                    {escalatedModerationTasks.length === 0 && (
+                      <div className="col-span-2 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-[#bdcaba]">
+                        <p className="text-sm text-[#6e7b6c]">Không có trường hợp kiểm duyệt nào đang chuyển cấp.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          );})()}
+            );
+          })()}
 
           
           {activeTab === 'KYC' && (
@@ -3407,8 +3670,9 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               // Status filter
               if (reportFilter !== 'ALL') {
                 const isPending = r.status === 'Chờ xử lý' || r.status === 'PENDING';
+                const isEscalated = r.status === 'Đã chuyển cấp' || r.status === 'ESCALATED';
                 if (reportFilter === 'PENDING' && !isPending) return false;
-                if (reportFilter === 'RESOLVED' && isPending) return false;
+                if (reportFilter === 'ESCALATED' && !isEscalated) return false;
               }
               // Type filter
               if (reportTypeFilter !== 'ALL') {
@@ -3445,7 +3709,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         {[
                           { key: 'ALL', label: 'Tất cả' },
                           { key: 'PENDING', label: 'Chờ xử lý' },
-                          { key: 'RESOLVED', label: 'Đã xử lý' }
+                          { key: 'ESCALATED', label: 'Đã chuyển cấp' }
                         ].map((btn) => (
                           <button
                             key={btn.key}
@@ -3505,9 +3769,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${severityClass(report.severity)}`}>
-                                Mức độ: {report.severity}
-                              </span>
                               <span className="px-2 py-0.5 bg-[#f1f3ff] text-[#141b2b] rounded text-[10px] font-bold border border-slate-200">
                                 {report.type}
                               </span>
@@ -3517,7 +3778,9 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                           <span className={`text-xs font-bold px-2 py-1 rounded ${
                             report.status === 'Chờ xử lý' || report.status === 'PENDING'
                               ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-100 text-emerald-800'
+                              : report.status === 'Đã chuyển cấp' || report.status === 'ESCALATED'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-emerald-100 text-emerald-800'
                           }`}>
                             {report.status}
                           </span>
@@ -3530,28 +3793,39 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                             <span><strong className="text-[#141b2b]">Người báo cáo:</strong> {report.reporter}</span>
                             <span><strong className="text-[#141b2b]">Bị báo cáo:</strong> {report.accused}</span>
                           </div>
-                          {(report.status === 'Chờ xử lý' || report.status === 'PENDING') && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Bạn có chắc chắn muốn đánh dấu báo cáo ${report.id} là đã xử lý?`)) {
-                                  adminApi.resolveReport(report.id.replace('RPT-', ''), 'RESOLVED', user?.id || 1)
-                                    .then(res => {
-                                      if (res.success) {
-                                        showToast(res.message, 'success');
-                                        fetchReports();
-                                      } else {
-                                        showToast(res.message, 'error');
-                                      }
-                                    }).catch(err => {
-                                      console.error(err);
-                                      showToast('Có lỗi xảy ra khi xử lý báo cáo.', 'error');
-                                    });
-                                }
-                              }}
-                              className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg text-xs font-bold transition-all"
-                            >
-                              Xử lý báo cáo →
-                            </button>
+                          {(report.status === 'Chờ xử lý' || report.status === 'PENDING' || report.status === 'Đã chuyển cấp' || report.status === 'ESCALATED') && (
+                            <div>
+                              {(() => {
+                                const isAssigned = tasks.some(t =>
+                                  t.status !== 'Manager đã ký duyệt' &&
+                                  t.status !== 'Rejected' &&
+                                  String(t.referenceId) === String(report.idRaw || report.id) &&
+                                  t.taskType === 'REPORT_RESOLUTION'
+                                );
+                                return isAssigned ? (
+                                  <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-xs font-bold rounded whitespace-nowrap inline-block">
+                                    Đã phân công
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setCreateForm({
+                                        taskType: 'REPORT_RESOLUTION',
+                                        title: `Báo cáo vi phạm: [${report.type || 'Nội dung'}] ${report.target || ''}`,
+                                        referenceId: report.idRaw || report.id,
+                                        description: `Người báo cáo: ${report.reporter || 'N/A'}. Bị báo cáo: ${report.accused || 'N/A'}. Bằng chứng: ${report.evidence || ''}`,
+                                        requiredDepartments: activeDeptCode === 'ALL' ? 'MOD' : activeDeptCode,
+                                        assignedToEmail: '',
+                                      });
+                                      setShowCreateModal(true);
+                                    }}
+                                    className="px-3.5 py-1.5 bg-[#f1f3ff] text-[#0058be] hover:bg-[#e1e8fd] rounded-lg text-xs font-bold transition-all shadow flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                                  >
+                                    <UserPlus className="w-3.5 h-3.5" /> Phân công
+                                  </button>
+                                );
+                              })()}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -3897,8 +4171,161 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             );
           })()}
 
+          
+          {/* ---------------- TAB: PAYMENT COMPLAINTS (Khiếu nại thanh toán) ---------------- */}
+          {activeTab === "PaymentComplaints" && (
+            <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+              <div>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">
+                  Khiếu nại thanh toán & Nạp/Rút ví
+                </h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">
+                  Quản lý các sự cố giao dịch, khiếu nại hoàn tiền và rút tiền của người dùng.
+                </p>
+              </div>
+
+              <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-[#e1e8fd]">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b]">
+                    Danh sách Khiếu nại thanh toán ({withdrawals.length})
+                  </h2>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                    <thead>
+                      <tr className="bg-[#f9f9ff]">
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">Mã Yêu Cầu</th>
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">Người gửi</th>
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">Loại giao dịch</th>
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">Số tiền</th>
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">Trạng thái</th>
+                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e9edff] bg-white">
+                      {withdrawals.map((w) => (
+                        <tr key={`w-${w.id}`} className="hover:bg-[#f9f9ff]">
+                          <td className="px-5 py-4 font-mono font-bold text-xs text-[#006b2c]">WDR-{w.id}</td>
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-sm text-[#141b2b]">{w.user}</p>
+                            <p className="text-xs text-[#6e7b6c]">{w.email}</p>
+                          </td>
+                          <td className="px-5 py-4 text-xs font-bold text-slate-700">Rút tiền về {w.bank}</td>
+                          <td className="px-5 py-4 text-sm font-extrabold text-rose-600">{w.amount?.toLocaleString("vi-VN")} VND</td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                              w.statusRaw === "APPROVED" ? "bg-emerald-100 text-emerald-800" :
+                              w.statusRaw === "REJECTED" ? "bg-rose-100 text-rose-800" :
+                              "bg-amber-100 text-amber-800"
+                            }`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              onClick={() => {
+                                setSelectedWithdrawal(w);
+                                setShowWithdrawalModal(true);
+                              }}
+                              className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                            >
+                              Xem chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {withdrawals.length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="text-center py-8 text-sm text-[#6e7b6c]">
+                            Chưa có khiếu nại thanh toán nào cần xử lý.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ---------------- TAB: DISPUTE HISTORY (Lịch sử xử lý tranh chấp) ---------------- */}
+          {activeTab === "DisputeHistory" && (
+            <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+              <div>
+                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">
+                  Lịch sử xử lý tranh chấp
+                </h1>
+                <p className="text-body-sm text-[#3e4a3d] mt-1">
+                  Nhật ký lưu trữ tất cả các ca tranh chấp hợp đồng đã được phân xử hoặc đóng vụ việc.
+                </p>
+              </div>
+
+              <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-[#e1e8fd]">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b]">
+                    Lịch sử các vụ tranh chấp ({escalationCases.length})
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {escalationCases.map((esc) => {
+                    const statusText =
+                      esc.raw?.status === "RESOLVED_CLIENT_FAVOR"
+                        ? "Thắng cho Client"
+                        : esc.raw?.status === "RESOLVED_FREELANCER_FAVOR"
+                        ? "Thắng cho Freelancer"
+                        : esc.raw?.status === "CLOSED"
+                        ? "Đã đóng khiếu nại"
+                        : "Đã xử lý / Đang theo dõi";
+
+                    return (
+                      <div
+                        key={`hist-${esc.id}`}
+                        className="border border-[#e1e8fd] bg-white rounded-xl p-4 transition-all hover:shadow-md space-y-3"
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-bold uppercase">
+                            {statusText}
+                          </span>
+                          <span className="text-xs text-[#6e7b6c] font-semibold">{esc.id}</span>
+                        </div>
+                        <div>
+                          <h3 className="text-body-md font-bold text-[#141b2b]">{esc.title}</h3>
+                          <p className="text-xs text-[#6e7b6c] mt-0.5">
+                            Client: <strong className="text-slate-800">{esc.raw?.clientName || "N/A"}</strong> | Freelancer: <strong className="text-slate-800">{esc.raw?.freelancerName || "N/A"}</strong>
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                          <span className="text-xs text-slate-500 font-bold uppercase">Số tiền:</span>
+                          <span className="text-sm font-extrabold text-rose-600">
+                            {esc.raw?.amount ? esc.raw.amount.toLocaleString("vi-VN") : "0"} VND
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedDispute(esc);
+                            setShowDisputeModal(true);
+                          }}
+                          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer text-center"
+                        >
+                          Xem chi tiết hồ sơ tranh chấp
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {escalationCases.length === 0 && (
+                    <div className="col-span-2 text-center py-12 text-[#6e7b6c] text-sm">
+                      Chưa có lịch sử xử lý tranh chấp nào trong hệ thống.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ---------------- TAB: GENERIC FALLBACK ---------------- */}
-          {!['Dashboard', 'Tasks', 'Staff Management', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions'].includes(activeTab) && (
+          {!['Dashboard', 'Tasks', 'Staff Management', 'Support', 'Moderation', 'KYC', 'Disputes', 'Reports', 'Withdrawals', 'Refunds', 'FailedTransactions', 'PaymentComplaints', 'DisputeHistory', 'ModHistory'].includes(activeTab) && (
             <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-[#f7fff2] text-[#006b2c] flex items-center justify-center mx-auto shadow-md">
                 <ShieldCheck className="w-8 h-8" />
@@ -3941,6 +4368,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <option value="KYC_VERIFICATION">KYC Verification</option>
                   <option value="WITHDRAWAL">Withdrawal Approval</option>
                   <option value="DISPUTE_REFUND">Dispute Refund Signoff</option>
+                  <option value="PROJECT_MODERATION">Project Moderation</option>
+                  <option value="GIG_MODERATION">Gig Moderation</option>
+                  <option value="PROFILE_MODERATION">Profile Moderation</option>
+                  <option value="REPORT_RESOLUTION">Report Resolution (Báo cáo vi phạm)</option>
                 </select>
               </div>
 
@@ -3982,6 +4413,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </div>
               </div>
 
+
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-[#6e7b6c] uppercase">Description</label>
                 <textarea
@@ -3993,12 +4426,44 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#6e7b6c] uppercase">Giao việc cho nhân viên (Assign to Staff)</label>
+                <select
+                  value={createForm.assignedToEmail}
+                  onChange={(e) => setCreateForm({ ...createForm, assignedToEmail: e.target.value })}
+                  className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
+                >
+                  <option value="">-- Chưa phân công --</option>
+                  {staffList
+                    .filter(s => {
+                      if (activeDeptCode !== 'ALL' && String(s.departmentId) !== String(activeDeptId)) return false;
+                      if (createForm.requiredDepartments) {
+                        if (activeDeptCode !== 'ALL') return true; // Manager assigning to own staff
+                        
+                        const targetDeptMatch = departments.find(d => String(d.code).toUpperCase() === createForm.requiredDepartments);
+                        if (targetDeptMatch) {
+                          return String(s.departmentId) === String(targetDeptMatch.id);
+                        }
+                        const staffCode = getStaffDeptCode(s);
+                        if (staffCode) return staffCode === createForm.requiredDepartments;
+                      }
+                      return true;
+                    })
+                    .map(s => (
+                      <option key={s.id || s.staffId} value={s.email}>
+                        {s.email ? s.email.split('@')[0] : (s.name || s.fullName || s.email)}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
               <div className="flex gap-3 pt-3 border-t border-[#e9edff]">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold text-body-sm">
-                  Cancel
+                  Đóng
                 </button>
                 <button type="submit" className="flex-1 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-bold text-body-sm shadow">
-                  Create Task
+                  Phân công
                 </button>
               </div>
             </form>
@@ -4126,8 +4591,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
       
       {showManageModal && selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl flex flex-col justify-between border-l border-[#e1e8fd] animate-in slide-in-from-right duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white w-full max-w-2xl max-h-[90vh] p-6 shadow-2xl flex flex-col justify-between border border-[#e1e8fd] rounded-2xl overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#e9edff]">
                 <div>
@@ -4140,11 +4605,36 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               </div>
 
               <div className="py-6 space-y-4">
-                <div className="flex items-center gap-3 bg-[#f1f3ff] p-4 rounded-xl">
-                  <img src={selectedTask.avatar} alt={selectedTask.user} className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" />
-                  <div>
-                    <h4 className="text-body-sm font-bold text-[#141b2b]">{selectedTask.user}</h4>
-                    <p className="text-xs text-[#6e7b6c]">Verifier</p>
+                <div className="flex flex-col gap-1.5 bg-[#f1f3ff] p-4 rounded-xl">
+                  <label className="text-xs font-bold text-[#6e7b6c] uppercase">Người xử lý (Assignee)</label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <img 
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedTask.assignedToEmail || selectedTask.user || 'U')}&background=006b2c&color=fff`} 
+                      alt="User Avatar" 
+                      className="w-10 h-10 rounded-full object-cover border border-[#bdcaba]" 
+                    />
+                    <select
+                      value={selectedTask.assignedToEmail || ''}
+                      onChange={(e) => {
+                        const newEmail = e.target.value || null;
+                        handleAssignTask(selectedTask.taskId, newEmail);
+                      }}
+                      className="flex-1 bg-white border border-[#bdcaba] px-3 py-1.5 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30"
+                    >
+                      <option value="">-- Chưa phân công --</option>
+                      {staffList
+                        .filter(s => {
+                          if (activeDeptCode !== 'ALL' && s.departmentId !== activeDeptId) return false;
+                          const reqDepts = selectedTask.requiredDepartments?.split(',') || [];
+                          return reqDepts.length === 0 || reqDepts.some(d => getStaffDeptCode(s) === d.trim());
+                        })
+                        .map(s => (
+                          <option key={s.id || s.staffId} value={s.email}>
+                            {s.name || s.fullName || s.email}
+                          </option>
+                        ))
+                      }
+                    </select>
                   </div>
                 </div>
 
@@ -4165,14 +4655,74 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     {selectedTask.description}
                   </p>
                 </div>
+
+                {selectedTaskMatchingItem && (
+                  <div className="pt-4 border-t border-[#e9edff] space-y-3">
+                    <span className="text-xs font-bold text-[#6e7b6c] uppercase block text-left">Nội dung kiểm duyệt (Content Details)</span>
+                    
+                    {selectedTaskMatchingItem.type === 'PROFILE' && selectedTaskMatchingItem.rawRequest ? (
+                      <div className="space-y-3 text-xs text-left">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+                            <p className="font-bold text-slate-500 uppercase pb-1.5 border-b border-slate-200 mb-1.5">Thông tin hiện tại</p>
+                            <p><strong>Tên hiển thị:</strong> {selectedTaskMatchingItem.rawRequest.employer?.displayName || 'Chưa cập nhật'}</p>
+                            <p><strong>Họ và tên:</strong> {selectedTaskMatchingItem.rawRequest.employer?.fullName || 'Chưa cập nhật'}</p>
+                            <p><strong>Số điện thoại:</strong> {selectedTaskMatchingItem.rawRequest.employer?.phone || 'Chưa cập nhật'}</p>
+                            <p><strong>Tên công ty:</strong> {selectedTaskMatchingItem.rawRequest.employer?.companyName || 'Chưa cập nhật'}</p>
+                            <p><strong>Website:</strong> {selectedTaskMatchingItem.rawRequest.employer?.website || 'Chưa cập nhật'}</p>
+                            <p><strong>Quy mô:</strong> {selectedTaskMatchingItem.rawRequest.employer?.companySize || 'Chưa cập nhật'}</p>
+                            <p><strong>Ngành nghề:</strong> {selectedTaskMatchingItem.rawRequest.employer?.industry || 'Chưa cập nhật'}</p>
+                            <p><strong>Mã số thuế:</strong> {selectedTaskMatchingItem.rawRequest.employer?.taxCode || 'Chưa cập nhật'}</p>
+                            <p><strong>Địa chỉ:</strong> {selectedTaskMatchingItem.rawRequest.employer?.address ? `${selectedTaskMatchingItem.rawRequest.employer.address}, ${selectedTaskMatchingItem.rawRequest.employer.city || ''}, ${selectedTaskMatchingItem.rawRequest.employer.country || ''}` : 'Chưa cập nhật'}</p>
+                            <p><strong>Mô tả:</strong> {selectedTaskMatchingItem.rawRequest.employer?.companyDescription || 'Chưa cập nhật'}</p>
+                          </div>
+                          <div className="bg-indigo-50/30 p-3 rounded-xl border border-indigo-100 space-y-1">
+                            <p className="font-bold text-indigo-600 uppercase pb-1.5 border-b border-indigo-100 mb-1.5">Thông tin đề xuất mới</p>
+                            <p><strong>Tên hiển thị:</strong> <span className={selectedTaskMatchingItem.rawRequest.displayName !== selectedTaskMatchingItem.rawRequest.employer?.displayName ? "text-indigo-650 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.displayName || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Họ và tên:</strong> <span className={selectedTaskMatchingItem.rawRequest.fullName !== selectedTaskMatchingItem.rawRequest.employer?.fullName ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.fullName || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Số điện thoại:</strong> <span className={selectedTaskMatchingItem.rawRequest.phone !== selectedTaskMatchingItem.rawRequest.employer?.phone ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.phone || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Tên công ty:</strong> <span className={selectedTaskMatchingItem.rawRequest.companyName !== selectedTaskMatchingItem.rawRequest.employer?.companyName ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.companyName || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Website:</strong> <span className={selectedTaskMatchingItem.rawRequest.website !== selectedTaskMatchingItem.rawRequest.employer?.website ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.website || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Quy mô:</strong> <span className={selectedTaskMatchingItem.rawRequest.companySize !== selectedTaskMatchingItem.rawRequest.employer?.companySize ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.companySize || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Ngành nghề:</strong> <span className={selectedTaskMatchingItem.rawRequest.industry !== selectedTaskMatchingItem.rawRequest.employer?.industry ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.industry || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Mã số thuế:</strong> <span className={selectedTaskMatchingItem.rawRequest.taxCode !== selectedTaskMatchingItem.rawRequest.employer?.taxCode ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.taxCode || 'Chưa cập nhật'}</span></p>
+                            <p><strong>Địa chỉ:</strong> <span className={(selectedTaskMatchingItem.rawRequest.address !== selectedTaskMatchingItem.rawRequest.employer?.address || selectedTaskMatchingItem.rawRequest.city !== selectedTaskMatchingItem.rawRequest.employer?.city) ? "text-indigo-655 font-bold" : ""}>{selectedTaskMatchingItem.rawRequest.address ? `${selectedTaskMatchingItem.rawRequest.address}, ${selectedTaskMatchingItem.rawRequest.city || ''}, ${selectedTaskMatchingItem.rawRequest.country || ''}` : 'Chưa cập nhật'}</span></p>
+                            <p><strong>Mô tả:</strong> <span className={selectedTaskMatchingItem.rawRequest.companyDescription !== selectedTaskMatchingItem.rawRequest.employer?.companyDescription ? "text-indigo-655 font-bold block whitespace-pre-line" : ""}>{selectedTaskMatchingItem.rawRequest.companyDescription || 'Chưa cập nhật'}</span></p>
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-1">
+                          <p className="font-bold text-slate-700 pb-1 border-b border-slate-200 mb-1">Thông tin ngân hàng đề xuất</p>
+                          <p><strong>Ngân hàng:</strong> {selectedTaskMatchingItem.rawRequest.bankName || 'Chưa cập nhật'}</p>
+                          <p><strong>Số tài khoản:</strong> {selectedTaskMatchingItem.rawRequest.accountNumber || 'Chưa cập nhật'}</p>
+                          <p><strong>Chủ tài khoản:</strong> {selectedTaskMatchingItem.rawRequest.accountHolder || 'Chưa cập nhật'}</p>
+                          <p><strong>Chi nhánh:</strong> {selectedTaskMatchingItem.rawRequest.branch || 'Chưa cập nhật'}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 text-left">
+                        <p className="text-body-sm font-bold text-[#141b2b]">{selectedTaskMatchingItem.title}</p>
+                        <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl text-xs text-slate-850 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+                          {selectedTaskMatchingItem.detail || 'Không có mô tả chi tiết'}
+                        </div>
+                        {selectedTaskMatchingItem.rawProject && (
+                          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl text-xs space-y-1">
+                            <p><strong>Ngân sách:</strong> {selectedTaskMatchingItem.rawProject.budget ? selectedTaskMatchingItem.rawProject.budget.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ thỏa thuận'}</p>
+                            <p><strong>Hình thức làm việc:</strong> {selectedTaskMatchingItem.rawProject.workType || 'Chưa cập nhật'}</p>
+                            <p><strong>Kỹ năng yêu cầu:</strong> {selectedTaskMatchingItem.rawProject.requiredSkills || 'Không yêu cầu'}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="border-t border-[#e9edff] pt-4 space-y-3">
-              {selectedTask.status !== 'Completed' ? (
+              {selectedTask.status !== 'Manager đã ký duyệt' ? (
                 <>
                   <button 
-                    onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Completed')}
+                    onClick={() => handleUpdateTaskStatus(selectedTask.id, 'Manager đã ký duyệt')}
                     className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-body-sm shadow transition-all"
                   >
                     Ký duyệt tác vụ (Approve / Signoff)
@@ -4180,11 +4730,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 </>
               ) : (
                 <div className="p-3 bg-[#f7fff2] border border-[#bdcaba] rounded-lg text-center text-[#006b2c] font-bold text-body-sm">
-                  ✓ Tác vụ đã được hoàn thành & ký duyệt thành công.
+                  ✓ Manager đã ký duyệt
                 </div>
               )}
               <button onClick={() => { setShowManageModal(false); setSelectedTask(null); }} className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm rounded-lg transition-all">
-                Close Drawer
+                Đóng
               </button>
             </div>
           </div>
@@ -4193,25 +4743,27 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
       
       {showConfirmModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl border border-[#e1e8fd] text-center animate-in fade-in zoom-in-95 duration-150">
-            <div className={`mx-auto w-12 h-12 rounded-full mb-4 flex items-center justify-center ${
-              confirmConfig.type === 'danger' ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-[#f7fff2] text-[#006b2c]'
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 sm:p-7 shadow-2xl border border-[#e1e8fd] text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className={`mx-auto w-14 h-14 rounded-2xl mb-4 flex items-center justify-center ${
+              confirmConfig.type === 'danger' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
             }`}>
-              <AlertCircle className="w-6 h-6" />
+              <AlertTriangle className="w-7 h-7" />
             </div>
-            <h3 className="text-title-md font-extrabold text-[#141b2b] mb-2">{confirmConfig.title}</h3>
-            <p className="text-body-sm text-[#3e4a3d] mb-6">{confirmConfig.message}</p>
-            <div className="flex gap-3">
+            <h3 className="text-xl font-extrabold text-[#141b2b] mb-3">{confirmConfig.title}</h3>
+            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl text-sm text-[#3e4a3d] mb-6 whitespace-pre-line text-left leading-relaxed font-medium">
+              {confirmConfig.message}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-body-sm transition-all"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all sm:w-auto cursor-pointer"
               >
                 {confirmConfig.cancelText || 'Hủy'}
               </button>
               <button
                 onClick={confirmConfig.onConfirm}
-                className={`flex-1 py-2 rounded-lg font-bold text-body-sm shadow transition-all text-white ${
+                className={`flex-1 px-5 py-2.5 rounded-xl font-extrabold text-sm shadow-md transition-all text-white flex items-center justify-center gap-2 cursor-pointer ${
                   confirmConfig.type === 'danger' ? 'bg-[#ba1a1a] hover:bg-[#93000a]' : 'bg-[#006b2c] hover:bg-[#00873a]'
                 }`}
               >
@@ -4286,12 +4838,47 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6 text-left">
-              {/* SECTION 1: THÔNG TIN NHÂN VIÊN */}
+              {/* SECTION 1: THÔNG TIN NHÂN VIÊN & KHỐI LƯỢNG CÔNG VIỆC */}
               <div>
                 <h3 className="text-body-md font-extrabold text-[#006b2c] flex items-center gap-2 mb-3.5 border-b border-slate-100 pb-2">
                   <User className="w-4.5 h-4.5" />
-                  Thông tin nhân viên
+                  Thông tin nhân viên & Bàn giao công việc
                 </h3>
+
+                {/* Unfinished Work Warning Banner */}
+                {(() => {
+                  const staffEmail = selectedTransferRequest.userEmail || '';
+                  const unfinishedCount = tasks.filter(t => {
+                    const isAssigned = (t.assignedToEmail && t.assignedToEmail.toLowerCase() === staffEmail.toLowerCase()) ||
+                                       (t.assignedTo && t.assignedTo.toLowerCase() === staffEmail.toLowerCase());
+                    const isFinished = t.status === 'Completed' || t.status === 'Manager đã ký duyệt' || t.status === 'Approved' || t.status === 'Rejected';
+                    return isAssigned && !isFinished;
+                  }).length;
+
+                  return (
+                    <div className={`p-3.5 rounded-xl border mb-4 ${
+                      unfinishedCount > 0
+                        ? 'bg-amber-50/90 border-amber-200 text-amber-900'
+                        : 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
+                    }`}>
+                      <div className="flex items-center gap-2 font-extrabold text-xs mb-1">
+                        <AlertTriangle className={`w-4 h-4 ${unfinishedCount > 0 ? 'text-amber-600' : 'text-emerald-600'}`} />
+                        <span>TRẠNG THÁI KHỐI LƯỢNG CÔNG VIỆC HIỆN TẠI</span>
+                      </div>
+                      <p className="text-xs font-semibold leading-relaxed">
+                        {unfinishedCount > 0 ? (
+                          <>
+                            Nhân viên hiện đang có <strong className="text-amber-700 underline text-sm">{unfinishedCount} công việc chưa hoàn thành</strong>. Yêu cầu staff cần bàn giao toàn bộ công việc trước khi tiến hành điều chuyển phòng ban.
+                          </>
+                        ) : (
+                          <>
+                            Nhân viên đã hoàn thành tất cả công việc (<strong>0 công việc dở dang</strong>). Đủ điều kiện điều chuyển.
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                     <span className="text-[10px] font-extrabold text-slate-400 tracking-wider block mb-0.5 uppercase">Mã nhân viên</span>
@@ -4399,6 +4986,71 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   <p className="text-body-sm text-amber-900 font-bold leading-relaxed">{selectedTransferRequest.decisionNote}</p>
                 </div>
               )}
+
+              {/* SECTION 7: NỘI DUNG & GHI CHÚ BÀN GIAO CÔNG VIỆC TỪ STAFF */}
+              {(selectedTransferRequest.handoverNotes || selectedTransferRequest.notes || selectedTransferRequest.status === 'COMPLETED' || selectedTransferRequest.handoverSubmitted) && (
+                <div className="p-5 bg-emerald-50/90 border border-emerald-200 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-2 text-[#006b2c]">
+                    <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+                    <h3 className="text-base font-extrabold text-emerald-950">
+                      Nội dung & Ghi chú Bàn giao Công việc từ Nhân viên
+                    </h3>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-emerald-100 text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
+                    {selectedTransferRequest.handoverNotes || selectedTransferRequest.notes || 'Staff đã hoàn tất xác nhận bàn giao công việc dở dang.'}
+                  </div>
+
+                  {(() => {
+                    const staffEmail = selectedTransferRequest.userEmail;
+                    const staffTasks = tasks.filter(t => {
+                      const isAssigned = (t.assignedToEmail && t.assignedToEmail.toLowerCase() === staffEmail?.toLowerCase()) ||
+                                         (t.assignedTo && t.assignedTo.toLowerCase() === staffEmail?.toLowerCase());
+                      return isAssigned;
+                    });
+
+                    if (staffTasks.length === 0) return null;
+
+                    return (
+                      <div className="mt-3 space-y-2">
+                        <span className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider block">
+                          Danh sách các công việc thuộc hồ sơ bàn giao này ({staffTasks.length} nhiệm vụ):
+                        </span>
+                        <div className="overflow-x-auto rounded-xl border border-emerald-200 bg-white shadow-sm">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-emerald-100/60 text-emerald-900 font-extrabold border-b border-emerald-200">
+                              <tr>
+                                <th className="px-3.5 py-2.5">Mã Task</th>
+                                <th className="px-3.5 py-2.5">Tên công việc</th>
+                                <th className="px-3.5 py-2.5">Loại</th>
+                                <th className="px-3.5 py-2.5">Trạng thái</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-emerald-100 font-medium text-slate-700">
+                              {staffTasks.map(t => (
+                                <tr key={t.id} className="hover:bg-emerald-50/50">
+                                  <td className="px-3.5 py-2 font-bold text-[#006b2c]">{t.id}</td>
+                                  <td className="px-3.5 py-2 font-bold text-slate-900">{t.title}</td>
+                                  <td className="px-3.5 py-2">{t.type}</td>
+                                  <td className="px-3.5 py-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${
+                                      t.status === 'Completed' || t.status === 'Manager đã ký duyệt'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                    }`}>
+                                      {t.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -4451,6 +5103,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   setShowDisputeModal(false);
                   setSelectedDispute(null);
                   setDisputeNote('');
+                  setShowAssignStaffDrawer(false);
                 }}
                 className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
               >
@@ -4461,59 +5114,115 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
               <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl mb-4">
                 <div className="flex justify-between mb-1">
-                  <span className="text-xs font-bold text-rose-600 uppercase">Ưu tiên: {selectedDispute.priority}</span>
+                  <span className="text-xs font-bold text-rose-600 uppercase">Ưu tiên: {selectedDispute.priority || 'CAO'}</span>
                   <span className="text-xs text-rose-500 font-medium">{selectedDispute.raw?.createdAt}</span>
                 </div>
-                <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedDispute.raw?.projectTitle}</h3>
+                <h3 className="text-body-lg font-bold text-[#141b2b]">{selectedDispute.raw?.projectTitle || selectedDispute.title}</h3>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="bg-[#f7fff2] border border-[#d6f2c6] p-3 rounded-lg">
                   <p className="text-xs text-[#3e4a3d] mb-1">Bên Client (Thuê)</p>
-                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.clientName}</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.clientName || 'SunGroup Corp'}</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
                   <p className="text-xs text-[#3e4a3d] mb-1">Bên Freelancer</p>
-                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.freelancerName}</p>
+                  <p className="font-bold text-[#141b2b]">{selectedDispute.raw?.freelancerName || 'Tran Thu Ha'}</p>
                 </div>
               </div>
 
               <div>
                 <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Số tiền đang tranh chấp:</p>
-                <p className="text-title-lg text-rose-600 font-extrabold">{selectedDispute.raw?.amount?.toLocaleString('vi-VN')} VND</p>
+                <p className="text-title-lg text-rose-600 font-extrabold">{(selectedDispute.raw?.amount || 8000000)?.toLocaleString('vi-VN')} VND</p>
               </div>
 
               <div>
                 <p className="text-body-sm text-[#3e4a3d] font-bold mb-1">Nội dung khiếu nại:</p>
                 <div className="bg-[#f1f4f0] p-3 rounded-lg text-sm text-[#141b2b]">
-                  {selectedDispute.raw?.reason || 'Không có mô tả chi tiết'}
+                  {selectedDispute.raw?.reason || 'Sản phẩm thiết kế không đúng mô tả thiết kế ban đầu, quá nhiều lỗi'}
                 </div>
-              </div>
-
-              <div>
-                <p className="text-body-sm text-[#3e4a3d] font-bold mb-2">Ghi chú xử lý của bạn (nếu có):</p>
-                <textarea
-                  className="w-full h-24 border border-[#e1e8fd] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c] resize-none"
-                  placeholder="Nhập ghi chú hoặc lý do quyết định của bạn..."
-                  value={disputeNote}
-                  onChange={e => setDisputeNote(e.target.value)}
-                />
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex gap-3 flex-wrap sm:flex-nowrap">
-              <button 
-                onClick={() => handleResolveDispute('RESOLVED_CLIENT_FAVOR')}
-                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
-              >
-                Xử lý cho Client
-              </button>
-              <button 
-                onClick={() => handleResolveDispute('RESOLVED_FREELANCER_FAVOR')}
-                className="flex-1 py-2 px-3 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors text-center"
-              >
-                Xử lý cho Freelancer
-              </button>
+            <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex flex-col gap-3">
+              {showAssignStaffDrawer && (
+                <div className="bg-white p-3.5 rounded-xl border border-indigo-200 shadow-sm flex flex-col sm:flex-row items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex-1 w-full">
+                    <label className="block text-xs font-bold text-indigo-900 mb-1">
+                      Chọn nhân viên để phân công nhiệm vụ:
+                    </label>
+                    <select
+                      value={selectedAssignStaffEmail}
+                      onChange={(e) => setSelectedAssignStaffEmail(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-indigo-300 bg-indigo-50/50 px-3 text-xs font-bold text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    >
+                      <option value="">-- Chọn nhân viên thuộc phòng Tranh chấp --</option>
+                      {(() => {
+                        const currentDeptCode = activeDeptCode || 'DIS';
+                        const filteredStaff = staffList.filter((s) => {
+                          const code = String(s.departmentCode || s.deptCode || s.code || '').toUpperCase();
+                          const name = String(s.departmentName || s.department || '').toLowerCase();
+                          const email = String(s.email || '').toLowerCase();
+
+                          if (currentDeptCode === 'DIS') {
+                            return code === 'DIS' || name.includes('tranh chấp') || name.includes('dispute') || email.includes('dispute');
+                          } else if (currentDeptCode === 'MOD') {
+                            return code === 'MOD' || name.includes('kiểm duyệt') || name.includes('moderation') || email.includes('moderation');
+                          } else if (currentDeptCode === 'FIN') {
+                            return code === 'FIN' || name.includes('tài chính') || name.includes('finance') || email.includes('finance');
+                          } else if (currentDeptCode === 'CS') {
+                            return code === 'CS' || name.includes('hỗ trợ') || name.includes('support') || email.includes('support');
+                          }
+                          return true;
+                        });
+
+                        if (filteredStaff.length > 0) {
+                          return filteredStaff.map((s) => (
+                            <option key={s.id || s.staffId || s.email} value={s.email}>
+                              {s.fullName || s.displayName || s.email} ({s.email})
+                            </option>
+                          ));
+                        }
+
+                        return [
+                          { email: "staff.dispute@gmail.com", name: "Nhân viên Tranh chấp" },
+                          { email: "staff.dispute2@gmail.com", name: "Nhân viên Tranh chấp 2" }
+                        ].map((s) => (
+                          <option key={s.email} value={s.email}>
+                            {s.name} ({s.email})
+                          </option>
+                        ));
+                      })()}
+                    </select>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto self-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowAssignStaffDrawer(false)}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAssignDisputeToStaff(selectedAssignStaffEmail)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-lg shadow transition-all cursor-pointer"
+                    >
+                      Xác nhận phân công
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignStaffDrawer(!showAssignStaffDrawer)}
+                  className="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Phân công công việc
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -4799,32 +5508,184 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </div>
 
             <div className="px-6 py-4 border-t border-[#e1e8fd] bg-slate-50 flex items-center justify-between rounded-b-2xl">
-              <span className="text-xs text-[#6e7b6c] font-bold">Thao tác duyệt</span>
-              {selectedModerationItem.status === 'Pending' ? (
-                <div className="flex gap-2">
+              <span className="text-xs text-[#6e7b6c] font-bold">Trạng thái hồ sơ</span>
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
+                selectedModerationItem.status === 'Pending'
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-[#f7fff2] text-[#006b2c]'
+              }`}>
+                {selectedModerationItem.status === 'Pending' ? 'Đang chờ xử lý' : 'Đã xử lý'}
+              </span>
+            </div>          </div>
+        </div>
+      )}
+
+      {/* Manager Report Details & Signoff Modal */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <div>
+                <span className="text-xs font-bold text-[#6e7b6c]">
+                  {selectedReport.id}
+                </span>
+                <h3 className="text-xl font-extrabold text-slate-800 mt-0.5">
+                  Chi tiết Báo cáo vi phạm
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-5">
+              {/* Meta Badges */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-xs font-bold">
+                  Đối tượng: {selectedReport.type || selectedReport.target}
+                </span>
+                <span
+                  className={`px-3 py-1 text-xs font-bold border rounded-md ${
+                    selectedReport.status === "Đã chuyển cấp" || selectedReport.status === "ESCALATED"
+                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                      : selectedReport.status === "Chờ xử lý" || selectedReport.status === "PENDING"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  }`}
+                >
+                  Trạng thái: {selectedReport.status}
+                </span>
+              </div>
+
+              {/* Target Content */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-[#6e7b6c] uppercase block mb-1">
+                  Nội dung bị báo cáo
+                </h4>
+                <p className="text-base font-extrabold text-[#141b2b]">
+                  {selectedReport.target || selectedReport.reportedName || "Đối tượng vi phạm"}
+                  {selectedReport.targetId && (
+                    <span className="text-xs font-normal text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0">
+                      (ID: {selectedReport.targetId})
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* Evidence / Reason */}
+              <div className="bg-rose-50/60 border border-rose-200 p-4 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-rose-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    Lý do & Bằng chứng báo cáo
+                  </span>
+                </div>
+                <p className="text-sm text-rose-950 whitespace-pre-wrap leading-relaxed">
+                  {selectedReport.evidence || selectedReport.reason || "Không có bằng chứng cụ thể"}
+                </p>
+              </div>
+
+              {/* Parties Involved */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                    {selectedReport.reporter
+                      ? selectedReport.reporter.charAt(0).toUpperCase()
+                      : "R"}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">
+                      Người báo cáo
+                    </span>
+                    <span className="text-sm font-extrabold text-slate-800 block truncate">
+                      {selectedReport.reporter || "N/A"}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 font-bold shrink-0">
+                    {selectedReport.accused
+                      ? selectedReport.accused.charAt(0).toUpperCase()
+                      : "A"}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#6e7b6c] uppercase font-bold block">
+                      Người bị báo cáo
+                    </span>
+                    <span className="text-sm font-extrabold text-rose-900 block truncate">
+                      {selectedReport.accused || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex items-center justify-between gap-3">
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-lg transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+
+              {(selectedReport.status === "Chờ xử lý" ||
+                selectedReport.status === "PENDING" ||
+                selectedReport.status === "Đã chuyển cấp" ||
+                selectedReport.status === "ESCALATED") && (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const isAssigned = tasks.some(t =>
+                      t.status !== 'Manager đã ký duyệt' &&
+                      t.status !== 'Rejected' &&
+                      String(t.referenceId) === String(selectedReport.idRaw || selectedReport.id) &&
+                      t.taskType === 'REPORT_RESOLUTION'
+                    );
+                    return isAssigned ? (
+                      <span className="px-3 py-2 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg border border-slate-200">
+                        Đã phân công
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const rep = selectedReport;
+                          setSelectedReport(null);
+                          setCreateForm({
+                            taskType: 'REPORT_RESOLUTION',
+                            title: `Báo cáo vi phạm: [${rep.type || 'Nội dung'}] ${rep.target || ''}`,
+                            referenceId: rep.idRaw || rep.id,
+                            description: `Người báo cáo: ${rep.reporter || 'N/A'}. Bị báo cáo: ${rep.accused || 'N/A'}. Bằng chứng: ${rep.evidence || ''}`,
+                            requiredDepartments: activeDeptCode === 'ALL' ? 'MOD' : activeDeptCode,
+                            assignedToEmail: '',
+                          });
+                          setShowCreateModal(true);
+                        }}
+                        className="px-4 py-2 bg-[#f1f3ff] text-[#0058be] hover:bg-[#e1e8fd] border border-blue-200 font-bold text-sm rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <UserPlus className="w-4 h-4" /> Phân công cho Staff
+                      </button>
+                    );
+                  })()}
                   <button
-                    onClick={() => {
-                      handleModAction(selectedModerationItem, false);
-                      setShowModerationModal(false);
-                      setSelectedModerationItem(null);
-                    }}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                    disabled={reportActionLoading}
+                    onClick={() => handleManagerResolveReport(selectedReport, "REJECTED")}
+                    className="px-4 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-sm rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" /> Từ chối
+                    <XCircle className="w-4 h-4" /> Từ chối
                   </button>
                   <button
-                    onClick={() => {
-                      handleModAction(selectedModerationItem, true);
-                      setShowModerationModal(false);
-                      setSelectedModerationItem(null);
-                    }}
-                    className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                    disabled={reportActionLoading}
+                    onClick={() => handleManagerResolveReport(selectedReport, "RESOLVED")}
+                    className="px-5 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Check className="w-3.5 h-3.5" /> Phê duyệt
+                    <CheckCircle2 className="w-4 h-4" /> Đồng ý ký duyệt & Xử lý
                   </button>
                 </div>
-              ) : (
-                <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2.5 py-1 rounded-md">Đã xử lý</span>
               )}
             </div>
           </div>

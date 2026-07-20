@@ -9,8 +9,32 @@ import SuspendedOverlay from "./components/common/SuspendedOverlay.jsx";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home");
-  const [pageParams, setPageParams] = useState(null);
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("currentPage");
+      return stored || "home";
+    } catch (_) {
+      return "home";
+    }
+  });
+  const [pageParams, setPageParams] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("pageParams");
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("currentPage", currentPage);
+    if (pageParams) {
+      sessionStorage.setItem("pageParams", JSON.stringify(pageParams));
+    } else {
+      sessionStorage.removeItem("pageParams");
+    }
+  }, [currentPage, pageParams]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
   const [user, setUser] = useState(() => {
@@ -94,6 +118,9 @@ export default function App() {
   };
 
   const handleNavigate = (page, params = null) => {
+    if (window.location.pathname !== "/") {
+      window.history.replaceState({}, document.title, "/");
+    }
     if (page !== "coming_soon") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -102,6 +129,7 @@ export default function App() {
       "coming_soon",
       "messenger",
       "post_job",
+      "find_freelancers",
       "employer_profile",
       "employer_jobs",
       "profile",
@@ -126,6 +154,13 @@ export default function App() {
       setCurrentPage("home");
       return;
     }
+    if (page === "find_freelancers" && user?.role !== "EMPLOYER") {
+      alert(
+        "Chỉ tài khoản Nhà tuyển dụng (Employer) mới có thể tìm và thuê Freelancer!",
+      );
+      setCurrentPage("home");
+      return;
+    }
     if (page === "employer_profile" && user?.role !== "EMPLOYER") {
       setCurrentPage("home");
       return;
@@ -145,7 +180,9 @@ export default function App() {
     const redirectTo = localStorage.getItem('redirect_after_login');
     localStorage.removeItem('redirect_after_login');
     
-    if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
+    if (redirectTo === 'find_freelancers' && userData.role === 'EMPLOYER') {
+      setCurrentPage('find_freelancers');
+    } else if (redirectTo === 'post_job' && userData.role === 'EMPLOYER') {
       setCurrentPage('post_job');
     } else {
       setCurrentPage("home");
