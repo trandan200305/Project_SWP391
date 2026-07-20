@@ -6,6 +6,9 @@ import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.user.repository.EmployerProfileRequestRepository;
 import com.cny.backend.user.dto.EmployerDto;
 import com.cny.backend.user.repository.FreelancerRepository;
+import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.project.repository.ContractRepository;
+import com.cny.backend.admin.repository.DisputeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,6 +40,15 @@ public class EmployerController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private ContractRepository contractRepository;
+
+    @Autowired
+    private DisputeRepository disputeRepository;
 
     @GetMapping
     public ResponseEntity<List<EmployerDto>> getAllEmployers() {
@@ -337,6 +349,27 @@ public class EmployerController {
             return ResponseEntity.badRequest().body(response);
         }
         return employerRepository.findById(id).map(e -> {
+            int activeProjects = projectRepository.countActiveProjectsByEmployerId(id);
+            if (activeProjects > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeProjects + " dự án đang mở hoặc chờ duyệt.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            int activeContracts = contractRepository.countActiveContractsByEmployerId(id);
+            if (activeContracts > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeContracts + " dự án/hợp đồng đang thực hiện với Freelancer.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            int activeDisputes = disputeRepository.countActiveDisputesByEmployerId(id);
+            if (activeDisputes > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeDisputes + " tranh chấp/khiếu nại đang mở.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             e.setIsDeleted(true);
             e.setUpdatedAt(LocalDateTime.now());
             employerRepository.save(e);

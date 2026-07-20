@@ -18,4 +18,10 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
     Integer countContractsByFreelancerAndStatus(@org.springframework.data.repository.query.Param("freelancerId") Integer freelancerId, @org.springframework.data.repository.query.Param("status") String status);
 
     List<Contract> findByFreelancerProfileIdAndStatusOrderByUpdatedAtDesc(Integer freelancerId, String status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(c) FROM Contract c WHERE c.freelancer.profileId = :freelancerId AND c.status IN ('IN_PROGRESS', 'PENDING', 'ACTIVE')")
+    int countActiveContractsByFreelancerId(@org.springframework.data.repository.query.Param("freelancerId") Integer freelancerId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(c) FROM Contract c WHERE c.client.employerId = :employerId AND c.status IN ('IN_PROGRESS', 'PENDING', 'ACTIVE')")
+    int countActiveContractsByEmployerId(@org.springframework.data.repository.query.Param("employerId") Integer employerId);
 }

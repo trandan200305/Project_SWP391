@@ -45,6 +45,9 @@ public class FreelancerController {
     private ContractRepository contractRepository;
 
     @Autowired
+    private DisputeRepository disputeRepository;
+
+    @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
     @GetMapping
@@ -208,6 +211,20 @@ public class FreelancerController {
             return ResponseEntity.badRequest().body(response);
         }
         return freelancerRepository.findById(id).map(f -> {
+            int activeContracts = contractRepository.countActiveContractsByFreelancerId(id);
+            if (activeContracts > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeContracts + " dự án/hợp đồng đang thực hiện hoặc chờ xử lý.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            int activeDisputes = disputeRepository.countActiveDisputesByFreelancerId(id);
+            if (activeDisputes > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeDisputes + " tranh chấp/khiếu nại đang mở.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             f.setIsDeleted(true);
             f.setUpdatedAt(java.time.LocalDateTime.now());
             freelancerRepository.save(f);
