@@ -3271,7 +3271,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   { value: 'UPDATE_FEE_RATE', label: '💰 Cập nhật phí' },
                                   { value: 'UPDATE_PACKAGE_PRICES', label: '📦 Cập nhật gói' },
                                   { value: 'UPDATE_PACKAGE_CONFIG', label: '⚙️ Cấu hình gói' },
-                                  { value: 'UPDATE_VNPAY_CONFIG', label: '🏦 Cấu hình VNPay' },
+
                                   { value: 'UPDATE_SEO', label: '🌐 Cập nhật SEO' },
                                   { value: 'TASK_SIGNOFF', label: '📋 Phê duyệt Task' },
                                   { value: 'MANUAL_RECONCILE_PAYMENT', label: '🔍 Đối soát GD' },
@@ -5199,7 +5199,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 <button
                                   onClick={() => handleQueryTransaction(txn.id, txn.txnRef || txn.vnpTxnRef)}
                                   className="px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
-                                  title="Truy vấn VNPay"
+                                  title="Truy vấn PayOS"
                                 >
                                   Truy vấn
                                 </button>
