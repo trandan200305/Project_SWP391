@@ -132,12 +132,10 @@ public class ReviewService {
     private void updateFreelancerRating(Freelancer freelancer) {
         BigDecimal average = calculateAverageRating(reviewRepository.findByRevieweeFreelancerProfileId(freelancer.getProfileId()));
         freelancer.setAverageRating(average);
-        freelancer.setProjectsCompleted((freelancer.getProjectsCompleted() == null ? 0 : freelancer.getProjectsCompleted()) + 1);
         freelancerRepository.save(freelancer);
 
         freelancerProfileRepository.findByFreelancer_ProfileId(freelancer.getProfileId()).ifPresent(profile -> {
             profile.setAverageRating(average);
-            profile.setProjectsCompleted((profile.getProjectsCompleted() == null ? 0 : profile.getProjectsCompleted()) + 1);
             freelancerProfileRepository.save(profile);
         });
     }

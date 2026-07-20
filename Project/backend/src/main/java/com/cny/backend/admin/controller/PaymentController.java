@@ -98,11 +98,23 @@ public class PaymentController {
             if (project != null && project.getServiceFee() != null) {
                 price = project.getServiceFee();
             } else if (packageType != null) {
-                Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
+                String pkgUpper = packageType.toUpperCase();
+                Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(pkgUpper);
                 if (configOpt.isPresent()) {
                     price = configOpt.get().getPrice();
                 } else {
-                    throw new IllegalArgumentException("Không tìm thấy cấu hình giá cho gói dịch vụ: " + packageType);
+                    double defaultPrice = "PREMIUM".equals(pkgUpper) ? 500000.0 : ("MEDIUM".equals(pkgUpper) ? 250000.0 : 100000.0);
+                    int duration = "PREMIUM".equals(pkgUpper) ? 30 : ("MEDIUM".equals(pkgUpper) ? 10 : 20);
+                    ServicePackageConfig newCfg = ServicePackageConfig.builder()
+                            .packageType(pkgUpper)
+                            .price(defaultPrice)
+                            .durationDays(duration)
+                            .postLimit(10)
+                            .build();
+                    try {
+                        servicePackageConfigRepository.save(newCfg);
+                    } catch (Exception e) {}
+                    price = defaultPrice;
                 }
             } else {
                 throw new IllegalArgumentException("Vui lòng cung cấp projectId hoặc packageType");
@@ -116,7 +128,7 @@ public class PaymentController {
             PaymentTransaction txn = PaymentTransaction.builder()
                     .txnRef(txnRef)
                     .employerId(project != null ? project.getClient().getEmployerId() : client.getEmployerId())
-                    .projectId(project != null ? project.getProjectId() : null)
+                    .projectId(project != null ? project.getProjectId() : (projectId != null ? projectId : null))
                     .packageType(packageType != null ? packageType.toUpperCase() : null)
                     .amount(feeAmount)
                     .status("PENDING")

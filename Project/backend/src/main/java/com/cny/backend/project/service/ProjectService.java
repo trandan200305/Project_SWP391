@@ -82,6 +82,13 @@ public class ProjectService {
         Employer client = employerRepository.findById(dto.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Employer với ID: " + dto.getClientId()));
 
+        if (Boolean.TRUE.equals(client.getIsDeleted())) {
+            throw new IllegalArgumentException("Tài khoản của bạn đã bị xóa hoặc ngưng hoạt động.");
+        }
+        if ("SUSPENDED".equalsIgnoreCase(client.getStatus()) || "BANNED".equalsIgnoreCase(client.getStatus()) || "LOCKED".equalsIgnoreCase(client.getStatus())) {
+            throw new IllegalArgumentException("Tài khoản của bạn đang bị khóa hoặc đình chỉ hoạt động.");
+        }
+
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
 
@@ -217,9 +224,13 @@ public class ProjectService {
 
 
     @Transactional
-    public Project updateProject(Integer projectId, ProjectUpdateDto dto) {
+    public Project updateProject(Integer projectId, ProjectUpdateDto dto, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa dự án này.");
+        }
 
         if ("IN_PROGRESS".equals(project.getStatus())) {
             throw new IllegalArgumentException("Không thể chỉnh sửa dự án đã giao cho Freelancer (đang thực hiện).");
@@ -288,20 +299,44 @@ public class ProjectService {
     }
 
     @Transactional
-    public Project closeProject(Integer projectId) {
+    public Project updateProject(Integer projectId, ProjectUpdateDto dto) {
+        return updateProject(projectId, dto, null);
+    }
+
+    @Transactional
+    public Project closeProject(Integer projectId, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền đóng dự án này.");
+        }
+
         project.setStatus("CLOSED");
         return projectRepository.save(project);
     }
 
     @Transactional
-    public Project deleteProject(Integer projectId) {
+    public Project closeProject(Integer projectId) {
+        return closeProject(projectId, null);
+    }
+
+    @Transactional
+    public Project deleteProject(Integer projectId, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
 
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền xóa dự án này.");
+        }
+
         project.setIsDeleted(true);
         return projectRepository.save(project);
+    }
+
+    @Transactional
+    public Project deleteProject(Integer projectId) {
+        return deleteProject(projectId, null);
     }
 
     public Page<ProjectDto> getPublishedProjects(Pageable pageable) {

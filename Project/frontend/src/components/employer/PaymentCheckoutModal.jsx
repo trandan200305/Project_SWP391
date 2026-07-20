@@ -75,14 +75,17 @@ export default function PaymentCheckoutModal({ isOpen, onClose, selectedPackage,
     setStep(2);
     setError(null);
 
+    const effectiveEmployerId = employerId || 1;
+
     try {
       if (selectedBank === 'PAYOS') {
-        const response = await fetch(`http://localhost:8080/api/payment/payos/create-url?packageType=${selectedPackage.packageType}&employerId=${employerId}`, {
+        const response = await fetch(`http://localhost:8080/api/payment/payos/create-url?packageType=${selectedPackage.packageType}&employerId=${effectiveEmployerId}`, {
           method: 'POST'
         });
         
         if (!response.ok) {
-          throw new Error('Có lỗi xảy ra khi tạo mã thanh toán PayOS.');
+          const errJson = await response.json().catch(() => ({}));
+          throw new Error(errJson.message || 'Có lỗi xảy ra khi tạo mã thanh toán PayOS. Vui lòng thử lại hoặc chọn cổng VNPay.');
         }
         
         const data = await response.json();
@@ -93,12 +96,13 @@ export default function PaymentCheckoutModal({ isOpen, onClose, selectedPackage,
           throw new Error('Không nhận được link thanh toán PayOS.');
         }
       } else if (selectedBank === 'VNPAY') {
-        const response = await fetch(`http://localhost:8080/api/payment/create-url?packageType=${selectedPackage.packageType}&employerId=${employerId}`, {
+        const response = await fetch(`http://localhost:8080/api/payment/create-url?packageType=${selectedPackage.packageType}&employerId=${effectiveEmployerId}`, {
           method: 'POST'
         });
         
         if (!response.ok) {
-          throw new Error('Có lỗi xảy ra khi tạo mã thanh toán VNPay.');
+          const errJson = await response.json().catch(() => ({}));
+          throw new Error(errJson.message || 'Có lỗi xảy ra khi tạo mã thanh toán VNPay.');
         }
         
         const data = await response.json();

@@ -60,36 +60,6 @@ public class EmployerController {
         }
 
         Map<String, Object> response = buildProfileResponse(employer);
-
-        // Fetch latest pending request to overlay pending changes
-        List<EmployerProfileRequest> requests = employerProfileRequestRepository.findByEmployerEmployerIdOrderByCreatedAtDesc(employerId);
-        if (!requests.isEmpty()) {
-            EmployerProfileRequest latest = requests.get(0);
-            if ("PENDING".equals(latest.getStatus())) {
-                response.put("hasPendingRequest", true);
-                if (latest.getDisplayName() != null) response.put("displayName", latest.getDisplayName());
-                if (latest.getFullName() != null) response.put("fullName", latest.getFullName());
-                if (latest.getPhone() != null) response.put("phone", latest.getPhone());
-                if (latest.getCompanyName() != null) response.put("companyName", latest.getCompanyName());
-                if (latest.getCompanyLogoUrl() != null) response.put("companyLogoUrl", latest.getCompanyLogoUrl());
-                if (latest.getCompanyDescription() != null) response.put("companyDescription", latest.getCompanyDescription());
-                if (latest.getWebsite() != null) response.put("website", latest.getWebsite());
-                if (latest.getAddress() != null) response.put("address", latest.getAddress());
-                if (latest.getCity() != null) response.put("city", latest.getCity());
-                if (latest.getCountry() != null) response.put("country", latest.getCountry());
-                if (latest.getCompanySize() != null) response.put("companySize", latest.getCompanySize());
-                if (latest.getIndustry() != null) response.put("industry", latest.getIndustry());
-                if (latest.getTaxCode() != null) response.put("taxCode", latest.getTaxCode());
-
-                Map<String, Object> billing = new HashMap<>();
-                billing.put("bank_name", latest.getBankName() != null ? latest.getBankName() : "");
-                billing.put("account_number", latest.getAccountNumber() != null ? latest.getAccountNumber() : "");
-                billing.put("account_holder", latest.getAccountHolder() != null ? latest.getAccountHolder() : "");
-                billing.put("branch", latest.getBranch() != null ? latest.getBranch() : "");
-                response.put("billing", billing);
-            }
-        }
-
         return ResponseEntity.ok(response);
     }
 
@@ -102,6 +72,13 @@ public class EmployerController {
         Employer employer = employerRepository.findById(employerId).orElse(null);
         if (employer == null) {
             return ResponseEntity.notFound().build();
+        }
+
+        if (Boolean.TRUE.equals(employer.getIsDeleted())) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Tài khoản của bạn đã bị xóa hoặc ngưng hoạt động.");
+            return ResponseEntity.status(403).body(errResponse);
         }
 
         // Intercept direct avatar update
@@ -117,9 +94,6 @@ public class EmployerController {
             return ResponseEntity.ok(response);
         }
 
-        Map<String, Object> billing = asMap(payload.get("billing"));
-
-        
         String displayName = text(payload.get("displayName"));
         if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {
             Map<String, Object> errResponse = new HashMap<>();
@@ -198,119 +172,27 @@ public class EmployerController {
             }
         }
 
-        String bankName = text(billing.get("bankName"));
-        String accountNumber = text(billing.get("accountNumber"));
-        String accountHolder = text(billing.get("accountHolder"));
-        String branch = text(billing.get("branch"));
+        // === Lưu trực tiếp các thông tin công ty & người đại diện vào bảng employers ===
+        employer.setDisplayName(displayName);
+        employer.setFullName(fullName);
+        employer.setPhone(phone);
+        employer.setCompanyName(text(payload.get("companyName")));
+        employer.setCompanyLogoUrl(companyLogoUrl);
+        employer.setCompanyDescription(text(payload.get("companyDescription")));
+        employer.setWebsite(website);
+        employer.setAddress(text(payload.get("address")));
+        employer.setCity(text(payload.get("city")));
+        employer.setCountry(text(payload.get("country")));
+        employer.setCompanySize(companySize);
+        employer.setIndustry(text(payload.get("industry")));
+        employer.setTaxCode(taxCode);
+        employer.setUpdatedAt(LocalDateTime.now());
 
-        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder) || !isBlank(branch)) {
-            if (isBlank(bankName) || isBlank(accountNumber) || isBlank(accountHolder)) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Nếu cập nhật thông tin thanh toán, vui lòng điền đầy đủ: Ngân hàng, Số tài khoản và Chủ tài khoản.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (!accountNumber.matches("^[0-9]+$")) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Số tài khoản ngân hàng chỉ được phép chứa các chữ số.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (accountNumber.length() > 30) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Số tài khoản ngân hàng tối đa 30 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (!accountHolder.matches("^[\\p{L} ]+$")) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (accountHolder.length() > 150) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Tên chủ tài khoản tối đa 150 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (branch != null && branch.length() > 100) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Chi nhánh ngân hàng tối đa 100 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-        }
-
-        List<EmployerProfileRequest> requests = employerProfileRequestRepository.findByEmployerEmployerIdOrderByCreatedAtDesc(employerId);
-        EmployerProfileRequest req;
-        if (!requests.isEmpty() && "PENDING".equals(requests.get(0).getStatus())) {
-            req = requests.get(0);
-            req.setDisplayName(text(payload.get("displayName")));
-            req.setFullName(text(payload.get("fullName")));
-            req.setPhone(text(payload.get("phone")));
-            req.setCompanyName(text(payload.get("companyName")));
-            req.setCompanyLogoUrl(text(payload.get("companyLogoUrl")));
-            req.setCompanyDescription(text(payload.get("companyDescription")));
-            req.setWebsite(text(payload.get("website")));
-            req.setAddress(text(payload.get("address")));
-            req.setCity(text(payload.get("city")));
-            req.setCountry(text(payload.get("country")));
-            req.setCompanySize(text(payload.get("companySize")));
-            req.setIndustry(text(payload.get("industry")));
-            req.setTaxCode(taxCode);
-            req.setBankName(text(billing.get("bankName")));
-            req.setAccountNumber(text(billing.get("accountNumber")));
-            req.setAccountHolder(text(billing.get("accountHolder")));
-            req.setBranch(text(billing.get("branch")));
-            req.setUpdatedAt(LocalDateTime.now());
-        } else {
-            req = EmployerProfileRequest.builder()
-                    .employer(employer)
-                    .displayName(text(payload.get("displayName")))
-                    .fullName(text(payload.get("fullName")))
-                    .phone(text(payload.get("phone")))
-                    .companyName(text(payload.get("companyName")))
-                    .companyLogoUrl(text(payload.get("companyLogoUrl")))
-                    .companyDescription(text(payload.get("companyDescription")))
-                    .website(text(payload.get("website")))
-                    .address(text(payload.get("address")))
-                    .city(text(payload.get("city")))
-                    .country(text(payload.get("country")))
-                    .companySize(text(payload.get("companySize")))
-                    .industry(text(payload.get("industry")))
-                    .taxCode(taxCode)
-                    .bankName(text(billing.get("bankName")))
-                    .accountNumber(text(billing.get("accountNumber")))
-                    .accountHolder(text(billing.get("accountHolder")))
-                    .branch(text(billing.get("branch")))
-                    .status("PENDING")
-                    .build();
-        }
-
-        EmployerProfileRequest savedReq = employerProfileRequestRepository.save(req);
-
-        // Notify MANAGER
-        try {
-            String empName = savedReq.getCompanyName() != null ? savedReq.getCompanyName() : savedReq.getDisplayName();
-            if (empName == null) {
-                empName = employer.getCompanyName() != null ? employer.getCompanyName() : employer.getDisplayName();
-            }
-            notificationService.createNotification(
-                0L,
-                "MANAGER",
-                "Yêu cầu cập nhật hồ sơ doanh nghiệp",
-                "Nhà tuyển dụng " + empName + " vừa gửi yêu cầu cập nhật hồ sơ.",
-                "PROFILE_REQUEST",
-                savedReq.getRequestId().toString()
-            );
-        } catch (Exception ex) {
-            System.err.println("Failed to send notification to manager: " + ex.getMessage());
-        }
+        employerRepository.save(employer);
 
         Map<String, Object> response = buildProfileResponse(employer);
         response.put("success", true);
-        response.put("message", "Yêu cầu thay đổi thông tin của bạn đã được gửi tới Manager để phê duyệt.");
+        response.put("message", "Cập nhật thông tin công ty thành công.");
         return ResponseEntity.ok(response);
     }
 
@@ -364,6 +246,11 @@ public class EmployerController {
             if (!taxCodeStr.matches("^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$")) {
                 response.put("success", false);
                 response.put("message", "Lỗi Backend Validation: Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (employerRepository.countTaxCodeDuplicate(taxCodeStr, id) > 0) {
+                response.put("success", false);
+                response.put("message", "Lỗi Backend Validation: Mã số thuế này đã được đăng ký bởi doanh nghiệp khác.");
                 return ResponseEntity.badRequest().body(response);
             }
         }
@@ -470,7 +357,7 @@ public class EmployerController {
         response.put("totalSpent", employer.getTotalSpent());
         response.put("projectsPosted", employer.getProjectsPosted());
         response.put("averageRating", employer.getAverageRating());
-        response.put("billing", findDefaultBankAccount(employer.getEmployerId()));
+        response.put("billing", new HashMap<>());
         response.put("kycStatus", employer.getKycStatus());
         response.put("businessLicenseUrl", employer.getBusinessLicenseUrl());
         response.put("representativeIdCardUrl", employer.getRepresentativeIdCardUrl());
@@ -483,26 +370,6 @@ public class EmployerController {
         response.put("kycRejectedReason", employer.getKycRejectedReason());
         response.put("isVerified", employer.getIsVerified());
         return response;
-    }
-
-    private Map<String, Object> findDefaultBankAccount(Integer employerId) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 1 bank_account_id, bank_name, account_number, account_holder, branch, is_default " +
-                        "FROM bank_accounts WHERE employer_id = ? ORDER BY is_default DESC, created_at DESC",
-                employerId
-        );
-        if (rows.isEmpty()) {
-            return new HashMap<>();
-        }
-        return rows.get(0);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> asMap(Object value) {
-        if (value instanceof Map<?, ?>) {
-            return (Map<String, Object>) value;
-        }
-        return new HashMap<>();
     }
 
     private String text(Object value) {

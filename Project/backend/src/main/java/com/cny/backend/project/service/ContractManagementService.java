@@ -11,6 +11,11 @@ import com.cny.backend.project.repository.MilestoneRepository;
 import com.cny.backend.project.repository.DeliverableRepository;
 import com.cny.backend.project.repository.ProjectRepository;
 import com.cny.backend.admin.repository.DisputeRepository;
+import com.cny.backend.user.entity.Employer;
+import com.cny.backend.user.entity.Freelancer;
+import com.cny.backend.user.repository.EmployerRepository;
+import com.cny.backend.user.repository.FreelancerProfileRepository;
+import com.cny.backend.user.repository.FreelancerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +43,15 @@ public class ContractManagementService {
 
     @Autowired
     private DisputeRepository disputeRepository;
+
+    @Autowired
+    private FreelancerRepository freelancerRepository;
+
+    @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
+    private EmployerRepository employerRepository;
 
     @Transactional(readOnly = true)
     public List<ContractDetailDto> getEmployerContracts(Integer employerId) {
@@ -113,8 +127,11 @@ public class ContractManagementService {
             throw new IllegalArgumentException("Hợp đồng này không ở trạng thái hoạt động (ACTIVE).");
         }
 
-        // Kiểm tra xem tất cả các mốc công việc đã được duyệt chưa
+        // Kiểm tra xem hợp đồng đã có mốc công việc chưa và tất cả các mốc công việc đã được duyệt chưa
         List<Milestone> milestones = milestoneRepository.findByContractContractIdOrderByMilestoneIdAsc(contractId);
+        if (milestones.isEmpty()) {
+            throw new IllegalArgumentException("Không thể hoàn thành hợp đồng do hợp đồng chưa tạo bất kỳ mốc công việc nào.");
+        }
         for (Milestone m : milestones) {
             if (!"APPROVED".equals(m.getStatus())) {
                 throw new IllegalArgumentException("Không thể hoàn thành hợp đồng do vẫn còn mốc công việc chưa hoàn thành/phê duyệt: " + m.getTitle());
@@ -128,8 +145,38 @@ public class ContractManagementService {
 
         // Cập nhật trạng thái dự án thành CLOSED
         Project project = contract.getProject();
-        project.setStatus("CLOSED");
-        projectRepository.save(project);
+        if (project != null) {
+            project.setStatus("CLOSED");
+            projectRepository.save(project);
+        }
+
+        // Cập nhật số lượng dự án hoàn thành & tổng thu nhập cho Freelancer
+        Freelancer freelancer = contract.getFreelancer();
+        if (freelancer != null) {
+            freelancer.setProjectsCompleted((freelancer.getProjectsCompleted() == null ? 0 : freelancer.getProjectsCompleted()) + 1);
+            if (contract.getAgreedAmount() != null) {
+                java.math.BigDecimal curEarnings = freelancer.getTotalEarnings() != null ? freelancer.getTotalEarnings() : java.math.BigDecimal.ZERO;
+                freelancer.setTotalEarnings(curEarnings.add(contract.getAgreedAmount()));
+            }
+            freelancerRepository.save(freelancer);
+
+            freelancerProfileRepository.findByFreelancer_ProfileId(freelancer.getProfileId()).ifPresent(profile -> {
+                profile.setProjectsCompleted((profile.getProjectsCompleted() == null ? 0 : profile.getProjectsCompleted()) + 1);
+                if (contract.getAgreedAmount() != null) {
+                    java.math.BigDecimal curProfEarnings = profile.getTotalEarnings() != null ? profile.getTotalEarnings() : java.math.BigDecimal.ZERO;
+                    profile.setTotalEarnings(curProfEarnings.add(contract.getAgreedAmount()));
+                }
+                freelancerProfileRepository.save(profile);
+            });
+        }
+
+        // Cập nhật tổng chi tiêu (totalSpent) cho Employer
+        Employer client = contract.getClient();
+        if (client != null && contract.getAgreedAmount() != null) {
+            java.math.BigDecimal curSpent = client.getTotalSpent() != null ? client.getTotalSpent() : java.math.BigDecimal.ZERO;
+            client.setTotalSpent(curSpent.add(contract.getAgreedAmount()));
+            employerRepository.save(client);
+        }
     }
 
     @Transactional

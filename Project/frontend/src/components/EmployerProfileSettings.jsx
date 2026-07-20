@@ -875,9 +875,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <TextInput label="Tên công ty" value={form.companyName}
                                                onChange={(value) => updateField('companyName', value)} required/>
-                                    <TextInput label="Mã số thuế" value={form.taxCode}
-                                               onChange={(value) => updateField('taxCode', value)}
-                                               placeholder="VD: 0102030405"/>
                                 </div>
                                 <TextArea label="Mô tả ngắn về công ty" value={form.companyDescription}
                                           onChange={(value) => updateField('companyDescription', value)}/>
@@ -941,6 +938,13 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                             </div>
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <TextInput label="Mã số thuế" value={form.taxCode}
+                                               onChange={(value) => updateField('taxCode', value)}
+                                               placeholder="VD: 0102030405"
+                                               disabled={kycStatus === 'VERIFIED' || kycStatus === 'APPROVED'} />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1341,7 +1345,7 @@ function FormSection({icon, title, children}) {
     </section>);
 }
 
-function TextInput({label, value, onChange, placeholder, icon, required}) {
+function TextInput({label, value, onChange, placeholder, icon, required, disabled}) {
     return (<label className="block">
       <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">
         {label}{required ? ' *' : ''}
@@ -1354,9 +1358,10 @@ function TextInput({label, value, onChange, placeholder, icon, required}) {
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className={`w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
+                disabled={disabled}
+                className={`w-full rounded-xl border border-slate-200 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
                     icon ? 'pl-10' : 'pl-3'
-                }`}
+                } ${disabled ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-70' : 'bg-slate-50'}`}
             />
         </div>
     </label>);
