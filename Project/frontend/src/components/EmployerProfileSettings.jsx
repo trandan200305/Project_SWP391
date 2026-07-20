@@ -557,45 +557,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
-        const {bankName, accountNumber, accountHolder, branch} = form.billing;
-        if (bankName || accountNumber || accountHolder || branch) {
-            if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
-                setNotice({
-                    type: 'error',
-                    message: 'Nếu cập nhật thông tin thanh toán, vui lòng điền đầy đủ: Ngân hàng, Số tài khoản và Chủ tài khoản.'
-                });
-                return false;
-            }
-
-            // Số tài khoản chỉ được phép chứa số và tối đa 30 ký tự
-            const numRegex = /^[0-9]+$/;
-            if (!numRegex.test(accountNumber.trim())) {
-                setNotice({type: 'error', message: 'Số tài khoản ngân hàng chỉ được phép chứa các chữ số.'});
-                return false;
-            }
-            if (accountNumber.trim().length > 30) {
-                setNotice({type: 'error', message: 'Số tài khoản ngân hàng tối đa 30 ký tự.'});
-                return false;
-            }
-
-            // Chủ tài khoản bắt buộc là chữ và tối đa 150 ký tự
-            const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠƯưăâêôơư\s]+$/;
-            if (!nameRegex.test(accountHolder.trim())) {
-                setNotice({type: 'error', message: 'Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.'});
-                return false;
-            }
-            if (accountHolder.trim().length > 150) {
-                setNotice({type: 'error', message: 'Tên chủ tài khoản tối đa 150 ký tự.'});
-                return false;
-            }
-
-            // Chi nhánh tối đa 100 ký tự
-            if (branch && branch.trim().length > 100) {
-                setNotice({type: 'error', message: 'Chi nhánh ngân hàng tối đa 100 ký tự.'});
-                return false;
-            }
-        }
         return true; 
     };
     const handleSubmit = async (event) => {
@@ -719,11 +680,11 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-extrabold">
-                                {activeTab === 'company' ? 'Thông tin công ty' : 'Thông tin thanh toán'}
+                            <h2 className="text-lg font-extrabold text-slate-900">
+                                Thông tin công ty & Xác thực
                             </h2>
                             <p className="text-sm text-slate-500">
-                                {activeTab === 'company' ? 'Cập nhật thông tin doanh nghiệp và người đại diện.' : 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.'}
+                                Cập nhật thông tin doanh nghiệp, người đại diện và đính kèm tài liệu xác thực.
                             </p>
                         </div>
                         {notice && (<div
@@ -734,35 +695,10 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </div>)}
                     </div>
 
-                    <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('company');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'company' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Building2 className="w-4 h-4"/>
-                            Thông tin công ty
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('billing');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'billing' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Banknote className="w-4 h-4"/>
-                            Thông tin thanh toán
-                        </button>
-                    </div>
-
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
                             <Loader2 className="w-6 h-6 animate-spin mr-2"/>
                             Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (
+                        </div>) : (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
                                 {/* Company Logo Upload Area */}
@@ -963,33 +899,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                 >
                                     {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
                                     {saving ? 'Đang lưu...' : 'Lưu thông tin công ty'}
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
-                            <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <TextInput label="Ngân hàng" value={form.billing.bankName}
-                                               onChange={(value) => updateBilling('bankName', value)}
-                                               placeholder="VD: Vietcombank"/>
-                                    <TextInput label="Số tài khoản" value={form.billing.accountNumber}
-                                               onChange={(value) => updateBilling('accountNumber', value)}/>
-                                    <TextInput label="Chủ tài khoản" value={form.billing.accountHolder}
-                                               onChange={(value) => updateBilling('accountHolder', value)}/>
-                                    <TextInput label="Chi nhánh" value={form.billing.branch}
-                                               onChange={(value) => updateBilling('branch', value)}/>
-                                </div>
-                            </FormSection>
-
-                            <div className="flex justify-end border-t border-slate-200 pt-5">
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
-                                >
-                                    {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
-                                    {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
                                 </button>
                             </div>
                         </form>
