@@ -951,6 +951,7 @@ public class AdminService {
                 .id(p.getId())
                 .status(p.getStatus())
                 .module(p.getModule())
+                .action(p.getAction())
                 .detail(detail)
                 .timestamp(p.getTimestamp())
                 .source(p.getSource())

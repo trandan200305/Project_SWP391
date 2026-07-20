@@ -6,34 +6,32 @@ import {
   Lock, Unlock, Eye, X, Check, HeartPulse, HelpCircle, LogOut, Key, 
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
-  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity,
-  PieChart, Landmark, Receipt, ChevronUp, Filter
+  User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const VIETQR_BANKS = [
-  { code: 'Techcombank', name: 'Ngân hàng Kỹ Thương Việt Nam', short: 'Techcombank' },
-  { code: 'Vietcombank', name: 'Ngân hàng TMCP Ngoại Thương Việt Nam', short: 'Vietcombank' },
-  { code: 'MBBank', name: 'Ngân hàng TMCP Quân đội', short: 'MBBank' },
-  { code: 'BIDV', name: 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam', short: 'BIDV' },
-  { code: 'Agribank', name: 'Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam', short: 'Agribank' },
-  { code: 'VietinBank', name: 'Ngân hàng TMCP Công Thương Việt Nam', short: 'VietinBank' },
-  { code: 'VPBank', name: 'Ngân hàng TMCP Việt Nam Thịnh Vượng', short: 'VPBank' },
-  { code: 'ACB', name: 'Ngân hàng TMCP Á Châu', short: 'ACB' },
-  { code: 'Sacombank', name: 'Ngân hàng TMCP Sài Gòn Thương Tín', short: 'Sacombank' },
-  { code: 'TPBank', name: 'Ngân hàng TMCP Tiên Phong', short: 'TPBank' },
-  { code: 'HDBank', name: 'Ngân hàng TMCP Phát triển TP.HCM', short: 'HDBank' },
-  { code: 'VIB', name: 'Ngân hàng TMCP Quốc tế Việt Nam', short: 'VIB' },
-  { code: 'SeABank', name: 'Ngân hàng TMCP Đông Nam Á', short: 'SeABank' },
-  { code: 'OCB', name: 'Ngân hàng TMCP Phương Đông', short: 'OCB' },
-  { code: 'MSB', name: 'Ngân hàng TMCP Hàng Hải Việt Nam', short: 'MSB' }
+  { code: 'Techcombank', name: 'Ng├ón h├áng Kß╗╣ Th╞░╞íng Viß╗çt Nam', short: 'Techcombank' },
+  { code: 'Vietcombank', name: 'Ng├ón h├áng TMCP Ngoß║íi Th╞░╞íng Viß╗çt Nam', short: 'Vietcombank' },
+  { code: 'MBBank', name: 'Ng├ón h├áng TMCP Qu├ón ─æß╗Öi', short: 'MBBank' },
+  { code: 'BIDV', name: 'Ng├ón h├áng TMCP ─Éß║ºu t╞░ v├á Ph├ít triß╗ân Viß╗çt Nam', short: 'BIDV' },
+  { code: 'Agribank', name: 'Ng├ón h├áng N├┤ng nghiß╗çp v├á Ph├ít triß╗ân N├┤ng th├┤n Viß╗çt Nam', short: 'Agribank' },
+  { code: 'VietinBank', name: 'Ng├ón h├áng TMCP C├┤ng Th╞░╞íng Viß╗çt Nam', short: 'VietinBank' },
+  { code: 'VPBank', name: 'Ng├ón h├áng TMCP Viß╗çt Nam Thß╗ïnh V╞░ß╗úng', short: 'VPBank' },
+  { code: 'ACB', name: 'Ng├ón h├áng TMCP ├ü Ch├óu', short: 'ACB' },
+  { code: 'Sacombank', name: 'Ng├ón h├áng TMCP S├ái G├▓n Th╞░╞íng T├¡n', short: 'Sacombank' },
+  { code: 'TPBank', name: 'Ng├ón h├áng TMCP Ti├¬n Phong', short: 'TPBank' },
+  { code: 'HDBank', name: 'Ng├ón h├áng TMCP Ph├ít triß╗ân TP.HCM', short: 'HDBank' },
+  { code: 'VIB', name: 'Ng├ón h├áng TMCP Quß╗æc tß║┐ Viß╗çt Nam', short: 'VIB' },
+  { code: 'SeABank', name: 'Ng├ón h├áng TMCP ─É├┤ng Nam ├ü', short: 'SeABank' },
+  { code: 'OCB', name: 'Ng├ón h├áng TMCP Ph╞░╞íng ─É├┤ng', short: 'OCB' },
+  { code: 'MSB', name: 'Ng├ón h├áng TMCP H├áng Hß║úi Viß╗çt Nam', short: 'MSB' }
 ];
 
 export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onLogout }) {
   
   const [activeTab, setActiveTab] = useState('home');
-  const [expandedMenus, setExpandedMenus] = useState(['overview', 'management', 'finance', 'system']);
   const [dashboardSubTab, setDashboardSubTab] = useState('overview');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,14 +89,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   
   
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeProjects: 0,
-    totalRevenue: 0.0,
-    activeDisputes: 0,
-    pendingWithdrawals: 0,
-    usersGrowthPercent: 0.0,
-    projectsGrowthPercent: 0.0,
-    revenueGrowthPercent: 0.0,
+    totalUsers: 1284,
+    activeProjects: 452,
+    totalRevenue: 128500.0,
+    activeDisputes: 18,
+    pendingWithdrawals: 2,
+    usersGrowthPercent: 12.0,
+    projectsGrowthPercent: 5.0,
+    revenueGrowthPercent: 8.2,
     instantRevenue: 0.0
   });
 
@@ -107,8 +105,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [withdrawals, setWithdrawals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLogFilter, setAuditLogFilter] = useState('ALL');
-  const [timelineModuleFilter, setTimelineModuleFilter] = useState('ALL');
-  const [timelineRoleFilter, setTimelineRoleFilter] = useState('ALL');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [feeRate, setFeeRate] = useState(10.0);
@@ -165,7 +161,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [currentPayosTxnRef, setCurrentPayosTxnRef] = useState(null);
 
   // Financial Dashboard States
-  const [paymentTimeFilter, setPaymentTimeFilter] = useState('Hôm nay');
+  const [paymentTimeFilter, setPaymentTimeFilter] = useState('H├┤m nay');
   const [donutHoverState, setDonutHoverState] = useState(null);
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState(null);
@@ -201,23 +197,23 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     const filteredTxns = allVnpayTransactions.filter(txn => {
       if (!txn.createdAt) return false;
       const d = new Date(txn.createdAt);
-      if (paymentTimeFilter === 'Hôm nay') return isSameDay(d, now);
-      if (paymentTimeFilter === 'Hôm qua') {
+      if (paymentTimeFilter === 'H├┤m nay') return isSameDay(d, now);
+      if (paymentTimeFilter === 'H├┤m qua') {
         const y = new Date(now); y.setDate(now.getDate() - 1);
         return isSameDay(d, y);
       }
-      if (paymentTimeFilter === 'Tuần này') {
+      if (paymentTimeFilter === 'Tuß║ºn n├áy') {
         const start = new Date(now); start.setDate(now.getDate() - now.getDay());
         return d >= start;
       }
-      if (paymentTimeFilter === 'Tháng này') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      if (paymentTimeFilter === 'Tháng trước') {
+      if (paymentTimeFilter === 'Th├íng n├áy') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (paymentTimeFilter === 'Th├íng tr╞░ß╗¢c') {
         let lm = now.getMonth() - 1; let y = now.getFullYear();
         if (lm < 0) { lm = 11; y--; }
         return d.getMonth() === lm && d.getFullYear() === y;
       }
-      if (paymentTimeFilter === 'Năm này') return d.getFullYear() === now.getFullYear();
-      if (paymentTimeFilter === 'Năm trước') return d.getFullYear() === now.getFullYear() - 1;
+      if (paymentTimeFilter === 'N─âm n├áy') return d.getFullYear() === now.getFullYear();
+      if (paymentTimeFilter === 'N─âm tr╞░ß╗¢c') return d.getFullYear() === now.getFullYear() - 1;
       return true;
     });
 
@@ -235,9 +231,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
     const totalTxns = filteredTxns.length || 1; 
     const donutData = [
-      { id: 'SUCCESS', name: 'Đã thanh toán', value: statuses.SUCCESS, color: '#34d399', percent: (statuses.SUCCESS / totalTxns) * 100 },
-      { id: 'FAILED', name: 'Hủy', value: statuses.FAILED, color: '#a7f3d0', percent: (statuses.FAILED / totalTxns) * 100 },
-      { id: 'PENDING', name: 'Chờ thanh toán', value: statuses.PENDING, color: '#047857', percent: (statuses.PENDING / totalTxns) * 100 }
+      { id: 'SUCCESS', name: '─É├ú thanh to├ín', value: statuses.SUCCESS, color: '#34d399', percent: (statuses.SUCCESS / totalTxns) * 100 },
+      { id: 'FAILED', name: 'Hß╗ºy', value: statuses.FAILED, color: '#a7f3d0', percent: (statuses.FAILED / totalTxns) * 100 },
+      { id: 'PENDING', name: 'Chß╗¥ thanh to├ín', value: statuses.PENDING, color: '#047857', percent: (statuses.PENDING / totalTxns) * 100 }
     ];
 
     return { totalRevenue, completedOrders, donutData, totalTxns: filteredTxns.length };
@@ -278,11 +274,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       } else if (res && res.paymentUrl) {
         window.open(res.paymentUrl, '_blank');
       } else {
-        showToast('Không tạo được URL thanh toán VNPay', 'error');
+        showToast('Kh├┤ng tß║ío ─æ╞░ß╗úc URL thanh to├ín VNPay', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Lỗi tạo URL thanh toán VNPay.', 'error');
+      showToast('Lß╗ùi tß║ío URL thanh to├ín VNPay.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -297,11 +293,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         setPayosCheckoutUrl(res.paymentUrl);
         setCurrentPayosTxnRef(res.txnRef);
       } else {
-        showToast('Không tạo được URL thanh toán PayOS', 'error');
+        showToast('Kh├┤ng tß║ío ─æ╞░ß╗úc URL thanh to├ín PayOS', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Lỗi tạo URL thanh toán PayOS.', 'error');
+      showToast('Lß╗ùi tß║ío URL thanh to├ín PayOS.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -311,9 +307,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     if (currentPayosTxnRef) {
       try {
         await adminApi.cancelPayosTransaction(currentPayosTxnRef);
-        showToast('Đã hủy giao dịch và vô hiệu hóa QR code PayOS thành công', 'success');
+        showToast('─É├ú hß╗ºy giao dß╗ïch v├á v├┤ hiß╗çu h├│a QR code PayOS th├ánh c├┤ng', 'success');
       } catch (err) {
-        console.error('Lỗi khi hủy giao dịch PayOS:', err);
+        console.error('Lß╗ùi khi hß╗ºy giao dß╗ïch PayOS:', err);
       }
       setCurrentPayosTxnRef(null);
     }
@@ -370,13 +366,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setServicePackages(data);
-          showToast('Cập nhật bảng giá các gói dịch vụ thành công!', 'success');
+          showToast('Cß║¡p nhß║¡t bß║úng gi├í c├íc g├│i dß╗ïch vß╗Ñ th├ánh c├┤ng!', 'success');
         }
         setIsUpdatingPackages(false);
       })
       .catch(err => {
         console.error('Error updating packages:', err);
-        showToast('Lỗi cập nhật bảng giá gói dịch vụ.', 'error');
+        showToast('Lß╗ùi cß║¡p nhß║¡t bß║úng gi├í g├│i dß╗ïch vß╗Ñ.', 'error');
         setIsUpdatingPackages(false);
       });
   };
@@ -384,19 +380,19 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const handleCreateUser = (e) => {
     e.preventDefault();
     if (!createForm.email) {
-      showToast('Vui lòng nhập Email!', 'error');
+      showToast('Vui l├▓ng nhß║¡p Email!', 'error');
       return;
     }
     if (!createForm.departmentId) {
-      showToast('Vui lòng chọn Khoa/Phòng ban!', 'error');
+      showToast('Vui l├▓ng chß╗ìn Khoa/Ph├▓ng ban!', 'error');
       return;
     }
     if (createForm.phone && !/^0\d{9}$/.test(createForm.phone)) {
-      showToast('Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng 0.', 'error');
+      showToast('Sß╗æ ─æiß╗çn thoß║íi kh├┤ng hß╗úp lß╗ç! Vui l├▓ng nhß║¡p 10 chß╗» sß╗æ bß║»t ─æß║ºu bß║▒ng 0.', 'error');
       return;
     }
     if (createForm.citizenId && !/^\d{12}$/.test(createForm.citizenId)) {
-      showToast('Căn cước công dân không hợp lệ! Vui lòng nhập đúng 12 chữ số.', 'error');
+      showToast('C─ân c╞░ß╗¢c c├┤ng d├ón kh├┤ng hß╗úp lß╗ç! Vui l├▓ng nhß║¡p ─æ├║ng 12 chß╗» sß╗æ.', 'error');
       return;
     }
 
@@ -414,9 +410,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(data => {
         setIsLoading(false);
         if (data.success === false) {
-          showToast(data.message || 'Lỗi khi tạo tài khoản.', 'error');
+          showToast(data.message || 'Lß╗ùi khi tß║ío t├ái khoß║ún.', 'error');
         } else {
-          showToast(data.message || 'Đã tạo tài khoản thành công!', 'success');
+          showToast(data.message || '─É├ú tß║ío t├ái khoß║ún th├ánh c├┤ng!', 'success');
           setShowCreateModal(false);
 
           if (data.generatedPassword) {
@@ -446,7 +442,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .catch(err => {
         setIsLoading(false);
         console.error(err);
-        showToast('Lỗi kết nối máy chủ.', 'error');
+        showToast('Lß╗ùi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
@@ -468,17 +464,17 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             userId: userId
           });
         } else {
-          showToast(data.message || 'Không thể tải thông tin tài khoản.', 'error');
+          showToast(data.message || 'Kh├┤ng thß╗â tß║úi th├┤ng tin t├ái khoß║ún.', 'error');
         }
       })
       .catch(err => {
         setIsLoading(false);
-        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+        showToast('C├│ lß╗ùi xß║úy ra khi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
   const handleRegeneratePassword = (role, userId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn cấp lại mật khẩu tạm thời mới cho tài khoản này? Mật khẩu cũ sẽ không sử dụng được nữa.')) {
+    if (!window.confirm('Bß║ín c├│ chß║»c chß║»n muß╗æn cß║Ñp lß║íi mß║¡t khß║⌐u tß║ím thß╗¥i mß╗¢i cho t├ái khoß║ún n├áy? Mß║¡t khß║⌐u c┼⌐ sß║╜ kh├┤ng sß╗¡ dß╗Ñng ─æ╞░ß╗úc nß╗»a.')) {
       return;
     }
     setIsLoading(true);
@@ -487,7 +483,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         setIsLoading(false);
         if (data.success) {
           setCustomNewPassword('');
-          showToast(data.message || 'Đã cấp lại mật khẩu mới!', 'success');
+          showToast(data.message || '─É├ú cß║Ñp lß║íi mß║¡t khß║⌐u mß╗¢i!', 'success');
           setCreatedCredentials({
             email: data.email,
             password: data.password,
@@ -498,18 +494,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             userId: userId
           });
         } else {
-          showToast(data.message || 'Không thể cấp lại mật khẩu.', 'error');
+          showToast(data.message || 'Kh├┤ng thß╗â cß║Ñp lß║íi mß║¡t khß║⌐u.', 'error');
         }
       })
       .catch(err => {
         setIsLoading(false);
-        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+        showToast('C├│ lß╗ùi xß║úy ra khi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
   const handleSaveCustomPassword = (role, userId) => {
     if (!customNewPassword || !customNewPassword.trim()) {
-      showToast('Vui lòng nhập mật khẩu mới!', 'error');
+      showToast('Vui l├▓ng nhß║¡p mß║¡t khß║⌐u mß╗¢i!', 'error');
       return;
     }
     setIsLoading(true);
@@ -517,18 +513,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(data => {
         setIsLoading(false);
         if (data.success) {
-          showToast(data.message || 'Đặt lại mật khẩu thành công!', 'success');
+          showToast(data.message || '─Éß║╖t lß║íi mß║¡t khß║⌐u th├ánh c├┤ng!', 'success');
           setCustomNewPassword('');
           setCreatedCredentials(null);
           refreshUsers();
         } else {
-          showToast(data.message || 'Không thể đặt lại mật khẩu.', 'error');
+          showToast(data.message || 'Kh├┤ng thß╗â ─æß║╖t lß║íi mß║¡t khß║⌐u.', 'error');
         }
       })
       .catch(err => {
         setIsLoading(false);
         console.error(err);
-        showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+        showToast('C├│ lß╗ùi xß║úy ra khi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
@@ -554,14 +550,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const handleCreateDepartment = (e) => {
     e.preventDefault();
     if (!deptForm.name.trim() || !deptForm.code.trim()) {
-      showToast('Vui lòng nhập đầy đủ tên và mã khoa!', 'error');
+      showToast('Vui l├▓ng nhß║¡p ─æß║ºy ─æß╗º t├¬n v├á m├ú khoa!', 'error');
       return;
     }
     setIsLoading(true);
     adminApi.createDepartment(deptForm)
       .then(res => {
         setIsLoading(false);
-        showToast('Tạo khoa/phòng ban mới thành công!', 'success');
+        showToast('Tß║ío khoa/ph├▓ng ban mß╗¢i th├ánh c├┤ng!', 'success');
         setShowCreateDeptModal(false);
         setDeptForm({ name: '', code: '', description: '' });
         adminApi.getDepartments()
@@ -570,7 +566,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .catch(err => {
         setIsLoading(false);
         console.error(err);
-        showToast('Có lỗi xảy ra khi tạo khoa.', 'error');
+        showToast('C├│ lß╗ùi xß║úy ra khi tß║ío khoa.', 'error');
       });
   };
 
@@ -602,7 +598,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(res => {
         setIsLoading(false);
         if (res.success || res.transfer) {
-          showToast(res.message || 'Điều chuyển nhân sự thành công!', 'success');
+          showToast(res.message || '─Éiß╗üu chuyß╗ân nh├ón sß╗▒ th├ánh c├┤ng!', 'success');
           setShowTransferModal(false);
 
           refreshUsers();
@@ -611,13 +607,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             handleSelectDepartment(selectedDepartment);
           }
         } else {
-          showToast(res.message || 'Lỗi khi điều chuyển.', 'error');
+          showToast(res.message || 'Lß╗ùi khi ─æiß╗üu chuyß╗ân.', 'error');
         }
       })
       .catch(err => {
         setIsLoading(false);
         console.error(err);
-        showToast(err.response?.data?.message || 'Có lỗi xảy ra khi gọi API điều chuyển.', 'error');
+        showToast(err.response?.data?.message || 'C├│ lß╗ùi xß║úy ra khi gß╗ìi API ─æiß╗üu chuyß╗ân.', 'error');
       });
   };
 
@@ -630,9 +626,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .then(res => {
         setIsLoading(false);
         if (res.success === false) {
-          showToast(res.message || 'Lỗi khi ký duyệt tác vụ.', 'error');
+          showToast(res.message || 'Lß╗ùi khi k├╜ duyß╗çt t├íc vß╗Ñ.', 'error');
         } else {
-          showToast(res.message || 'Ký duyệt tác vụ thành công!', 'success');
+          showToast(res.message || 'K├╜ duyß╗çt t├íc vß╗Ñ th├ánh c├┤ng!', 'success');
           setShowSignoffModal(false);
           setSelectedVerificationTask(null);
 
@@ -643,7 +639,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       .catch(err => {
         setIsLoading(false);
         console.error(err);
-        showToast('Có lỗi xảy ra khi ký duyệt.', 'error');
+        showToast('C├│ lß╗ùi xß║úy ra khi k├╜ duyß╗çt.', 'error');
       });
   };
 
@@ -687,7 +683,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
   const handleQueryTransaction = async (txnId, txnRef) => {
     try {
-      showToast("Đang truy vấn...", "success");
+      showToast("─Éang truy vß║Ñn...", "success");
       let res;
       if (!String(txnRef).includes('_')) {
         // PayOS
@@ -698,13 +694,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       }
 
       if (res && res.success) {
-        showToast(res.message || "Trạng thái giao dịch: Thành công. Đã đồng bộ!", "success");
+        showToast(res.message || "Trß║íng th├íi giao dß╗ïch: Th├ánh c├┤ng. ─É├ú ─æß╗ông bß╗Ö!", "success");
       } else {
-        showToast(res?.message || "Giao dịch chưa thanh toán hoặc có lỗi xảy ra.", "error");
+        showToast(res?.message || "Giao dß╗ïch ch╞░a thanh to├ín hoß║╖c c├│ lß╗ùi xß║úy ra.", "error");
       }
       fetchVnpayTransactions();
     } catch (err) {
-      showToast(err.message || "Lỗi truy vấn giao dịch.", "error");
+      showToast(err.message || "Lß╗ùi truy vß║Ñn giao dß╗ïch.", "error");
     }
   };
 
@@ -722,11 +718,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
   const handleRefundSubmit = async () => {
     if (!refundAmount || isNaN(refundAmount) || refundAmount <= 0) {
-      showToast("Số tiền hoàn không hợp lệ.", "error");
+      showToast("Sß╗æ tiß╗ün ho├án kh├┤ng hß╗úp lß╗ç.", "error");
       return;
     }
     if (!refundReason.trim()) {
-      showToast("Vui lòng nhập lý do hoàn tiền.", "error");
+      showToast("Vui l├▓ng nhß║¡p l├╜ do ho├án tiß╗ün.", "error");
       return;
     }
     setIsRefunding(true);
@@ -736,14 +732,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         reason: refundReason
       });
       if (res && res.success) {
-        showToast("Yêu cầu hoàn tiền đã được gửi tới VNPAY.", "success");
+        showToast("Y├¬u cß║ºu ho├án tiß╗ün ─æ├ú ─æ╞░ß╗úc gß╗¡i tß╗¢i VNPAY.", "success");
         handleCloseRefundModal();
         fetchVnpayTransactions();
       } else {
-        showToast(res?.message || "Lỗi hoàn tiền.", "error");
+        showToast(res?.message || "Lß╗ùi ho├án tiß╗ün.", "error");
       }
     } catch (err) {
-      showToast(err.message || "Lỗi hoàn tiền.", "error");
+      showToast(err.message || "Lß╗ùi ho├án tiß╗ün.", "error");
     } finally {
       setIsRefunding(false);
     }
@@ -751,7 +747,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
   const handleLookupBank = async () => {
     if (!vnpayConfig?.bankName || !vnpayConfig?.bankAccountNo) {
-      showToast("Vui lòng chọn ngân hàng và nhập số tài khoản trước khi kiểm tra.", "error");
+      showToast("Vui l├▓ng chß╗ìn ng├ón h├áng v├á nhß║¡p sß╗æ t├ái khoß║ún tr╞░ß╗¢c khi kiß╗âm tra.", "error");
       return;
     }
     setIsLookingUp(true);
@@ -762,14 +758,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       if (res && res.success && res.data && res.data.accountName) {
         setLookupResult(res.data.accountName);
         setVnpayConfig({ ...vnpayConfig, bankAccountName: res.data.accountName });
-        showToast("Đã lấy được tên chủ tài khoản: " + res.data.accountName, "success");
+        showToast("─É├ú lß║Ñy ─æ╞░ß╗úc t├¬n chß╗º t├ái khoß║ún: " + res.data.accountName, "success");
       } else {
-        setLookupError(res?.message || "Không tìm thấy thông tin tài khoản.");
-        showToast(res?.message || "Không tìm thấy thông tin tài khoản.", "error");
+        setLookupError(res?.message || "Kh├┤ng t├¼m thß║Ñy th├┤ng tin t├ái khoß║ún.");
+        showToast(res?.message || "Kh├┤ng t├¼m thß║Ñy th├┤ng tin t├ái khoß║ún.", "error");
       }
     } catch (err) {
-      setLookupError(err.message || "Lỗi tra cứu tài khoản.");
-      showToast(err.message || "Lỗi tra cứu tài khoản.", "error");
+      setLookupError(err.message || "Lß╗ùi tra cß╗⌐u t├ái khoß║ún.");
+      showToast(err.message || "Lß╗ùi tra cß╗⌐u t├ái khoß║ún.", "error");
     } finally {
       setIsLookingUp(false);
     }
@@ -805,22 +801,22 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     try {
       const data = await adminApi.saveVnpayConfig(vnpayConfig);
       if (data) {
-        setVnpaySuccessMessage("Đã lưu cấu hình kết nối VNPay thành công!");
-        showToast("Cập nhật cấu hình VNPay thành công!", "success");
+        setVnpaySuccessMessage("─É├ú l╞░u cß║Ñu h├¼nh kß║┐t nß╗æi VNPay th├ánh c├┤ng!");
+        showToast("Cß║¡p nhß║¡t cß║Ñu h├¼nh VNPay th├ánh c├┤ng!", "success");
         const freshConfig = await adminApi.getVnpayConfig();
         if (freshConfig) setVnpayConfig(freshConfig);
         setIsEditingVnpay(false);
       }
     } catch (err) {
-      setVnpayErrorMessage(err.message || "Lỗi lưu cấu hình VNPay");
-      showToast("Lỗi cập nhật cấu hình VNPay", "error");
+      setVnpayErrorMessage(err.message || "Lß╗ùi l╞░u cß║Ñu h├¼nh VNPay");
+      showToast("Lß╗ùi cß║¡p nhß║¡t cß║Ñu h├¼nh VNPay", "error");
     } finally {
       setVnpaySaving(false);
     }
   };
 
   const handleReconcile = async (txnId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn duyệt thủ công giao dịch này và kích hoạt dự án tương ứng?")) return;
+    if (!window.confirm("Bß║ín c├│ chß║»c chß║»n muß╗æn duyß╗çt thß╗º c├┤ng giao dß╗ïch n├áy v├á k├¡ch hoß║ít dß╗▒ ├ín t╞░╞íng ß╗⌐ng?")) return;
     try {
       setIsLoading(true);
       const res = await adminApi.reconcileVnpayTransaction(txnId);
@@ -833,7 +829,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         }
       }
     } catch (err) {
-      showToast(err.message || "Lỗi đối soát giao dịch", "error");
+      showToast(err.message || "Lß╗ùi ─æß╗æi so├ít giao dß╗ïch", "error");
     } finally {
       setIsLoading(false);
     }
@@ -861,11 +857,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       if (Array.isArray(res) && res.length > 0) {
         setServicePackages(res);
         setIsEditingPackages(false);
-        showToast('Cập nhật bảng giá thành công', 'success');
+        showToast('Cß║¡p nhß║¡t bß║úng gi├í th├ánh c├┤ng', 'success');
       }
     } catch (err) {
       console.error('Error updating packages:', err);
-      showToast('Lỗi cập nhật bảng giá', 'error');
+      showToast('Lß╗ùi cß║¡p nhß║¡t bß║úng gi├í', 'error');
     } finally {
       setIsUpdatingPackages(false);
     }
@@ -1060,24 +1056,24 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const handleUserStatusChange = (userId, role, newStatus) => {
     if (newStatus !== 'ACTIVE') {
       if (banReasons.length === 0) {
-        showToast('Vui lòng chọn ít nhất 1 lý do vi phạm.', 'error');
+        showToast('Vui l├▓ng chß╗ìn ├¡t nhß║Ñt 1 l├╜ do vi phß║ím.', 'error');
         return;
       }
       if (!adminPin || adminPin.trim() === '') {
-        showToast('Vui lòng nhập mã PIN xác nhận.', 'error');
+        showToast('Vui l├▓ng nhß║¡p m├ú PIN x├íc nhß║¡n.', 'error');
         return;
       }
     }
 
-    const reasonStr = banReasons.length > 0 ? banReasons.join(', ') : 'Yêu cầu từ Admin';
+    const reasonStr = banReasons.length > 0 ? banReasons.join(', ') : 'Y├¬u cß║ºu tß╗½ Admin';
     const reasonParam = encodeURIComponent(reasonStr);
 
     adminApi.updateUserStatus(userId, role, newStatus, reasonParam, adminPin, user?.id)
       .then(data => {
         if (data.success === false) {
-          showToast(data.message || 'Hành động bị từ chối bởi hệ thống.', 'error');
+          showToast(data.message || 'H├ánh ─æß╗Öng bß╗ï tß╗½ chß╗æi bß╗ƒi hß╗ç thß╗æng.', 'error');
         } else {
-          showToast(data.message || 'Thao tác thành công!', 'success');
+          showToast(data.message || 'Thao t├íc th├ánh c├┤ng!', 'success');
           refreshUsers();
           loadDashboardData();
           setActiveUserForAction(null);
@@ -1087,7 +1083,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       })
       .catch(err => {
         console.error(err);
-        showToast('Lỗi kết nối máy chủ.', 'error');
+        showToast('Lß╗ùi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
@@ -1108,16 +1104,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     adminApi.moderateProfileRequest(requestId, approve, reasonParam, user?.id)
       .then(res => {
         if (res.success) {
-          showToast(res.message || 'Thao tác thành công.', 'success');
+          showToast(res.message || 'Thao t├íc th├ánh c├┤ng.', 'success');
         } else {
-          showToast(res.message || 'Thao tác thất bại.', 'error');
+          showToast(res.message || 'Thao t├íc thß║Ñt bß║íi.', 'error');
         }
         adminApi.getProfileRequests()
           .then(data => setProfileRequests(Array.isArray(data) ? data : []));
       })
       .catch(err => {
         console.error(err);
-        showToast('Lỗi kết nối máy chủ.', 'error');
+        showToast('Lß╗ùi kß║┐t nß╗æi m├íy chß╗º.', 'error');
       });
   };
 
@@ -1126,10 +1122,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     const status = approve ? 'APPROVED' : 'REJECTED';
     let reason = null;
     if (status === 'REJECTED') {
-      reason = window.prompt("Nhập lý do từ chối yêu cầu rút tiền này (bắt buộc):");
+      reason = window.prompt("Nhß║¡p l├╜ do tß╗½ chß╗æi y├¬u cß║ºu r├║t tiß╗ün n├áy (bß║»t buß╗Öc):");
       if (reason === null) return; // user cancelled
       if (!reason.trim()) {
-        alert("Vui lòng nhập lý do từ chối.");
+        alert("Vui l├▓ng nhß║¡p l├╜ do tß╗½ chß╗æi.");
         return;
       }
     }
@@ -1190,12 +1186,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setToast({ title: 'Lỗi', message: 'Không thể mở hộp thoại lưu file: ' + err.message, type: 'error' });
+        setToast({ title: 'Lß╗ùi', message: 'Kh├┤ng thß╗â mß╗ƒ hß╗Öp thoß║íi l╞░u file: ' + err.message, type: 'error' });
       }
       return; 
     }
 
-    setToast({ title: 'Đang xử lý', message: `Đang khởi tạo file ${format}, vui lòng đợi...`, type: 'success' });
+    setToast({ title: '─Éang xß╗¡ l├╜', message: `─Éang khß╗ƒi tß║ío file ${format}, vui l├▓ng ─æß╗úi...`, type: 'success' });
 
     let finalBlob = null;
 
@@ -1219,13 +1215,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       }
 
       doc.setFontSize(16);
-      doc.text("DANH SÁCH TÀI KHOẢN NGƯỜI DÙNG - LancerPro", 14, 15);
+      doc.text("DANH S├üCH T├ÇI KHOß║óN NG╞»ß╗£I D├ÖNG - LancerPro", 14, 15);
       
-      const tableColumn = ["ID", "Tên hiển thị", "Email", "Vai trò", "Trạng thái", "Đăng nhập cuối", "Ngày gia nhập"];
+      const tableColumn = ["ID", "T├¬n hiß╗ân thß╗ï", "Email", "Vai tr├▓", "Trß║íng th├íi", "─É─âng nhß║¡p cuß╗æi", "Ng├áy gia nhß║¡p"];
       const tableRows = [];
 
       usersList.forEach(user => {
-        let loginStr = 'Chưa đăng nhập';
+        let loginStr = 'Ch╞░a ─æ─âng nhß║¡p';
         if (user.lastLogin) {
           const cleanStr = user.lastLogin.split('.')[0];
           loginStr = new Date(cleanStr).toLocaleString('vi-VN');
@@ -1267,18 +1263,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <thead>
               <tr>
                 <th style="width: 60px;">ID</th>
-                <th style="width: 180px;">Tên hiển thị</th>
+                <th style="width: 180px;">T├¬n hiß╗ân thß╗ï</th>
                 <th style="width: 250px;">Email</th>
-                <th style="width: 120px;">Vai trò</th>
-                <th style="width: 100px;">Trạng thái</th>
-                <th style="width: 180px;">Đăng nhập cuối</th>
-                <th style="width: 120px;">Ngày gia nhập</th>
+                <th style="width: 120px;">Vai tr├▓</th>
+                <th style="width: 100px;">Trß║íng th├íi</th>
+                <th style="width: 180px;">─É─âng nhß║¡p cuß╗æi</th>
+                <th style="width: 120px;">Ng├áy gia nhß║¡p</th>
               </tr>
             </thead>
             <tbody>`;
       
       usersList.forEach(user => {
-        let loginStr = 'Chưa đăng nhập';
+        let loginStr = 'Ch╞░a ─æ─âng nhß║¡p';
         if (user.lastLogin) {
           const cleanStr = user.lastLogin.split('.')[0];
           loginStr = new Date(cleanStr).toLocaleString('vi-VN');
@@ -1310,7 +1306,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         const writable = await fileHandle.createWritable();
         await writable.write(finalBlob);
         await writable.close();
-        setToast({ title: 'Thành công', message: `Đã lưu file vào máy: ${defaultFileName}`, type: 'success' });
+        setToast({ title: 'Th├ánh c├┤ng', message: `─É├ú l╞░u file v├áo m├íy: ${defaultFileName}`, type: 'success' });
       } else if (fallbackMode) {
         const url = URL.createObjectURL(finalBlob);
         const link = document.createElement('a');
@@ -1319,10 +1315,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setToast({ title: 'Thành công', message: `Đã tải xuống file: ${defaultFileName}`, type: 'success' });
+        setToast({ title: 'Th├ánh c├┤ng', message: `─É├ú tß║úi xuß╗æng file: ${defaultFileName}`, type: 'success' });
       }
     } catch (err) {
-      setToast({ title: 'Lỗi', message: 'Không thể lưu nội dung file. Chi tiết: ' + err.message, type: 'error' });
+      setToast({ title: 'Lß╗ùi', message: 'Kh├┤ng thß╗â l╞░u nß╗Öi dung file. Chi tiß║┐t: ' + err.message, type: 'error' });
     }
   };
 
@@ -2614,144 +2610,106 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           </div>
 
-          <div className="space-y-4">
-            
+          <div className="space-y-6">
             {/* OVERVIEW Section */}
             <div className="space-y-1">
-              <div 
-                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
-                onClick={() => setExpandedMenus(prev => prev.includes('overview') ? prev.filter(m => m !== 'overview') : [...prev, 'overview'])}
-              >
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
-                  Overview
-                </p>
-                {expandedMenus.includes('overview') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Overview</span>
+              </p>
               
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('overview') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {[
-                  { id: 'home', icon: Home, label: 'Trang chủ' },
-                  { id: 'dashboard_overview', icon: AlertTriangle, label: 'Tổng quan & Cảnh báo' },
-                  { id: 'dashboard_financials', icon: BadgeDollarSign, label: 'Biểu đồ & Tài chính' },
-                  { id: 'dashboard_activity', icon: Activity, label: 'Nhật ký Hoạt động' }
-                ].map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {[
+                { id: 'home', icon: Home, label: 'Trang chß╗º' },
+                { id: 'dashboard', icon: LayoutDashboard, label: 'B├ío c├ío & Thß╗æng k├¬' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
             </div>
 
             {/* MANAGEMENT Section */}
             <div className="space-y-1">
-              <div 
-                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
-                onClick={() => setExpandedMenus(prev => prev.includes('management') ? prev.filter(m => m !== 'management') : [...prev, 'management'])}
-              >
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
-                  Management
-                </p>
-                {expandedMenus.includes('management') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Management</span>
+              </p>
               
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('management') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {[
-                  { id: 'users', icon: Users, label: 'Người dùng' },
-                  { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' }
-                ].map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                      {item.label}
-                    </span>
-                    {item.id === 'users' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
-                  </div>
-                ))}
-              </div>
+              {[
+                { id: 'users', icon: Users, label: 'Ng╞░ß╗¥i d├╣ng' },
+                { id: 'departments', icon: Sliders, label: 'Ph├▓ng ban / Khoa' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                  {item.id === 'users' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
+                </div>
+              ))}
             </div>
 
             {/* FINANCE Section */}
             <div className="space-y-1">
-              <div 
-                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
-                onClick={() => setExpandedMenus(prev => prev.includes('finance') ? prev.filter(m => m !== 'finance') : [...prev, 'finance'])}
-              >
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
-                  Finance
-                </p>
-                {expandedMenus.includes('finance') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>Finance</span>
+              </p>
               
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('finance') ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {[
-                  { id: 'finance_dashboard', icon: PieChart, label: 'Dashboard Tài chính' },
-                  { id: 'finance_banking', icon: Landmark, label: 'Cấu hình Ngân hàng' },
-                  { id: 'finance_history', icon: Receipt, label: 'Lịch sử Giao dịch' }
-                ].map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {[
+                { id: 'vnpay', icon: BadgeDollarSign, label: 'Giao dß╗ïch VNPay' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
             </div>
             
             {/* SYSTEM Section */}
             <div className="space-y-1">
-              <div 
-                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
-                onClick={() => setExpandedMenus(prev => prev.includes('system') ? prev.filter(m => m !== 'system') : [...prev, 'system'])}
-              >
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
-                  System
-                </p>
-                {expandedMenus.includes('system') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+                <span>System</span>
+              </p>
               
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('system') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {[
-                  { id: 'cms', icon: Settings, label: 'Cấu hình (CMS)' }
-                ].map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {[
+                { id: 'cms', icon: Settings, label: 'Cß║Ñu h├¼nh (CMS)' }
+              ].map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                    activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
+                  <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-
         </div>
 
         <div className="space-y-1 mt-6 pt-4 border-t border-slate-100">
@@ -2791,28 +2749,20 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         <header className="bg-white border-b border-slate-200 h-20 px-8 flex justify-between items-center shrink-0">
           <div>
             <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-3">
-              {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hệ thống Quản trị LancerPro</>}
-              {activeTab === 'dashboard_overview' && <><AlertTriangle className="w-6 h-6 text-blue-600" /> Tổng quan & Cảnh báo</>}
-              {activeTab === 'dashboard_financials' && <><BadgeDollarSign className="w-6 h-6 text-blue-600" /> Biểu đồ & Tài chính</>}
-              {activeTab === 'dashboard_activity' && <><Activity className="w-6 h-6 text-blue-600" /> Nhật ký Hoạt động</>}
+              {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hß╗ç thß╗æng Quß║ún trß╗ï LancerPro</>}
+              {activeTab === 'dashboard' && <><Settings className="w-6 h-6 text-blue-600" /> B├ío c├ío & Thß╗æng k├¬ Tß╗òng quan</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
-              {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
+              {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quß║ún l├╜ Khoa / Ph├▓ng Ban</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
-              {activeTab === 'finance_dashboard' && <><PieChart className="w-6 h-6 text-emerald-600" /> Dashboard Tài chính</>}
-              {activeTab === 'finance_banking' && <><Landmark className="w-6 h-6 text-emerald-600" /> Cấu hình Ngân hàng</>}
-              {activeTab === 'finance_history' && <><Receipt className="w-6 h-6 text-emerald-600" /> Lịch sử Giao dịch Ngân hàng</>}
+              {activeTab === 'vnpay' && <><BadgeDollarSign className="w-6 h-6 text-emerald-600" /> Cß║Ñu h├¼nh & Giao dß╗ïch VNPay</>}
             </h1>
             <p className="text-body-sm text-muted mt-1 ml-9">
-              {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
-              {activeTab === 'dashboard_overview' && 'Giám sát các chỉ số tổng quan, tranh chấp và công việc cần xử lý ngay.'}
-              {activeTab === 'dashboard_financials' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
-              {activeTab === 'dashboard_activity' && 'Theo dõi các hoạt động mới nhất trên hệ thống theo thời gian thực.'}
+              {activeTab === 'home' && 'Tß╗òng quan dß╗ïch vß╗Ñ v├á lß╗æi tß║»t truy cß║¡p nhanh v├áo c├íc ph├ón hß╗ç nghiß╗çp vß╗Ñ.'}
+              {activeTab === 'dashboard' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
-              {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
+              {activeTab === 'departments' && 'Quß║ún l├╜ c├íc khoa chuy├¬n m├┤n, gi├ím s├ít phi├¬n l├ám viß╗çc v├á nhß║¡t k├╜ thao t├íc.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
-              {activeTab === 'finance_dashboard' && 'Báo cáo doanh thu và đối soát các giao dịch phân bổ dòng tiền.'}
-              {activeTab === 'finance_banking' && 'Cài đặt tham số kết nối VNPay / VietQR và cấu hình Gói Dịch vụ.'}
-              {activeTab === 'finance_history' && 'Sao kê giao dịch, lịch sử truy vấn và kiểm tra trạng thái thanh toán.'}
+              {activeTab === 'vnpay' && 'Quß║ún l├╜ tham sß╗æ kß║┐t nß╗æi VNPay v├á ─æß╗æi so├ít c├íc giao dß╗ïch ─æ├│ng ph├¡ nß╗ün tß║úng cß╗ºa nh├á tuyß╗ân dß╗Ñng.'}
             </p>
           </div>
 
@@ -2865,7 +2815,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div className="profile-menu-dropdown">
                 <div className="profile-menu-item px-3 py-2 border-b border-slate-50 mb-1">
                   <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-left">
-                    Tài khoản
+                    T├ái khoß║ún
                   </p>
                   <p
                     className="text-sm font-bold text-slate-800 truncate text-left"
@@ -2887,7 +2837,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     }`}
                   >
                     <span className="profile-menu-circle" />
-                    <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                    <Edit3 className="w-4 h-4" /> Sß╗¡a th├┤ng tin c├í nh├ón
                   </button>
                 </div>
 
@@ -2903,7 +2853,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     }`}
                   >
                     <span className="profile-menu-circle" />
-                    <Settings className="w-4 h-4" /> Cài đặt chung
+                    <Settings className="w-4 h-4" /> C├ái ─æß║╖t chung
                   </button>
                 </div>
 
@@ -2920,7 +2870,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       }`}
                     >
                       <span className="profile-menu-circle" />
-                      <MessageSquare className="w-4 h-4" /> Tin nhắn
+                      <MessageSquare className="w-4 h-4" /> Tin nhß║»n
                     </button>
                   </div>
                 )}
@@ -2957,7 +2907,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     className="profile-menu-btn w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                   >
                     <span className="profile-menu-circle" />
-                    <LogOut className="w-4 h-4" /> Đăng xuất
+                    <LogOut className="w-4 h-4" /> ─É─âng xuß║Ñt
                   </button>
                 </div>
               </div>
@@ -2974,25 +2924,25 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {}
               <div className="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
-                  <h2 className="text-3xl font-bold font-display mb-2">Hệ thống Quản trị LancerPro</h2>
-                  <p className="text-teal-50 mb-8 max-w-lg text-sm">Trung tâm điều hành nền tảng việc làm tự do. Vui lòng chọn phân hệ nghiệp vụ bên dưới để bắt đầu công việc hàng ngày.</p>
+                  <h2 className="text-3xl font-bold font-display mb-2">Hß╗ç thß╗æng Quß║ún trß╗ï LancerPro</h2>
+                  <p className="text-teal-50 mb-8 max-w-lg text-sm">Trung t├óm ─æiß╗üu h├ánh nß╗ün tß║úng viß╗çc l├ám tß╗▒ do. Vui l├▓ng chß╗ìn ph├ón hß╗ç nghiß╗çp vß╗Ñ b├¬n d╞░ß╗¢i ─æß╗â bß║»t ─æß║ºu c├┤ng viß╗çc h├áng ng├áy.</p>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                       <p className="text-3xl font-bold">{stats.totalUsers}</p>
-                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Người dùng</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Ng╞░ß╗¥i d├╣ng</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                       <p className="text-3xl font-bold">{stats.activeProjects}</p>
-                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dự án in-progress</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dß╗▒ ├ín in-progress</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                       <p className="text-3xl font-bold">{pendingProjects.length}</p>
-                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dự án chờ duyệt</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Dß╗▒ ├ín chß╗¥ duyß╗çt</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                       <p className="text-3xl font-bold">{stats.pendingWithdrawals}</p>
-                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Yêu cầu rút tiền</p>
+                      <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider mt-1">Y├¬u cß║ºu r├║t tiß╗ün</p>
                     </div>
                   </div>
                 </div>
@@ -3006,8 +2956,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div>
                 <div className="flex items-center gap-2 mb-6 text-slate-700">
                   <LayoutDashboard className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-xl font-bold">Dịch vụ Quản lý Nghiệp vụ</h3>
-                  <span className="text-sm font-normal text-slate-500 ml-2">Chọn nghiệp vụ để bắt đầu công việc hàng ngày</span>
+                  <h3 className="text-xl font-bold">Dß╗ïch vß╗Ñ Quß║ún l├╜ Nghiß╗çp vß╗Ñ</h3>
+                  <span className="text-sm font-normal text-slate-500 ml-2">Chß╗ìn nghiß╗çp vß╗Ñ ─æß╗â bß║»t ─æß║ºu c├┤ng viß╗çc h├áng ng├áy</span>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -3020,11 +2970,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <LayoutDashboard className="w-6 h-6" />
                       </div>
-                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOß║áT ─Éß╗ÿNG</span>
                     </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2">Báo cáo & Thống kê</h4>
-                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Xem biểu đồ tăng trưởng, doanh thu GMV, tỷ lệ chuyển đổi và các chỉ số tài chính.</p>
-                    <p className="text-xs font-bold text-emerald-600">Dữ liệu theo thời gian thực</p>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">B├ío c├ío & Thß╗æng k├¬</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Xem biß╗âu ─æß╗ô t─âng tr╞░ß╗ƒng, doanh thu GMV, tß╗╖ lß╗ç chuyß╗ân ─æß╗òi v├á c├íc chß╗ë sß╗æ t├ái ch├¡nh.</p>
+                    <p className="text-xs font-bold text-emerald-600">Dß╗» liß╗çu theo thß╗¥i gian thß╗▒c</p>
                   </div>
 
                   {}
@@ -3036,11 +2986,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Users className="w-6 h-6" />
                       </div>
-                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOß║áT ─Éß╗ÿNG</span>
                     </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2">Quản lý Người dùng</h4>
-                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Khóa/mở khóa tài khoản, ban vĩnh viễn, xem lịch sử truy cập của hệ thống.</p>
-                    <p className="text-xs font-bold text-rose-600">{stats.totalUsers} người dùng</p>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Quß║ún l├╜ Ng╞░ß╗¥i d├╣ng</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Kh├│a/mß╗ƒ kh├│a t├ái khoß║ún, ban v─⌐nh viß╗àn, xem lß╗ïch sß╗¡ truy cß║¡p cß╗ºa hß╗ç thß╗æng.</p>
+                    <p className="text-xs font-bold text-rose-600">{stats.totalUsers} ng╞░ß╗¥i d├╣ng</p>
                   </div>
 
                   {}
@@ -3052,11 +3002,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Settings className="w-6 h-6" />
                       </div>
-                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOẠT ĐỘNG</span>
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider">HOß║áT ─Éß╗ÿNG</span>
                     </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2">Cấu hình & SEO</h4>
-                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Quản lý danh mục kỹ năng, cấu hình nền tảng, tối ưu SEO và quản lý khiếu nại.</p>
-                    <p className="text-xs font-bold text-violet-600">Truy cập cấu hình</p>
+                    <h4 className="text-lg font-bold text-slate-800 mb-2">Cß║Ñu h├¼nh & SEO</h4>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">Quß║ún l├╜ danh mß╗Ñc kß╗╣ n─âng, cß║Ñu h├¼nh nß╗ün tß║úng, tß╗æi ╞░u SEO v├á quß║ún l├╜ khiß║┐u nß║íi.</p>
+                    <p className="text-xs font-bold text-violet-600">Truy cß║¡p cß║Ñu h├¼nh</p>
                   </div>
                 </div>
               </div>
@@ -3064,10 +3014,57 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           )}
 
           {}
-          {activeTab.startsWith('dashboard_') && (
+          {activeTab === 'dashboard' && (
             <div className="animate-in fade-in duration-300">
+              {/* Sub-Tabs Navigation */}
+              <div className="flex justify-center mb-8">
+                <div className="radio-inputs">
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'overview'} onChange={() => setDashboardSubTab('overview')} />
+                    <span className="name">Tß╗òng quan & Cß║únh b├ío</span>
+                  </label>
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'financials'} onChange={() => setDashboardSubTab('financials')} />
+                    <span className="name">Biß╗âu ─æß╗ô & T├ái ch├¡nh</span>
+                  </label>
+                  <label className="radio">
+                    <input type="radio" name="dashboardTab" checked={dashboardSubTab === 'activity'} onChange={() => setDashboardSubTab('activity')} />
+                    <span className="name">Nhß║¡t k├╜ Hoß║ít ─æß╗Öng</span>
+                  </label>
+                </div>
+              </div>
 
-              {activeTab === 'dashboard_overview' && (
+              {/* TOP BANNER */}
+              <div className="bg-[#0f4c5c] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center text-white mb-8 shadow-[0_4px_20px_rgb(15,76,92,0.15)]">
+                <div>
+                  <p className="text-teal-100/80 font-medium text-[13px] mb-1.5">Total Balance</p>
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-3xl md:text-[40px] font-bold tracking-tight">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
+                    </h2>
+                    <span className="text-emerald-400 text-sm font-semibold flex items-center gap-0.5">
+                      <ArrowUpRight className="w-4 h-4" /> {stats.revenueGrowthPercent || 0}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 mt-6 md:mt-0">
+                  <button className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-bold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm shadow-sm">
+                    <Plus className="w-4 h-4" /> Add
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
+                    <ArrowUpRight className="w-4 h-4" /> Send
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 text-sm backdrop-blur-sm">
+                    <RefreshCw className="w-4 h-4" /> Request
+                  </button>
+                  <button className="bg-white/10 hover:bg-white/20 text-white font-semibold p-2.5 rounded-xl transition-colors flex items-center justify-center backdrop-blur-sm">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {dashboardSubTab === 'overview' && (
               <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
                 
                 <div className="space-y-8">
@@ -3075,42 +3072,42 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-rose-500" />
-                      Công việc Giám sát & Xử lý
+                      C├┤ng viß╗çc Gi├ím s├ít & Xß╗¡ l├╜
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                {/* Tranh chấp */}
+                {/* Tranh chß║Ñp */}
                 <div className="bg-white p-5 rounded-xl border border-rose-100 shadow-sm border-l-[4px] border-l-rose-500 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
                     <span className="bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold animate-pulse">
-                      XỬ LÝ NGAY
+                      Xß╗¼ L├¥ NGAY
                     </span>
                   </div>
                   <div className="mt-4">
                     <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeDisputes || 0}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tranh chấp đang mở</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tranh chß║Ñp ─æang mß╗ƒ</p>
                   </div>
                 </div>
 
-                {/* Yêu cầu rút tiền */}
+                {/* Y├¬u cß║ºu r├║t tiß╗ün */}
                 <div className="bg-white p-5 rounded-xl border border-amber-100 shadow-sm border-l-[4px] border-l-amber-500 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
                       <RefreshCw className="w-5 h-5" />
                     </div>
                     <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
-                      CHỜ DUYỆT
+                      CHß╗£ DUYß╗åT
                     </span>
                   </div>
                   <div className="mt-4">
                     <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingWithdrawals || 0}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Yêu cầu rút tiền</p>
+                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Y├¬u cß║ºu r├║t tiß╗ün</p>
                   </div>
                 </div>
 
-                  {/* Chờ duyệt KYC */}
+                  {/* Chß╗¥ duyß╗çt KYC */}
                   <div className="bg-white p-5 rounded-xl border border-blue-100 shadow-sm border-l-[4px] border-l-blue-500 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">
                       <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -3122,11 +3119,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                     <div className="mt-4">
                       <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingKyc || 0}</p>
-                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Profile chờ duyệt</p>
+                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Profile chß╗¥ duyß╗çt</p>
                     </div>
                   </div>
 
-                  {/* Task Kiểm duyệt (Staff/Manager) */}
+                  {/* Task Kiß╗âm duyß╗çt (Staff/Manager) */}
                   <div className="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm border-l-[4px] border-l-indigo-500 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">
                       <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -3138,7 +3135,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </div>
                     <div className="mt-4">
                       <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingVerificationTasks || 0}</p>
-                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Task đang chờ xử lý</p>
+                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Task ─æang chß╗¥ xß╗¡ l├╜</p>
                     </div>
                   </div>
                 </div>
@@ -3150,7 +3147,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <div>
                       <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                         <Users className="w-5 h-5 text-indigo-500" />
-                        Người dùng & Dự án
+                        Ng╞░ß╗¥i d├╣ng & Dß╗▒ ├ín
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         {/* Users */}
@@ -3165,7 +3162,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           </div>
                           <div className="mt-4">
                             <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.totalUsers || 0}</p>
-                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng người dùng</p>
+                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Tß╗òng ng╞░ß╗¥i d├╣ng</p>
                           </div>
                         </div>
 
@@ -3181,7 +3178,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           </div>
                           <div className="mt-4">
                             <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeProjects || 0}</p>
-                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Dự án In Progress</p>
+                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Dß╗▒ ├ín In Progress</p>
                           </div>
                         </div>
 
@@ -3191,166 +3188,79 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-inner">
                               <Sparkles className="w-5 h-5" />
                             </div>
-                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">Hôm nay</span>
+                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">H├┤m nay</span>
                           </div>
                           <div className="mt-4">
                             <p className="text-2xl font-extrabold text-amber-600 font-mono">
                               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
                             </p>
-                            <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tức thì</p>
+                            <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tß╗⌐c th├¼</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
               )}
-              {activeTab === 'dashboard_activity' && (
+
+              {dashboardSubTab === 'activity' && (
               <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
 
                   <div className="bg-white border border-slate-200 rounded-[24px] shadow-sm overflow-hidden flex flex-col h-[700px]">
-                    <div className="p-6 border-b border-slate-100 flex flex-col gap-4 bg-slate-50">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative">
-                            <Activity className="w-4 h-4" />
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border-2 border-white rounded-full animate-ping"></span>
-                          </div>
-                          <h3 className="font-bold text-slate-800 text-[15px]">Live Activity Feed</h3>
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative">
+                          <Activity className="w-4 h-4" />
+                          <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border-2 border-white rounded-full animate-ping"></span>
                         </div>
-                        <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
+                        <h3 className="font-bold text-slate-800 text-[15px]">Live Activity Feed</h3>
                       </div>
-                      <div className="relative filter-wrapper w-max z-10">
-                        <div className="filter-main px-4 py-2 bg-white rounded-lg border border-slate-200 cursor-pointer flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors shadow-sm">
-                          <Filter className="w-4 h-4" /> 
-                          {timelineModuleFilter === 'ALL' && timelineRoleFilter === 'ALL' ? 'Bộ lọc hiển thị' : `Đang lọc${timelineModuleFilter !== 'ALL' ? ': ' + timelineModuleFilter : ''}${timelineRoleFilter !== 'ALL' ? ' · ' + timelineRoleFilter : ''}`}
-                          <div className="filter-bar ml-2 scale-[0.65]">
-                            <span className="filter-top filter-bar-list" />
-                            <span className="filter-middle filter-bar-list" />
-                            <span className="filter-bottom filter-bar-list" />
-                          </div>
-                        </div>
-
-                        <section className="filter-menu-container -left-4 w-[480px] origin-top-left" onClick={e => e.stopPropagation()}>
-                          <div className="grid grid-cols-2 gap-6 text-left">
-                            <div className="filter-item-list space-y-2">
-                              <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chức năng (Module)</span>
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {[
-                                  { value: 'ALL', label: 'Tất cả chức năng' },
-                                  { value: 'USER_MANAGEMENT', label: 'Tài khoản & Người dùng' },
-                                  { value: 'PROJECTS', label: 'Kiểm duyệt Dự án' },
-                                  { value: 'FINANCE', label: 'Quản lý Tài chính' },
-                                  { value: 'DEPARTMENTS', label: 'Quản lý Phòng ban' },
-                                  { value: 'CMS_SETTINGS', label: 'Cấu hình Hệ thống' },
-                                  { value: 'SYSTEM', label: 'Hệ thống' }
-                                ].map(mod => (
-                                  <button
-                                    key={mod.value}
-                                    onClick={() => setTimelineModuleFilter(mod.value)}
-                                    className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
-                                      timelineModuleFilter === mod.value
-                                        ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <span className={`w-2 h-2 rounded-full ${timelineModuleFilter === mod.value ? 'bg-blue-500' : 'bg-slate-300'}`}></span>
-                                    {mod.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="filter-item-list space-y-2">
-                              <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Hành động (Action)</span>
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {[
-                                  { value: 'ALL', label: 'Tất cả hành động' },
-                                  { value: 'VERIFY_USER', label: '✅ Duyệt tài khoản' },
-                                  { value: 'CHANGE_STATUS', label: '🔄 Đổi trạng thái' },
-                                  { value: 'INVITE_USER', label: '📨 Mời người dùng' },
-                                  { value: 'UPDATE_FEE_RATE', label: '💰 Cập nhật phí' },
-                                  { value: 'UPDATE_PACKAGE_PRICES', label: '📦 Cập nhật gói' },
-                                  { value: 'UPDATE_PACKAGE_CONFIG', label: '⚙️ Cấu hình gói' },
-                                  { value: 'UPDATE_VNPAY_CONFIG', label: '🏦 Cấu hình VNPay' },
-                                  { value: 'UPDATE_SEO', label: '🌐 Cập nhật SEO' },
-                                  { value: 'TASK_SIGNOFF', label: '📋 Phê duyệt Task' },
-                                  { value: 'MANUAL_RECONCILE_PAYMENT', label: '🔍 Đối soát GD' },
-                                  { value: 'CANCEL_PAYOS_TRANSACTION', label: '❌ Hủy GD PayOS' },
-                                  { value: 'QUERY_PAYOS_TRANSACTION', label: '🔎 Tra cứu PayOS' }
-                                ].map(act => (
-                                  <button
-                                    key={act.value}
-                                    onClick={() => setTimelineRoleFilter(act.value)}
-                                    className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
-                                      timelineRoleFilter === act.value
-                                        ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <span className={`w-2 h-2 rounded-full ${timelineRoleFilter === act.value ? 'bg-blue-500' : 'bg-slate-300'}`}></span>
-                                    {act.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
                     </div>
                     
                     <div className="p-5 flex-1 overflow-y-auto">
-                      <div className="relative border-l-2 border-slate-100 ml-4 space-y-4 pb-4">
-                        {Array.isArray(auditLogs) && auditLogs.filter(log => log && (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.action === timelineRoleFilter)).length > 0 ? (
-                          auditLogs
-                            .filter(log => log && (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.action === timelineRoleFilter))
-                            .slice(0, 50).map((log, idx) => {
-                            if (!log) return null;
-                            const time = log.timestamp ? new Date(log.timestamp).toLocaleString('vi-VN', {
-                                day: '2-digit', month: '2-digit', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit'
-                            }) : '';
+                      <div className="relative border-l-2 border-slate-100 ml-4 space-y-8 pb-4">
+                        {stats.recentActivities && stats.recentActivities.length > 0 ? (
+                          stats.recentActivities.map((activity, idx) => {
+                            const parts = activity.split(" | ");
+                            const time = parts[0];
+                            const content = parts.length > 1 ? parts[1] : activity;
+                            const authorParts = content.split(" - ");
+                            const author = authorParts[0];
+                            const actionDetail = authorParts.length > 1 ? authorParts[1] : content;
                             
                             return (
-                              <div 
-                                key={log.id || idx} 
-                                className="relative pl-6 py-2 cursor-pointer hover:bg-slate-50 transition-colors rounded-xl group"
-                                onClick={() => setSelectedActivity(log)}
-                              >
-                                <span className="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-white border-[3px] border-emerald-400 group-hover:border-blue-500 transition-colors"></span>
-                                <div className="mb-1 flex items-center gap-2 flex-wrap">
+                              <div key={idx} className="relative pl-6">
+                                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-[3px] border-emerald-400"></span>
+                                <div className="mb-1">
                                   <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{time}</span>
-                                  {log.module && <span className={`text-[10px] font-extrabold px-1.5 rounded ${
-                                    log.module === 'FINANCE' ? 'text-emerald-700 bg-emerald-50' :
-                                    log.module === 'USER_MANAGEMENT' ? 'text-blue-700 bg-blue-50' :
-                                    log.module === 'CMS_SETTINGS' ? 'text-violet-700 bg-violet-50' :
-                                    'text-slate-600 bg-slate-100'
-                                  }`}>{log.module}</span>}
-                                  {log.action && <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-1.5 rounded">{log.action}</span>}
                                 </div>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">{log.source || 'Hệ thống'}</p>
-                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 group-hover:bg-white p-2.5 rounded-lg border border-slate-100 transition-colors line-clamp-2">{log.detail || ''}</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{author}</p>
+                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">{actionDetail}</p>
                               </div>
                             );
                           })
                         ) : (
                           <div className="text-center py-10">
-                            <p className="text-sm text-slate-500 italic">Chưa có hoạt động nào gần đây phù hợp với bộ lọc.</p>
+                            <p className="text-sm text-slate-500 italic">Ch╞░a c├│ hoß║ít ─æß╗Öng n├áo gß║ºn ─æ├óy.</p>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
               )}
 
-              {activeTab === 'dashboard_financials' && (
+              {dashboardSubTab === 'financials' && (
               <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Financials */}
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                       <BadgeDollarSign className="w-5 h-5 text-[#0f4c5c]" />
-                      Tổng quan Tài chính
+                      Tß╗òng quan T├ái ch├¡nh
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       {/* Doanh thu */}
@@ -3367,7 +3277,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           <p className="text-2xl font-extrabold text-slate-800 font-mono">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
                           </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu hệ thống (Commission/Fees)</p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu hß╗ç thß╗æng (Commission/Fees)</p>
                         </div>
                       </div>
 
@@ -3377,7 +3287,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           <p className="text-xl font-extrabold text-slate-800 font-mono">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalGmv || 0)}
                           </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng GMV</p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Tß╗òng GMV</p>
                         </div>
                       </div>
 
@@ -3387,7 +3297,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           <p className="text-xl font-extrabold text-slate-800 font-mono">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.escrowBalance || 0)}
                           </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Số dư Ví Escrow</p>
+                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Sß╗æ d╞░ V├¡ Escrow</p>
                         </div>
                       </div>
                     </div>
@@ -3402,7 +3312,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/><path d="M11 21v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"/><path d="M3 11h18"/><path d="M3 15h18"/></svg>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-lg">Dòng tiền (Cash Flow)</h3>
+                    <h3 className="font-bold text-slate-800 text-lg">D├▓ng tiß╗ün (Cash Flow)</h3>
                   </div>
                 </div>
 
@@ -3469,7 +3379,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <div className="w-10 h-10 rounded-xl bg-[#0f4c5c] flex items-center justify-center text-white shadow-sm">
                           <ArrowUpRight className="w-5 h-5" />
                         </div>
-                        <span className="text-slate-600 font-semibold">Doanh thu tổng hợp</span>
+                        <span className="text-slate-600 font-semibold">Doanh thu tß╗òng hß╗úp</span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-black text-slate-800 tracking-tight">
@@ -3485,30 +3395,31 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <div className="w-10 h-10 rounded-xl bg-[#22c55e] flex items-center justify-center text-white shadow-sm">
                           <Zap className="w-5 h-5" />
                         </div>
-                        <span className="text-slate-600 font-semibold">Doanh thu tức thời</span>
+                        <span className="text-slate-600 font-semibold">Doanh thu tß╗⌐c thß╗¥i</span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-black text-slate-800 tracking-tight">
                           {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
                         </span>
-                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> Hôm nay</span>
+                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> H├┤m nay</span>
                       </div>
                     </div>
                     </div>
                   </div>
                 </div>
               </div>
+              </div>
               )}
 
-              {activeTab === 'dashboard_overview' && (
+              {dashboardSubTab === 'overview' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                        <Users className="w-5 h-5 text-blue-500" /> Biểu đồ Tăng Trưởng Tài Khoản Mới
+                        <Users className="w-5 h-5 text-blue-500" /> Biß╗âu ─æß╗ô T─âng Tr╞░ß╗ƒng T├ái Khoß║ún Mß╗¢i
                       </h3>
-                      <p className="text-[11px] text-slate-400 mt-1">So sánh hiệu suất đăng ký thực tế với chu kỳ trước</p>
+                      <p className="text-[11px] text-slate-400 mt-1">So s├ính hiß╗çu suß║Ñt ─æ─âng k├╜ thß╗▒c tß║┐ vß╗¢i chu kß╗│ tr╞░ß╗¢c</p>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -3519,7 +3430,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           onChange={e => setCompareMode(e.target.checked)}
                           className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <span className="text-[12px] font-bold text-slate-500">So sánh chu kỳ trước</span>
+                        <span className="text-[12px] font-bold text-slate-500">So s├ính chu kß╗│ tr╞░ß╗¢c</span>
                       </label>
 
                       <button className="text-[12px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border border-slate-200 bg-slate-50 px-2.5 py-1 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm hover:bg-white">
@@ -3617,7 +3528,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           top: '15px'
                         }}
                       >
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tháng {hoveredPoint.label}</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Th├íng {hoveredPoint.label}</span>
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-blue-500" />
                           <span className="font-extrabold font-mono text-lg">{hoveredPoint.value} users</span>
@@ -3625,7 +3536,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         {compareMode && (
                           <div className="flex items-center gap-2 pt-1 border-t border-slate-800 text-[11px] text-slate-400">
                             <span className="w-2 h-2 rounded-full bg-slate-500" />
-                            <span>Kỳ trước: <strong className="text-white font-mono">{hoveredPoint.compareValue}</strong></span>
+                            <span>Kß╗│ tr╞░ß╗¢c: <strong className="text-white font-mono">{hoveredPoint.compareValue}</strong></span>
                           </div>
                         )}
                       </div>
@@ -3634,25 +3545,25 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                   <div className="flex justify-between text-muted font-bold text-[11px] mt-2 px-8">
                     {userGrowthTrend.map((pt, i) => (
-                      <span key={i}>Tháng {pt.label}</span>
+                      <span key={i}>Th├íng {pt.label}</span>
                     ))}
                   </div>
                 </div>
               </div>
               )}
 
-              {activeTab === 'dashboard_financials' && (
+              {dashboardSubTab === 'financials' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                        <BadgeDollarSign className="w-5 h-5 text-emerald-500" /> Doanh Thu Theo Quý
+                        <BadgeDollarSign className="w-5 h-5 text-emerald-500" /> Doanh Thu Theo Qu├╜
                       </h3>
-                      <p className="text-[11px] text-slate-400 mt-1">Phí thu được tích hợp từ DB</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Ph├¡ thu ─æ╞░ß╗úc t├¡ch hß╗úp tß╗½ DB</p>
                     </div>
                     <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                      Tối ưu Escrow
+                      Tß╗æi ╞░u Escrow
                     </span>
                   </div>
 
@@ -3685,7 +3596,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
 
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-body-sm">
-                    <span className="text-muted">Doanh thu cao nhất:</span>
+                    <span className="text-muted">Doanh thu cao nhß║Ñt:</span>
                     <span className="font-extrabold text-emerald-600">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.max(...revenueTrend.map(d => d.value || 0)))}
                     </span>
@@ -3694,12 +3605,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
               )}
 
-              {activeTab === 'dashboard_activity' && (
+              {dashboardSubTab === 'activity' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)
+                    <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhß║¡t K├╜ Hoß║ít ─Éß╗Öng Hß╗ç Thß╗æng Gß║ºn Nhß║Ñt (Audit)
                   </h3>
                   <div className="flex items-center gap-4">
                     <select 
@@ -3707,11 +3618,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       onChange={(e) => setAuditLogFilter(e.target.value)}
                       className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
                     >
-                      <option value="ALL">Tất cả chức năng</option>
-                      <option value="USER_MANAGEMENT">Tài khoản & Người dùng</option>
-                      <option value="PROJECTS">Kiểm duyệt Dự án</option>
-                      <option value="FINANCE">Quản lý Tài chính</option>
-                      <option value="SYSTEM">Hệ thống</option>
+                      <option value="ALL">Tß║Ñt cß║ú chß╗⌐c n─âng</option>
+                      <option value="USER_MANAGEMENT">T├ái khoß║ún & Ng╞░ß╗¥i d├╣ng</option>
+                      <option value="PROJECTS">Kiß╗âm duyß╗çt Dß╗▒ ├ín</option>
+                      <option value="FINANCE">Quß║ún l├╜ T├ái ch├¡nh</option>
+                      <option value="SYSTEM">Hß╗ç thß╗æng</option>
                     </select>
                   </div>
                 </div>
@@ -3719,11 +3630,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
-                        <th className="p-4 pl-6">Thời gian</th>
+                        <th className="p-4 pl-6">Thß╗¥i gian</th>
                         <th className="p-4">Actor</th>
-                        <th className="p-4">Nghiệp vụ chi tiết</th>
-                        <th className="p-4">Trạng thái</th>
-                        <th className="p-4 text-center">Thao tác</th>
+                        <th className="p-4">Nghiß╗çp vß╗Ñ chi tiß║┐t</th>
+                        <th className="p-4">Trß║íng th├íi</th>
+                        <th className="p-4 text-center">Thao t├íc</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -3760,7 +3671,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </tbody>
                   </table>
                 </div>
-              </div>
               </div>
               )}
             </div>
@@ -3801,13 +3711,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                     <div>
-                      <h3 className="font-bold text-primary text-lg">Danh sách Tài khoản Người dùng</h3>
-                      <p className="text-[12px] text-slate-400 mt-1">Kết quả khớp điều kiện: <span className="font-bold text-blue-600">{filteredUsers.length}</span> tài khoản được quản lý</p>
+                      <h3 className="font-bold text-primary text-lg">Danh s├ích T├ái khoß║ún Ng╞░ß╗¥i d├╣ng</h3>
+                      <p className="text-[12px] text-slate-400 mt-1">Kß║┐t quß║ú khß╗¢p ─æiß╗üu kiß╗çn: <span className="font-bold text-blue-600">{filteredUsers.length}</span> t├ái khoß║ún ─æ╞░ß╗úc quß║ún l├╜</p>
                     </div>
 
                     <div className="radio-inputs">
                       {[
-                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'ALL', label: 'Tß║Ñt cß║ú' },
                         { key: 'EMPLOYER', label: 'Employer' },
                         { key: 'MANAGER', label: 'Manager' },
                         { key: 'STAFF', label: 'Staff' }
@@ -3836,7 +3746,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             type="text" 
                             name="adminSearchQuery"
                             autoComplete="off"
-                            placeholder="Tìm kiếm Email hoặc Tên..." 
+                            placeholder="T├¼m kiß║┐m Email hoß║╖c T├¬n..." 
                             className="bg-transparent border-none text-body-sm outline-none w-full font-medium placeholder-slate-400"
                             value={searchQuery}
                             onChange={e => {
@@ -3879,7 +3789,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <div className="flex items-center gap-2">
                         <div 
                           className="fancy-download-btn excel" 
-                          data-tooltip="Tải Excel" 
+                          data-tooltip="Tß║úi Excel" 
                           onClick={async () => {
                             setIsLoading(true);
                             try {
@@ -3914,7 +3824,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                         <div 
                           className="fancy-download-btn pdf" 
-                          data-tooltip="Xuất PDF" 
+                          data-tooltip="Xuß║Ñt PDF" 
                           onClick={async () => {
                             setIsLoading(true);
                             try {
@@ -3956,13 +3866,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         onClick={() => setShowCreateModal(true)}
                         className="h-[38px] w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-4 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30 flex items-center justify-center gap-2"
                       >
-                        + Tạo Tài Khoản
+                        + Tß║ío T├ái Khoß║ún
                       </button>
 
                       
                       <div className="relative filter-wrapper w-full">
                         <div className="filter-main">
-                          Bộ lọc nâng cao
+                          Bß╗Ö lß╗ìc n├óng cao
                           <div className="filter-bar">
                             <span className="filter-top filter-bar-list" />
                             <span className="filter-middle filter-bar-list" />
@@ -3976,14 +3886,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               
                               {}
                               <div className="filter-item-list space-y-2">
-                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Trạng thái tài khoản</span>
+                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Trß║íng th├íi t├ái khoß║ún</span>
                                 <div className="grid grid-cols-1 gap-1.5">
                                   {[
-                                    { value: 'ALL', label: 'Tất cả' },
-                                    { value: 'ACTIVE', label: 'Active (Hoạt động)' },
-                                    { value: 'LOCKED', label: 'Locked (Đang khóa)' },
-                                    { value: 'BANNED', label: 'Banned (Bị cấm)' },
-                                    { value: 'OFFLINE', label: 'Offline (Ngoại tuyến)' }
+                                    { value: 'ALL', label: 'Tß║Ñt cß║ú' },
+                                    { value: 'ACTIVE', label: 'Active (Hoß║ít ─æß╗Öng)' },
+                                    { value: 'LOCKED', label: 'Locked (─Éang kh├│a)' },
+                                    { value: 'BANNED', label: 'Banned (Bß╗ï cß║Ñm)' },
+                                    { value: 'OFFLINE', label: 'Offline (Ngoß║íi tuyß║┐n)' }
                                   ].map(status => (
                                     <div key={status.value} className="space-y-1">
                                       <button
@@ -4007,7 +3917,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       
                                       {status.value === 'ACTIVE' && userStatusFilter === 'ACTIVE' && (
                                         <div className="pl-6 pr-2 py-3 mt-1 bg-slate-50 border border-slate-100 rounded-xl space-y-3 flex flex-col clip-down-animation">
-                                          <label className="ios-checkbox emerald" title="Đang trực tuyến">
+                                          <label className="ios-checkbox emerald" title="─Éang trß╗▒c tuyß║┐n">
                                             <input 
                                               type="checkbox"
                                               checked={activeOnlineChecked}
@@ -4020,10 +3930,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                               </svg>
                                             </div>
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
-                                            <span className="text-[11px] font-bold text-slate-600 select-none">Đang trực tuyến (Online)</span>
+                                            <span className="text-[11px] font-bold text-slate-600 select-none">─Éang trß╗▒c tuyß║┐n (Online)</span>
                                           </label>
                                           
-                                          <label className="ios-checkbox blue" title="Ngoại tuyến">
+                                          <label className="ios-checkbox blue" title="Ngoß║íi tuyß║┐n">
                                             <input 
                                               type="checkbox"
                                               checked={activeOfflineChecked}
@@ -4036,7 +3946,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                               </svg>
                                             </div>
                                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400 ml-1" />
-                                            <span className="text-[11px] font-bold text-slate-600 select-none">Ngoại tuyến (Offline)</span>
+                                            <span className="text-[11px] font-bold text-slate-600 select-none">Ngoß║íi tuyß║┐n (Offline)</span>
                                           </label>
                                         </div>
                                       )}
@@ -4047,12 +3957,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                               {}
                               <div className="filter-item-list space-y-2">
-                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Đăng nhập lần cuối</span>
+                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">─É─âng nhß║¡p lß║ºn cuß╗æi</span>
                                 <div className="flex flex-col gap-1.5">
                                   {[
-                                    { value: 'ALL', label: 'Tất cả thời gian' },
-                                    { value: '8HOURS', label: 'Hoạt động 8 tiếng trước' },
-                                    { value: 'CUSTOM', label: 'Lọc theo khoảng ngày...' }
+                                    { value: 'ALL', label: 'Tß║Ñt cß║ú thß╗¥i gian' },
+                                    { value: '8HOURS', label: 'Hoß║ít ─æß╗Öng 8 tiß║┐ng tr╞░ß╗¢c' },
+                                    { value: 'CUSTOM', label: 'Lß╗ìc theo khoß║úng ng├áy...' }
                                   ].map(timeOpt => (
                                     <button
                                       key={timeOpt.value}
@@ -4074,7 +3984,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                               {}
                               <div className="filter-item-list space-y-2">
-                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chọn khoảng ngày</span>
+                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chß╗ìn khoß║úng ng├áy</span>
                                 <div className={`p-4 rounded-2xl border transition-all duration-300 ${
                                   userTimeFilterType === 'CUSTOM'
                                     ? 'bg-blue-50/20 border-blue-200'
@@ -4083,7 +3993,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   {userTimeFilterType === 'CUSTOM' ? (
                                     <div className="space-y-3 clip-down-animation">
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-bold text-slate-400">TỪ NGÀY</span>
+                                        <span className="text-[11px] font-bold text-slate-400">Tß╗¬ NG├ÇY</span>
                                         <input 
                                           type="date" 
                                           value={userTimeStart}
@@ -4092,7 +4002,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                         />
                                       </div>
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-bold text-slate-400">ĐẾN NGÀY</span>
+                                        <span className="text-[11px] font-bold text-slate-400">─Éß║╛N NG├ÇY</span>
                                         <input 
                                           type="date" 
                                           value={userTimeEnd}
@@ -4104,13 +4014,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   ) : (
                                     <div className="space-y-3">
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-bold text-slate-400">TỪ NGÀY</span>
+                                        <span className="text-[11px] font-bold text-slate-400">Tß╗¬ NG├ÇY</span>
                                         <div className="fancy-date-input text-slate-300 flex items-center justify-between">
                                           <span>mm/dd/yyyy</span>
                                         </div>
                                       </div>
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-[11px] font-bold text-slate-400">ĐẾN NGÀY</span>
+                                        <span className="text-[11px] font-bold text-slate-400">─Éß║╛N NG├ÇY</span>
                                         <div className="fancy-date-input text-slate-300 flex items-center justify-between">
                                           <span>mm/dd/yyyy</span>
                                         </div>
@@ -4125,7 +4035,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             {}
                             <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-5">
                               <div className="flex flex-wrap gap-5 items-center pl-2">
-                                <label className="ios-checkbox blue" title="Tài khoản Doanh nghiệp">
+                                <label className="ios-checkbox blue" title="T├ái khoß║ún Doanh nghiß╗çp">
                                   <input 
                                     type="checkbox" 
                                     checked={filterEmployer}
@@ -4140,7 +4050,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <span className="text-[12px] font-bold text-slate-600 ml-1">Employer</span>
                                 </label>
 
-                                <label className="ios-checkbox emerald" title="Tài khoản Manager">
+                                <label className="ios-checkbox emerald" title="T├ái khoß║ún Manager">
                                   <input 
                                     type="checkbox" 
                                     checked={filterManager}
@@ -4155,7 +4065,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <span className="text-[12px] font-bold text-slate-600 ml-1">Manager</span>
                                 </label>
 
-                                <label className="ios-checkbox blue" title="Tài khoản Staff">
+                                <label className="ios-checkbox blue" title="T├ái khoß║ún Staff">
                                   <input 
                                     type="checkbox" 
                                     checked={filterStaff}
@@ -4188,7 +4098,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 }}
                                 className="px-4 py-2 hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-body-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm hover:shadow-md"
                               >
-                                Đặt lại bộ lọc
+                                ─Éß║╖t lß║íi bß╗Ö lß╗ìc
                               </button>
                             </div>
                           </section>
@@ -4204,13 +4114,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <thead>
                         <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
                           <th className="px-3 py-3.5 pl-5 w-[50px]">ID</th>
-                          <th className="px-3 py-3.5 w-[110px]">Tên hiển thị</th>
+                          <th className="px-3 py-3.5 w-[110px]">T├¬n hiß╗ân thß╗ï</th>
                           <th className="px-3 py-3.5 w-[150px]">Email</th>
-                          <th className="px-3 py-3.5 w-[75px]">Vai trò</th>
-                          <th className="px-3 py-3.5 w-[85px]">Trạng thái</th>
-                          <th className="px-3 py-3.5 w-[135px]">Đăng nhập cuối</th>
-                          <th className="px-3 py-3.5 w-[100px]">Ngày gia nhập</th>
-                          <th className="px-3 py-3.5 text-center w-[175px]">Hành động bảo mật</th>
+                          <th className="px-3 py-3.5 w-[75px]">Vai tr├▓</th>
+                          <th className="px-3 py-3.5 w-[85px]">Trß║íng th├íi</th>
+                          <th className="px-3 py-3.5 w-[135px]">─É─âng nhß║¡p cuß╗æi</th>
+                          <th className="px-3 py-3.5 w-[100px]">Ng├áy gia nhß║¡p</th>
+                          <th className="px-3 py-3.5 text-center w-[175px]">H├ánh ─æß╗Öng bß║úo mß║¡t</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -4221,7 +4131,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             return (
                               <tr>
                                 <td colSpan="8" className="p-12 text-center text-slate-400 font-medium">
-                                  Không tìm thấy người dùng nào khớp điều kiện lọc nâng cao
+                                  Kh├┤ng t├¼m thß║Ñy ng╞░ß╗¥i d├╣ng n├áo khß╗¢p ─æiß╗üu kiß╗çn lß╗ìc n├óng cao
                                 </td>
                               </tr>
                             );
@@ -4243,7 +4153,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     ? 'cursor-pointer hover:underline hover:text-indigo-600 transition-colors' 
                                     : ''
                                 }`} 
-                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhập để xem thông tin đăng nhập và liên kết kích hoạt" : user.name}
+                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhß║¡p ─æß╗â xem th├┤ng tin ─æ─âng nhß║¡p v├á li├¬n kß║┐t k├¡ch hoß║ít" : user.name}
                               >
                                 <div className="flex items-center gap-1">
                                   {user.name}
@@ -4263,7 +4173,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     ? 'cursor-pointer hover:underline hover:text-indigo-650 transition-colors' 
                                     : ''
                                 }`} 
-                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhập để xem thông tin đăng nhập và liên kết kích hoạt" : user.email}
+                                title={user.role === 'MANAGER' || user.role === 'STAFF' ? "Nhß║¡p ─æß╗â xem th├┤ng tin ─æ─âng nhß║¡p v├á li├¬n kß║┐t k├¡ch hoß║ít" : user.email}
                               >
                                 {user.email}
                               </td>
@@ -4285,10 +4195,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   user.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-100' :
                                   'bg-rose-50 text-rose-700 border-rose-100'
                                 }`}>
-                                  {user.status === 'ACTIVE' ? 'HOẠT ĐỘNG' :
-                                   user.status === 'PENDING' ? 'CHỜ KÍCH HOẠT' :
-                                   user.status === 'EXPIRED' ? 'HẾT HẠN' :
-                                   user.status === 'LOCKED' ? 'BỊ KHÓA' :
+                                  {user.status === 'ACTIVE' ? 'HOß║áT ─Éß╗ÿNG' :
+                                   user.status === 'PENDING' ? 'CHß╗£ K├ìCH HOß║áT' :
+                                   user.status === 'EXPIRED' ? 'Hß║╛T Hß║áN' :
+                                   user.status === 'LOCKED' ? 'Bß╗è KH├ôA' :
                                    user.status}
                                 </span>
                               </td>
@@ -4299,7 +4209,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       return (
                                         <>
                                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                          <span className="text-slate-400">Chưa từng đăng nhập</span>
+                                          <span className="text-slate-400">Ch╞░a tß╗½ng ─æ─âng nhß║¡p</span>
                                         </>
                                       );
                                     }
@@ -4330,7 +4240,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 <div className="flex justify-center gap-1">
                                   {user.isProtectedAdmin ? (
                                     <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-xl font-bold text-[11px] flex items-center gap-1">
-                                      <ShieldAlert className="w-3 h-3" /> Được bảo vệ
+                                      <ShieldAlert className="w-3 h-3" /> ─É╞░ß╗úc bß║úo vß╗ç
                                     </span>
                                   ) : user.status === 'ACTIVE' ? (
                                     <>
@@ -4352,7 +4262,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       onClick={() => handleUserStatusChange(user.id, user.role, 'ACTIVE')}
                                       className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm"
                                     >
-                                      <Unlock className="w-3.5 h-3.5" /> Kích hoạt
+                                      <Unlock className="w-3.5 h-3.5" /> K├¡ch hoß║ít
                                     </button>
                                     {user.status !== 'DELETED' && (
                                       <button 
@@ -4377,11 +4287,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     return (
                       <div className="p-4 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <span className="text-body-sm font-semibold text-slate-500">
-                          Hiển thị từ <span className="font-mono text-primary font-bold">{totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> đến{' '}
+                          Hiß╗ân thß╗ï tß╗½ <span className="font-mono text-primary font-bold">{totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> ─æß║┐n{' '}
                           <span className="font-mono text-primary font-bold">
                             {Math.min(currentPage * pageSize, totalElements)}
                           </span>{' '}
-                          trong tổng số <span className="font-mono text-blue-600 font-bold">{totalElements}</span> thành viên
+                          trong tß╗òng sß╗æ <span className="font-mono text-blue-600 font-bold">{totalElements}</span> th├ánh vi├¬n
                         </span>
 
                         {totalPages > 1 && (
@@ -4390,7 +4300,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               onClick={() => setCurrentPage(1)}
                               disabled={currentPage === 1}
                               className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
-                              title="Trang đầu (<<)"
+                              title="Trang ─æß║ºu (<<)"
                             >
                               <ChevronsLeft className="w-4 h-4" />
                             </button>
@@ -4398,7 +4308,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                               disabled={currentPage === 1}
                               className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
-                              title="Trang trước (<)"
+                              title="Trang tr╞░ß╗¢c (<)"
                             >
                               <ChevronLeft className="w-4 h-4" />
                             </button>
@@ -4419,7 +4329,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               onClick={() => setCurrentPage(totalPages)}
                               disabled={currentPage === totalPages}
                               className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 active:scale-95 hover:shadow-md shadow-sm flex items-center justify-center"
-                              title="Trang cuối (>>)"
+                              title="Trang cuß╗æi (>>)"
                             >
                               <ChevronsRight className="w-4 h-4" />
                             </button>
@@ -4439,14 +4349,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {}
               <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-200">
                 {[
-                  { id: 'seo', label: 'Cấu hình Hệ thống' },
-                  { id: 'categories', label: 'Danh mục Việc làm', count: jobCategories.length },
-                  { id: 'kyc', label: 'Duyệt KYC', count: kycRequests.length },
-                  { id: 'profileRequests', label: 'Duyệt Profile', count: profileRequests.length },
-                  { id: 'disputes', label: 'Tranh chấp', count: disputes.length },
-                  { id: 'reports', label: 'Báo cáo vi phạm', count: reports.length },
-                  { id: 'articles', label: 'Bài viết CMS', count: articles.length },
-                  { id: 'tickets', label: 'Hỗ trợ Tickets', count: tickets.length }
+                  { id: 'seo', label: 'Cß║Ñu h├¼nh Hß╗ç thß╗æng' },
+                  { id: 'categories', label: 'Danh mß╗Ñc Viß╗çc l├ám', count: jobCategories.length },
+                  { id: 'kyc', label: 'Duyß╗çt KYC', count: kycRequests.length },
+                  { id: 'profileRequests', label: 'Duyß╗çt Profile', count: profileRequests.length },
+                  { id: 'disputes', label: 'Tranh chß║Ñp', count: disputes.length },
+                  { id: 'reports', label: 'B├ío c├ío vi phß║ím', count: reports.length },
+                  { id: 'articles', label: 'B├ái viß║┐t CMS', count: articles.length },
+                  { id: 'tickets', label: 'Hß╗ù trß╗ú Tickets', count: tickets.length }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -4473,17 +4383,17 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeCmsTab === 'seo' && (
                 <div className="max-w-2xl animate-in fade-in duration-300">
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-primary text-body-md border-b border-slate-100 pb-2">Thiết lập cấu hình SEO (UC-42)</h3>
+                    <h3 className="font-bold text-primary text-body-md border-b border-slate-100 pb-2">Thiß║┐t lß║¡p cß║Ñu h├¼nh SEO (UC-42)</h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Meta Title trang chủ</label>
-                        <input type="text" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_title : "vLance - Thuê Freelancer Việt Nam Uy Tín Số 1"} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500" />
+                        <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Meta Title trang chß╗º</label>
+                        <input type="text" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_title : "vLance - Thu├¬ Freelancer Viß╗çt Nam Uy T├¡n Sß╗æ 1"} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500" />
                       </div>
                       <div>
-                        <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Meta Description trang chủ</label>
-                        <textarea rows="3" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_description : "Sàn thương mại điện tử về dịch vụ tự do..."} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500 resize-none" />
+                        <label className="text-[12px] font-bold text-slate-500 uppercase block mb-1">Meta Description trang chß╗º</label>
+                        <textarea rows="3" defaultValue={seoConfigs.length > 0 ? seoConfigs[0].meta_description : "S├án th╞░╞íng mß║íi ─æiß╗çn tß╗¡ vß╗ü dß╗ïch vß╗Ñ tß╗▒ do..."} className="w-full border border-slate-200 rounded-lg p-2.5 text-body-sm outline-none focus:border-blue-500 resize-none" />
                       </div>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30">Lưu cấu hình SEO</button>
+                      <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-body-sm px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-blue-600/30">L╞░u cß║Ñu h├¼nh SEO</button>
                     </div>
                   </div>
                 </div>
@@ -4492,16 +4402,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeCmsTab === 'profileRequests' && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="font-bold text-primary text-body-md mb-2">Duyệt thay đổi thông tin hồ sơ Employer</h3>
-                    <p className="text-body-sm text-slate-500">Các yêu cầu cập nhật thông tin doanh nghiệp và tài khoản ngân hàng từ phía Employer cần được Admin xem xét và phê duyệt.</p>
+                    <h3 className="font-bold text-primary text-body-md mb-2">Duyß╗çt thay ─æß╗òi th├┤ng tin hß╗ô s╞í Employer</h3>
+                    <p className="text-body-sm text-slate-500">C├íc y├¬u cß║ºu cß║¡p nhß║¡t th├┤ng tin doanh nghiß╗çp v├á t├ái khoß║ún ng├ón h├áng tß╗½ ph├¡a Employer cß║ºn ─æ╞░ß╗úc Admin xem x├⌐t v├á ph├¬ duyß╗çt.</p>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-5">
                     {profileRequests.length === 0 ? (
                       <div className="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-sm">
                         <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                        <h4 className="font-bold text-primary text-lg">Hoàn tất!</h4>
-                        <p className="text-slate-500 mt-2">Không có yêu cầu cập nhật hồ sơ nào đang chờ duyệt.</p>
+                        <h4 className="font-bold text-primary text-lg">Ho├án tß║Ñt!</h4>
+                        <p className="text-slate-500 mt-2">Kh├┤ng c├│ y├¬u cß║ºu cß║¡p nhß║¡t hß╗ô s╞í n├áo ─æang chß╗¥ duyß╗çt.</p>
                       </div>
                     ) : (
                       profileRequests.map((req) => (
@@ -4510,46 +4420,46 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <div>
                               <span className="bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded text-[11px] font-bold">EMPLOYER #{req.employer.employerId}</span>
                               <span className="text-[12px] text-slate-450 ml-2 font-medium">Email: {req.employer.email}</span>
-                              <span className="text-[11px] text-slate-400 ml-2 font-mono">Yêu cầu lúc: {new Date(req.createdAt).toLocaleString('vi-VN')}</span>
+                              <span className="text-[11px] text-slate-400 ml-2 font-mono">Y├¬u cß║ºu l├║c: {new Date(req.createdAt).toLocaleString('vi-VN')}</span>
                             </div>
-                            <span className="bg-amber-50 text-amber-700 border border-amber-250 px-2.5 py-0.5 rounded text-[10px] font-extrabold">CHỜ DUYỆT</span>
+                            <span className="bg-amber-50 text-amber-700 border border-amber-250 px-2.5 py-0.5 rounded text-[10px] font-extrabold">CHß╗£ DUYß╗åT</span>
                           </div>
                           
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-body-sm">
                             <div className="space-y-1.5">
-                              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Thông tin hiện tại</p>
+                              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Th├┤ng tin hiß╗çn tß║íi</p>
                               <div className="bg-slate-50 p-4 rounded-2xl space-y-1.5 border border-slate-100">
-                                <p><strong>Tên hiển thị:</strong> {req.employer.displayName}</p>
-                                <p><strong>Họ tên:</strong> {req.employer.fullName || 'Chưa cập nhật'}</p>
-                                <p><strong>Số điện thoại:</strong> {req.employer.phone || 'Chưa cập nhật'}</p>
-                                <p><strong>Tên công ty:</strong> {req.employer.companyName || 'Chưa cập nhật'}</p>
-                                <p><strong>Ngành nghề:</strong> {req.employer.industry || 'Chưa cập nhật'}</p>
-                                <p><strong>Quy mô:</strong> {req.employer.companySize || 'Chưa cập nhật'}</p>
-                                <p><strong>Website:</strong> {req.employer.website || 'Chưa cập nhật'}</p>
-                                <p><strong>Mã số thuế:</strong> {req.employer.taxCode || 'Chưa cập nhật'}</p>
-                                <p><strong>Địa chỉ:</strong> {req.employer.address ? `${req.employer.address}, ${req.employer.city || ''}, ${req.employer.country || ''}` : 'Chưa cập nhật'}</p>
-                                <p><strong>Mô tả:</strong> {req.employer.companyDescription || 'Chưa cập nhật'}</p>
+                                <p><strong>T├¬n hiß╗ân thß╗ï:</strong> {req.employer.displayName}</p>
+                                <p><strong>Hß╗ì t├¬n:</strong> {req.employer.fullName || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>Sß╗æ ─æiß╗çn thoß║íi:</strong> {req.employer.phone || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>T├¬n c├┤ng ty:</strong> {req.employer.companyName || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>Ng├ánh nghß╗ü:</strong> {req.employer.industry || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>Quy m├┤:</strong> {req.employer.companySize || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>Website:</strong> {req.employer.website || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>M├ú sß╗æ thuß║┐:</strong> {req.employer.taxCode || 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>─Éß╗ïa chß╗ë:</strong> {req.employer.address ? `${req.employer.address}, ${req.employer.city || ''}, ${req.employer.country || ''}` : 'Ch╞░a cß║¡p nhß║¡t'}</p>
+                                <p><strong>M├┤ tß║ú:</strong> {req.employer.companyDescription || 'Ch╞░a cß║¡p nhß║¡t'}</p>
                               </div>
                             </div>
                             
                             <div className="space-y-1.5">
-                              <p className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Thông tin đề xuất thay đổi</p>
+                              <p className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Th├┤ng tin ─æß╗ü xuß║Ñt thay ─æß╗òi</p>
                               <div className="bg-indigo-50/20 border border-indigo-100/70 p-4 rounded-2xl space-y-1.5">
-                                <p><strong>Tên hiển thị:</strong> <span className={req.displayName !== req.employer.displayName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.displayName}</span></p>
-                                <p><strong>Họ tên:</strong> <span className={req.fullName !== req.employer.fullName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.fullName || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Số điện thoại:</strong> <span className={req.phone !== req.employer.phone ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.phone || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Tên công ty:</strong> <span className={req.companyName !== req.employer.companyName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companyName || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Ngành nghề:</strong> <span className={req.industry !== req.employer.industry ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.industry || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Quy mô:</strong> <span className={req.companySize !== req.employer.companySize ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companySize || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Website:</strong> <span className={req.website !== req.employer.website ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.website || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Mã số thuế:</strong> <span className={req.taxCode !== req.employer.taxCode ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.taxCode || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Địa chỉ:</strong> <span className={(req.address !== req.employer.address || req.city !== req.employer.city || req.country !== req.employer.country) ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.address ? `${req.address}, ${req.city || ''}, ${req.country || ''}` : 'Chưa cập nhật'}</span></p>
-                                <p><strong>Mô tả:</strong> <span className={req.companyDescription !== req.employer.companyDescription ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded block whitespace-pre-line" : ""}>{req.companyDescription || 'Chưa cập nhật'}</span></p>
-                                <p className="pt-2 border-t border-indigo-100/60 font-semibold text-slate-700">Thông tin Ngân hàng:</p>
-                                <p><strong>Ngân hàng:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.bankName || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Số tài khoản:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountNumber || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Chủ tài khoản:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountHolder || 'Chưa cập nhật'}</span></p>
-                                <p><strong>Chi nhánh:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.branch || 'Chưa cập nhật'}</span></p>
+                                <p><strong>T├¬n hiß╗ân thß╗ï:</strong> <span className={req.displayName !== req.employer.displayName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.displayName}</span></p>
+                                <p><strong>Hß╗ì t├¬n:</strong> <span className={req.fullName !== req.employer.fullName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.fullName || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Sß╗æ ─æiß╗çn thoß║íi:</strong> <span className={req.phone !== req.employer.phone ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.phone || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>T├¬n c├┤ng ty:</strong> <span className={req.companyName !== req.employer.companyName ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companyName || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Ng├ánh nghß╗ü:</strong> <span className={req.industry !== req.employer.industry ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.industry || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Quy m├┤:</strong> <span className={req.companySize !== req.employer.companySize ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.companySize || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Website:</strong> <span className={req.website !== req.employer.website ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.website || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>M├ú sß╗æ thuß║┐:</strong> <span className={req.taxCode !== req.employer.taxCode ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.taxCode || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>─Éß╗ïa chß╗ë:</strong> <span className={(req.address !== req.employer.address || req.city !== req.employer.city || req.country !== req.employer.country) ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded" : ""}>{req.address ? `${req.address}, ${req.city || ''}, ${req.country || ''}` : 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>M├┤ tß║ú:</strong> <span className={req.companyDescription !== req.employer.companyDescription ? "text-indigo-655 font-bold bg-indigo-50 px-1.5 py-0.5 rounded block whitespace-pre-line" : ""}>{req.companyDescription || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p className="pt-2 border-t border-indigo-100/60 font-semibold text-slate-700">Th├┤ng tin Ng├ón h├áng:</p>
+                                <p><strong>Ng├ón h├áng:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.bankName || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Sß╗æ t├ái khoß║ún:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountNumber || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Chß╗º t├ái khoß║ún:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.accountHolder || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
+                                <p><strong>Chi nh├ính:</strong> <span className="text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{req.branch || 'Ch╞░a cß║¡p nhß║¡t'}</span></p>
                               </div>
                             </div>
                           </div>
@@ -4559,16 +4469,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               onClick={() => handleProfileRequestAction(req.requestId, true)}
                               className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all shadow-sm hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
                             >
-                              Phê duyệt
+                              Ph├¬ duyß╗çt
                             </button>
                             <button
                               onClick={() => {
-                                const reason = prompt('Nhập lý do từ chối yêu cầu thay đổi profile này:');
+                                const reason = prompt('Nhß║¡p l├╜ do tß╗½ chß╗æi y├¬u cß║ºu thay ─æß╗òi profile n├áy:');
                                 if (reason !== null) handleProfileRequestAction(req.requestId, false, reason);
                               }}
                               className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-5 py-2.5 rounded-xl font-bold text-body-sm transition-all shadow-sm hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
                             >
-                              Từ chối
+                              Tß╗½ chß╗æi
                             </button>
                           </div>
                         </div>
@@ -4595,7 +4505,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         activeCmsTab === 'articles' ? articles : tickets;
                       
                       if (data.length === 0) {
-                        return <p className="text-center text-slate-400 py-8">Chưa có dữ liệu trong Database cho mục này.</p>;
+                        return <p className="text-center text-slate-400 py-8">Ch╞░a c├│ dß╗» liß╗çu trong Database cho mß╗Ñc n├áy.</p>;
                       }
 
                       
@@ -4630,14 +4540,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           )}
 
-          {activeTab === 'finance_banking' && (
+          {activeTab === 'vnpay' && (
             <div className="space-y-8 animate-in fade-in duration-300">
               
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-primary text-lg">Cấu hình Cổng Thanh toán VNPay / VietQR</h3>
-                    <p className="text-[12px] text-slate-400 mt-1">Cài đặt mã Ngân hàng, Số tài khoản nhận tiền và Secret Key tích hợp thanh toán.</p>
+                    <h3 className="font-bold text-primary text-lg">Cß║Ñu h├¼nh Cß╗òng Thanh to├ín VNPay / VietQR</h3>
+                    <p className="text-[12px] text-slate-400 mt-1">C├ái ─æß║╖t m├ú Ng├ón h├áng, Sß╗æ t├ái khoß║ún nhß║¡n tiß╗ün v├á Secret Key t├¡ch hß╗úp thanh to├ín.</p>
                   </div>
                   <div>
                     {!isEditingVnpay ? (
@@ -4645,7 +4555,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         onClick={() => setShowVnpayEditConfirmModal(true)}
                         className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[13px] rounded-xl transition-all flex items-center gap-2"
                       >
-                        <Edit3 className="w-4 h-4" /> Chỉnh sửa cấu hình
+                        <Edit3 className="w-4 h-4" /> Chß╗ënh sß╗¡a cß║Ñu h├¼nh
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -4656,13 +4566,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           }}
                           className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[13px] rounded-xl transition-all"
                         >
-                          Hủy
+                          Hß╗ºy
                         </button>
                         <button 
                           onClick={handleSaveVnpayConfig}
                           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] rounded-xl transition-all shadow-sm flex items-center gap-2"
                         >
-                          <Save className="w-4 h-4" /> Lưu cấu hình
+                          <Save className="w-4 h-4" /> L╞░u cß║Ñu h├¼nh
                         </button>
                       </div>
                     )}
@@ -4672,19 +4582,19 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Mã Ngân hàng (Bank Name)</label>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">M├ú Ng├ón h├áng (Bank Name)</label>
                       <select 
                         value={vnpayConfig?.bankName || ''}
                         onChange={(e) => setVnpayConfig({...vnpayConfig, bankName: e.target.value})}
                         disabled={!isEditingVnpay}
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
                       >
-                        <option value="">Chọn ngân hàng...</option>
-                        <option value="VNPAY">Ví VNPAY</option>
-                        <option value="NCB">NCB - Ngân hàng Quốc Dân</option>
-                        <option value="VISA">Thẻ Quốc tế VISA</option>
-                        <option value="MASTERCARD">Thẻ Quốc tế MasterCard</option>
-                        <option value="JCB">Thẻ Quốc tế JCB</option>
+                        <option value="">Chß╗ìn ng├ón h├áng...</option>
+                        <option value="VNPAY">V├¡ VNPAY</option>
+                        <option value="NCB">NCB - Ng├ón h├áng Quß╗æc D├ón</option>
+                        <option value="VISA">Thß║╗ Quß╗æc tß║┐ VISA</option>
+                        <option value="MASTERCARD">Thß║╗ Quß╗æc tß║┐ MasterCard</option>
+                        <option value="JCB">Thß║╗ Quß╗æc tß║┐ JCB</option>
                         <option value="VCB">Vietcombank</option>
                         <option value="TECHCOMBANK">Techcombank</option>
                         <option value="MB">MBBank</option>
@@ -4700,7 +4610,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Số Tài khoản (Bank Account No)</label>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Sß╗æ T├ái khoß║ún (Bank Account No)</label>
                       <div className="flex gap-2">
                         <input 
                           type="text" 
@@ -4716,19 +4626,19 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             disabled={isLookingUp || !vnpayConfig?.bankName || !vnpayConfig?.bankAccountNo}
                             className="px-4 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-[13px] rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
                           >
-                            {isLookingUp ? 'Đang dò...' : 'Kiểm tra'}
+                            {isLookingUp ? '─Éang d├▓...' : 'Kiß╗âm tra'}
                           </button>
                         )}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Tên Chủ Tài khoản</label>
+                      <label className="block text-[12px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">T├¬n Chß╗º T├ái khoß║ún</label>
                       <input 
                         type="text" 
                         value={vnpayConfig?.bankAccountName || ''}
                         onChange={(e) => setVnpayConfig({...vnpayConfig, bankAccountName: e.target.value.toUpperCase()})}
                         disabled={!isEditingVnpay}
-                        placeholder="Tự động điền khi bấm Kiểm tra"
+                        placeholder="Tß╗▒ ─æß╗Öng ─æiß╗ün khi bß║Ñm Kiß╗âm tra"
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed uppercase"
                       />
                     </div>
@@ -4742,7 +4652,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${vnpayConfig?.isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
                       </div>
                       <span className="text-[13px] font-medium text-slate-600">
-                        {vnpayConfig?.isActive ? 'Cổng thanh toán đang hoạt động' : 'Tạm khóa cổng thanh toán'}
+                        {vnpayConfig?.isActive ? 'Cß╗òng thanh to├ín ─æang hoß║ít ─æß╗Öng' : 'Tß║ím kh├│a cß╗òng thanh to├ín'}
                       </span>
                     </div>
                   </div>
@@ -4757,8 +4667,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <Sliders className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-slate-800 text-[15px]">Cấu hình Gói Dịch Vụ & Cổng Thanh toán (VNPay / PayOS)</h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Quản lý giá tiền và chọn gói để tạo liên kết thanh toán thử nghiệm.</p>
+                      <h4 className="font-extrabold text-slate-800 text-[15px]">Cß║Ñu h├¼nh G├│i Dß╗ïch Vß╗Ñ & Cß╗òng Thanh to├ín (VNPay / PayOS)</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Quß║ún l├╜ gi├í tiß╗ün v├á chß╗ìn g├│i ─æß╗â tß║ío li├¬n kß║┐t thanh to├ín thß╗¡ nghiß╗çm.</p>
                     </div>
                   </div>
                   <div>
@@ -4767,7 +4677,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         onClick={handleEditPackages}
                         className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[12px] rounded-lg transition-all"
                       >
-                        Chỉnh sửa giá
+                        Chß╗ënh sß╗¡a gi├í
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -4776,7 +4686,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           disabled={isUpdatingPackages}
                           className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[12px] rounded-lg transition-all disabled:opacity-50"
                         >
-                          Hủy
+                          Hß╗ºy
                         </button>
                         <button 
                           onClick={handleSavePackages}
@@ -4784,7 +4694,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] rounded-lg transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50 flex items-center gap-1.5"
                         >
                           {isUpdatingPackages && <RefreshCw className="w-3 h-3 animate-spin" />}
-                          Lưu bảng giá
+                          L╞░u bß║úng gi├í
                         </button>
                       </div>
                     )}
@@ -4810,21 +4720,21 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   ) : (
                     servicePackages.map((pkg) => {
                     const isSelected = testPackageType === pkg.packageType;
-                    let pkgTitle = 'Gói Trung bình';
+                    let pkgTitle = 'G├│i Trung b├¼nh';
                     let pkgClass = 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30';
                     let badgeColor = 'bg-slate-100 text-slate-600';
                     const postLimit = pkg.postLimit || (pkg.packageType === 'PREMIUM' ? 40 : pkg.packageType === 'REGULAR' ? 10 : 20);
                     const durationDays = pkg.durationDays || 30;
-                    let pkgDuration = `${postLimit} bài / ${durationDays} ngày`;
+                    let pkgDuration = `${postLimit} b├ái / ${durationDays} ng├áy`;
 
                     if (pkg.packageType === 'REGULAR') {
-                      pkgTitle = 'Gói Thường';
+                      pkgTitle = 'G├│i Th╞░ß╗¥ng';
                       if (isSelected) {
                         pkgClass = 'border-indigo-500 bg-indigo-50/10 ring-2 ring-indigo-500/10';
                       }
                       badgeColor = 'bg-indigo-50 text-indigo-700';
                     } else if (pkg.packageType === 'PREMIUM') {
-                      pkgTitle = 'Gói Cao cấp';
+                      pkgTitle = 'G├│i Cao cß║Ñp';
                       if (isSelected) {
                         pkgClass = 'border-amber-500 bg-amber-50/10 ring-2 ring-amber-500/10';
                       }
@@ -4858,9 +4768,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, postLimit: val } : p));
                                   }}
                                   onClick={(e) => e.stopPropagation()}
-                                  title="Số bài"
+                                  title="Sß╗æ b├ái"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">bài /</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">b├ái /</span>
                                 <input
                                   type="number"
                                   className="w-10 border border-slate-300 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-700 text-center focus:outline-none focus:border-blue-500"
@@ -4870,9 +4780,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, durationDays: val } : p));
                                   }}
                                   onClick={(e) => e.stopPropagation()}
-                                  title="Số ngày"
+                                  title="Sß╗æ ng├áy"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">ngày</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">ng├áy</span>
                               </div>
                             ) : (
                               <span className="text-[11px] text-slate-400 font-semibold">{pkgDuration}</span>
@@ -4882,7 +4792,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         </div>
                         <div className="mt-4 flex justify-between items-end">
                           <div>
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Giá gói</span>
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Gi├í g├│i</span>
                             {isEditingPackages ? (
                               <input
                                 type="number"
@@ -4902,7 +4812,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           </div>
                           {isSelected && (
                             <span className="text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100/60 text-emerald-800 px-2 py-0.5 rounded-md">
-                              ✓ Chọn
+                              Γ£ô Chß╗ìn
                             </span>
                           )}
                         </div>
@@ -4917,34 +4827,30 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     disabled={isLoading}
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
                   >
-                    Hiển thị mã VietQR ({testPackageType})
+                    Hiß╗ân thß╗ï m├ú VietQR ({testPackageType})
                   </button>
                   <button 
                     onClick={() => setShowInvoicePreviewModal(true)}
                     disabled={isLoading}
                     className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-md shadow-rose-600/10 hover:shadow-rose-600/20 active:scale-95 transition-all flex items-center gap-2"
                   >
-                    <FileText className="w-4 h-4" /> Xem mẫu Hóa đơn ({testPackageType})
+                    <FileText className="w-4 h-4" /> Xem mß║½u H├│a ─æ╞ín ({testPackageType})
                   </button>
                   <button 
                     onClick={() => handleTestPayos()}
                     disabled={isLoading}
                     className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-2"
                   >
-                    Tạo thanh toán PayOS ({testPackageType})
+                    Tß║ío thanh to├ín PayOS ({testPackageType})
                   </button>
                 </div>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'finance_dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
               {/* === FINANCIAL DASHBOARD BLOCK === */}
               <div className="bg-[#242424] rounded-2xl p-6 shadow-sm mb-6 animate-in fade-in duration-300">
                 {/* Time Filters */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {['Hôm qua', 'Hôm nay', 'Tuần này', 'Tháng này', 'Tháng trước', 'Năm này', 'Năm trước'].map(filter => (
+                  {['H├┤m qua', 'H├┤m nay', 'Tuß║ºn n├áy', 'Th├íng n├áy', 'Th├íng tr╞░ß╗¢c', 'N─âm n├áy', 'N─âm tr╞░ß╗¢c'].map(filter => (
                     <button
                       key={filter}
                       onClick={() => setPaymentTimeFilter(filter)}
@@ -4958,7 +4864,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </button>
                   ))}
                   <button className="px-4 py-1.5 rounded-full text-xs font-medium text-gray-300 bg-transparent border border-gray-600 hover:border-gray-400 flex items-center gap-1">
-                    Tùy chỉnh <ChevronDown className="w-3 h-3" />
+                    T├╣y chß╗ënh <ChevronDown className="w-3 h-3" />
                   </button>
                 </div>
 
@@ -4967,15 +4873,15 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <div className="bg-[#00b86b] rounded-xl p-5 flex flex-col justify-center relative overflow-hidden">
                     <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                     <div className="absolute -top-4 -right-10 w-24 h-24 bg-black/10 rounded-full blur-xl"></div>
-                    <span className="text-white/90 text-sm font-medium mb-3">Tổng doanh thu {paymentTimeFilter.toLowerCase()}</span>
+                    <span className="text-white/90 text-sm font-medium mb-3">Tß╗òng doanh thu {paymentTimeFilter.toLowerCase()}</span>
                     <span className="text-white text-2xl font-bold tracking-tight">
                       {new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue)} VND
                     </span>
                   </div>
                   <div className="bg-[#e8f5e9] rounded-xl p-5 flex flex-col justify-center">
-                    <span className="text-slate-700 text-sm font-medium mb-3">Tổng đơn hoàn thành {paymentTimeFilter.toLowerCase()}</span>
+                    <span className="text-slate-700 text-sm font-medium mb-3">Tß╗òng ─æ╞ín ho├án th├ánh {paymentTimeFilter.toLowerCase()}</span>
                     <span className="text-[#00b86b] text-xl font-bold">
-                      {paymentStats.completedOrders} đơn hàng
+                      {paymentStats.completedOrders} ─æ╞ín h├áng
                     </span>
                   </div>
                 </div>
@@ -4984,13 +4890,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
                   {/* Left: Channels */}
                   <div className="bg-[#2c2c2c] border border-gray-700/50 rounded-xl p-5">
-                    <h4 className="text-gray-300 text-sm font-medium mb-5">Thu theo kênh thanh toán</h4>
+                    <h4 className="text-gray-300 text-sm font-medium mb-5">Thu theo k├¬nh thanh to├ín</h4>
                     <div className="bg-[#383838] rounded-xl p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-gray-600">
                           <img src="/lancer-channel.jpg" alt="Channel" className="w-full h-full object-cover" />
                         </div>
-                        <span className="text-gray-300 text-sm">Kênh: <span className="text-white font-medium">lancer</span></span>
+                        <span className="text-gray-300 text-sm">K├¬nh: <span className="text-white font-medium">lancer</span></span>
                       </div>
                       <span className="text-white font-bold text-sm">
                         {new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue)} VND
@@ -5000,7 +4906,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                   {/* Right: Pie Chart */}
                   <div className="bg-[#2c2c2c] border border-gray-700/50 rounded-xl p-5 flex flex-col">
-                    <h4 className="text-gray-300 text-sm font-medium mb-2">Thống kê trạng thái đơn hàng</h4>
+                    <h4 className="text-gray-300 text-sm font-medium mb-2">Thß╗æng k├¬ trß║íng th├íi ─æ╞ín h├áng</h4>
                     <div className="flex-1 flex flex-col items-center justify-center relative min-h-[220px]">
                       {(() => {
                         const radius = 70;
@@ -5069,7 +4975,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             {/* Inner Donut Text */}
                             <g transform="rotate(90 110 110)">
                               <text x="110" y="105" textAnchor="middle" fill={donutHoverState ? donutHoverState.data.color : "#fff"} fontSize="12" fontWeight="600">
-                                {donutHoverState ? donutHoverState.data.name : 'Tổng đơn hàng'}
+                                {donutHoverState ? donutHoverState.data.name : 'Tß╗òng ─æ╞ín h├áng'}
                               </text>
                               <text x="110" y="125" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold">
                                 {donutHoverState ? donutHoverState.data.value : paymentStats.totalTxns}
@@ -5086,9 +4992,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           style={{ left: donutHoverState.x + 'px', top: donutHoverState.y + 'px' }}
                         >
                           <p className="text-gray-900 font-bold text-sm mb-1.5">{donutHoverState.data.name}</p>
-                          <p className="text-gray-600 text-xs mb-0.5">Số lượng: <span className="font-semibold text-gray-800">{donutHoverState.data.value} đơn hàng</span></p>
-                          <p className="text-gray-600 text-xs mb-0.5">Tỷ lệ: <span className="font-semibold text-gray-800">{donutHoverState.data.percent.toFixed(1)}%</span></p>
-                          <p className="text-gray-600 text-xs">Tổng tiền: <span className="font-semibold text-gray-800">{donutHoverState.data.id === 'SUCCESS' ? new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue) : '0'} VND</span></p>
+                          <p className="text-gray-600 text-xs mb-0.5">Sß╗æ l╞░ß╗úng: <span className="font-semibold text-gray-800">{donutHoverState.data.value} ─æ╞ín h├áng</span></p>
+                          <p className="text-gray-600 text-xs mb-0.5">Tß╗╖ lß╗ç: <span className="font-semibold text-gray-800">{donutHoverState.data.percent.toFixed(1)}%</span></p>
+                          <p className="text-gray-600 text-xs">Tß╗òng tiß╗ün: <span className="font-semibold text-gray-800">{donutHoverState.data.id === 'SUCCESS' ? new Intl.NumberFormat('vi-VN').format(paymentStats.totalRevenue) : '0'} VND</span></p>
                         </div>
                       )}
 
@@ -5105,22 +5011,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'finance_history' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-primary text-[17px]">Nhật Ký Giao Dịch</h3>
-                    <p className="text-[12px] text-slate-500 mt-1">Danh sách đối soát và duyệt hóa đơn cho Employer đăng dự án tuyển dụng.</p>
+                    <h3 className="font-bold text-primary text-[17px]">Nhß║¡t K├╜ Giao Dß╗ïch</h3>
+                    <p className="text-[12px] text-slate-500 mt-1">Danh s├ích ─æß╗æi so├ít v├á duyß╗çt h├│a ─æ╞ín cho Employer ─æ─âng dß╗▒ ├ín tuyß╗ân dß╗Ñng.</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => fetchVnpayTransactions(0)}
                       className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
-                      title="Tải lại giao dịch"
+                      title="Tß║úi lß║íi giao dß╗ïch"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
@@ -5130,25 +5032,25 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   {vnpayLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-450 space-y-3">
                       <RefreshCw className="w-8 h-8 animate-spin text-emerald-600" />
-                      <p className="text-body-sm font-semibold">Đang tải nhật ký giao dịch...</p>
+                      <p className="text-body-sm font-semibold">─Éang tß║úi nhß║¡t k├╜ giao dß╗ïch...</p>
                     </div>
                   ) : vnpayTransactions.length === 0 ? (
                     <div className="text-center py-16 border border-dashed border-slate-200 rounded-2xl">
                       <BadgeDollarSign className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500 font-medium">Chưa có giao dịch thanh toán nào được thực hiện.</p>
+                      <p className="text-slate-500 font-medium">Ch╞░a c├│ giao dß╗ïch thanh to├ín n├áo ─æ╞░ß╗úc thß╗▒c hiß╗çn.</p>
                     </div>
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider font-extrabold">
-                            <th className="p-3">Mã GD / Order Info</th>
-                            <th className="p-3">Employer / Dịch vụ</th>
-                            <th className="p-3">Số tiền</th>
-                            <th className="p-3">Thời gian</th>
-                            <th className="p-3">Cổng GD / VNP No.</th>
-                            <th className="p-3 text-center">Trạng thái</th>
-                            <th className="p-3 text-center">Hành động</th>
+                            <th className="p-3">M├ú GD / Order Info</th>
+                            <th className="p-3">Employer / Dß╗ïch vß╗Ñ</th>
+                            <th className="p-3">Sß╗æ tiß╗ün</th>
+                            <th className="p-3">Thß╗¥i gian</th>
+                            <th className="p-3">Cß╗òng GD / VNP No.</th>
+                            <th className="p-3 text-center">Trß║íng th├íi</th>
+                            <th className="p-3 text-center">H├ánh ─æß╗Öng</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -5156,16 +5058,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <tr key={txn.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
                               <td className="p-3">
                                 <span className="font-bold text-slate-800 font-mono text-[12px] block">#{txn.txnRef || txn.vnpTxnRef || 'N/A'}</span>
-                                <span className="text-[11px] text-slate-450 leading-normal block max-w-[150px] truncate" title={txn.orderInfo || 'Thông tin thanh toán'}>
-                                  {txn.orderInfo || (txn.packageType ? `Thanh toán Gói ${txn.packageType}` : `Thanh toán Dự án #${txn.projectId}`)}
+                                <span className="text-[11px] text-slate-450 leading-normal block max-w-[150px] truncate" title={txn.orderInfo || 'Th├┤ng tin thanh to├ín'}>
+                                  {txn.orderInfo || (txn.packageType ? `Thanh to├ín G├│i ${txn.packageType}` : `Thanh to├ín Dß╗▒ ├ín #${txn.projectId}`)}
                                 </span>
                               </td>
                               <td className="p-3">
                                 <span className="font-semibold text-slate-700 block">Employer ID: {txn.employerId}</span>
                                 {txn.packageType ? (
-                                  <span className="text-[11.5px] text-indigo-600 font-medium block">Gói: {txn.packageType}</span>
+                                  <span className="text-[11.5px] text-indigo-600 font-medium block">G├│i: {txn.packageType}</span>
                                 ) : (
-                                  <span className="text-[11.5px] text-slate-500 block">Dự án: ID #{txn.projectId || 'N/A'}</span>
+                                  <span className="text-[11.5px] text-slate-500 block">Dß╗▒ ├ín: ID #{txn.projectId || 'N/A'}</span>
                                 )}
                               </td>
                               <td className="p-3">
@@ -5174,11 +5076,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 </span>
                               </td>
                               <td className="p-3 text-slate-550 text-body-xs font-medium">
-                                {txn.status === 'SUCCESS' ? new Date(txn.updatedAt || txn.createdAt).toLocaleString('vi-VN') : 'Chưa thanh toán'}
+                                {txn.status === 'SUCCESS' ? new Date(txn.updatedAt || txn.createdAt).toLocaleString('vi-VN') : 'Ch╞░a thanh to├ín'}
                               </td>
                               <td className="p-3 font-mono text-body-xs">
                                 <span className="block font-semibold text-slate-700">{txn.bankCode || 'PayOS / VNPay'}</span>
-                                <span className="block text-slate-450 text-[10px]">Mã NH: {txn.vnpTransactionNo || 'Chưa ghi nhận'}</span>
+                                <span className="block text-slate-450 text-[10px]">M├ú NH: {txn.vnpTransactionNo || 'Ch╞░a ghi nhß║¡n'}</span>
                               </td>
                               <td className="p-3 text-center">
                                 <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold border ${
@@ -5194,23 +5096,23 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   onClick={() => setSelectedTxnDetails(txn)}
                                   className="px-2.5 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
                                 >
-                                  Chi tiết
+                                  Chi tiß║┐t
                                 </button>
                                 <button
                                   onClick={() => handleQueryTransaction(txn.id, txn.txnRef || txn.vnpTxnRef)}
                                   className="px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
-                                  title="Truy vấn VNPay"
+                                  title="Truy vß║Ñn VNPay"
                                 >
-                                  Truy vấn
+                                  Truy vß║Ñn
                                 </button>
                                 
                                 {txn.status === 'SUCCESS' && (
                                   <button
                                     onClick={() => handleOpenRefundModal(txn)}
                                     className="px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 font-bold rounded-lg text-[11px] transition-all active:scale-95 whitespace-nowrap"
-                                    title="Hoàn tiền giao dịch này"
+                                    title="Ho├án tiß╗ün giao dß╗ïch n├áy"
                                   >
-                                    Hoàn tiền
+                                    Ho├án tiß╗ün
                                   </button>
                                 )}
 
@@ -5232,7 +5134,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               disabled={vnpayPage === 0 || vnpayLoading}
                               className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-xs font-bold"
                             >
-                              Trang trước
+                              Trang tr╞░ß╗¢c
                             </button>
                             <button
                               onClick={() => fetchVnpayTransactions(vnpayPage + 1)}
@@ -5259,8 +5161,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                      <h3 className="font-bold text-primary text-[18px]">Danh Sách Khoa / Phòng Ban</h3>
-                      <p className="text-body-sm text-slate-500 mt-1">Danh sách phòng ban trực thuộc hệ thống. Mỗi phòng ban hỗ trợ tối đa 5 Managers và bắt buộc có tối thiểu 1 Manager & 1 Staff.</p>
+                      <h3 className="font-bold text-primary text-[18px]">Danh S├ích Khoa / Ph├▓ng Ban</h3>
+                      <p className="text-body-sm text-slate-500 mt-1">Danh s├ích ph├▓ng ban trß╗▒c thuß╗Öc hß╗ç thß╗æng. Mß╗ùi ph├▓ng ban hß╗ù trß╗ú tß╗æi ─æa 5 Managers v├á bß║»t buß╗Öc c├│ tß╗æi thiß╗âu 1 Manager & 1 Staff.</p>
                     </div>
                   </div>
 
@@ -5297,7 +5199,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             <div>
                               <h4 className="font-display font-bold text-lg text-primary">{dept.name}</h4>
                               <p className="text-body-sm text-slate-500 mt-2 line-clamp-2 min-h-[40px]">
-                                {dept.description || 'Chưa có mô tả chi tiết cho khoa này.'}
+                                {dept.description || 'Ch╞░a c├│ m├┤ tß║ú chi tiß║┐t cho khoa n├áy.'}
                               </p>
                             </div>
 
@@ -5306,19 +5208,19 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               {managersCount === 1 && (
                                 <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
                                   <AlertTriangle className="w-3.5 h-3.5" />
-                                  <span>Cảnh báo: Chỉ còn 1 Manager!</span>
+                                  <span>Cß║únh b├ío: Chß╗ë c├▓n 1 Manager!</span>
                                 </div>
                               )}
                               {staffCount === 1 && (
                                 <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
                                   <AlertTriangle className="w-3.5 h-3.5" />
-                                  <span>Cảnh báo: Chỉ còn 1 Staff!</span>
+                                  <span>Cß║únh b├ío: Chß╗ë c├▓n 1 Staff!</span>
                                 </div>
                               )}
                               {managersCount === 0 && (
                                 <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 px-2 py-1 rounded-lg font-semibold animate-pulse">
                                   <AlertTriangle className="w-3.5 h-3.5" />
-                                  <span>Lỗi: Thiếu Manager! (Cần tối thiểu 1)</span>
+                                  <span>Lß╗ùi: Thiß║┐u Manager! (Cß║ºn tß╗æi thiß╗âu 1)</span>
                                 </div>
                               )}
                             </div>
@@ -5330,7 +5232,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               onClick={() => handleSelectDepartment(dept)}
                               className="text-indigo-600 hover:text-indigo-700 font-bold text-body-sm flex items-center gap-1 group"
                             >
-                              Xem chi tiết <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                              Xem chi tiß║┐t <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                             </button>
                           </div>
                         </div>
@@ -5342,10 +5244,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 mt-8">
                     <div>
                       <h3 className="font-bold text-primary text-[18px] flex items-center gap-2">
-                        <ShieldAlert className="w-5 h-5 text-indigo-650" /> Liên Kết Kiểm Chứng Liên Khoa
+                        <ShieldAlert className="w-5 h-5 text-indigo-650" /> Li├¬n Kß║┐t Kiß╗âm Chß╗⌐ng Li├¬n Khoa
                       </h3>
                       <p className="text-body-sm text-slate-500 mt-1">
-                        Quy trình phê duyệt liên kết giữa các khoa chuyên môn đối với các giao dịch tài chính và yêu cầu nhạy cảm.
+                        Quy tr├¼nh ph├¬ duyß╗çt li├¬n kß║┐t giß╗»a c├íc khoa chuy├¬n m├┤n ─æß╗æi vß╗¢i c├íc giao dß╗ïch t├ái ch├¡nh v├á y├¬u cß║ºu nhß║íy cß║úm.
                       </p>
                     </div>
 
@@ -5353,18 +5255,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider">
-                            <th className="p-4">Tác Vụ</th>
-                            <th className="p-4">Loại Tác Vụ</th>
-                            <th className="p-4">Trạng Thái</th>
-                            <th className="p-4">Tiến Độ Ký Duyệt</th>
-                            <th className="p-4 text-center">Hành Động</th>
+                            <th className="p-4">T├íc Vß╗Ñ</th>
+                            <th className="p-4">Loß║íi T├íc Vß╗Ñ</th>
+                            <th className="p-4">Trß║íng Th├íi</th>
+                            <th className="p-4">Tiß║┐n ─Éß╗Ö K├╜ Duyß╗çt</th>
+                            <th className="p-4 text-center">H├ánh ─Éß╗Öng</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {verificationTasksList.length === 0 ? (
                             <tr>
                               <td colSpan="5" className="text-center text-slate-400 py-8 text-body-sm">
-                                Không có tác vụ kiểm chứng liên khoa nào đang chờ duyệt.
+                                Kh├┤ng c├│ t├íc vß╗Ñ kiß╗âm chß╗⌐ng li├¬n khoa n├áo ─æang chß╗¥ duyß╗çt.
                               </td>
                             </tr>
                           ) : (
@@ -5375,7 +5277,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <td className="p-4">
                                     <div className="font-bold text-slate-800">{task.title}</div>
                                     <div className="text-[12px] text-slate-400 mt-0.5">{task.description}</div>
-                                    <div className="text-[11px] text-slate-500 font-mono mt-1">ID Tác vụ: #{task.taskId} | Ref ID: #{task.referenceId}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono mt-1">ID T├íc vß╗Ñ: #{task.taskId} | Ref ID: #{task.referenceId}</div>
                                   </td>
                                   <td className="p-4">
                                     <span className="font-mono text-[11.5px] bg-slate-150 text-slate-700 px-2 py-0.5 rounded font-bold">
@@ -5388,8 +5290,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       task.status === 'REJECTED' ? 'bg-rose-50 text-rose-700' :
                                       'bg-amber-50 text-amber-700'
                                     }`}>
-                                      {task.status === 'APPROVED' ? 'Đã thông qua' :
-                                       task.status === 'REJECTED' ? 'Bị từ chối' : 'Đang xử lý'}
+                                      {task.status === 'APPROVED' ? '─É├ú th├┤ng qua' :
+                                       task.status === 'REJECTED' ? 'Bß╗ï tß╗½ chß╗æi' : '─Éang xß╗¡ l├╜'}
                                     </span>
                                   </td>
                                   <td className="p-4">
@@ -5398,17 +5300,17 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                         const signoff = task.signoffs?.find(s => s.departmentCode === dept);
                                         let badgeColor = 'bg-slate-50 text-slate-500 border border-slate-200';
                                         let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
-                                        let statusText = 'Chờ duyệt';
+                                        let statusText = 'Chß╗¥ duyß╗çt';
                                         
                                         if (signoff) {
                                           if (signoff.status === 'APPROVED') {
                                             badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
                                             icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
-                                            statusText = `Duyệt bởi ${signoff.verifierEmail}`;
+                                            statusText = `Duyß╗çt bß╗ƒi ${signoff.verifierEmail}`;
                                           } else {
                                             badgeColor = 'bg-rose-50 text-rose-700 border border-rose-100';
                                             icon = <XCircle className="w-3.5 h-3.5 text-rose-600" />;
-                                            statusText = `Từ chối bởi ${signoff.verifierEmail}`;
+                                            statusText = `Tß╗½ chß╗æi bß╗ƒi ${signoff.verifierEmail}`;
                                           }
                                         }
 
@@ -5434,7 +5336,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                         }}
                                         className="bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-bold px-4 py-2 rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm"
                                       >
-                                        Ký duyệt
+                                        K├╜ duyß╗çt
                                       </button>
                                     ) : (
                                       <span className="text-slate-400 text-[12px] font-medium">-</span>
@@ -5458,7 +5360,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <button 
                         onClick={() => handleSelectDepartment(null)}
                         className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all duration-200 active:scale-95"
-                        title="Quay lại danh sách"
+                        title="Quay lß║íi danh s├ích"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
@@ -5469,7 +5371,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                             {selectedDepartment.code}
                           </span>
                         </div>
-                        <p className="text-body-sm text-slate-500 mt-1">{selectedDepartment.description || 'Không có mô tả.'}</p>
+                        <p className="text-body-sm text-slate-500 mt-1">{selectedDepartment.description || 'Kh├┤ng c├│ m├┤ tß║ú.'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -5477,7 +5379,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         onClick={() => handleSelectDepartment(selectedDepartment)}
                         className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 p-2.5 rounded-xl text-body-sm font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
                       >
-                        <RefreshCw className="w-4 h-4" /> Làm mới dữ liệu
+                        <RefreshCw className="w-4 h-4" /> L├ám mß╗¢i dß╗» liß╗çu
                       </button>
                     </div>
                   </div>
@@ -5488,11 +5390,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
                       <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-indigo-650" /> Thành Viên Khoa ({users.filter(u => u.departmentId === selectedDepartment.departmentId).length})
+                        <Users className="w-5 h-5 text-indigo-650" /> Th├ánh Vi├¬n Khoa ({users.filter(u => u.departmentId === selectedDepartment.departmentId).length})
                       </h4>
                       <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
                         {users.filter(u => u.departmentId === selectedDepartment.departmentId).length === 0 ? (
-                          <p className="text-center text-slate-400 py-12 text-body-sm">Khoa này chưa có Manager hay Staff nào.</p>
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Khoa n├áy ch╞░a c├│ Manager hay Staff n├áo.</p>
                         ) : (
                           users.filter(u => u.departmentId === selectedDepartment.departmentId).map(member => (
                             <div key={member.id} className="py-3.5 flex justify-between items-start gap-4">
@@ -5515,12 +5417,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-2 shrink-0">
-                                <span className="text-[10px] text-slate-400 whitespace-nowrap">Gia nhập: {member.joined || 'N/A'}</span>
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">Gia nhß║¡p: {member.joined || 'N/A'}</span>
                                 <button
                                   onClick={() => handleOpenTransferModal(member)}
                                   className="text-indigo-600 hover:text-white hover:bg-indigo-600 text-[11px] font-bold border border-indigo-200 hover:border-indigo-600 px-2.5 py-1 rounded-lg transition-all active:scale-95 flex items-center gap-1 bg-indigo-50/50 shadow-sm"
                                 >
-                                  <RefreshCw className="w-3 h-3" /> Điều chuyển
+                                  <RefreshCw className="w-3 h-3" /> ─Éiß╗üu chuyß╗ân
                                 </button>
                               </div>
                             </div>
@@ -5541,7 +5443,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                           >
-                            Phiên Làm Việc ({departmentSessions.length})
+                            Phi├¬n L├ám Viß╗çc ({departmentSessions.length})
                           </button>
                           <button
                             onClick={() => setDeptDetailTab('logs')}
@@ -5551,7 +5453,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                           >
-                            Nhật Ký Thao Tác ({departmentLogs.length})
+                            Nhß║¡t K├╜ Thao T├íc ({departmentLogs.length})
                           </button>
                         </div>
                       </div>
@@ -5559,7 +5461,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
                         {deptDetailTab === 'sessions' ? (
                           departmentSessions.length === 0 ? (
-                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có phiên làm việc nào được ghi nhận.</p>
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Ch╞░a c├│ phi├¬n l├ám viß╗çc n├áo ─æ╞░ß╗úc ghi nhß║¡n.</p>
                           ) : (
                             departmentSessions.map(session => (
                               <div key={session.sessionId} className="py-3.5 space-y-1">
@@ -5578,15 +5480,15 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   </span>
                                 </div>
                                 <div className="text-[11px] text-slate-400 flex flex-col gap-0.5 pt-1">
-                                  <div>Bắt đầu: {new Date(session.loginAt).toLocaleString('vi-VN')}</div>
-                                  {session.logoutAt && <div>Kết thúc: {new Date(session.logoutAt).toLocaleString('vi-VN')}</div>}
+                                  <div>Bß║»t ─æß║ºu: {new Date(session.loginAt).toLocaleString('vi-VN')}</div>
+                                  {session.logoutAt && <div>Kß║┐t th├║c: {new Date(session.logoutAt).toLocaleString('vi-VN')}</div>}
                                 </div>
                               </div>
                             ))
                           )
                         ) : (
                           departmentLogs.length === 0 ? (
-                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có nhật ký hoạt động nào.</p>
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Ch╞░a c├│ nhß║¡t k├╜ hoß║ít ─æß╗Öng n├áo.</p>
                           ) : (
                             departmentLogs.map(log => (
                               <div key={log.logId} className="py-3.5 space-y-1.5">
@@ -5615,11 +5517,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
                       <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <History className="w-5 h-5 text-indigo-650" /> Lịch Sử Điều Chuyển ({departmentTransfers.length})
+                        <History className="w-5 h-5 text-indigo-650" /> Lß╗ïch Sß╗¡ ─Éiß╗üu Chuyß╗ân ({departmentTransfers.length})
                       </h4>
                       <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
                         {departmentTransfers.length === 0 ? (
-                          <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có lịch sử điều chuyển nào.</p>
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Ch╞░a c├│ lß╗ïch sß╗¡ ─æiß╗üu chuyß╗ân n├áo.</p>
                         ) : (
                           departmentTransfers.map(transfer => {
                             const isIncoming = transfer.toDepartment.departmentId === selectedDepartment.departmentId;
@@ -5627,7 +5529,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                               <div key={transfer.transferId} className="py-3.5 space-y-1.5">
                                 <div className="flex justify-between items-start gap-4">
                                   <div className="min-w-0">
-                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{transfer.userDisplayName || 'Không rõ tên'}</span>
+                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{transfer.userDisplayName || 'Kh├┤ng r├╡ t├¬n'}</span>
                                     <span className="text-[10px] text-slate-400 font-mono block truncate">{transfer.userEmail}</span>
                                     <span className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded">
                                       {transfer.userType}
@@ -5638,7 +5540,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
                                       : 'bg-rose-50 text-rose-700 border border-rose-100'
                                   }`}>
-                                    {isIncoming ? 'Nhận vào' : 'Chuyển đi'}
+                                    {isIncoming ? 'Nhß║¡n v├áo' : 'Chuyß╗ân ─æi'}
                                   </span>
                                 </div>
 
@@ -5670,6 +5572,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
             </div>
           )}
+
         </div>
 
       </main>
@@ -5678,7 +5581,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedActivity ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
         <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${selectedActivity ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h4 className="font-bold text-primary text-lg">Chi Tiết Hoạt Động Nhật Ký</h4>
+            <h4 className="font-bold text-primary text-lg">Chi Tiß║┐t Hoß║ít ─Éß╗Öng Nhß║¡t K├╜</h4>
             <button 
               onClick={() => setSelectedActivity(null)}
               className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-all duration-200 hover:rotate-90 active:scale-95"
@@ -5688,26 +5591,21 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Thời Gian</span>
-              <span className="text-body-md font-medium text-slate-800">
-                {selectedActivity?.timestamp && new Date(selectedActivity.timestamp).toLocaleString('vi-VN', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                })}
-              </span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Thß╗¥i Gian</span>
+              <span className="text-body-md font-medium text-slate-800">{selectedActivity?.timestamp}</span>
             </div>
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Nguồn Hoạt Động (Actor)</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Nguß╗ôn Hoß║ít ─Éß╗Öng (Actor)</span>
               <span className="text-body-md font-bold text-blue-600">{selectedActivity?.source}</span>
             </div>
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Chi Tiết Nghiệp Vụ</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Chi Tiß║┐t Nghiß╗çp Vß╗Ñ</span>
               <span className="text-body-md text-slate-600 block bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
                 {selectedActivity?.detail}
               </span>
             </div>
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Trạng Thế Hệ Thống</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Trß║íng Thß║┐ Hß╗ç Thß╗æng</span>
               <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold mt-1 uppercase ${
                 selectedActivity?.status === 'Approved' || selectedActivity?.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' :
                 selectedActivity?.status === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-800'
@@ -5748,47 +5646,47 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <p className="text-body-sm text-slate-500">
               {activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF' ? (
                 <>
-                  Xác nhận cập nhật trạng thái hoạt động cho nhân sự:<br/>
+                  X├íc nhß║¡n cß║¡p nhß║¡t trß║íng th├íi hoß║ít ─æß╗Öng cho nh├ón sß╗▒:<br/>
                   <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email} - <span className="text-indigo-600 font-bold">{activeUserForAction?.role}</span>).
                 </>
               ) : (
                 <>
-                  Xác nhận thay đổi bảo mật cho tài khoản:<br/>
+                  X├íc nhß║¡n thay ─æß╗òi bß║úo mß║¡t cho t├ái khoß║ún:<br/>
                   <span className="font-bold text-slate-800">{activeUserForAction?.name}</span> ({activeUserForAction?.email}).
                 </>
               )}
             </p>
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">
-                {activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF' ? 'CHỌN LÝ DO HÀNH CHÍNH (BẮT BUỘC)' : 'CHỌN LÝ DO BẢO MẬT (BẮT BUỘC)'}
+                {activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF' ? 'CHß╗îN L├¥ DO H├ÇNH CH├ìNH (Bß║«T BUß╗ÿC)' : 'CHß╗îN L├¥ DO Bß║óO Mß║¼T (Bß║«T BUß╗ÿC)'}
               </label>
               <div className="flex flex-wrap gap-2">
                 {(() => {
                   if (activeUserForAction?.role === 'MANAGER' || activeUserForAction?.role === 'STAFF') {
                     if (actionType === 'lock') {
                       return [
-                        "Tạm ngưng công tác / Nghỉ phép dài hạn",
-                        "Điều chuyển công tác / Thay đổi nhiệm vụ",
-                        "Yêu cầu bảo mật / Kiểm tra tài khoản",
-                        "Tạm khóa quyền truy cập",
-                        "Khác"
+                        "Tß║ím ng╞░ng c├┤ng t├íc / Nghß╗ë ph├⌐p d├ái hß║ín",
+                        "─Éiß╗üu chuyß╗ân c├┤ng t├íc / Thay ─æß╗òi nhiß╗çm vß╗Ñ",
+                        "Y├¬u cß║ºu bß║úo mß║¡t / Kiß╗âm tra t├ái khoß║ún",
+                        "Tß║ím kh├│a quyß╗ün truy cß║¡p",
+                        "Kh├íc"
                       ];
                     } else {
                       return [
-                        "Nghỉ việc / Chấm dứt hợp đồng lao động",
-                        "Thu hồi vĩnh viễn quyền truy cập",
-                        "Thay đổi nhân sự phòng ban",
-                        "Khác"
+                        "Nghß╗ë viß╗çc / Chß║Ñm dß╗⌐t hß╗úp ─æß╗ông lao ─æß╗Öng",
+                        "Thu hß╗ôi v─⌐nh viß╗àn quyß╗ün truy cß║¡p",
+                        "Thay ─æß╗òi nh├ón sß╗▒ ph├▓ng ban",
+                        "Kh├íc"
                       ];
                     }
                   } else {
                     return [
-                      "Gian lận thanh toán",
-                      "Spam tin nhắn / dự án",
-                      "Đăng nội dung phản cảm",
-                      "Lừa đảo chiếm đoạt tài sản",
-                      "Vi phạm điều khoản dịch vụ",
-                      "Khác"
+                      "Gian lß║¡n thanh to├ín",
+                      "Spam tin nhß║»n / dß╗▒ ├ín",
+                      "─É─âng nß╗Öi dung phß║ún cß║úm",
+                      "Lß╗½a ─æß║úo chiß║┐m ─æoß║ít t├ái sß║ún",
+                      "Vi phß║ím ─æiß╗üu khoß║ún dß╗ïch vß╗Ñ",
+                      "Kh├íc"
                     ];
                   }
                 })().map(reason => (
@@ -5814,12 +5712,12 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
             
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">MÃ PIN XÁC NHẬN CỦA ADMIN</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">M├â PIN X├üC NHß║¼N Cß╗ªA ADMIN</label>
               <input 
                 type="text" 
                 style={{ WebkitTextSecurity: 'disc' }}
                 autoComplete="new-password"
-                placeholder="Nhập mã PIN gồm 6 số" 
+                placeholder="Nhß║¡p m├ú PIN gß╗ôm 6 sß╗æ" 
                 maxLength={6}
                 className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono tracking-[0.2em]"
                 value={adminPin}
@@ -5857,7 +5755,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         }`}>
           <div className="p-6 border-b flex justify-between items-center bg-blue-50/30 border-blue-100 rounded-t-3xl">
             <h4 className="font-bold text-lg flex items-center gap-2 text-blue-800">
-              + Mời Nhân Sự Quản Trị / Vận Hành
+              + Mß╗¥i Nh├ón Sß╗▒ Quß║ún Trß╗ï / Vß║¡n H├ánh
             </h4>
             <button 
               onClick={() => setShowCreateModal(false)}
@@ -5869,7 +5767,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           <form onSubmit={handleCreateUser} className="p-6 space-y-4">
             
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Vai Trò Tài Khoản</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Vai Tr├▓ T├ái Khoß║ún</label>
               <div className="radio-inputs" style={{ width: '100%' }}>
                 <label className="radio">
                   <input 
@@ -5878,7 +5776,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     checked={createRole === 'MANAGER'}
                     onChange={() => setCreateRole('MANAGER')}
                   />
-                  <span className="name">Manager (Quản Lý)</span>
+                  <span className="name">Manager (Quß║ún L├╜)</span>
                 </label>
                 <label className="radio">
                   <input 
@@ -5887,14 +5785,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     checked={createRole === 'STAFF'}
                     onChange={() => setCreateRole('STAFF')}
                   />
-                  <span className="name">Staff (Nhân Viên)</span>
+                  <span className="name">Staff (Nh├ón Vi├¬n)</span>
                 </label>
               </div>
             </div>
 
             
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Email Người Nhận Lời Mời <span className="text-rose-500">*</span></label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Email Ng╞░ß╗¥i Nhß║¡n Lß╗¥i Mß╗¥i <span className="text-rose-500">*</span></label>
               <input 
                 type="email" 
                 required
@@ -5905,24 +5803,24 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Hệ thống sẽ gửi email tự động kèm liên kết kích hoạt. Người nhận sẽ tự đặt mật khẩu của riêng họ.
+                Hß╗ç thß╗æng sß║╜ gß╗¡i email tß╗▒ ─æß╗Öng k├¿m li├¬n kß║┐t k├¡ch hoß║ít. Ng╞░ß╗¥i nhß║¡n sß║╜ tß╗▒ ─æß║╖t mß║¡t khß║⌐u cß╗ºa ri├¬ng hß╗ì.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Họ và Tên <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Hß╗ì v├á T├¬n <span className="text-rose-500">*</span></label>
                 <input 
                   type="text" 
                   required
-                  placeholder="Nguyễn Văn A" 
+                  placeholder="Nguyß╗àn V─ân A" 
                   className="w-full border border-slate-300 p-2 text-sm outline-none focus:border-slate-400"
                   value={createForm.fullName}
                   onChange={e => setCreateForm({ ...createForm, fullName: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tên Hiển Thị <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">T├¬n Hiß╗ân Thß╗ï <span className="text-rose-500">*</span></label>
                 <input 
                   type="text" 
                   required
@@ -5936,7 +5834,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số điện thoại <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Sß╗æ ─æiß╗çn thoß║íi <span className="text-rose-500">*</span></label>
                 <input 
                   type="text" 
                   required
@@ -5947,7 +5845,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Số CCCD / CMND <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Sß╗æ CCCD / CMND <span className="text-rose-500">*</span></label>
                 <input 
                   type="text" 
                   required
@@ -5961,7 +5859,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
             
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Khoa / Phòng Ban <span className="text-rose-500">*</span></label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase block mb-2">Khoa / Ph├▓ng Ban <span className="text-rose-500">*</span></label>
               <div className="dept-wrapper relative w-full">
                 {(() => {
                   const selectedDept = departmentsList.find(d => String(d.departmentId) === String(createForm.departmentId));
@@ -5969,7 +5867,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <>
                       <div className={`dept-main ${selectedDept ? 'selected-active' : ''}`}>
                         <span className="text-body-sm font-semibold truncate">
-                          {selectedDept ? `${selectedDept.name} (${selectedDept.code})` : '-- Chọn Khoa/Phòng Ban --'}
+                          {selectedDept ? `${selectedDept.name} (${selectedDept.code})` : '-- Chß╗ìn Khoa/Ph├▓ng Ban --'}
                         </span>
                         <div className="dept-bar">
                           <span className="top dept-bar-list dept-top" />
@@ -6051,7 +5949,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 onClick={() => setShowCreateModal(false)}
                 className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
               >
-                Hủy
+                Hß╗ºy
               </button>
               <button 
                 type="submit"
@@ -6065,10 +5963,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Đang gửi...
+                    ─Éang gß╗¡i...
                   </>
                 ) : (
-                  'Gửi lời mời'
+                  'Gß╗¡i lß╗¥i mß╗¥i'
                 )}
               </button>
             </div>
@@ -6083,7 +5981,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         }`}>
           <div className="p-6 border-b flex justify-between items-center bg-emerald-50/30 border-emerald-100 rounded-t-3xl">
             <h4 className="font-bold text-lg flex items-center gap-2 text-emerald-800">
-              <CheckCircle2 className="w-5 h-5" /> Thông Tin Tài Khoản Nhân Sự
+              <CheckCircle2 className="w-5 h-5" /> Th├┤ng Tin T├ái Khoß║ún Nh├ón Sß╗▒
             </h4>
             <button 
               onClick={() => setCreatedCredentials(null)}
@@ -6097,66 +5995,66 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span className="text-[11px] font-extrabold text-amber-700 uppercase">Chỉ dành cho Admin</span>
+                  <span className="text-[11px] font-extrabold text-amber-700 uppercase">Chß╗ë d├ánh cho Admin</span>
                 </div>
                 <p className="text-[12px] text-amber-700 leading-relaxed">
-                  Mật khẩu này <strong>không được gửi tự động</strong> dưới dạng văn bản thuần cho người được mời. Admin sử dụng thông tin này để quản lý, hoặc cung cấp/sao chép liên kết kích hoạt bên dưới cho người dùng tự thiết lập.
+                  Mß║¡t khß║⌐u n├áy <strong>kh├┤ng ─æ╞░ß╗úc gß╗¡i tß╗▒ ─æß╗Öng</strong> d╞░ß╗¢i dß║íng v─ân bß║ún thuß║ºn cho ng╞░ß╗¥i ─æ╞░ß╗úc mß╗¥i. Admin sß╗¡ dß╗Ñng th├┤ng tin n├áy ─æß╗â quß║ún l├╜, hoß║╖c cung cß║Ñp/sao ch├⌐p li├¬n kß║┐t k├¡ch hoß║ít b├¬n d╞░ß╗¢i cho ng╞░ß╗¥i d├╣ng tß╗▒ thiß║┐t lß║¡p.
                 </p>
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-200">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Vai trò</span>
-                    <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.role === 'MANAGER' ? 'Manager (Quản Lý)' : 'Staff (Nhân Viên)'}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Vai tr├▓</span>
+                    <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.role === 'MANAGER' ? 'Manager (Quß║ún L├╜)' : 'Staff (Nh├ón Vi├¬n)'}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Trạng thái</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Trß║íng th├íi</span>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
                       createdCredentials.status === 'ACCEPTED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                       createdCredentials.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                       createdCredentials.status === 'EXPIRED' ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse' :
                       'bg-slate-50 text-slate-600 border-slate-200'
                     }`}>
-                      {createdCredentials.status === 'PENDING' ? 'CHỜ KÍCH HOẠT' : 
-                       createdCredentials.status === 'ACCEPTED' ? 'ĐÃ THIẾT LẬP' : 
-                       createdCredentials.status === 'EXPIRED' ? 'HẾT HẠN (CẦN GIA HẠN)' : 
+                      {createdCredentials.status === 'PENDING' ? 'CHß╗£ K├ìCH HOß║áT' : 
+                       createdCredentials.status === 'ACCEPTED' ? '─É├â THIß║╛T Lß║¼P' : 
+                       createdCredentials.status === 'EXPIRED' ? 'Hß║╛T Hß║áN (Cß║ªN GIA Hß║áN)' : 
                        createdCredentials.status}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Phòng ban</span>
-                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.department || 'Chưa phân bổ'}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Ph├▓ng ban</span>
+                  <span className="font-bold text-slate-800 text-body-sm">{createdCredentials.department || 'Ch╞░a ph├ón bß╗ò'}</span>
                 </div>
                 <hr className="border-slate-200" />
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Tài khoản (Email)</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">T├ái khoß║ún (Email)</span>
                   <div className="flex items-center gap-2 mt-1">
                     <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-blue-700 flex-grow overflow-x-auto">{createdCredentials.email}</code>
                     <button
                       type="button"
-                      onClick={() => { navigator.clipboard.writeText(createdCredentials.email); showToast('Đã sao chép email!', 'success'); }}
+                      onClick={() => { navigator.clipboard.writeText(createdCredentials.email); showToast('─É├ú sao ch├⌐p email!', 'success'); }}
                       className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-all active:scale-95"
                     >Copy</button>
                   </div>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                    {createdCredentials.status === 'ACCEPTED' ? 'Mật khẩu hiện tại (tự sinh)' : 'Mật khẩu tạm thời'}
+                    {createdCredentials.status === 'ACCEPTED' ? 'Mß║¡t khß║⌐u hiß╗çn tß║íi (tß╗▒ sinh)' : 'Mß║¡t khß║⌐u tß║ím thß╗¥i'}
                   </span>
                   <div className="flex items-center gap-2 mt-1">
                     <code className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-body-sm font-mono font-bold text-rose-600 flex-grow tracking-wider overflow-x-auto">
-                      {createdCredentials.password || '(Trống/Đã thay đổi)'}
+                      {createdCredentials.password || '(Trß╗æng/─É├ú thay ─æß╗òi)'}
                     </code>
                     <button
                       type="button"
                       onClick={() => { 
                         if (createdCredentials.password) {
                           navigator.clipboard.writeText(createdCredentials.password); 
-                          showToast('Đã sao chép mật khẩu!', 'success'); 
+                          showToast('─É├ú sao ch├⌐p mß║¡t khß║⌐u!', 'success'); 
                         } else {
-                          showToast('Mật khẩu trống!', 'error');
+                          showToast('Mß║¡t khß║⌐u trß╗æng!', 'error');
                         }
                       }}
                       className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[11px] font-bold hover:bg-rose-100 transition-all active:scale-95"
@@ -6166,7 +6064,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                 {createdCredentials.status === 'EXPIRED' && (
                   <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-800 text-[11.5px] font-semibold leading-relaxed">
-                   <strong>Liên kết mời đã hết hạn!</strong> Người dùng không thể kích hoạt tài khoản bằng liên kết này nữa. Thực hiện <strong>"Cấp lại mật khẩu mới"</strong> phía dưới để <strong>tạo liên kết mời mới hoàn toàn</strong> (vô hiệu hóa liên kết cũ) và gia hạn thêm 24 giờ.
+                   <strong>Li├¬n kß║┐t mß╗¥i ─æ├ú hß║┐t hß║ín!</strong> Ng╞░ß╗¥i d├╣ng kh├┤ng thß╗â k├¡ch hoß║ít t├ái khoß║ún bß║▒ng li├¬n kß║┐t n├áy nß╗»a. Thß╗▒c hiß╗çn <strong>"Cß║Ñp lß║íi mß║¡t khß║⌐u mß╗¢i"</strong> ph├¡a d╞░ß╗¢i ─æß╗â <strong>tß║ío li├¬n kß║┐t mß╗¥i mß╗¢i ho├án to├án</strong> (v├┤ hiß╗çu h├│a li├¬n kß║┐t c┼⌐) v├á gia hß║ín th├¬m 24 giß╗¥.
                   </div>
                 )}
 
@@ -6174,7 +6072,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <>
                     <hr className="border-slate-200" />
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Liên kết thiết lập tài khoản</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Li├¬n kß║┐t thiß║┐t lß║¡p t├ái khoß║ún</span>
                       <div className="flex items-center gap-2 mt-1">
                         <input 
                           type="text"
@@ -6186,7 +6084,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           type="button"
                           onClick={() => { 
                             navigator.clipboard.writeText(createdCredentials.setupLink); 
-                            showToast('Đã sao chép liên kết kích hoạt!', 'success'); 
+                            showToast('─É├ú sao ch├⌐p li├¬n kß║┐t k├¡ch hoß║ít!', 'success'); 
                           }}
                           className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[11px] font-bold hover:bg-indigo-100 transition-all active:scale-95 whitespace-nowrap"
                         >Copy Link</button>
@@ -6202,14 +6100,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   onClick={() => handleRegeneratePassword(createdCredentials.role, createdCredentials.userId)}
                   className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center justify-center gap-1"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Cấp lại mật khẩu mới
+                  <RefreshCw className="w-3.5 h-3.5" /> Cß║Ñp lß║íi mß║¡t khß║⌐u mß╗¢i
                 </button>
                 <button
                   type="button"
                   onClick={() => setCreatedCredentials(null)}
                   className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
                 >
-                  Đóng
+                  ─É├│ng
                 </button>
               </div>
             </div>
@@ -6223,7 +6121,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${showTransferModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
             <h4 className="font-bold text-primary text-lg flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-indigo-650" /> Điều Chuyển Phòng Ban
+              <RefreshCw className="w-5 h-5 text-indigo-650" /> ─Éiß╗üu Chuyß╗ân Ph├▓ng Ban
             </h4>
             <button 
               onClick={() => setShowTransferModal(false)}
@@ -6236,16 +6134,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <form onSubmit={handleExecuteTransfer} className="p-6 space-y-4">
               <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-2">
                 <div>
-                  <label className="text-[10px] font-bold text-indigo-500 uppercase block">Nhân viên cần chuyển</label>
+                  <label className="text-[10px] font-bold text-indigo-500 uppercase block">Nh├ón vi├¬n cß║ºn chuyß╗ân</label>
                   <span className="font-bold text-slate-800 text-body-sm">{transferTargetMember.name}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Vai trò</label>
+                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Vai tr├▓</label>
                     <span className="font-semibold text-slate-600 text-body-xs">{transferTargetMember.role}</span>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Khoa hiện tại</label>
+                    <label className="text-[10px] font-bold text-indigo-500 uppercase block">Khoa hiß╗çn tß║íi</label>
                     <span className="font-bold text-slate-700 text-body-xs">
                       {departmentsList.find(d => d.departmentId === transferTargetMember.departmentId)?.name || 'N/A'}
                     </span>
@@ -6254,7 +6152,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chọn khoa / phòng ban đích <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Chß╗ìn khoa / ph├▓ng ban ─æ├¡ch <span className="text-rose-500">*</span></label>
                 <select 
                   required
                   className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold"
@@ -6273,11 +6171,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Lý do điều chuyển <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">L├╜ do ─æiß╗üu chuyß╗ân <span className="text-rose-500">*</span></label>
                 <textarea 
                   rows="3"
                   required
-                  placeholder="Nhập lý do điều chuyển nhân viên này..." 
+                  placeholder="Nhß║¡p l├╜ do ─æiß╗üu chuyß╗ân nh├ón vi├¬n n├áy..." 
                   className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium resize-none"
                   value={transferForm.reason}
                   onChange={e => setTransferForm({ ...transferForm, reason: e.target.value })}
@@ -6289,14 +6187,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-body-sm px-5 py-3 rounded-xl flex-grow transition-all duration-300 shadow-md shadow-indigo-650/15"
                 >
-                  Xác nhận điều chuyển
+                  X├íc nhß║¡n ─æiß╗üu chuyß╗ân
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowTransferModal(false)}
                   className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 font-bold text-body-sm px-5 py-3 rounded-xl transition-all"
                 >
-                  Hủy
+                  Hß╗ºy
                 </button>
               </div>
             </form>
@@ -6309,7 +6207,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         <div className={`bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 ease-out transform ${showSignoffModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
             <h4 className="font-bold text-primary text-lg flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-indigo-650" /> Ký Duyệt Tác Vụ Liên Khoa
+              <ShieldAlert className="w-5 h-5 text-indigo-650" /> K├╜ Duyß╗çt T├íc Vß╗Ñ Li├¬n Khoa
             </h4>
             <button 
               onClick={() => setShowSignoffModal(false)}
@@ -6321,46 +6219,46 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           {selectedVerificationTask && (
             <form onSubmit={handleSubmitTaskSignoff} className="p-6 space-y-4">
               <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-1">
-                <p className="text-[11px] font-extrabold text-indigo-700 uppercase">Thông tin tác vụ gốc</p>
+                <p className="text-[11px] font-extrabold text-indigo-700 uppercase">Th├┤ng tin t├íc vß╗Ñ gß╗æc</p>
                 <h5 className="font-bold text-slate-800 text-body-sm">{selectedVerificationTask.title}</h5>
                 <p className="text-[12px] text-slate-500 leading-relaxed">{selectedVerificationTask.description}</p>
                 <div className="text-[11px] font-mono text-slate-400 pt-1">
-                  ID: #{selectedVerificationTask.taskId} | Loại: {selectedVerificationTask.taskType}
+                  ID: #{selectedVerificationTask.taskId} | Loß║íi: {selectedVerificationTask.taskType}
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Khoa thực hiện ký duyệt <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Khoa thß╗▒c hiß╗çn k├╜ duyß╗çt <span className="text-rose-500">*</span></label>
                 <select 
                   className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
                   value={signoffForm.departmentCode}
                   onChange={e => setSignoffForm({ ...signoffForm, departmentCode: e.target.value })}
                 >
-                  <option value="FIN">Phòng Tài chính (Finance - FIN)</option>
-                  <option value="MOD">Phòng Kiểm duyệt (Moderation - MOD)</option>
-                  <option value="DIS">Phòng Tranh chấp (Dispute Resolution - DIS)</option>
-                  <option value="CS">Phòng Hỗ trợ (Customer Support - CS)</option>
-                  <option value="IT">Phòng Kỹ thuật (IT & Development - IT)</option>
+                  <option value="FIN">Ph├▓ng T├ái ch├¡nh (Finance - FIN)</option>
+                  <option value="MOD">Ph├▓ng Kiß╗âm duyß╗çt (Moderation - MOD)</option>
+                  <option value="DIS">Ph├▓ng Tranh chß║Ñp (Dispute Resolution - DIS)</option>
+                  <option value="CS">Ph├▓ng Hß╗ù trß╗ú (Customer Support - CS)</option>
+                  <option value="IT">Ph├▓ng Kß╗╣ thuß║¡t (IT & Development - IT)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Quyết định kiểm chứng <span className="text-rose-500">*</span></label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Quyß║┐t ─æß╗ïnh kiß╗âm chß╗⌐ng <span className="text-rose-500">*</span></label>
                 <select 
                   className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
                   value={signoffForm.status}
                   onChange={e => setSignoffForm({ ...signoffForm, status: e.target.value })}
                 >
-                  <option value="APPROVED">Chấp thuận (APPROVED)</option>
-                  <option value="REJECTED">Từ chối & Hủy tác vụ (REJECTED)</option>
+                  <option value="APPROVED">Chß║Ñp thuß║¡n (APPROVED)</option>
+                  <option value="REJECTED">Tß╗½ chß╗æi & Hß╗ºy t├íc vß╗Ñ (REJECTED)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Ghi chú kiểm duyệt</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Ghi ch├║ kiß╗âm duyß╗çt</label>
                 <textarea 
                   rows="3"
-                  placeholder="Ghi rõ lý do phê duyệt hoặc từ chối để lưu vào hệ thống..." 
+                  placeholder="Ghi r├╡ l├╜ do ph├¬ duyß╗çt hoß║╖c tß╗½ chß╗æi ─æß╗â l╞░u v├áo hß╗ç thß╗æng..." 
                   className="w-full border border-slate-200 rounded-xl p-3 text-body-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium resize-none"
                   value={signoffForm.note}
                   onChange={e => setSignoffForm({ ...signoffForm, note: e.target.value })}
@@ -6372,14 +6270,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-body-sm px-5 py-3 rounded-xl flex-grow transition-all duration-300 shadow-md shadow-indigo-650/15"
                 >
-                  Xác nhận Ký duyệt
+                  X├íc nhß║¡n K├╜ duyß╗çt
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowSignoffModal(false)}
                   className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-body-sm px-5 py-3 rounded-xl transition-all"
                 >
-                  Hủy
+                  Hß╗ºy
                 </button>
               </div>
             </form>
@@ -6397,14 +6295,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-lg">Xác nhận Lưu Cấu Hình</h3>
-              <p className="text-body-sm text-slate-500">Thao tác này ảnh hưởng đến toàn hệ thống</p>
+              <h3 className="font-bold text-slate-800 text-lg">X├íc nhß║¡n L╞░u Cß║Ñu H├¼nh</h3>
+              <p className="text-body-sm text-slate-500">Thao t├íc n├áy ß║únh h╞░ß╗ƒng ─æß║┐n to├án hß╗ç thß╗æng</p>
             </div>
           </div>
           
           <div className="bg-slate-50 p-4 rounded-2xl mb-6">
             <p className="text-body-sm text-slate-600 leading-relaxed">
-              Bạn có chắc chắn muốn lưu các thay đổi tham số VNPay này không? Việc sai lệch thông tin <span className="font-bold text-slate-800">Terminal Code</span> hoặc <span className="font-bold text-slate-800">Hash Secret</span> có thể làm gián đoạn hệ thống thanh toán của hệ thống.
+              Bß║ín c├│ chß║»c chß║»n muß╗æn l╞░u c├íc thay ─æß╗òi tham sß╗æ VNPay n├áy kh├┤ng? Viß╗çc sai lß╗çch th├┤ng tin <span className="font-bold text-slate-800">Terminal Code</span> hoß║╖c <span className="font-bold text-slate-800">Hash Secret</span> c├│ thß╗â l├ám gi├ín ─æoß║ín hß╗ç thß╗æng thanh to├ín cß╗ºa hß╗ç thß╗æng.
             </p>
           </div>
 
@@ -6414,14 +6312,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               onClick={() => setShowVnpayConfirmModal(false)}
               className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
             >
-              Hủy
+              Hß╗ºy
             </button>
             <button 
               type="button"
               onClick={confirmSaveVnpayConfig}
               className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-amber-500/20 transition-all duration-200 active:scale-95"
             >
-              Xác nhận Lưu
+              X├íc nhß║¡n L╞░u
             </button>
           </div>
         </div>
@@ -6437,14 +6335,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <Lock className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-lg">Mở khóa Cấu Hình</h3>
-              <p className="text-body-sm text-slate-500">Thao tác này cho phép chỉnh sửa tham số</p>
+              <h3 className="font-bold text-slate-800 text-lg">Mß╗ƒ kh├│a Cß║Ñu H├¼nh</h3>
+              <p className="text-body-sm text-slate-500">Thao t├íc n├áy cho ph├⌐p chß╗ënh sß╗¡a tham sß╗æ</p>
             </div>
           </div>
           
           <div className="bg-slate-50 p-4 rounded-2xl mb-6">
             <p className="text-body-sm text-slate-600 leading-relaxed">
-              Bạn có chắc chắn muốn mở khóa và chỉnh sửa cấu hình kết nối VNPay không? Vui lòng cẩn thận khi thay đổi các thông số kết nối thanh toán của hệ thống.
+              Bß║ín c├│ chß║»c chß║»n muß╗æn mß╗ƒ kh├│a v├á chß╗ënh sß╗¡a cß║Ñu h├¼nh kß║┐t nß╗æi VNPay kh├┤ng? Vui l├▓ng cß║⌐n thß║¡n khi thay ─æß╗òi c├íc th├┤ng sß╗æ kß║┐t nß╗æi thanh to├ín cß╗ºa hß╗ç thß╗æng.
             </p>
           </div>
 
@@ -6454,14 +6352,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               onClick={() => setShowVnpayEditConfirmModal(false)}
               className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95"
             >
-              Hủy
+              Hß╗ºy
             </button>
             <button 
               type="button"
               onClick={confirmStartEditVnpay}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-blue-600/20 transition-all duration-200 active:scale-95"
             >
-              Xác nhận Chỉnh sửa
+              X├íc nhß║¡n Chß╗ënh sß╗¡a
             </button>
           </div>
         </div>
@@ -6475,7 +6373,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             type="button"
             onClick={() => setShowQrZoomModal(false)}
             className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 shrink-0 transition-all p-1.5 hover:bg-slate-100 rounded-full active:scale-95"
-            title="Đóng"
+            title="─É├│ng"
           >
             <X className="w-5 h-5" />
           </button>
@@ -6488,8 +6386,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             return (
               <>
                 <div className="text-center w-full pb-3 border-b border-slate-100 mb-5">
-                  <h3 className="font-bold text-slate-800 text-lg">Mã VietQR Thử Nghiệm ({testPackageType})</h3>
-                  <p className="text-body-sm text-slate-500">{vnpayConfig.bankAccountName || 'Chưa có tên'}</p>
+                  <h3 className="font-bold text-slate-800 text-lg">M├ú VietQR Thß╗¡ Nghiß╗çm ({testPackageType})</h3>
+                  <p className="text-body-sm text-slate-500">{vnpayConfig.bankAccountName || 'Ch╞░a c├│ t├¬n'}</p>
                   <p className="text-body-xs font-mono text-slate-400 mt-0.5">{vnpayConfig.bankName} - {vnpayConfig.bankAccountNo}</p>
                 </div>
 
@@ -6502,7 +6400,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
 
                 <div className="mt-5 text-center text-body-xs text-slate-450 leading-relaxed max-w-sm">
-                  Quét mã trên bằng ứng dụng Ngân hàng của bạn để kiểm tra tài khoản thụ hưởng. Số tiền thanh toán: <span className="font-bold text-slate-700 text-[14px]">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentAmount)}</span>.
+                  Qu├⌐t m├ú tr├¬n bß║▒ng ß╗⌐ng dß╗Ñng Ng├ón h├áng cß╗ºa bß║ín ─æß╗â kiß╗âm tra t├ái khoß║ún thß╗Ñ h╞░ß╗ƒng. Sß╗æ tiß╗ün thanh to├ín: <span className="font-bold text-slate-700 text-[14px]">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentAmount)}</span>.
                 </div>
               </>
             );
@@ -6516,7 +6414,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           showInvoicePreviewModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}>
           <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-rose-600"/> Mẫu Hóa Đơn Điện Tử (MISA Simulation)</h3>
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-rose-600"/> Mß║½u H├│a ─É╞ín ─Éiß╗çn Tß╗¡ (MISA Simulation)</h3>
             <button 
               type="button"
               onClick={() => setShowInvoicePreviewModal(false)}
@@ -6532,9 +6430,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 ? (tempPackages.find(p => p.packageType === testPackageType)?.price || 0) 
                 : (servicePackages?.find(p => p.packageType === testPackageType)?.price || 0);
               
-              // Giả định giá trị hiện tại là ĐÃ BAO GỒM VAT 8% hoặc VAT là riêng biệt. 
-              // Trong bài toán này, ta tính VAT 8% tách từ Tổng tiền thanh toán (thường giá bán = Giá trước thuế + VAT)
-              // Ví dụ tổng tiền 50.000 => Giá trước thuế = 50.000 / 1.08
+              // Giß║ú ─æß╗ïnh gi├í trß╗ï hiß╗çn tß║íi l├á ─É├â BAO Gß╗ÆM VAT 8% hoß║╖c VAT l├á ri├¬ng biß╗çt. 
+              // Trong b├ái to├ín n├áy, ta t├¡nh VAT 8% t├ích tß╗½ Tß╗òng tiß╗ün thanh to├ín (th╞░ß╗¥ng gi├í b├ín = Gi├í tr╞░ß╗¢c thuß║┐ + VAT)
+              // V├¡ dß╗Ñ tß╗òng tiß╗ün 50.000 => Gi├í tr╞░ß╗¢c thuß║┐ = 50.000 / 1.08
               const taxRate = 0.08;
               const preTaxAmount = Math.round(currentAmount / (1 + taxRate));
               const taxAmount = currentAmount - preTaxAmount;
@@ -6546,10 +6444,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   
                   {/* Watermark fake */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-                    <span className="text-[120px] font-bold text-red-500 transform -rotate-45">MẪU</span>
+                    <span className="text-[120px] font-bold text-red-500 transform -rotate-45">Mß║¬U</span>
                   </div>
 
-                  {/* Header Hóa đơn */}
+                  {/* Header H├│a ─æ╞ín */}
                   <div className="flex justify-between items-start mb-6">
                     <div className="w-1/3">
                       <div className="w-24 h-24 bg-red-50 border-2 border-red-200 flex items-center justify-center text-red-500 font-bold mb-2">
@@ -6557,14 +6455,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       </div>
                     </div>
                     <div className="w-1/3 text-center">
-                      <h2 className="text-xl font-bold text-red-600 mb-1">HÓA ĐƠN GIÁ TRỊ GIA TĂNG</h2>
-                      <p className="text-sm italic text-slate-600">(Bản thể hiện của hóa đơn điện tử)</p>
-                      <p className="text-sm text-slate-800 mt-2">Ngày 14 tháng 07 năm 2026</p>
+                      <h2 className="text-xl font-bold text-red-600 mb-1">H├ôA ─É╞áN GI├ü TRß╗è GIA T─éNG</h2>
+                      <p className="text-sm italic text-slate-600">(Bß║ún thß╗â hiß╗çn cß╗ºa h├│a ─æ╞ín ─æiß╗çn tß╗¡)</p>
+                      <p className="text-sm text-slate-800 mt-2">Ng├áy 14 th├íng 07 n─âm 2026</p>
                     </div>
                     <div className="w-1/3 text-right text-sm">
-                      <p>Mẫu số: <span className="font-semibold">1</span></p>
-                      <p>Ký hiệu: <span className="font-semibold">C26TMA</span></p>
-                      <p>Số: <span className="font-bold text-red-600 text-lg">0001234</span></p>
+                      <p>Mß║½u sß╗æ: <span className="font-semibold">1</span></p>
+                      <p>K├╜ hiß╗çu: <span className="font-semibold">C26TMA</span></p>
+                      <p>Sß╗æ: <span className="font-bold text-red-600 text-lg">0001234</span></p>
                     </div>
                   </div>
 
@@ -6572,21 +6470,21 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
                   {/* Seller Info */}
                   <div className="mb-6 space-y-1 text-sm">
-                    <p><span className="font-semibold">Đơn vị bán hàng:</span> CÔNG TY TNHH LANCERPRO VIỆT NAM</p>
-                    <p><span className="font-semibold">Mã số thuế:</span> 0101234567</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> Tầng 3, Tòa nhà FPT, Khu CNC Hòa Lạc, Thạch Thất, Hà Nội</p>
-                    <p><span className="font-semibold">Điện thoại:</span> 024.1234.5678 <span className="ml-8 font-semibold">Số tài khoản:</span> {vnpayConfig.bankAccountNo} ({vnpayConfig.bankName})</p>
+                    <p><span className="font-semibold">─É╞ín vß╗ï b├ín h├áng:</span> C├öNG TY TNHH LANCERPRO VIß╗åT NAM</p>
+                    <p><span className="font-semibold">M├ú sß╗æ thuß║┐:</span> 0101234567</p>
+                    <p><span className="font-semibold">─Éß╗ïa chß╗ë:</span> Tß║ºng 3, T├▓a nh├á FPT, Khu CNC H├▓a Lß║íc, Thß║ích Thß║Ñt, H├á Nß╗Öi</p>
+                    <p><span className="font-semibold">─Éiß╗çn thoß║íi:</span> 024.1234.5678 <span className="ml-8 font-semibold">Sß╗æ t├ái khoß║ún:</span> {vnpayConfig.bankAccountNo} ({vnpayConfig.bankName})</p>
                   </div>
 
                   <hr className="border-t border-dashed border-red-300 mb-6" />
 
                   {/* Buyer Info */}
                   <div className="mb-6 space-y-1 text-sm">
-                    <p><span className="font-semibold">Họ tên người mua hàng:</span> NGUYỄN VĂN A</p>
-                    <p><span className="font-semibold">Tên đơn vị:</span> CÔNG TY TNHH DEMO KHÁCH HÀNG</p>
-                    <p><span className="font-semibold">Mã số thuế:</span> 0109876543</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> Quận 1, Thành phố Hồ Chí Minh</p>
-                    <p><span className="font-semibold">Hình thức thanh toán:</span> Chuyển khoản (VietQR)</p>
+                    <p><span className="font-semibold">Hß╗ì t├¬n ng╞░ß╗¥i mua h├áng:</span> NGUYß╗äN V─éN A</p>
+                    <p><span className="font-semibold">T├¬n ─æ╞ín vß╗ï:</span> C├öNG TY TNHH DEMO KH├üCH H├ÇNG</p>
+                    <p><span className="font-semibold">M├ú sß╗æ thuß║┐:</span> 0109876543</p>
+                    <p><span className="font-semibold">─Éß╗ïa chß╗ë:</span> Quß║¡n 1, Th├ánh phß╗æ Hß╗ô Ch├¡ Minh</p>
+                    <p><span className="font-semibold">H├¼nh thß╗⌐c thanh to├ín:</span> Chuyß╗ân khoß║ún (VietQR)</p>
                   </div>
 
                   {/* Table */}
@@ -6594,18 +6492,18 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <thead>
                       <tr className="bg-red-50 font-semibold text-center">
                         <td className="border border-red-500 p-2">STT</td>
-                        <td className="border border-red-500 p-2">Tên Hàng Hóa, Dịch vụ</td>
-                        <td className="border border-red-500 p-2">ĐVT</td>
-                        <td className="border border-red-500 p-2">Số lượng</td>
-                        <td className="border border-red-500 p-2">Đơn giá</td>
-                        <td className="border border-red-500 p-2">Thành tiền</td>
+                        <td className="border border-red-500 p-2">T├¬n H├áng H├│a, Dß╗ïch vß╗Ñ</td>
+                        <td className="border border-red-500 p-2">─ÉVT</td>
+                        <td className="border border-red-500 p-2">Sß╗æ l╞░ß╗úng</td>
+                        <td className="border border-red-500 p-2">─É╞ín gi├í</td>
+                        <td className="border border-red-500 p-2">Th├ánh tiß╗ün</td>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td className="border border-red-500 p-2 text-center">1</td>
-                        <td className="border border-red-500 p-2 font-medium">Gói dịch vụ đăng tin tuyển dụng {testPackageType}</td>
-                        <td className="border border-red-500 p-2 text-center">Gói</td>
+                        <td className="border border-red-500 p-2 font-medium">G├│i dß╗ïch vß╗Ñ ─æ─âng tin tuyß╗ân dß╗Ñng {testPackageType}</td>
+                        <td className="border border-red-500 p-2 text-center">G├│i</td>
                         <td className="border border-red-500 p-2 text-center">1</td>
                         <td className="border border-red-500 p-2 text-right">{formatVND(preTaxAmount)}</td>
                         <td className="border border-red-500 p-2 text-right font-semibold">{formatVND(preTaxAmount)}</td>
@@ -6617,16 +6515,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   <div className="flex justify-end mb-6 text-sm">
                     <div className="w-1/2 space-y-2">
                       <div className="flex justify-between">
-                        <span>Cộng tiền hàng:</span>
-                        <span className="font-semibold">{formatVND(preTaxAmount)} đ</span>
+                        <span>Cß╗Öng tiß╗ün h├áng:</span>
+                        <span className="font-semibold">{formatVND(preTaxAmount)} ─æ</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Thuế suất GTGT (8%):</span>
-                        <span className="font-semibold">{formatVND(taxAmount)} đ</span>
+                        <span>Thuß║┐ suß║Ñt GTGT (8%):</span>
+                        <span className="font-semibold">{formatVND(taxAmount)} ─æ</span>
                       </div>
                       <div className="flex justify-between text-base font-bold text-red-600 mt-2 border-t border-red-200 pt-2">
-                        <span>Tổng cộng tiền thanh toán:</span>
-                        <span>{formatVND(currentAmount)} đ</span>
+                        <span>Tß╗òng cß╗Öng tiß╗ün thanh to├ín:</span>
+                        <span>{formatVND(currentAmount)} ─æ</span>
                       </div>
                     </div>
                   </div>
@@ -6634,14 +6532,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   {/* Footer */}
                   <div className="flex justify-between text-center pt-8 mb-4 text-sm">
                     <div className="w-1/3">
-                      <p className="font-semibold">Người mua hàng</p>
-                      <p className="italic text-slate-500 text-xs">(Ký, ghi rõ họ tên)</p>
+                      <p className="font-semibold">Ng╞░ß╗¥i mua h├áng</p>
+                      <p className="italic text-slate-500 text-xs">(K├╜, ghi r├╡ hß╗ì t├¬n)</p>
                     </div>
                     <div className="w-1/3">
-                      <p className="font-semibold">Người bán hàng</p>
-                      <p className="italic text-slate-500 text-xs">(Ký, ghi rõ họ tên)</p>
+                      <p className="font-semibold">Ng╞░ß╗¥i b├ín h├áng</p>
+                      <p className="italic text-slate-500 text-xs">(K├╜, ghi r├╡ hß╗ì t├¬n)</p>
                       <div className="mt-8 border-2 border-red-500 text-red-500 font-bold p-2 inline-block rounded-md rotate-[-5deg]">
-                        ĐÃ KÝ ĐIỆN TỬ
+                        ─É├â K├¥ ─ÉIß╗åN Tß╗¼
                       </div>
                     </div>
                   </div>
@@ -6663,14 +6561,14 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <RefreshCw className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-lg">Hoàn tiền Giao dịch</h3>
+              <h3 className="font-bold text-slate-800 text-lg">Ho├án tiß╗ün Giao dß╗ïch</h3>
               <p className="text-body-sm text-slate-500">#{refundTxn?.vnpTransactionNo}</p>
             </div>
           </div>
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-body-sm font-bold text-slate-700 mb-1">Số tiền hoàn (VND)</label>
+              <label className="block text-body-sm font-bold text-slate-700 mb-1">Sß╗æ tiß╗ün ho├án (VND)</label>
               <input
                 type="number"
                 value={refundAmount}
@@ -6679,11 +6577,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               />
             </div>
             <div>
-              <label className="block text-body-sm font-bold text-slate-700 mb-1">Lý do hoàn tiền</label>
+              <label className="block text-body-sm font-bold text-slate-700 mb-1">L├╜ do ho├án tiß╗ün</label>
               <textarea
                 value={refundReason}
                 onChange={e => setRefundReason(e.target.value)}
-                placeholder="Nhập lý do hoàn tiền..."
+                placeholder="Nhß║¡p l├╜ do ho├án tiß╗ün..."
                 rows="3"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 resize-none"
               ></textarea>
@@ -6697,7 +6595,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               disabled={isRefunding}
               className="border border-slate-200 text-slate-650 px-5 py-2.5 rounded-xl font-bold text-body-sm hover:bg-slate-100 transition-all duration-200 active:scale-95 disabled:opacity-50"
             >
-              Hủy
+              Hß╗ºy
             </button>
             <button 
               type="button"
@@ -6706,7 +6604,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-body-sm shadow-md shadow-amber-500/20 transition-all duration-200 active:scale-95 disabled:opacity-50 flex items-center gap-2"
             >
               {isRefunding && <RefreshCw className="w-4 h-4 animate-spin" />}
-              {isRefunding ? 'Đang gửi...' : 'Xác nhận'}
+              {isRefunding ? '─Éang gß╗¡i...' : 'X├íc nhß║¡n'}
             </button>
           </div>
         </div>
@@ -6723,51 +6621,51 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <QrCode className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-base">Chi tiết giao dịch</h3>
-              <p className="text-[11px] text-slate-500">Thông tin đối soát hệ thống</p>
+              <h3 className="font-bold text-slate-800 text-base">Chi tiß║┐t giao dß╗ïch</h3>
+              <p className="text-[11px] text-slate-500">Th├┤ng tin ─æß╗æi so├ít hß╗ç thß╗æng</p>
             </div>
           </div>
 
           {selectedTxnDetails && (
             <div className="space-y-2 mb-5">
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Cổng thanh toán:</span>
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Cß╗òng thanh to├ín:</span>
                 <span className="font-bold text-slate-700 text-sm text-right">{!String(selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef).includes('_') ? 'PayOS' : 'VNPAY'}</span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Mã tham chiếu:</span>
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">M├ú tham chiß║┐u:</span>
                 <span className="font-bold text-slate-700 text-sm text-right">{selectedTxnDetails.txnRef || selectedTxnDetails.vnpTxnRef}</span>
               </div>
               <div className="flex flex-col bg-slate-50 px-3 py-2 rounded-xl gap-0.5">
-                <span className="text-xs text-slate-500">Mã giao dịch NH:</span>
+                <span className="text-xs text-slate-500">M├ú giao dß╗ïch NH:</span>
                 <span className="font-mono font-bold text-slate-700 text-xs break-all leading-tight">
-                  {selectedTxnDetails.vnpTransactionNo || 'Chưa ghi nhận'}
+                  {selectedTxnDetails.vnpTransactionNo || 'Ch╞░a ghi nhß║¡n'}
                 </span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Dự án ID:</span>
+                <span className="text-xs text-slate-500 whitespace-nowrap mr-2">Dß╗▒ ├ín ID:</span>
                 <span className="font-bold text-slate-700 text-sm text-right">{selectedTxnDetails.projectId || 'N/A'}</span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500">Nhà tuyển dụng ID:</span>
+                <span className="text-xs text-slate-500">Nh├á tuyß╗ân dß╗Ñng ID:</span>
                 <span className="font-bold text-slate-700 text-sm">{selectedTxnDetails.employerId}</span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500">Số tiền:</span>
+                <span className="text-xs text-slate-500">Sß╗æ tiß╗ün:</span>
                 <span className="font-bold text-emerald-600 text-sm">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTxnDetails.amount || 0)}</span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500">Thời gian tạo:</span>
+                <span className="text-xs text-slate-500">Thß╗¥i gian tß║ío:</span>
                 <span className="font-bold text-slate-700 text-sm">{selectedTxnDetails.createdAt ? new Date(selectedTxnDetails.createdAt).toLocaleString('vi-VN') : '-'}</span>
               </div>
               <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
-                <span className="text-xs text-slate-500">Trạng thái:</span>
+                <span className="text-xs text-slate-500">Trß║íng th├íi:</span>
                 <span className="font-bold text-sm">
-                  {selectedTxnDetails.status === 'SUCCESS' ? <span className="text-emerald-600">Đã thanh toán</span> :
-                   selectedTxnDetails.status === 'FAILED' ? <span className="text-rose-600">Thất bại</span> :
-                   selectedTxnDetails.status === 'REFUNDED' ? <span className="text-amber-600">Đã hoàn tiền</span> :
-                   selectedTxnDetails.status === 'CANCELLED' ? <span className="text-slate-500">Đã hủy / Hết hạn</span> :
-                   <span className="text-blue-600">Đang xử lý</span>}
+                  {selectedTxnDetails.status === 'SUCCESS' ? <span className="text-emerald-600">─É├ú thanh to├ín</span> :
+                   selectedTxnDetails.status === 'FAILED' ? <span className="text-rose-600">Thß║Ñt bß║íi</span> :
+                   selectedTxnDetails.status === 'REFUNDED' ? <span className="text-amber-600">─É├ú ho├án tiß╗ün</span> :
+                   selectedTxnDetails.status === 'CANCELLED' ? <span className="text-slate-500">─É├ú hß╗ºy / Hß║┐t hß║ín</span> :
+                   <span className="text-blue-600">─Éang xß╗¡ l├╜</span>}
                 </span>
               </div>
             </div>
@@ -6778,7 +6676,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               onClick={() => setSelectedTxnDetails(null)}
               className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
             >
-              Đóng
+              ─É├│ng
             </button>
           </div>
         </div>
@@ -6792,9 +6690,9 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         }}>
           <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', textAlign: 'center', width: '900px', maxWidth: '95%', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#1a1a1a', fontSize: '20px', fontWeight: 'bold' }}>Thanh toán thử nghiệm PayOS</h3>
+              <h3 style={{ margin: 0, color: '#1a1a1a', fontSize: '20px', fontWeight: 'bold' }}>Thanh to├ín thß╗¡ nghiß╗çm PayOS</h3>
               <button onClick={handleCancelPayos} style={{ padding: '8px 15px', cursor: 'pointer', background: '#e2e8f0', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
-                Đóng
+                ─É├│ng
               </button>
             </div>
             
@@ -6834,8 +6732,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             toast?.type === 'success' ? 'text-emerald-600' : 
             toast?.type === 'warning' ? 'text-amber-600' : 'text-rose-600'
           }`}>
-            {toast?.type === 'success' ? 'Thành công' : 
-             toast?.type === 'warning' ? 'Cảnh báo' : 'Thao tác thất bại'}
+            {toast?.type === 'success' ? 'Th├ánh c├┤ng' : 
+             toast?.type === 'warning' ? 'Cß║únh b├ío' : 'Thao t├íc thß║Ñt bß║íi'}
           </p>
           <p className="text-[13px] text-slate-500 mt-0.5 leading-relaxed">{toast?.message}</p>
         </div>

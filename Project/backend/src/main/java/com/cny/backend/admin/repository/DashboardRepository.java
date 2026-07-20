@@ -142,6 +142,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
         Integer getId();
         String getStatus();
         String getModule();
+        String getAction();
         String getDetail();
         java.util.Date getTimestamp();
         String getSource();
@@ -182,7 +183,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     @Query(value = "INSERT INTO admin_audit_logs (admin_id, source_email, action, module, description, created_at) VALUES (:adminId, :sourceEmail, :action, :module, :description, GETDATE())", nativeQuery = true)
     void logAudit(@Param("adminId") int adminId, @Param("sourceEmail") String sourceEmail, @Param("action") String action, @Param("module") String module, @Param("description") String description);
 
-    @Query(value = "SELECT l.log_id as id, l.action as status, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source, " +
+    @Query(value = "SELECT l.log_id as id, l.action as status, l.action as action, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source, " +
         "CASE " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM admins) OR a.email IS NOT NULL THEN 'ADMIN' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM managers) THEN 'MANAGER' " +
