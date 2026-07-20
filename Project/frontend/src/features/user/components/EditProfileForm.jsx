@@ -245,25 +245,22 @@ export default function EditProfileForm({
   const completenessItems = React.useMemo(() => {
     let score = 0;
     if (avatarUrl) score += 10;
-    if (bio && bio.trim().length >= 30) score += 15;
+    if (bio && bio.trim().length >= 30) score += 25;
     if (professionalTitle && professionalTitle.trim()) score += 10;
     if (hourlyRate && hourlyRate > 0) score += 10;
     if (country && city && city !== 'Chờ cập nhật') score += 10;
     if (expertiseField && expertiseField.trim()) score += 10;
     if (primarySkills && primarySkills.trim()) score += 10;
     if (kycStatus === 'APPROVED') score += 15;
-
-    const portfolioDone = profileCompleteness >= (score + 10); 
     
     return [
       { name: 'Ảnh đại diện', points: 10, done: !!avatarUrl },
-      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 15, done: !!(bio && bio.trim().length >= 30) },
+      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 25, done: !!(bio && bio.trim().length >= 30) },
       { name: 'Chức danh nghề nghiệp', points: 10, done: !!(professionalTitle && professionalTitle.trim()) },
       { name: 'Mức lương kỳ vọng', points: 10, done: !!(hourlyRate && hourlyRate > 0) },
       { name: 'Vị trí địa lý', points: 10, done: !!(country && city && city !== 'Chờ cập nhật') },
       { name: 'Lĩnh vực chuyên môn', points: 10, done: !!(expertiseField && expertiseField.trim()) },
       { name: 'Kỹ năng chuyên môn', points: 10, done: !!(primarySkills && primarySkills.trim()) },
-      { name: 'Dự án mẫu (Portfolio)', points: 10, done: portfolioDone },
       { name: 'Xác thực (KYC)', points: 15, done: kycStatus === 'APPROVED' },
     ];
   }, [avatarUrl, bio, professionalTitle, hourlyRate, country, city, expertiseField, primarySkills, kycStatus, profileCompleteness]);
