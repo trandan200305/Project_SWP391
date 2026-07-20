@@ -82,7 +82,7 @@ export default function NotificationDropdown({ userId, role }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+  // danh dau da doc
   const handleMarkAsRead = async (
     id,
     currentReadStatus,

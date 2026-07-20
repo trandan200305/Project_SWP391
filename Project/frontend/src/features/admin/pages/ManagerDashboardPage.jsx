@@ -2010,7 +2010,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             className="w-full flex items-center justify-center gap-2 bg-[#006b2c] hover:bg-[#00873a] text-white py-2.5 rounded-lg font-bold text-body-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Task</span>
+            <span>Tạo công việc mới</span>
           </button>
         </div>
       </aside>
@@ -2026,7 +2026,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
             </span>
             <input
               type="text"
-              placeholder="Search tasks, staff, or cases..."
+              placeholder="Tìm kiếm công việc, nhân sự hoặc tranh chấp..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#f1f3ff] border-none text-[#141b2b] placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border border-transparent transition-all"
@@ -2053,11 +2053,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 >
                   <div className="flex flex-col text-right sm:block hidden">
                     <span className="text-[13px] font-bold text-[#141b2b] leading-tight truncate max-w-[150px] block" title={user?.displayName || user?.email}>
-                      {user?.displayName || user?.email || "Manager"}
+                      {user?.displayName || user?.email || "Quản lý"}
                     </span>
                     <div className="flex justify-end mt-0.5">
                       <span className="inline-flex items-center text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100/60 leading-none">
-                        {(user?.role || "MANAGER") + (myProfile?.departmentName ? ` / ${myProfile.departmentName}` : '')}
+                        {(user?.role || "QUẢN LÝ") + (myProfile?.departmentName ? ` / ${myProfile.departmentName}` : '')}
                       </span>
                     </div>
                   </div>
@@ -2071,7 +2071,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-sm border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105">
-                        {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'M'}
+                        {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'Q'}
                       </div>
                     )}
                     
@@ -2173,19 +2173,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
               
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Operational Overview</h1>
-                  <p className="text-body-sm text-[#6e7b6c] mt-1">Real-time performance monitoring for Department: General</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button className="px-4 py-2 bg-white border border-[#e1e8fd] text-[#141b2b] rounded-lg text-body-sm font-bold shadow-sm hover:bg-[#f1f3ff] transition-all flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#6e7b6c]" />
-                    <span>Last 24 Hours</span>
-                    <ChevronRight className="w-3.5 h-3.5 rotate-90 text-[#6e7b6c]" />
-                  </button>
-                  <button className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-sm transition-all flex items-center gap-2">
-                    <Download className="w-4 h-4" />
-                    <span>Export Report</span>
-                  </button>
+                  <h1 className="text-headline-lg text-[#141b2b] font-extrabold tracking-tight">Tổng quan vận hành</h1>
+                  <p className="text-body-sm text-[#6e7b6c] mt-1">Ghi nhận hiệu suất vận hành thời gian thực của phòng ban.</p>
                 </div>
               </div>
 
@@ -2199,11 +2188,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       <Users className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#006b2c] flex items-center gap-0.5">
-                      +2 this week
+                      +2 tuần này
                     </span>
                   </div>
                   <div className="mt-2">
-                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">Total Staff</p>
+                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">TỔNG NHÂN SỰ</p>
                     <h2 className="text-3xl font-extrabold text-[#141b2b] mt-1">{staffList.length}</h2>
                   </div>
                   <div className="mt-2">
@@ -2211,7 +2200,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       <div className="bg-[#006b2c] h-full" style={{ width: `${(staffList.filter(s => s.status === 'ACTIVE').length / (staffList.length || 1)) * 100}%` }}></div>
                     </div>
                     <p className="text-[10px] text-[#6e7b6c] font-semibold mt-1">
-                      {staffList.filter(s => s.status === 'ACTIVE').length} Currently Active
+                      {staffList.filter(s => s.status === 'ACTIVE').length} Đang hoạt động
                     </p>
                   </div>
                 </div>
@@ -2223,12 +2212,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       <CheckSquare className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-bold text-[#ba1a1a] flex items-center gap-0.5">
-                      -4% vs yesterday
+                      -4% so với hôm qua
                     </span>
                   </div>
                   <div className="mt-2 flex justify-between items-end">
                     <div>
-                      <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">Pending Cases</p>
+                      <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">CÔNG VIỆC CHỜ XỬ LÝ</p>
                       <h2 className="text-3xl font-extrabold text-[#141b2b] mt-1">
                         {tasks.filter(t => t.status === 'Pending').length}
                       </h2>
@@ -2249,14 +2238,14 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     <ShieldAlert className="w-5 h-5" />
                   </div>
                   <div className="mt-2">
-                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">Escalated</p>
+                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">CHUYỂN CẤP</p>
                     <h2 className="text-3xl font-extrabold text-[#141b2b] mt-1">
                       {tasks.filter(t => t.priority === 'High' && t.status !== 'Manager đã ký duyệt').length}
                     </h2>
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-xs font-bold text-[#ba1a1a]">
                     <TrendingUp className="w-3.5 h-3.5 text-[#ba1a1a]" />
-                    <span>Urgent</span>
+                    <span>Khẩn cấp</span>
                   </div>
                 </div>
 
@@ -2266,12 +2255,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     <Zap className="w-5 h-5" />
                   </div>
                   <div className="mt-2">
-                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">Avg Resolution</p>
+                    <p className="text-xs font-bold text-[#6e7b6c] uppercase tracking-wider">THỜI GIAN XỬ LÝ TB</p>
                     <h2 className="text-3xl font-extrabold text-[#141b2b] mt-1">2.4h</h2>
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-xs font-bold text-[#006b2c]">
                     <Zap className="w-3.5 h-3.5 text-[#006b2c]" />
-                    <span>Optimal</span>
+                    <span>Tối ưu</span>
                   </div>
                 </div>
 
@@ -2284,8 +2273,8 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 <div className="lg:col-span-2 bg-white border border-[#e1e8fd] p-6 rounded-xl min-h-[320px] flex flex-col justify-between card-level-1">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-body-lg font-bold text-[#141b2b]">Staff Performance</h3>
-                      <p className="text-xs text-[#6e7b6c]">Average resolved tickets and cases count by team.</p>
+                      <h3 className="text-body-lg font-bold text-[#141b2b]">Hiệu suất Làm việc Nhân sự</h3>
+                      <p className="text-xs text-[#6e7b6c]">Trung bình số lượng công việc và ticket đã xử lý theo đội ngũ.</p>
                     </div>
                     <button className="p-1.5 hover:bg-[#f1f3ff] rounded-lg text-[#6e7b6c] transition-colors">
                       <MoreVertical className="w-4 h-4" />
@@ -2343,13 +2332,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl flex flex-col justify-between min-h-[320px] card-level-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-body-lg font-bold text-[#141b2b]">Department Workload</h3>
+                    <h3 className="text-body-lg font-bold text-[#141b2b]">Khối lượng Công việc Phòng ban</h3>
                     <div className="flex items-center gap-3 text-[10px] font-bold text-[#6e7b6c]">
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-[#006b2c] rounded-full" /> Capacity
+                        <span className="w-2.5 h-2.5 bg-[#006b2c] rounded-full" /> Đã sử dụng
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-[#f1f3ff] rounded-full" /> Remaining
+                        <span className="w-2.5 h-2.5 bg-[#f1f3ff] rounded-full" /> Còn lại
                       </span>
                     </div>
                   </div>
@@ -2358,7 +2347,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
-                        <span>Core Operations</span>
+                        <span>Vận hành cốt lõi</span>
                         <span>88%</span>
                       </div>
                       <div className="w-full bg-[#f1f3ff] h-2.5 rounded-full overflow-hidden">
@@ -2369,7 +2358,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
-                        <span>Quality Assurance</span>
+                        <span>Đảm bảo chất lượng</span>
                         <span>64%</span>
                       </div>
                       <div className="w-full bg-[#f1f3ff] h-2.5 rounded-full overflow-hidden">
@@ -2380,7 +2369,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
-                        <span>Customer Support</span>
+                        <span>Hỗ trợ khách hàng</span>
                         <span className="text-[#ba1a1a]">92%</span>
                       </div>
                       <div className="w-full bg-[#f1f3ff] h-2.5 rounded-full overflow-hidden">
@@ -2391,7 +2380,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     
                     <div>
                       <div className="flex items-center justify-between text-xs font-bold text-[#141b2b] mb-1.5">
-                        <span>Logistics</span>
+                        <span>Hậu cần</span>
                         <span>45%</span>
                       </div>
                       <div className="w-full bg-[#f1f3ff] h-2.5 rounded-full overflow-hidden">
@@ -2410,12 +2399,12 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl lg:col-span-2 card-level-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between pb-4 border-b border-[#e1e8fd]">
-                      <h3 className="text-body-lg font-bold text-[#141b2b]">Staff Workload</h3>
+                      <h3 className="text-body-lg font-bold text-[#141b2b]">Tải công việc Nhân sự</h3>
                       <button 
                         onClick={() => setActiveTab('Staff Management')}
                         className="text-xs font-bold text-[#006b2c] hover:underline"
                       >
-                        View Directory
+                        Xem danh sách
                       </button>
                     </div>
 
@@ -2423,10 +2412,10 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       <table className="min-w-full divide-y divide-[#e9edff] text-left">
                         <thead>
                           <tr>
-                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider">Staff Member</th>
-                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider text-center">Active Tasks</th>
-                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider">Load Progress</th>
-                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider text-right">Efficiency</th>
+                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider">Nhân viên</th>
+                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider text-center">Việc đang làm</th>
+                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider">Tiến độ tải</th>
+                            <th className="pb-3 text-[11px] font-bold text-[#6e7b6c] uppercase tracking-wider text-right">Hiệu suất</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#e9edff]">
@@ -2479,20 +2468,20 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                 
                 <div className="bg-white border border-[#e1e8fd] p-6 rounded-xl flex flex-col justify-between relative card-level-1">
                   <div>
-                    <h3 className="text-body-lg font-bold text-[#141b2b] pb-4 border-b border-[#e1e8fd]">Recent Escalations</h3>
+                    <h3 className="text-body-lg font-bold text-[#141b2b] pb-4 border-b border-[#e1e8fd]">Trường hợp Chuyển cấp gần đây</h3>
                     
                     <div className="space-y-4 mt-4">
                       
                       <div className="bg-[#f9f9ff] border border-[#e1e8fd] p-4 rounded-xl relative">
                         <div className="flex items-center justify-between">
                           <span className="bg-[#ba1a1a] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            Urgent
+                            Khẩn cấp
                           </span>
                           <span className="text-[10px] font-bold text-[#6e7b6c]">14:22 PM</span>
                         </div>
-                        <h4 className="text-body-sm font-bold text-[#141b2b] mt-2">Payment Dispute #8821</h4>
+                        <h4 className="text-body-sm font-bold text-[#141b2b] mt-2">Tranh chấp thanh toán #8821</h4>
                         <p className="text-xs text-[#3e4a3d] mt-1 line-clamp-2">
-                          Merchant claims funds were not received after successful milestone delivery...
+                          Nhà tuyển dụng phản ánh chưa nhận được tiền sau khi nghiệm thu cột mốc thành công...
                         </p>
                         <div className="flex items-center justify-between mt-3.5">
                           <div className="flex -space-x-1.5">
@@ -2502,11 +2491,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                           <button 
                             onClick={() => {
                               setActiveTab('Disputes');
-                              showToast('Navigating to dispute details...', 'success');
+                              showToast('Chuyển tới chi tiết tranh chấp...', 'success');
                             }}
                             className="text-xs font-bold text-[#006b2c] hover:underline"
                           >
-                            Take Action
+                            Xem & Xử lý
                           </button>
                         </div>
                       </div>
@@ -2515,13 +2504,13 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                       <div className="bg-[#f9f9ff] border border-[#e1e8fd] p-4 rounded-xl relative">
                         <div className="flex items-center justify-between">
                           <span className="bg-[#293040] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            Medium
+                            Trung bình
                           </span>
                           <span className="text-[10px] font-bold text-[#6e7b6c]">11:05 AM</span>
                         </div>
-                        <h4 className="text-body-sm font-bold text-[#141b2b] mt-2">Policy Violation #7742</h4>
+                        <h4 className="text-body-sm font-bold text-[#141b2b] mt-2">Báo cáo vi phạm điều khoản #7742</h4>
                         <p className="text-xs text-[#3e4a3d] mt-1 line-clamp-2">
-                          User reported for multiple off-platform payment attempts in chat...
+                          Người dùng bị báo cáo do cố tình giao dịch ngoài hệ thống nhiều lần...
                         </p>
                         <div className="flex items-center justify-between mt-3.5">
                           <div className="flex">
@@ -2530,11 +2519,11 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                           <button 
                             onClick={() => {
                               setActiveTab('Moderation');
-                              showToast('Navigating to moderation queue...', 'success');
+                              showToast('Chuyển tới hàng đợi kiểm duyệt...', 'success');
                             }}
                             className="text-xs font-bold text-[#006b2c] hover:underline"
                           >
-                            Review Case
+                            Xem xét
                           </button>
                         </div>
                       </div>
@@ -2559,21 +2548,21 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   </div>
                   <div>
                     <span className="text-body-sm font-bold text-white block">
-                      8 Approval Requests Pending
+                      8 Yêu cầu Duyệt đang chờ
                     </span>
                     <p className="text-[11px] text-white/80 mt-0.5">
-                      Budget adjustments and new staff onboarding require your signature.
+                      Cần chữ ký duyệt của Manager đối với các đơn xin chuyển phòng ban và điều chỉnh.
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => {
                     setActiveTab('KYC');
-                    showToast('Opening approval requests queue...', 'success');
+                    showToast('Mở hàng đợi phê duyệt...', 'success');
                   }}
                   className="bg-white hover:bg-slate-50 text-[#0058be] font-bold text-xs px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
                 >
-                  Review Queue
+                  Xem hàng đợi
                 </button>
               </div>
 
@@ -2582,15 +2571,15 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Tasks Directory</h1>
-                  <p className="text-body-sm text-[#3e4a3d] mt-1">Full registry of administrative verification tasks in LancerPro.</p>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Danh mục Công việc</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Danh sách công việc xác thực và kiểm duyệt hành chính.</p>
                 </div>
                 <button 
                   onClick={() => setShowCreateModal(true)}
                   className="px-4 py-2 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-body-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Create New Task</span>
+                  <span>Tạo công việc mới</span>
                 </button>
               </div>
 
@@ -2602,7 +2591,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         <span className="text-xs font-bold text-[#006b2c]">{t.id} - {t.type}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           t.priority === 'High' ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-amber-100 text-amber-800'
-                        }`}>{t.priority}</span>
+                        }`}>{t.priority === 'High' ? 'Cao' : 'Trung bình'}</span>
                       </div>
                       <h3 className="text-body-lg font-bold text-[#141b2b] mt-2">{t.title}</h3>
                       <p className="text-body-sm text-[#3e4a3d] line-clamp-2 mt-1.5">{t.description}</p>
@@ -2620,7 +2609,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                         }}
                         className="text-xs font-extrabold text-[#006b2c] hover:text-[#00873a] flex items-center gap-1"
                       >
-                        <span>Manage</span>
+                        <span>Xử lý</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
