@@ -3241,6 +3241,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   { value: 'USER_MANAGEMENT', label: 'Tài khoản & Người dùng' },
                                   { value: 'PROJECTS', label: 'Kiểm duyệt Dự án' },
                                   { value: 'FINANCE', label: 'Quản lý Tài chính' },
+                                  { value: 'DEPARTMENTS', label: 'Quản lý Phòng ban' },
+                                  { value: 'CMS_SETTINGS', label: 'Cấu hình Hệ thống' },
                                   { value: 'SYSTEM', label: 'Hệ thống' }
                                 ].map(mod => (
                                   <button
