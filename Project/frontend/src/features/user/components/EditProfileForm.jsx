@@ -243,27 +243,19 @@ export default function EditProfileForm({
   }, []);
 
   const completenessItems = React.useMemo(() => {
-    let score = 0;
-    if (avatarUrl) score += 10;
-    if (bio && bio.trim().length >= 30) score += 25;
-    if (professionalTitle && professionalTitle.trim()) score += 10;
-    if (hourlyRate && hourlyRate > 0) score += 10;
-    if (country && city && city !== 'Chờ cập nhật') score += 10;
-    if (expertiseField && expertiseField.trim()) score += 10;
-    if (primarySkills && primarySkills.trim()) score += 10;
-    if (kycStatus === 'APPROVED') score += 15;
-    
     return [
-      { name: 'Ảnh đại diện', points: 10, done: !!avatarUrl },
-      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 25, done: !!(bio && bio.trim().length >= 30) },
-      { name: 'Chức danh nghề nghiệp', points: 10, done: !!(professionalTitle && professionalTitle.trim()) },
-      { name: 'Mức lương kỳ vọng', points: 10, done: !!(hourlyRate && hourlyRate > 0) },
-      { name: 'Vị trí địa lý', points: 10, done: !!(country && city && city !== 'Chờ cập nhật') },
+      { name: 'Xác thực Danh tính (KYC)', points: 20, done: kycStatus === 'APPROVED' },
+      { name: 'Xác thực Email', points: 15, done: !!emailVerified },
+      { name: 'Số điện thoại', points: 10, done: !!(phone && phone.trim().length > 0) },
+      { name: 'Địa chỉ cụ thể', points: 10, done: !!(address && address.trim().length > 0) },
       { name: 'Lĩnh vực chuyên môn', points: 10, done: !!(expertiseField && expertiseField.trim()) },
       { name: 'Kỹ năng chuyên môn', points: 10, done: !!(primarySkills && primarySkills.trim()) },
-      { name: 'Xác thực (KYC)', points: 15, done: kycStatus === 'APPROVED' },
+      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 10, done: !!(bio && bio.trim().length >= 30) },
+      { name: 'Ảnh đại diện', points: 5, done: !!avatarUrl },
+      { name: 'Chức danh nghề nghiệp', points: 5, done: !!(professionalTitle && professionalTitle.trim()) },
+      { name: 'Mức lương kỳ vọng', points: 5, done: !!(hourlyRate && hourlyRate > 0) },
     ];
-  }, [avatarUrl, bio, professionalTitle, hourlyRate, country, city, expertiseField, primarySkills, kycStatus, profileCompleteness]);
+  }, [kycStatus, emailVerified, phone, address, expertiseField, primarySkills, bio, avatarUrl, professionalTitle, hourlyRate]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

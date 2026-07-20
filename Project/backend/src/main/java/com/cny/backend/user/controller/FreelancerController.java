@@ -301,19 +301,24 @@ public class FreelancerController {
 
     private int calculateCompleteness(Freelancer f) {
         int score = 0;
-        if (f.getAvatarUrl() != null && !f.getAvatarUrl().trim().isEmpty()) score += 10;
-        if (f.getBio() != null && f.getBio().trim().length() >= 30) score += 25;
-        if (f.getProfessionalTitle() != null && !f.getProfessionalTitle().trim().isEmpty()) score += 10;
-        if (f.getHourlyRate() != null && f.getHourlyRate().compareTo(java.math.BigDecimal.ZERO) > 0) score += 10;
-        if (f.getCountry() != null && !f.getCountry().trim().isEmpty() && f.getCity() != null && !f.getCity().trim().isEmpty()) score += 10;
+        
+        if ("APPROVED".equals(f.getKycStatus())) score += 20;
+        if (f.getEmailVerified() != null && f.getEmailVerified()) score += 15;
+        if (f.getPhone() != null && !f.getPhone().trim().isEmpty()) score += 10;
+        if (f.getAddress() != null && !f.getAddress().trim().isEmpty()) score += 10;
+        
+        if (f.getBio() != null && f.getBio().trim().length() >= 30) score += 10;
         
         FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
         if (profile != null) {
             if (profile.getExpertiseField() != null && !profile.getExpertiseField().trim().isEmpty()) score += 10;
             if (profile.getPrimarySkills() != null && !profile.getPrimarySkills().trim().isEmpty()) score += 10;
         }
-        if ("APPROVED".equals(f.getKycStatus())) score += 15;
-        
+
+        if (f.getAvatarUrl() != null && !f.getAvatarUrl().trim().isEmpty()) score += 5;
+        if (f.getProfessionalTitle() != null && !f.getProfessionalTitle().trim().isEmpty()) score += 5;
+        if (f.getHourlyRate() != null && f.getHourlyRate().compareTo(java.math.BigDecimal.ZERO) > 0) score += 5;
+
         return Math.min(score, 100);
     }
 }
