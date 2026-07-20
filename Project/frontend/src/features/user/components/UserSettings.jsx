@@ -299,9 +299,29 @@ export default function UserSettings({
         {prefTab === 'danger' && role !== 'admin' && (
           <div className="bg-white p-8 rounded-xl border border-red-200 shadow-sm max-w-2xl">
             <h3 className="font-bold text-gray-900 text-xl mb-4 flex items-center gap-2"><Trash2 className="w-5 h-5 text-red-500" /> Xóa Tài Khoản</h3>
-            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               Khi bạn xóa tài khoản, tất cả dữ liệu bao gồm hồ sơ, dự án, lịch sử giao dịch và tin nhắn sẽ bị xóa vĩnh viễn và không thể khôi phục.
             </p>
+
+            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg mb-6">
+              <h4 className="font-bold text-orange-800 text-sm mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> Yêu cầu bắt buộc trước khi xóa:
+              </h4>
+              <ul className="list-disc list-inside text-sm text-orange-700 space-y-1.5 ml-1">
+                {role === 'freelancer' ? (
+                  <>
+                    <li>Không có hợp đồng/dự án nào đang trong trạng thái <span className="font-semibold">Đang thực hiện</span> hoặc <span className="font-semibold">Chờ bắt đầu</span>.</li>
+                    <li>Không có <span className="font-semibold">tranh chấp hoặc khiếu nại</span> nào đang mở.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Không có dự án đăng tuyển nào đang <span className="font-semibold">Mở</span> hoặc <span className="font-semibold">Chờ duyệt</span>.</li>
+                    <li>Không có hợp đồng/dự án nào đang <span className="font-semibold">thực hiện</span> với Freelancer.</li>
+                    <li>Không có <span className="font-semibold">tranh chấp hoặc khiếu nại</span> nào đang mở.</li>
+                  </>
+                )}
+              </ul>
+            </div>
             
             <button 
               onClick={handleDeleteAccount} 
