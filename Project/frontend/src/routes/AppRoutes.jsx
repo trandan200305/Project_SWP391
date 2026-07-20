@@ -115,6 +115,18 @@ export default function AppRoutes({
     );
   }
 
+  if (currentPage === 'employer_support') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+        initialTab="support"
+      />
+    );
+  }
+
   if (currentPage === 'employer_packages') {
     return (
       <PackageSelectionPage 

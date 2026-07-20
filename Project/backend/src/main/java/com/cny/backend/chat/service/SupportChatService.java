@@ -169,7 +169,7 @@ public class SupportChatService {
                      "LEFT JOIN freelancers f ON t.freelancer_id = f.freelancer_id " +
                      "LEFT JOIN employers e ON t.employer_id = e.employer_id " +
                      "LEFT JOIN staff s ON t.assigned_staff_id = s.staff_id " +
-                     "WHERE t.status = 'OPEN' AND ISNULL(t.deleted_by_admin, 0) = 0 " +
+                     "WHERE t.status = 'OPEN' " +
                      "ORDER BY t.updated_at DESC";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
@@ -475,4 +475,120 @@ public class SupportChatService {
         messagingTemplate.convertAndSend("/topic/ticket." + ticketId, sysMsg);
         messagingTemplate.convertAndSend("/topic/admin", sysMsg);
     }
+
+    public List<Map<String, Object>> getTicketsByEmployerId(Integer employerId) {
+        if (employerId == null || employerId <= 0) {
+            throw new IllegalArgumentException("Mã nhà tuyển dụng (employerId) không hợp lệ.");
+        }
+
+        String sql = "SELECT t.ticket_id, t.employer_id, t.subject, t.description, t.status, t.priority, t.created_at, t.updated_at, t.assigned_staff_id, " +
+                     "s.display_name as staff_name, s.avatar_url as staff_avatar, " +
+                     "(SELECT TOP 1 message_text FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message, " +
+                     "(SELECT TOP 1 sent_at FROM ticket_messages WHERE ticket_id = t.ticket_id ORDER BY sent_at DESC) as last_message_at, " +
+                     "(SELECT COUNT(*) FROM ticket_messages WHERE ticket_id = t.ticket_id AND (sender_admin_id IS NOT NULL OR sender_staff_id IS NOT NULL) AND is_read = 0) as unread_count " +
+                     "FROM support_tickets t " +
+                     "LEFT JOIN staff s ON t.assigned_staff_id = s.staff_id " +
+                     "WHERE t.employer_id = ? " +
+                     "ORDER BY t.updated_at DESC";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, employerId);
+        List<Map<String, Object>> tickets = new ArrayList<>();
+
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> ticket = new HashMap<>(row);
+            if (row.get("created_at") != null) {
+                ticket.put("created_at", row.get("created_at").toString());
+            }
+            if (row.get("updated_at") != null) {
+                ticket.put("updated_at", row.get("updated_at").toString());
+            }
+            if (row.get("last_message_at") != null) {
+                ticket.put("last_message_at", row.get("last_message_at").toString());
+            }
+            Object unreadCount = row.get("unread_count");
+            ticket.put("unread_count", unreadCount != null ? ((Number) unreadCount).intValue() : 0);
+            tickets.add(ticket);
+        }
+        return tickets;
+    }
+
+    @Transactional
+    public Integer createEmployerTicket(Integer employerId, String subject, String description, String priority, List<Map<String, Object>> attachments) {
+        if (employerId == null || employerId <= 0) {
+            throw new IllegalArgumentException("Mã nhà tuyển dụng (employerId) không hợp lệ.");
+        }
+
+        // Validate Employer Existence
+        Integer countEmployer = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM employers WHERE employer_id = ?", Integer.class, employerId);
+        if (countEmployer == null || countEmployer == 0) {
+            throw new IllegalArgumentException("Tài khoản nhà tuyển dụng không tồn tại trong hệ thống.");
+        }
+
+        // Validate Subject
+        if (subject == null || subject.trim().length() < 5 || subject.trim().length() > 255) {
+            throw new IllegalArgumentException("Tiêu đề ticket hỗ trợ phải chứa từ 5 đến 255 ký tự.");
+        }
+
+        // Validate Description
+        if (description == null || description.trim().length() < 10 || description.trim().length() > 4000) {
+            throw new IllegalArgumentException("Mô tả chi tiết sự cố phải chứa từ 10 đến 4000 ký tự.");
+        }
+
+        // Validate Priority
+        String p = (priority != null) ? priority.trim().toUpperCase() : "MEDIUM";
+        if (!List.of("LOW", "MEDIUM", "HIGH", "URGENT").contains(p)) {
+            throw new IllegalArgumentException("Mức độ ưu tiên không hợp lệ (LOW, MEDIUM, HIGH, URGENT).");
+        }
+
+        // Validate Attachments Count
+        if (attachments != null && attachments.size() > 5) {
+            throw new IllegalArgumentException("Chỉ được đính kèm tối đa 5 tệp tin mỗi ticket.");
+        }
+
+        String subj = subject.trim();
+        String desc = description.trim();
+
+        String insertTicketSql = "INSERT INTO support_tickets (employer_id, subject, description, status, priority, created_at, updated_at) " +
+                                 "VALUES (?, ?, ?, 'OPEN', ?, GETDATE(), GETDATE())";
+        jdbcTemplate.update(insertTicketSql, employerId, subj, desc, p);
+        Integer ticketId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
+
+        String insertMsgSql = "INSERT INTO ticket_messages (ticket_id, sender_employer_id, message_text, is_read, sent_at) " +
+                              "VALUES (?, ?, ?, 0, GETDATE())";
+        jdbcTemplate.update(insertMsgSql, ticketId, employerId, desc);
+        Integer messageId = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('ticket_messages')", Integer.class);
+
+        if (attachments != null && !attachments.isEmpty()) {
+            for (Map<String, Object> att : attachments) {
+                String fileUrl = (String) att.get("fileUrl");
+                if (fileUrl != null && !fileUrl.trim().isEmpty()) {
+                    jdbcTemplate.update(
+                        "INSERT INTO ticket_attachments (message_id, file_url, file_name, file_size, created_at) VALUES (?, ?, ?, ?, GETDATE())",
+                        messageId, fileUrl.trim(), att.get("fileName"), att.get("fileSize")
+                    );
+                }
+            }
+        }
+        return ticketId;
+    }
+
+    @Transactional
+    public void updateTicketStatusByEmployer(Integer ticketId, String status) {
+        if (ticketId == null || ticketId <= 0) {
+            throw new IllegalArgumentException("Mã ticket (ticketId) không hợp lệ.");
+        }
+
+        String st = (status != null) ? status.trim().toUpperCase() : "";
+        if (!List.of("OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED").contains(st)) {
+            throw new IllegalArgumentException("Trạng thái ticket không hợp lệ.");
+        }
+
+        Integer countTicket = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets WHERE ticket_id = ?", Integer.class, ticketId);
+        if (countTicket == null || countTicket == 0) {
+            throw new IllegalArgumentException("Không tìm thấy ticket hỗ trợ trong CSDL.");
+        }
+
+        jdbcTemplate.update("UPDATE support_tickets SET status = ?, updated_at = GETDATE() WHERE ticket_id = ?", st, ticketId);
+    }
 }
+

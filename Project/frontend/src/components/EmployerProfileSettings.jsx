@@ -25,10 +25,12 @@ import {
     X,
     Check,
     AlertCircle,
-    FileText
+    FileText,
+    LifeBuoy
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
+import EmployerSupportTickets from './employer/EmployerSupportTickets.jsx';
 
 const emptyForm = {
     displayName: '',
@@ -49,7 +51,7 @@ const emptyForm = {
     }
 };
 
-export default function EmployerProfileSettings({user, onNavigateHome, onNavigate, onUserUpdate}) {
+export default function EmployerProfileSettings({user, onNavigateHome, onNavigate, onUserUpdate, initialTab = 'company', openCreateTicketModal = false}) {
     const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -66,7 +68,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [uploadingCccd, setUploadingCccd] = useState(false);
 
     
-    const [activeTab, setActiveTab] = useState('company'); 
+    const [activeTab, setActiveTab] = useState(initialTab || 'company'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -616,7 +618,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         </div>);
     }
 
-    return (<div className="min-h-screen bg-slate-100 text-slate-900">
+    return (<div className="min-h-screen bg-slate-100 text-slate-900 pt-20">
         <div className="bg-white border-b border-slate-200">
             <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
                 <button
@@ -654,44 +656,102 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         <main className="max-w-6xl mx-auto px-6 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
                 <aside className="space-y-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div
-                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
-                            {form.companyLogoUrl ? (
-                                <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
-                            ) : (
-                                <Building2 className="w-7 h-7"/>
-                            )}
-                        </div>
-                        <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Cập nhật thông tin doanh nghiệp và tài khoản thanh toán để freelancer tin tưởng hơn khi
-                            nhận dự án.
-                        </p>
-                    </div>
+                    {activeTab === 'company' ? (
+                        <>
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
+                                <div
+                                    className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
+                                    {form.companyLogoUrl ? (
+                                        <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Building2 className="w-7 h-7"/>
+                                    )}
+                                </div>
+                                <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
+                                <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                    Cập nhật thông tin doanh nghiệp và tài khoản thanh toán để freelancer tin tưởng hơn khi
+                                    nhận dự án.
+                                </p>
+                            </div>
 
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-bold text-slate-700">Độ hoàn thiện</span>
-                            <span className="text-sm font-extrabold text-cyan-700">{completion}%</span>
-                        </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-cyan-500 rounded-full transition-all"
-                                 style={{width: `${completion}%`}}/>
-                        </div>
-                        <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4 text-emerald-500"/>
-                                Thông tin rõ ràng tăng độ tin cậy
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-sm font-bold text-slate-700">Độ hoàn thiện</span>
+                                    <span className="text-sm font-extrabold text-cyan-700">{completion}%</span>
+                                </div>
+                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-cyan-500 rounded-full transition-all"
+                                         style={{width: `${completion}%`}}/>
+                                </div>
+                                <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
+                                    <div className="flex items-center gap-2">
+                                        <BadgeCheck className="w-4 h-4 text-emerald-500"/>
+                                        Thông tin rõ ràng tăng độ tin cậy
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Banknote className="w-4 h-4 text-amber-500"/>
+                                        Billing dùng để đối soát thanh toán
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Banknote className="w-4 h-4 text-amber-500"/>
-                                Billing dùng để đối soát thanh toán
+                        </>
+                    ) : (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1 space-y-4">
+                            <div className="w-12 h-12 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700">
+                                <LifeBuoy className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-extrabold text-slate-900">Trung tâm Hỗ trợ</h3>
+                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                    Gửi ticket khi bạn gặp sự cố nạp tiền, lỗi hệ thống hoặc cần giải đáp thắc mắc. Nhân viên Staff sẽ tiếp nhận và xử lý.
+                                </p>
+                            </div>
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 space-y-2">
+                                <div className="flex items-center gap-2 font-bold text-slate-800">
+                                    <span>💡 Lưu ý quan trọng</span>
+                                </div>
+                                <p>• Sự cố nạp tiền: đính kèm hóa đơn hoặc mã giao dịch.</p>
+                                <p>• Khiếu nại hợp đồng dự án cụ thể được xử lý tại mục Tranh chấp (Disputes).</p>
                             </div>
                         </div>
+                    )}
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-level-1 space-y-1">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('company')}
+                            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                                activeTab === 'company'
+                                    ? 'bg-slate-900 text-white shadow-sm'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                            }`}
+                        >
+                            <Building2 className="w-4 h-4" />
+                            <span>Thông tin công ty</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('support')}
+                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                                activeTab === 'support'
+                                    ? 'bg-cyan-600 text-white shadow-sm'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <LifeBuoy className="w-4 h-4" />
+                                <span>Hỗ trợ kỹ thuật & Sự cố</span>
+                            </div>
+                            <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-full font-extrabold">NEW</span>
+                        </button>
                     </div>
                 </aside>
 
+                {activeTab === 'support' ? (
+                    <section className="bg-transparent space-y-4">
+                        <EmployerSupportTickets user={user} defaultOpenModal={openCreateTicketModal} />
+                    </section>
+                ) : (
                 <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -930,6 +990,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </form>
                     )}
                 </section>
+                )}
             </div>
         </main>
 
