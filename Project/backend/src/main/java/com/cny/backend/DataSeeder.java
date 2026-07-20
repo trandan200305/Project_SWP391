@@ -63,6 +63,9 @@ public class DataSeeder implements CommandLineRunner {
     private com.cny.backend.department.repository.DepartmentRepository departmentRepository;
 
     @Autowired
+    private PaymentInvoiceRepository paymentInvoiceRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
@@ -92,6 +95,55 @@ public class DataSeeder implements CommandLineRunner {
         
         seedAdminEntities();
         seedStaffAndManagers();
+
+        if (paymentInvoiceRepository.count() == 0) {
+            seedInvoices();
+        }
+    }
+
+    private void seedInvoices() {
+        var employers = employerRepository.findAll();
+        if (employers.isEmpty()) return;
+
+        for (Employer emp : employers) {
+            PaymentInvoice inv1 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260715-" + emp.getEmployerId() + "01")
+                    .transactionId(1001 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Thanh toán gói dịch vụ Doanh nghiệp VIP (Enterprise Package)")
+                    .amount(new BigDecimal("2500000.00"))
+                    .taxAmount(new BigDecimal("250000.00"))
+                    .totalAmount(new BigDecimal("2750000.00"))
+                    .issuedAt(LocalDateTime.now().minusDays(5))
+                    .status("PAID")
+                    .build();
+
+            PaymentInvoice inv2 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260718-" + emp.getEmployerId() + "02")
+                    .transactionId(1002 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Nạp tiền vào tài khoản LancerPro (Ví Employer)")
+                    .amount(new BigDecimal("5000000.00"))
+                    .taxAmount(BigDecimal.ZERO)
+                    .totalAmount(new BigDecimal("5000000.00"))
+                    .issuedAt(LocalDateTime.now().minusDays(2))
+                    .status("PAID")
+                    .build();
+
+            PaymentInvoice inv3 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260720-" + emp.getEmployerId() + "03")
+                    .transactionId(1003 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Thanh toán phí đăng tin dự án Nổi bật (Featured Job)")
+                    .amount(new BigDecimal("500000.00"))
+                    .taxAmount(new BigDecimal("50000.00"))
+                    .totalAmount(new BigDecimal("550000.00"))
+                    .issuedAt(LocalDateTime.now().minusHours(6))
+                    .status("PAID")
+                    .build();
+
+            paymentInvoiceRepository.saveAll(List.of(inv1, inv2, inv3));
+        }
     }
 
     private void seedAdminOnly() {

@@ -1,6 +1,8 @@
 package com.cny.backend.admin.repository;
 
 import com.cny.backend.admin.entity.PaymentInvoice;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,4 +14,5 @@ public interface PaymentInvoiceRepository extends JpaRepository<PaymentInvoice, 
     Optional<PaymentInvoice> findByTransactionId(Integer transactionId);
     Optional<PaymentInvoice> findByInvoiceNumber(String invoiceNumber);
     List<PaymentInvoice> findByEmployerIdOrderByIssuedAtDesc(Integer employerId);
+    Page<PaymentInvoice> findByEmployerId(Integer employerId, Pageable pageable);
 }

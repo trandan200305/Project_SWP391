@@ -27,7 +27,7 @@ public class PaymentInvoice {
     @Column(name = "employer_id")
     private Integer employerId;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String description;
 
     @Column(nullable = false, precision = 18, scale = 2)
