@@ -107,6 +107,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [withdrawals, setWithdrawals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLogFilter, setAuditLogFilter] = useState('ALL');
+  const [timelineModuleFilter, setTimelineModuleFilter] = useState('ALL');
+  const [timelineRoleFilter, setTimelineRoleFilter] = useState('ALL');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [feeRate, setFeeRate] = useState(10.0);
@@ -3207,42 +3209,75 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
 
                   <div className="bg-white border border-slate-200 rounded-[24px] shadow-sm overflow-hidden flex flex-col h-[700px]">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative">
-                          <Activity className="w-4 h-4" />
-                          <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border-2 border-white rounded-full animate-ping"></span>
+                    <div className="p-6 border-b border-slate-100 flex flex-col gap-4 bg-slate-50">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative">
+                            <Activity className="w-4 h-4" />
+                            <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border-2 border-white rounded-full animate-ping"></span>
+                          </div>
+                          <h3 className="font-bold text-slate-800 text-[15px]">Live Activity Feed</h3>
                         </div>
-                        <h3 className="font-bold text-slate-800 text-[15px]">Live Activity Feed</h3>
+                        <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
                       </div>
-                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">REAL-TIME</span>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={timelineModuleFilter}
+                          onChange={(e) => setTimelineModuleFilter(e.target.value)}
+                          className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
+                        >
+                          <option value="ALL">Tất cả chức năng</option>
+                          <option value="USER_MANAGEMENT">Tài khoản & Người dùng</option>
+                          <option value="PROJECTS">Kiểm duyệt Dự án</option>
+                          <option value="FINANCE">Quản lý Tài chính</option>
+                          <option value="SYSTEM">Hệ thống</option>
+                        </select>
+                        <select
+                          value={timelineRoleFilter}
+                          onChange={(e) => setTimelineRoleFilter(e.target.value)}
+                          className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
+                        >
+                          <option value="ALL">Tất cả Roles</option>
+                          <option value="ADMIN">ADMIN</option>
+                          <option value="MANAGER">MANAGER</option>
+                          <option value="STAFF">STAFF</option>
+                          <option value="EMPLOYER">EMPLOYER</option>
+                          <option value="FREELANCER">FREELANCER</option>
+                          <option value="SYSTEM">SYSTEM</option>
+                        </select>
+                      </div>
                     </div>
                     
                     <div className="p-5 flex-1 overflow-y-auto">
-                      <div className="relative border-l-2 border-slate-100 ml-4 space-y-8 pb-4">
-                        {stats.recentActivities && stats.recentActivities.length > 0 ? (
-                          stats.recentActivities.map((activity, idx) => {
-                            const parts = activity.split(" | ");
-                            const time = parts[0];
-                            const content = parts.length > 1 ? parts[1] : activity;
-                            const authorParts = content.split(" - ");
-                            const author = authorParts[0];
-                            const actionDetail = authorParts.length > 1 ? authorParts[1] : content;
+                      <div className="relative border-l-2 border-slate-100 ml-4 space-y-4 pb-4">
+                        {auditLogs && auditLogs.filter(log => (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter)).length > 0 ? (
+                          auditLogs
+                            .filter(log => (timelineModuleFilter === 'ALL' || log.module === timelineModuleFilter) && (timelineRoleFilter === 'ALL' || log.role === timelineRoleFilter))
+                            .slice(0, 50).map((log, idx) => {
+                            const time = new Date(log.timestamp).toLocaleString('vi-VN', {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            });
                             
                             return (
-                              <div key={idx} className="relative pl-6">
-                                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-[3px] border-emerald-400"></span>
-                                <div className="mb-1">
+                              <div 
+                                key={log.id || idx} 
+                                className="relative pl-6 py-2 cursor-pointer hover:bg-slate-50 transition-colors rounded-xl group"
+                                onClick={() => setSelectedActivity(log)}
+                              >
+                                <span className="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-white border-[3px] border-emerald-400 group-hover:border-blue-500 transition-colors"></span>
+                                <div className="mb-1 flex items-center gap-2">
                                   <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{time}</span>
+                                  {log.role && <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 rounded">{log.role}</span>}
                                 </div>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">{author}</p>
-                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">{actionDetail}</p>
+                                <p className="text-sm font-semibold text-slate-800 mt-1">{log.source}</p>
+                                <p className="text-[13px] text-slate-600 leading-relaxed mt-0.5 bg-slate-50 group-hover:bg-white p-2.5 rounded-lg border border-slate-100 transition-colors line-clamp-2">{log.detail}</p>
                               </div>
                             );
                           })
                         ) : (
                           <div className="text-center py-10">
-                            <p className="text-sm text-slate-500 italic">Chưa có hoạt động nào gần đây.</p>
+                            <p className="text-sm text-slate-500 italic">Chưa có hoạt động nào gần đây phù hợp với bộ lọc.</p>
                           </div>
                         )}
                       </div>
