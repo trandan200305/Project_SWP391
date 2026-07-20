@@ -1,5 +1,5 @@
 import React from 'react';
-import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star } from 'lucide-react';
+import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star, RefreshCw } from 'lucide-react';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
 const InputRow = ({ label, value, onChange, placeholder, type = 'text', prefix, suffix }) => (
@@ -227,7 +227,7 @@ const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
 };
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills, expertiseField, setExpertiseField, avatarUrl
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, primarySkills, setPrimarySkills, expertiseField, setExpertiseField, avatarUrl, fetchProfileData
 }) {
   const [showCompleteness, setShowCompleteness] = React.useState(false);
   const completenessRef = React.useRef(null);
@@ -458,7 +458,16 @@ export default function EditProfileForm({
                    <span className="text-[11px] font-bold text-gray-400 group-hover:text-blue-600 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
                      Độ hoàn thiện hồ sơ
                    </span>
-                   <span className="text-sm font-extrabold text-blue-600 group-hover:underline whitespace-nowrap">{profileCompleteness}%</span>
+                   <div className="flex items-center gap-2">
+                       <button 
+                           onClick={(e) => { e.stopPropagation(); if(fetchProfileData) fetchProfileData(); }} 
+                           className="text-gray-400 hover:text-blue-600 transition-colors" 
+                           title="Tải lại % độ hoàn thiện hồ sơ"
+                       >
+                           <RefreshCw className="w-3.5 h-3.5" />
+                       </button>
+                       <span className="text-sm font-extrabold text-blue-600 group-hover:underline whitespace-nowrap">{profileCompleteness}%</span>
+                   </div>
                  </div>
                  
                  {showCompleteness && (

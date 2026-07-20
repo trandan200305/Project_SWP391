@@ -80,19 +80,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
 
 
-  // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
-  useEffect(() => {
+  const fetchProfileData = React.useCallback(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
-
-    setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
-    setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
-    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry(''); setPrimarySkills('');
-    setHideEmail(false); setHidePhone(false); setHideLocation(false); setHourlyRate(0);
-    setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
-    setTotalSpent(0); setProjectsPosted(0);
-    setKycStatus('UNVERIFIED'); setKycRejectedReason('');
-    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
-
     fetch(endpoint)
       .then(res => res.text())
       .then(text => {
@@ -159,6 +148,20 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
         console.log('Chưa kết nối API Backend hoặc chưa login:', endpoint);
       });
   }, [role, targetId]);
+
+  // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
+  useEffect(() => {
+    setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
+    setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
+    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry(''); setPrimarySkills('');
+    setHideEmail(false); setHidePhone(false); setHideLocation(false); setHourlyRate(0);
+    setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
+    setTotalSpent(0); setProjectsPosted(0);
+    setKycStatus('UNVERIFIED'); setKycRejectedReason('');
+    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
+
+    fetchProfileData();
+  }, [fetchProfileData]);
 
 
 
@@ -316,7 +319,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     handleSaveProfile, handleSavePrivacy, formatDate, formatDateTime, formatCurrency, formatCompactCurrency, handleDeleteAccount,
-    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, handleSavePassword
+    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, handleSavePassword,
+    fetchProfileData
   };
 
   return (
