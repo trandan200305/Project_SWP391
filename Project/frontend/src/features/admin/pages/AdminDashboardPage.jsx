@@ -7,7 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
   User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity,
-  PieChart, Landmark, Receipt, ChevronUp
+  PieChart, Landmark, Receipt, ChevronUp, Filter
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
