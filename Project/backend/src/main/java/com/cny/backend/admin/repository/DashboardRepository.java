@@ -145,6 +145,7 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
         String getDetail();
         java.util.Date getTimestamp();
         String getSource();
+        String getRole();
     }
     
     public interface JobCategoryProjection {
@@ -181,7 +182,15 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     @Query(value = "INSERT INTO admin_audit_logs (admin_id, source_email, action, module, description, created_at) VALUES (:adminId, :sourceEmail, :action, :module, :description, GETDATE())", nativeQuery = true)
     void logAudit(@Param("adminId") int adminId, @Param("sourceEmail") String sourceEmail, @Param("action") String action, @Param("module") String module, @Param("description") String description);
 
-    @Query(value = "SELECT l.log_id as id, l.action as status, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source FROM admin_audit_logs l LEFT JOIN admins a ON l.admin_id = a.admin_id ORDER BY l.created_at DESC", nativeQuery = true)
+    @Query(value = "SELECT l.log_id as id, l.action as status, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source, " +
+        "CASE " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM admins) OR a.email IS NOT NULL THEN 'ADMIN' " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM managers) THEN 'MANAGER' " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM staffs) THEN 'STAFF' " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM employers) THEN 'EMPLOYER' " +
+        "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM freelancers) THEN 'FREELANCER' " +
+        "ELSE 'SYSTEM' END as role " +
+        "FROM admin_audit_logs l LEFT JOIN admins a ON l.admin_id = a.admin_id ORDER BY l.created_at DESC", nativeQuery = true)
     List<AuditLogProjection> getAuditLogs();
 
     
