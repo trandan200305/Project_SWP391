@@ -161,6 +161,7 @@ public class Freelancer {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class TransientUser {
         private Integer userId;

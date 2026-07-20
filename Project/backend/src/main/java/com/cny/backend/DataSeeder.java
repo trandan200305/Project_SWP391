@@ -485,12 +485,12 @@ public class DataSeeder implements CommandLineRunner {
                 // 6. Seed disputes if empty (include RESOLVED_CLIENT_FAVOR for Refunds)
                 Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
                 if (disputeCount != null && disputeCount == 0) {
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
                 }
 
                 // 7. Seed payment_transactions if empty

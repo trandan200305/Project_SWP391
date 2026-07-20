@@ -169,6 +169,10 @@ export default function App() {
       setCurrentPage("home");
       return;
     }
+    if (page === "your_jobs" && user?.role !== "FREELANCER") {
+      setCurrentPage("home");
+      return;
+    }
     setCurrentPage(page);
     setPageParams(params);
   };

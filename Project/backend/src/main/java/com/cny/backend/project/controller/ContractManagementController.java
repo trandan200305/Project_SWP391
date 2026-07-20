@@ -1,6 +1,7 @@
 package com.cny.backend.project.controller;
 
 import com.cny.backend.project.dto.ContractDetailDto;
+import com.cny.backend.project.dto.CreateDisputeDto;
 import com.cny.backend.project.service.ContractManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -74,6 +75,22 @@ public class ContractManagementController {
             @RequestParam Integer employerId) {
         try {
             contractManagementService.completeContract(contractId, employerId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    // Nhà tuyển dụng gửi khiếu nại về Freelancer
+    @PostMapping("/{contractId}/dispute")
+    public ResponseEntity<?> createDispute(
+            @PathVariable Integer contractId,
+            @RequestParam Integer employerId,
+            @RequestBody CreateDisputeDto dto) {
+        try {
+            contractManagementService.createDispute(contractId, employerId, dto);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

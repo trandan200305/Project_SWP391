@@ -1264,9 +1264,8 @@ function TextArea({label, value, onChange}) {
 function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
     const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
     const [milestones, setMilestones] = useState([
-        { title: 'Giai đoạn 1: Bản vẽ thiết kế & Giao diện', amount: '', dueDate: '', description: 'Freelancer hoàn thiện thiết kế giao diện chi tiết' },
-        { title: 'Giai đoạn 2: Lập trình frontend & Tích hợp', amount: '', dueDate: '', description: 'Freelancer lập trình giao diện và kết nối dữ liệu' },
-        { title: 'Giai đoạn 3: Bàn giao sản phẩm & Hướng dẫn', amount: '', dueDate: '', description: 'Freelancer hoàn thiện kiểm thử và bàn giao sản phẩm hoàn chỉnh' },
+        { title: '', amount: '', dueDate: '', description: '' },
+        { title: '', amount: '', dueDate: '', description: '' },
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -1286,11 +1285,11 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
     const handleAddMilestone = () => {
         if (milestones.length >= 5) return;
-        setMilestones([...milestones, { title: `Giai đoạn ${milestones.length + 1}: `, amount: '', dueDate: '', description: '' }]);
+        setMilestones([...milestones, { title: '', amount: '', dueDate: '', description: '' }]);
     };
 
     const handleRemoveMilestone = (index) => {
-        if (milestones.length <= 3) return;
+        if (milestones.length <= 2) return;
         setMilestones(milestones.filter((_, idx) => idx !== index));
     };
 
@@ -1315,8 +1314,8 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
         let customMilestones = null;
         if (payOption === 'split') {
-            if (milestones.length < 3 || milestones.length > 5) {
-                setError('Số lượng mốc thanh toán phải từ 3 đến 5.');
+            if (milestones.length < 2 || milestones.length > 5) {
+                setError('Số lượng mốc thanh toán phải từ 2 đến 5.');
                 return;
             }
             if (!isSumMatch) {
@@ -1343,6 +1342,10 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                 }
                 if (m.dueDate > maxDeadlineIso) {
                     setError(`Hạn hoàn thành mốc thứ ${i + 1} (${m.dueDate}) không được vượt quá ngày hoàn thành dự án dự kiến (${maxDeadlineStr}).`);
+                    return;
+                }
+                if (i > 0 && milestones[i - 1].dueDate > m.dueDate) {
+                    setError(`Hạn hoàn thành mốc thứ ${i} không được sau mốc thứ ${i + 1}.`);
                     return;
                 }
             }
@@ -1460,7 +1463,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                         onChange={() => setPayOption('split')}
                                         className="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (3 - 5 mốc)</span>
+                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (2 - 5 mốc)</span>
                                 </div>
                                 <span className="text-slate-500 text-xs pl-5 leading-normal">
                                     Giải ngân tiền theo từng giai đoạn hoàn thành công việc.
@@ -1489,7 +1492,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                     <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 relative space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-slate-700 text-xs">Mốc số {idx + 1}</span>
-                                            {milestones.length > 3 && (
+                                            {milestones.length > 2 && (
                                                 <button 
                                                     type="button" 
                                                     onClick={() => handleRemoveMilestone(idx)}

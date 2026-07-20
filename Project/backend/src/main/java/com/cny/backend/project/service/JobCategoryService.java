@@ -31,7 +31,7 @@ public class JobCategoryService {
     private ProjectRepository projectRepository;
 
     public List<JobCategoryDto> getAllCategoriesWithCount() {
-        List<JobCategory> categories = jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+        List<JobCategory> categories = getActiveCategoriesOrCreateDefaults();
         return categories.stream().map(cat -> {
             int count = projectRepository.countByCategoryCategoryIdAndStatusAndIsDeletedFalse(cat.getCategoryId(), "PUBLISHED");
             return JobCategoryDto.builder()
@@ -48,7 +48,9 @@ public class JobCategoryService {
     }
 
     public List<JobCategoryDto> getTopCategories() {
-        List<JobCategory> categories = jobCategoryRepository.findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAsc();
+        List<JobCategory> categories = getActiveCategoriesOrCreateDefaults().stream()
+                .filter(cat -> cat.getParent() == null)
+                .collect(Collectors.toList());
         return categories.stream().map(cat -> {
             int count = projectRepository.countByCategoryCategoryIdAndStatusAndIsDeletedFalse(cat.getCategoryId(), "PUBLISHED");
             return JobCategoryDto.builder()
@@ -76,5 +78,47 @@ public class JobCategoryService {
                 .categoryName(saved.getCategoryName())
                 .iconUrl(saved.getIconUrl())
                 .build();
+    }
+
+    private List<JobCategory> getActiveCategoriesOrCreateDefaults() {
+        List<JobCategory> categories = jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+        if (!categories.isEmpty()) {
+            return categories;
+        }
+
+        String[] names = {
+                "Lập trình",
+                "Thiết kế",
+                "Marketing",
+                "Dịch thuật",
+                "Viết lách",
+                "Video & Phim",
+                "Hành chính"
+        };
+        String[] icons = {"code", "palette", "megaphone", "languages", "pen-tool", "video", "folder-open"};
+
+        for (int i = 0; i < names.length; i++) {
+            final int displayOrder = i;
+            final String icon = icons[i];
+            JobCategory category = jobCategoryRepository.findFirstByCategoryNameIgnoreCase(names[i])
+                    .map(existing -> {
+                        existing.setIsActive(true);
+                        existing.setDisplayOrder(displayOrder);
+                        if (existing.getIconUrl() == null || existing.getIconUrl().isBlank()) {
+                            existing.setIconUrl(icon);
+                        }
+                        return existing;
+                    })
+                    .orElseGet(() -> JobCategory.builder()
+                            .categoryName(names[displayOrder])
+                            .description("Các dự án liên quan đến " + names[displayOrder])
+                            .iconUrl(icon)
+                            .displayOrder(displayOrder)
+                            .isActive(true)
+                            .build());
+            jobCategoryRepository.save(category);
+        }
+
+        return jobCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
     }
 }

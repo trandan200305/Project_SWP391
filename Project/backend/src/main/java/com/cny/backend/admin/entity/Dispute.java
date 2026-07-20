@@ -22,6 +22,15 @@ public class Dispute {
     @Column(name = "dispute_id")
     private Integer disputeId;
 
+    @Column(name = "contract_id")
+    private Integer contractId;
+
+    @Column(name = "raised_by_freelancer_id")
+    private Integer raisedByFreelancerId;
+
+    @Column(name = "raised_by_employer_id")
+    private Integer raisedByEmployerId;
+
     @Column(name = "project_title", columnDefinition = "NVARCHAR(255)")
     private String projectTitle;
 

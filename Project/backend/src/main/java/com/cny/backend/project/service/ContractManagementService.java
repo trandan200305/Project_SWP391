@@ -4,11 +4,13 @@ import com.cny.backend.project.entity.Contract;
 import com.cny.backend.project.entity.Milestone;
 import com.cny.backend.project.entity.Project;
 import com.cny.backend.project.dto.ContractDetailDto;
+import com.cny.backend.project.dto.CreateDisputeDto;
 import com.cny.backend.project.dto.MilestoneDto;
 import com.cny.backend.project.repository.ContractRepository;
 import com.cny.backend.project.repository.MilestoneRepository;
 import com.cny.backend.project.repository.DeliverableRepository;
 import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.admin.repository.DisputeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,9 @@ public class ContractManagementService {
 
     @Autowired
     private DeliverableService deliverableService;
+
+    @Autowired
+    private DisputeRepository disputeRepository;
 
     @Transactional(readOnly = true)
     public List<ContractDetailDto> getEmployerContracts(Integer employerId) {
@@ -125,6 +130,42 @@ public class ContractManagementService {
         Project project = contract.getProject();
         project.setStatus("CLOSED");
         projectRepository.save(project);
+    }
+
+    @Transactional
+    public void createDispute(Integer contractId, Integer employerId, CreateDisputeDto dto) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng ID: " + contractId));
+
+        if (!contract.getClient().getEmployerId().equals(employerId)) {
+            throw new IllegalArgumentException("Bạn không có quyền gửi khiếu nại cho hợp đồng này.");
+        }
+
+        if (dto.getReason() == null || dto.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do/nội dung khiếu nại.");
+        }
+
+        String freelancerName = contract.getFreelancer().getDisplayName() != null ? contract.getFreelancer().getDisplayName()
+                : (contract.getFreelancer().getFullName() != null ? contract.getFreelancer().getFullName() : "Freelancer");
+
+        String clientName = contract.getClient().getCompanyName() != null ? contract.getClient().getCompanyName()
+                : (contract.getClient().getFullName() != null ? contract.getClient().getFullName() : "Client");
+
+        String priority = dto.getPriority() != null ? dto.getPriority() : "MEDIUM";
+
+        com.cny.backend.admin.entity.Dispute dispute = com.cny.backend.admin.entity.Dispute.builder()
+                .contractId(contract.getContractId())
+                .raisedByEmployerId(employerId)
+                .projectTitle(contract.getProject() != null ? contract.getProject().getTitle() : contract.getTitle())
+                .clientName(clientName)
+                .freelancerName(freelancerName)
+                .amount(contract.getAgreedAmount())
+                .reason(dto.getReason().trim())
+                .priority(priority)
+                .status("OPEN")
+                .build();
+
+        disputeRepository.save(dispute);
     }
 
     private ContractDetailDto mapToBasicDto(Contract contract) {

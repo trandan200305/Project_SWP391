@@ -199,6 +199,7 @@ public class Employer {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class TransientUser {
         private Integer userId;

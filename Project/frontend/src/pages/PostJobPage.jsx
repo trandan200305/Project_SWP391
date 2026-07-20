@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X, ShieldCheck, Award, FileText, Video, Layers, Check } from 'lucide-react';
+import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X } from 'lucide-react';
 
 const SKILLS_BY_CATEGORY = {
   1: ['ReactJS', 'Spring Boot', 'Node.js', 'Java', 'Python', 'SQL Server', 'VueJS', 'Tailwind CSS', 'Mobile App', 'RESTful API'],
@@ -16,12 +16,14 @@ const DEFAULT_SKILLS = [
   'Dịch tiếng Anh', 'Premiere Pro', 'Excel / Data Entry'
 ];
 
-const PREFERENCE_OPTIONS = [
-  { id: 'nda', label: 'Yêu cầu ký cam kết bảo mật NDA (Bảo mật thông tin)' },
-  { id: 'exp', label: 'Ưu tiên Freelancer có kinh nghiệm > 2 năm (hoặc Đánh giá 4.5★)' },
-  { id: 'portfolio', label: 'Yêu cầu đính kèm Portfolio / Sản phẩm mẫu đã làm' },
-  { id: 'milestone', label: 'Chia nhỏ mốc nghiệm thu & thanh toán theo từng giai đoạn (Milestones)' },
-  { id: 'interview', label: 'Sẵn sàng phỏng vấn ngắn qua Video Call trước khi giao việc' }
+const DEFAULT_CATEGORIES = [
+  { categoryId: 1, categoryName: 'Lập trình' },
+  { categoryId: 2, categoryName: 'Thiết kế' },
+  { categoryId: 3, categoryName: 'Marketing' },
+  { categoryId: 4, categoryName: 'Dịch thuật' },
+  { categoryId: 5, categoryName: 'Viết lách' },
+  { categoryId: 6, categoryName: 'Video & Phim' },
+  { categoryId: 7, categoryName: 'Hành chính' }
 ];
 
 export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
@@ -45,7 +47,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [customSkillInput, setCustomSkillInput] = useState('');
-  const [selectedPreferences, setSelectedPreferences] = useState([]);
   const [dbSkills, setDbSkills] = useState([]);
 
   useEffect(() => {
@@ -60,11 +61,13 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         return res.json();
       })
       .then((data) => {
-        setCategories(data.filter(c => c.isActive !== false));
+        const activeCategories = Array.isArray(data) ? data.filter(c => c.isActive !== false) : [];
+        setCategories(activeCategories.length > 0 ? activeCategories : DEFAULT_CATEGORIES);
         setLoadingCategories(false);
       })
       .catch((err) => {
         console.error('Error fetching categories:', err);
+        setCategories(DEFAULT_CATEGORIES);
         setLoadingCategories(false);
       });
 
@@ -111,12 +114,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
   const removeSkill = (skill) => {
     setSelectedSkills(prev => prev.filter(s => s !== skill));
-  };
-
-  const togglePreference = (prefId) => {
-    setSelectedPreferences(prev =>
-      prev.includes(prefId) ? prev.filter(p => p !== prefId) : [...prev, prefId]
-    );
   };
 
   const handlePostProject = async (e) => {
@@ -169,18 +166,11 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     setPostingProject(true);
     setNotice(null);
 
-    // Format skills and preferences into description cleanly if provided
+    // Format skills into description cleanly if provided
     let finalDescription = newProject.description.trim();
     
     if (selectedSkills.length > 0) {
       finalDescription += `\n\n--- KỸ NĂNG YÊU CẦU ---\n• ` + selectedSkills.join('\n• ');
-    }
-
-    if (selectedPreferences.length > 0) {
-      const activePrefLabels = PREFERENCE_OPTIONS
-        .filter(p => selectedPreferences.includes(p.id))
-        .map(p => p.label);
-      finalDescription += `\n\n--- YÊU CẦU & ĐIỀU KIỆN KHI ỨNG TUYỂN ---\n☑ ` + activePrefLabels.join('\n☑ ');
     }
 
     const payload = {
@@ -278,7 +268,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         workForm: 'ONLINE'
       });
       setSelectedSkills([]);
-      setSelectedPreferences([]);
       
       setTimeout(() => {
         if (onNavigate) onNavigate('employer_jobs');
@@ -578,41 +567,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                 />
               </div>
             </label>
-
-            {/* PHẦN CHECKBOX TÙY CHỌN & ĐIỀU KIỆN DỰ ÁN */}
-            <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-200/70 space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-amber-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-amber-600" />
-                Yêu cầu & Điều kiện ứng tuyển (Tích chọn bổ sung)
-              </span>
-              <p className="text-[11px] text-amber-800/80 leading-normal">
-                Tích chọn các ô dưới đây để thiết lập tiêu chuẩn đối với Freelancers khi nộp hồ sơ.
-              </p>
-
-              <div className="space-y-2 pt-1">
-                {PREFERENCE_OPTIONS.map((opt) => {
-                  const isChecked = selectedPreferences.includes(opt.id);
-                  return (
-                    <label
-                      key={opt.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                        isChecked
-                          ? 'bg-amber-100/70 border-amber-300 text-amber-950 shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-amber-200 hover:bg-amber-50/30'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => togglePreference(opt.id)}
-                        className="w-4 h-4 mt-0.5 rounded text-amber-600 focus:ring-amber-400 accent-amber-600 cursor-pointer"
-                      />
-                      <span className="leading-snug">{opt.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Mô tả */}
             <label className="block">

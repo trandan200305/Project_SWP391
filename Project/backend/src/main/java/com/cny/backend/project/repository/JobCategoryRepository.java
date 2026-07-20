@@ -20,10 +20,12 @@ import com.cny.backend.chat.service.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobCategoryRepository extends JpaRepository<JobCategory, Integer> {
     List<JobCategory> findByIsActiveTrueOrderByDisplayOrderAsc();
     List<JobCategory> findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAsc();
     List<JobCategory> findByParentCategoryIdAndIsActiveTrue(Integer parentId);
+    Optional<JobCategory> findFirstByCategoryNameIgnoreCase(String categoryName);
 }

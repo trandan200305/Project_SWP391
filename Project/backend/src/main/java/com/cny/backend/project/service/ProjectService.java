@@ -62,11 +62,14 @@ public class ProjectService {
     @Autowired
     private ProjectSkillRepository projectSkillRepository;
 
+    @Autowired
+    private SkillRepository skillRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
 
-    public List<Project> searchProjects(String keyword) {
+    public List<Project> searchProjectEntities(String keyword) {
         return projectRepository.searchProjectsByKeyword("PUBLISHED", keyword);
     }
 
@@ -174,17 +177,7 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
 
         // Lưu danh sách kỹ năng được chọn vào bảng project_skills trong CSDL
-        if (dto.getSkills() != null && !dto.getSkills().isEmpty()) {
-            for (String skillName : dto.getSkills()) {
-                if (skillName != null && !skillName.trim().isEmpty()) {
-                    ProjectSkill ps = ProjectSkill.builder()
-                            .project(savedProject)
-                            .skillName(skillName.trim())
-                            .build();
-                    projectSkillRepository.save(ps);
-                }
-            }
-        }
+        saveProjectSkills(savedProject, dto.getSkills(), dto.getCategoryId());
 
         // Notify all staff
         try {
@@ -285,15 +278,7 @@ public class ProjectService {
         if (dto.getSkills() != null) {
             try {
                 projectSkillRepository.deleteByProjectProjectId(projectId);
-                for (String skillName : dto.getSkills()) {
-                    if (skillName != null && !skillName.trim().isEmpty()) {
-                        ProjectSkill ps = ProjectSkill.builder()
-                                .project(project)
-                                .skillName(skillName.trim())
-                                .build();
-                        projectSkillRepository.save(ps);
-                    }
-                }
+                saveProjectSkills(project, dto.getSkills(), project.getCategory() != null ? project.getCategory().getCategoryId() : null);
             } catch (Exception e) {
                 System.err.println("Failed to update project skills: " + e.getMessage());
             }
@@ -430,7 +415,10 @@ public class ProjectService {
         try {
             List<ProjectSkill> psList = projectSkillRepository.findByProjectProjectId(project.getProjectId());
             if (psList != null && !psList.isEmpty()) {
-                projectSkills = psList.stream().map(ProjectSkill::getSkillName).collect(Collectors.toList());
+                projectSkills = psList.stream()
+                        .map(ps -> ps.getSkill() != null ? ps.getSkill().getSkillName() : ps.getSkillName())
+                        .filter(skillName -> skillName != null && !skillName.trim().isEmpty())
+                        .collect(Collectors.toList());
             }
         } catch (Exception e) {
             System.err.println("Error reading skills for project " + project.getProjectId() + ": " + e.getMessage());
@@ -468,5 +456,30 @@ public class ProjectService {
             return 0;
         }
         return text.trim().split("\\s+").length;
+    }
+
+    private void saveProjectSkills(Project project, List<String> skillNames, Integer categoryId) {
+        if (skillNames == null || skillNames.isEmpty()) {
+            return;
+        }
+
+        skillNames.stream()
+                .filter(skillName -> skillName != null && !skillName.trim().isEmpty())
+                .map(String::trim)
+                .distinct()
+                .forEach(skillName -> {
+                    Skill skill = skillRepository.findFirstBySkillNameIgnoreCase(skillName)
+                            .orElseGet(() -> skillRepository.save(Skill.builder()
+                                    .skillName(skillName)
+                                    .categoryId(categoryId)
+                                    .build()));
+
+                    ProjectSkill projectSkill = ProjectSkill.builder()
+                            .project(project)
+                            .skill(skill)
+                            .skillName(skill.getSkillName())
+                            .build();
+                    projectSkillRepository.save(projectSkill);
+                });
     }
 }
