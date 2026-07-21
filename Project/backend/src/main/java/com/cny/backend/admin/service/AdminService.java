@@ -3009,7 +3009,47 @@ public class AdminService {
             response.put("message", "Không tìm thấy yêu cầu chuyển phòng ban.");
         }
         return response;
+    }
 
+    public List<Map<String, Object>> getTopSpenders() {
+        List<Employer> topList = employerRepository.findTopSpenders();
+        List<Map<String, Object>> result = new ArrayList<>();
+        int rank = 1;
+        for (Employer e : topList) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("rank", rank++);
+            item.put("employerId", e.getEmployerId());
+            item.put("displayName", e.getDisplayName());
+            item.put("email", e.getEmail());
+            item.put("companyName", e.getCompanyName());
+            item.put("avatarUrl", e.getAvatarUrl());
+            item.put("totalSpent", e.getTotalSpent() != null ? e.getTotalSpent() : java.math.BigDecimal.ZERO);
+            item.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent()));
+            item.put("lastSpentAt", e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null);
+            result.add(item);
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> getChurnWarnings() {
+        java.math.BigDecimal minSpent = new java.math.BigDecimal("10000000"); // 10 Triệu
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(60); // Inactive 60+ days
+        List<Employer> churnList = employerRepository.findChurnRiskEmployers(minSpent, cutoffDate);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Employer e : churnList) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("employerId", e.getEmployerId());
+            item.put("displayName", e.getDisplayName());
+            item.put("email", e.getEmail());
+            item.put("phone", e.getPhone());
+            item.put("companyName", e.getCompanyName());
+            item.put("totalSpent", e.getTotalSpent());
+            item.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent()));
+            item.put("lastSpentAt", e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null);
+            item.put("warningReason", "Employer VIP đã dừng nạp tiền/chi tiêu trên 60 ngày.");
+            result.add(item);
+        }
+        return result;
     }
 }
 

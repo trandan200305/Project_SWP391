@@ -12,7 +12,8 @@ import {
   Briefcase,
   User,
   Paperclip,
-  Star
+  Star,
+  ShieldAlert
 } from 'lucide-react';
 import { contractApi } from '../../../api/contractApi';
 import { getImageUrl } from '../../../utils/imageHelper.js';
@@ -40,8 +41,14 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   const [actionError, setActionError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const isClient = user && contract && contract.clientId === user.id;
-  const isFreelancer = user && contract && contract.freelancerId === user.id;
+  // Dispute state
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputePriority, setDisputePriority] = useState('HIGH');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+
+  const isClient = user && contract && user.role === 'EMPLOYER' && contract.clientId === user.id;
+  const isFreelancer = user && contract && user.role === 'FREELANCER' && contract.freelancerId === user.id;
 
   const fetchContractDetails = async () => {
     try {
@@ -81,6 +88,10 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
 
   const handleWorkSubmit = async (e, milestoneId) => {
     e.preventDefault();
+    if (!isFreelancer || user?.role !== 'FREELANCER') {
+      setActionError('Chỉ Freelancer mới có quyền nộp sản phẩm cho mốc công việc này.');
+      return;
+    }
     if (!submitTitle.trim()) {
       setActionError('Vui lòng nhập tiêu đề sản phẩm.');
       return;
@@ -198,6 +209,30 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
     }
   };
 
+  const handleDisputeSubmit = async (e) => {
+    e.preventDefault();
+    if (!disputeReason.trim()) {
+      setActionError('Vui lòng nhập nội dung/lý do khiếu nại.');
+      return;
+    }
+
+    try {
+      setSubmittingDispute(true);
+      setActionError(null);
+      await contractApi.createDispute(contract.contractId, user.id, {
+        reason: disputeReason,
+        priority: disputePriority
+      });
+      setShowDisputeModal(false);
+      setDisputeReason('');
+      showSuccess('Đã gửi khiếu nại thành công! Bộ phận Nhân viên (Staff) sẽ giải quyết và liên hệ lại.');
+    } catch (err) {
+      setActionError(err.message || 'Lỗi khi gửi khiếu nại.');
+    } finally {
+      setSubmittingDispute(false);
+    }
+  };
+
   const renderStars = (rating, sizeClass = 'w-4 h-4') => {
     const numericRating = Number(rating) || 0;
     return (
@@ -295,25 +330,41 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <span>Quay lại trang danh sách</span>
           </button>
 
-          {isClient && contract.status === 'ACTIVE' && allMilestonesApproved && (
-            <button
-              onClick={handleCompleteContract}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
-            >
-              <Check className="w-5 h-5" />
-              <span>Hoàn thành Hợp đồng</span>
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {isClient && contract.status === 'ACTIVE' && (
+              <button
+                onClick={() => {
+                  setDisputeReason('');
+                  setDisputePriority('HIGH');
+                  setShowDisputeModal(true);
+                }}
+                className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2"
+              >
+                <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <span>Khiếu nại Freelancer</span>
+              </button>
+            )}
 
-          {isClient && contract.status === 'COMPLETED' && !myContractReview && (
-            <button
-              onClick={handleReviewFreelancerClick}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
-            >
-              <Star className="w-5 h-5 fill-white" />
-              <span>Đánh giá ứng viên</span>
-            </button>
-          )}
+            {isClient && contract.status === 'ACTIVE' && allMilestonesApproved && (
+              <button
+                onClick={handleCompleteContract}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
+              >
+                <Check className="w-5 h-5" />
+                <span>Hoàn thành Hợp đồng</span>
+              </button>
+            )}
+
+            {isClient && contract.status === 'COMPLETED' && !myContractReview && (
+              <button
+                onClick={handleReviewFreelancerClick}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
+              >
+                <Star className="w-5 h-5 fill-white" />
+                <span>Đánh giá ứng viên</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {successMessage && (
@@ -569,7 +620,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                     )}
 
                     {/* Freelancer Submit Work Form */}
-                    {showSubmitForm && (
+                    {showSubmitForm && isFreelancer && (
                       <form 
                         onSubmit={(e) => handleWorkSubmit(e, milestone.milestoneId)}
                         className="bg-slate-50/70 p-4 rounded-xl border border-blue-100 space-y-4 animate-in slide-in-from-top-3 duration-200"
@@ -731,6 +782,84 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
           )}
         </div>
       </div>
+
+      {/* Dispute Modal */}
+      {showDisputeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl p-6 sm:p-8 animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setShowDisputeModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-lg text-slate-900 leading-tight">Gửi khiếu nại về Freelancer</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Yêu cầu hỗ trợ & xử lý sự cố từ Bộ phận Nhân viên (Staff)</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mb-5 text-xs space-y-1">
+              <div><strong className="text-slate-700">Dự án:</strong> {contract.projectTitle}</div>
+              <div><strong className="text-slate-700">Freelancer bị khiếu nại:</strong> {contract.freelancerName}</div>
+            </div>
+
+            <form onSubmit={handleDisputeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Mức độ nghiêm trọng <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={disputePriority}
+                  onChange={(e) => setDisputePriority(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition"
+                >
+                  <option value="HIGH">Gấp / Nghiêm trọng (Scam, lừa đảo, thái độ vi phạm nghiêm trọng)</option>
+                  <option value="MEDIUM">Trung bình (Bỏ dở công việc, tiến độ quá chậm)</option>
+                  <option value="LOW">Bình thường (Mâu thuẫn nhỏ về yêu cầu công việc)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Lý do & Mô tả chi tiết khiếu nại <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  placeholder="Mô tả cụ thể hành vi, thái độ không tốt hoặc bằng chứng vi phạm của Freelancer để Staff tiếp nhận xử lý..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDisputeModal(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingDispute}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>{submittingDispute ? 'Đang gửi...' : 'Gửi khiếu nại'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,9 +21,11 @@ public class ServicePackageConfig {
     @Column(nullable = false)
     private double price;
 
+    @Builder.Default
     @Column(name = "post_limit", nullable = false)
     private Integer postLimit = 10; // Default quota
 
+    @Builder.Default
     @Column(name = "duration_days", nullable = false)
     private Integer durationDays = 30; // Default duration
 

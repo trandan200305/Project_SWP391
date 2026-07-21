@@ -62,6 +62,9 @@ public class ProjectService {
     @Autowired
     private ProjectSkillRepository projectSkillRepository;
 
+    @Autowired
+    private SkillRepository skillRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -78,6 +81,13 @@ public class ProjectService {
     public Project createProject(ProjectCreateDto dto) {
         Employer client = employerRepository.findById(dto.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Employer với ID: " + dto.getClientId()));
+
+        if (Boolean.TRUE.equals(client.getIsDeleted())) {
+            throw new IllegalArgumentException("Tài khoản của bạn đã bị xóa hoặc ngưng hoạt động.");
+        }
+        if ("SUSPENDED".equalsIgnoreCase(client.getStatus()) || "BANNED".equalsIgnoreCase(client.getStatus()) || "LOCKED".equalsIgnoreCase(client.getStatus())) {
+            throw new IllegalArgumentException("Tài khoản của bạn đang bị khóa hoặc đình chỉ hoạt động.");
+        }
 
         JobCategory category = jobCategoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Danh mục công việc với ID: " + dto.getCategoryId()));
@@ -119,38 +129,27 @@ public class ProjectService {
 
         // Check if Employer has an active subscription package with available quota
         boolean hasActiveSubscription = client.getPackageExpiryDate() != null && client.getPackageExpiryDate().isAfter(LocalDateTime.now());
-        if (hasActiveSubscription && client.getPackagePostQuota() != null && client.getPackagePostQuota() > 0) {
-            // Deduct quota and publish immediately
-            client.setPackagePostQuota(client.getPackagePostQuota() - 1);
-            employerRepository.save(client);
+        if (!hasActiveSubscription) {
+            throw new IllegalArgumentException("Gói dịch vụ của bạn đã hết hạn hoặc chưa đăng ký. Vui lòng mua gói dịch vụ mới để tiếp tục đăng tin.");
+        }
 
-            appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
-            
-            // Get duration from config if possible
-            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
-            if (configOpt.isPresent()) {
-                durationDays = configOpt.get().getDurationDays();
-            } else {
-                if ("REGULAR".equals(appliedPackage)) durationDays = 15;
-                if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
-            }
+        if (client.getPackagePostQuota() == null || client.getPackagePostQuota() <= 0) {
+            throw new IllegalArgumentException("Bạn đã sử dụng hết số lượt đăng bài của gói hiện tại. Vui lòng mua gói mới để nhận thêm lượt đăng.");
+        }
+
+        // Deduct 1 quota and publish immediately
+        client.setPackagePostQuota(client.getPackagePostQuota() - 1);
+        employerRepository.save(client);
+
+        appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
+        
+        // Get duration from config if possible
+        Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
+        if (configOpt.isPresent()) {
+            durationDays = configOpt.get().getDurationDays();
         } else {
-            // Fallback to Pay-per-post logic
-            appliedPackage = dto.getServicePackage() != null ? dto.getServicePackage().toUpperCase() : "MEDIUM";
-            if (!"MEDIUM".equals(appliedPackage) && !"REGULAR".equals(appliedPackage) && !"PREMIUM".equals(appliedPackage)) {
-                appliedPackage = "MEDIUM";
-            }
-            
-            if ("REGULAR".equals(appliedPackage)) {
-                durationDays = 15;
-            } else if ("PREMIUM".equals(appliedPackage)) {
-                durationDays = 30;
-            }
-
-            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
-            if (configOpt.isPresent()) {
-                durationDays = configOpt.get().getDurationDays();
-            }
+            if ("REGULAR".equals(appliedPackage)) durationDays = 15;
+            if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
         }
 
         Project project = Project.builder()
@@ -174,17 +173,7 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
 
         // Lưu danh sách kỹ năng được chọn vào bảng project_skills trong CSDL
-        if (dto.getSkills() != null && !dto.getSkills().isEmpty()) {
-            for (String skillName : dto.getSkills()) {
-                if (skillName != null && !skillName.trim().isEmpty()) {
-                    ProjectSkill ps = ProjectSkill.builder()
-                            .project(savedProject)
-                            .skillName(skillName.trim())
-                            .build();
-                    projectSkillRepository.save(ps);
-                }
-            }
-        }
+        saveProjectSkills(savedProject, dto.getSkills(), dto.getCategoryId());
 
         // Notify all staff
         try {
@@ -224,9 +213,13 @@ public class ProjectService {
 
 
     @Transactional
-    public Project updateProject(Integer projectId, ProjectUpdateDto dto) {
+    public Project updateProject(Integer projectId, ProjectUpdateDto dto, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa dự án này.");
+        }
 
         if ("IN_PROGRESS".equals(project.getStatus())) {
             throw new IllegalArgumentException("Không thể chỉnh sửa dự án đã giao cho Freelancer (đang thực hiện).");
@@ -285,15 +278,7 @@ public class ProjectService {
         if (dto.getSkills() != null) {
             try {
                 projectSkillRepository.deleteByProjectProjectId(projectId);
-                for (String skillName : dto.getSkills()) {
-                    if (skillName != null && !skillName.trim().isEmpty()) {
-                        ProjectSkill ps = ProjectSkill.builder()
-                                .project(project)
-                                .skillName(skillName.trim())
-                                .build();
-                        projectSkillRepository.save(ps);
-                    }
-                }
+                saveProjectSkills(project, dto.getSkills(), project.getCategory() != null ? project.getCategory().getCategoryId() : null);
             } catch (Exception e) {
                 System.err.println("Failed to update project skills: " + e.getMessage());
             }
@@ -303,20 +288,44 @@ public class ProjectService {
     }
 
     @Transactional
-    public Project closeProject(Integer projectId) {
+    public Project updateProject(Integer projectId, ProjectUpdateDto dto) {
+        return updateProject(projectId, dto, null);
+    }
+
+    @Transactional
+    public Project closeProject(Integer projectId, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
+
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền đóng dự án này.");
+        }
+
         project.setStatus("CLOSED");
         return projectRepository.save(project);
     }
 
     @Transactional
-    public Project deleteProject(Integer projectId) {
+    public Project closeProject(Integer projectId) {
+        return closeProject(projectId, null);
+    }
+
+    @Transactional
+    public Project deleteProject(Integer projectId, Integer requesterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Dự án với ID: " + projectId));
 
+        if (requesterId != null && !project.getClient().getEmployerId().equals(requesterId)) {
+            throw new IllegalArgumentException("Bạn không có quyền xóa dự án này.");
+        }
+
         project.setIsDeleted(true);
         return projectRepository.save(project);
+    }
+
+    @Transactional
+    public Project deleteProject(Integer projectId) {
+        return deleteProject(projectId, null);
     }
 
     public Page<ProjectDto> getPublishedProjects(Pageable pageable) {
@@ -430,7 +439,10 @@ public class ProjectService {
         try {
             List<ProjectSkill> psList = projectSkillRepository.findByProjectProjectId(project.getProjectId());
             if (psList != null && !psList.isEmpty()) {
-                projectSkills = psList.stream().map(ProjectSkill::getSkillName).collect(Collectors.toList());
+                projectSkills = psList.stream()
+                        .map(ps -> ps.getSkill() != null ? ps.getSkill().getSkillName() : ps.getSkillName())
+                        .filter(skillName -> skillName != null && !skillName.trim().isEmpty())
+                        .collect(Collectors.toList());
             }
         } catch (Exception e) {
             System.err.println("Error reading skills for project " + project.getProjectId() + ": " + e.getMessage());
@@ -468,5 +480,30 @@ public class ProjectService {
             return 0;
         }
         return text.trim().split("\\s+").length;
+    }
+
+    private void saveProjectSkills(Project project, List<String> skillNames, Integer categoryId) {
+        if (skillNames == null || skillNames.isEmpty()) {
+            return;
+        }
+
+        skillNames.stream()
+                .filter(skillName -> skillName != null && !skillName.trim().isEmpty())
+                .map(String::trim)
+                .distinct()
+                .forEach(skillName -> {
+                    Skill skill = skillRepository.findFirstBySkillNameIgnoreCase(skillName)
+                            .orElseGet(() -> skillRepository.save(Skill.builder()
+                                    .skillName(skillName)
+                                    .categoryId(categoryId)
+                                    .build()));
+
+                    ProjectSkill projectSkill = ProjectSkill.builder()
+                            .project(project)
+                            .skill(skill)
+                            .skillName(skill.getSkillName())
+                            .build();
+                    projectSkillRepository.save(projectSkill);
+                });
     }
 }

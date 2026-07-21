@@ -305,4 +305,13 @@ public class AdminController {
     }
 
 
+    @GetMapping("/analytics/top-spenders")
+    public ResponseEntity<List<Map<String, Object>>> getTopSpenders() {
+        return ResponseEntity.ok(adminService.getTopSpenders());
+    }
+
+    @GetMapping("/analytics/churn-warnings")
+    public ResponseEntity<List<Map<String, Object>>> getChurnWarnings() {
+        return ResponseEntity.ok(adminService.getChurnWarnings());
+    }
 }

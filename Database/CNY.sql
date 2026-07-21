@@ -1167,3 +1167,53 @@ CREATE TABLE payment_transactions (
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at DATETIME2 NULL
 );
+GO
+
+---------------------------------------
+-- KYC COLUMNS FOR EMPLOYERS & FREELANCERS
+---------------------------------------
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'kyc_status')
+BEGIN
+    ALTER TABLE employers ADD kyc_status NVARCHAR(30) NULL DEFAULT 'UNVERIFIED';
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'kyc_rejected_reason')
+BEGIN
+    ALTER TABLE employers ADD kyc_rejected_reason NVARCHAR(500) NULL;
+END
+ELSE
+BEGIN
+    ALTER TABLE employers ALTER COLUMN kyc_rejected_reason NVARCHAR(500);
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'business_license_url')
+BEGIN
+    ALTER TABLE employers ADD business_license_url NVARCHAR(500) NULL;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'representative_id_card_url')
+BEGIN
+    ALTER TABLE employers ADD representative_id_card_url NVARCHAR(500) NULL;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'kyc_submitted_at')
+BEGIN
+    ALTER TABLE employers ADD kyc_submitted_at DATETIME2 NULL;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'kyc_reviewed_at')
+BEGIN
+    ALTER TABLE employers ADD kyc_reviewed_at DATETIME2 NULL;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'kyc_reviewed_by_staff_id')
+BEGIN
+    ALTER TABLE employers ADD kyc_reviewed_by_staff_id INT NULL;
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('employers') AND name = 'is_verified')
+BEGIN
+    ALTER TABLE employers ADD is_verified BIT NOT NULL DEFAULT 0;
+END
+GO
+

@@ -45,4 +45,10 @@ public interface EmployerRepository extends JpaRepository<Employer, Integer> {
 
     @Query("SELECT COUNT(e) FROM Employer e WHERE e.taxCode = :taxCode AND e.employerId <> :employerId AND (e.isDeleted IS NULL OR e.isDeleted = false)")
     int countTaxCodeDuplicate(@Param("taxCode") String taxCode, @Param("employerId") Integer employerId);
+
+    @Query("SELECT e FROM Employer e WHERE (e.isDeleted IS NULL OR e.isDeleted = false) AND e.totalSpent > 0 ORDER BY e.totalSpent DESC")
+    java.util.List<Employer> findTopSpenders();
+
+    @Query("SELECT e FROM Employer e WHERE (e.isDeleted IS NULL OR e.isDeleted = false) AND e.totalSpent >= :minSpent AND (e.lastSpentAt IS NULL OR e.lastSpentAt < :cutoffDate) ORDER BY e.totalSpent DESC")
+    java.util.List<Employer> findChurnRiskEmployers(@Param("minSpent") java.math.BigDecimal minSpent, @Param("cutoffDate") java.time.LocalDateTime cutoffDate);
 }

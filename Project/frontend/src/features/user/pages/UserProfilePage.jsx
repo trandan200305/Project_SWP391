@@ -3,6 +3,7 @@ import { Camera, CheckCircle, Plus, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
+import EmployerExpensesTab from '../components/EmployerExpensesTab.jsx';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
 export default function UserProfilePage({ user, targetRole, targetUserId, onNavigate, onLogout, defaultTab = 'profile' }) {
@@ -658,6 +659,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
       : role === 'employer'
       ? [
           { id: 'profile', label: 'Thông tin chung' },
+          { id: 'expenses', label: 'Hóa đơn & Lịch sử gói' },
           { id: 'preferences', label: 'Cài đặt chung' }
         ]
       : [
@@ -818,6 +820,7 @@ export default function UserProfilePage({ user, targetRole, targetUserId, onNavi
             <div className="p-6 sm:px-10 py-8">
                {activeTab === 'profile' && <UserProfile {...allProps} />}
                {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
+               {activeTab === 'expenses' && <EmployerExpensesTab employerId={targetId} />}
                
                {activeTab === 'work_profile' && (
                   <div className="max-w-4xl space-y-10">

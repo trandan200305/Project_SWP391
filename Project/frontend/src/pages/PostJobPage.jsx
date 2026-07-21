@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X, ShieldCheck, Award, FileText, Video, Layers, Check } from 'lucide-react';
+import { Briefcase, ArrowLeft, Coins, ArrowLeftRight, Loader2, Sparkles, CheckSquare, Plus, X, Package } from 'lucide-react';
 
 const SKILLS_BY_CATEGORY = {
   1: ['ReactJS', 'Spring Boot', 'Node.js', 'Java', 'Python', 'SQL Server', 'VueJS', 'Tailwind CSS', 'Mobile App', 'RESTful API'],
@@ -16,12 +16,14 @@ const DEFAULT_SKILLS = [
   'Dịch tiếng Anh', 'Premiere Pro', 'Excel / Data Entry'
 ];
 
-const PREFERENCE_OPTIONS = [
-  { id: 'nda', label: 'Yêu cầu ký cam kết bảo mật NDA (Bảo mật thông tin)' },
-  { id: 'exp', label: 'Ưu tiên Freelancer có kinh nghiệm > 2 năm (hoặc Đánh giá 4.5★)' },
-  { id: 'portfolio', label: 'Yêu cầu đính kèm Portfolio / Sản phẩm mẫu đã làm' },
-  { id: 'milestone', label: 'Chia nhỏ mốc nghiệm thu & thanh toán theo từng giai đoạn (Milestones)' },
-  { id: 'interview', label: 'Sẵn sàng phỏng vấn ngắn qua Video Call trước khi giao việc' }
+const DEFAULT_CATEGORIES = [
+  { categoryId: 1, categoryName: 'Lập trình' },
+  { categoryId: 2, categoryName: 'Thiết kế' },
+  { categoryId: 3, categoryName: 'Marketing' },
+  { categoryId: 4, categoryName: 'Dịch thuật' },
+  { categoryId: 5, categoryName: 'Viết lách' },
+  { categoryId: 6, categoryName: 'Video & Phim' },
+  { categoryId: 7, categoryName: 'Hành chính' }
 ];
 
 export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
@@ -45,13 +47,21 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [customSkillInput, setCustomSkillInput] = useState('');
-  const [selectedPreferences, setSelectedPreferences] = useState([]);
   const [dbSkills, setDbSkills] = useState([]);
+  const [employerQuota, setEmployerQuota] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'EMPLOYER') {
       if (onNavigate) onNavigate('home');
       return;
+    }
+
+    const empId = user?.employerId || user?.id || user?.userId;
+    if (empId) {
+      fetch(`http://localhost:8080/api/employers/${empId}/profile`)
+        .then(res => res.json())
+        .then(data => setEmployerQuota(data))
+        .catch(err => console.error('Error fetching employer quota:', err));
     }
 
     fetch('http://localhost:8080/api/categories')
@@ -60,11 +70,13 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         return res.json();
       })
       .then((data) => {
-        setCategories(data.filter(c => c.isActive !== false));
+        const activeCategories = Array.isArray(data) ? data.filter(c => c.isActive !== false) : [];
+        setCategories(activeCategories.length > 0 ? activeCategories : DEFAULT_CATEGORIES);
         setLoadingCategories(false);
       })
       .catch((err) => {
         console.error('Error fetching categories:', err);
+        setCategories(DEFAULT_CATEGORIES);
         setLoadingCategories(false);
       });
 
@@ -113,16 +125,25 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     setSelectedSkills(prev => prev.filter(s => s !== skill));
   };
 
-  const togglePreference = (prefId) => {
-    setSelectedPreferences(prev =>
-      prev.includes(prefId) ? prev.filter(p => p !== prefId) : [...prev, prefId]
-    );
-  };
-
   const handlePostProject = async (e) => {
     e.preventDefault();
     if (!newProject.title.trim() || !newProject.categoryId || !newProject.description.trim()) {
       setNotice({ type: 'error', message: 'Vui lòng điền đầy đủ các thông tin bắt buộc.' });
+      return;
+    }
+
+    if (newProject.title.trim().length < 8) {
+      setNotice({ type: 'error', message: 'Tiêu đề công việc phải có ít nhất 8 ký tự.' });
+      return;
+    }
+
+    if (newProject.description.trim().length <= 50) {
+      setNotice({ type: 'error', message: 'Mô tả công việc phải có nhiều hơn 50 ký tự.' });
+      return;
+    }
+
+    if (employerQuota && (!employerQuota.packagePostQuota || employerQuota.packagePostQuota <= 0)) {
+      setNotice({ type: 'error', message: 'Tài khoản của bạn đã hết lượt đăng bài. Vui lòng mua gói dịch vụ mới để tiếp tục đăng tin.' });
       return;
     }
 
@@ -169,22 +190,17 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
     setPostingProject(true);
     setNotice(null);
 
-    // Format skills and preferences into description cleanly if provided
+    // Format skills into description cleanly if provided
     let finalDescription = newProject.description.trim();
     
     if (selectedSkills.length > 0) {
       finalDescription += `\n\n--- KỸ NĂNG YÊU CẦU ---\n• ` + selectedSkills.join('\n• ');
     }
 
-    if (selectedPreferences.length > 0) {
-      const activePrefLabels = PREFERENCE_OPTIONS
-        .filter(p => selectedPreferences.includes(p.id))
-        .map(p => p.label);
-      finalDescription += `\n\n--- YÊU CẦU & ĐIỀU KIỆN KHI ỨNG TUYỂN ---\n☑ ` + activePrefLabels.join('\n☑ ');
-    }
+    const empId = user?.employerId || user?.id || user?.userId;
 
     const payload = {
-      clientId: user.id,
+      clientId: empId,
       categoryId: parseInt(newProject.categoryId),
       title: newProject.title.trim(),
       description: finalDescription,
@@ -278,7 +294,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
         workForm: 'ONLINE'
       });
       setSelectedSkills([]);
-      setSelectedPreferences([]);
       
       setTimeout(() => {
         if (onNavigate) onNavigate('employer_jobs');
@@ -321,6 +336,37 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           }`}>
             <span className="text-base">{notice.type === 'success' ? '✓' : '⚠️'}</span>
             {notice.message}
+          </div>
+        )}
+
+        {employerQuota && (
+          <div className={`p-4 rounded-2xl mb-6 flex items-center justify-between border shadow-sm ${
+            (employerQuota.packagePostQuota > 0)
+              ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950'
+              : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 text-amber-950'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                <Package className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">
+                  Gói dịch vụ: <span className="uppercase text-indigo-700 font-extrabold">{employerQuota.currentPackageType || 'CHƯA DÙNG GÓI'}</span> — 
+                  Lượt còn lại: <strong className="text-emerald-700 font-black text-base ml-1">{employerQuota.packagePostQuota || 0} bài đăng</strong>
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Hạn dùng gói: {employerQuota.packageExpiryDate ? new Date(employerQuota.packageExpiryDate).toLocaleDateString('vi-VN') : 'Không có'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate('employer_packages')}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Mua gói / Nâng cấp
+            </button>
           </div>
         )}
 
@@ -578,41 +624,6 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
                 />
               </div>
             </label>
-
-            {/* PHẦN CHECKBOX TÙY CHỌN & ĐIỀU KIỆN DỰ ÁN */}
-            <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-200/70 space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-amber-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-amber-600" />
-                Yêu cầu & Điều kiện ứng tuyển (Tích chọn bổ sung)
-              </span>
-              <p className="text-[11px] text-amber-800/80 leading-normal">
-                Tích chọn các ô dưới đây để thiết lập tiêu chuẩn đối với Freelancers khi nộp hồ sơ.
-              </p>
-
-              <div className="space-y-2 pt-1">
-                {PREFERENCE_OPTIONS.map((opt) => {
-                  const isChecked = selectedPreferences.includes(opt.id);
-                  return (
-                    <label
-                      key={opt.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                        isChecked
-                          ? 'bg-amber-100/70 border-amber-300 text-amber-950 shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-amber-200 hover:bg-amber-50/30'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => togglePreference(opt.id)}
-                        className="w-4 h-4 mt-0.5 rounded text-amber-600 focus:ring-amber-400 accent-amber-600 cursor-pointer"
-                      />
-                      <span className="leading-snug">{opt.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Mô tả */}
             <label className="block">

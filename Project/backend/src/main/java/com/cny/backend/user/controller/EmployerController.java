@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,9 @@ public class EmployerController {
 
     @Autowired
     private EmployerRepository employerRepository;
+
+    @Autowired
+    private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
@@ -45,6 +49,44 @@ public class EmployerController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/{employerId}/expenses")
+    public ResponseEntity<Map<String, Object>> getEmployerExpenses(@PathVariable Integer employerId) {
+        Employer employer = employerRepository.findById(employerId).orElse(null);
+        if (employer == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("employerId", employer.getEmployerId());
+        response.put("companyName", employer.getCompanyName() != null ? employer.getCompanyName() : employer.getDisplayName());
+        response.put("totalSpent", employer.getTotalSpent() != null ? employer.getTotalSpent() : java.math.BigDecimal.ZERO);
+        response.put("currentPackageType", employer.getCurrentPackageType() != null ? employer.getCurrentPackageType() : "CHƯA ĐĂNG KÝ");
+        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 0);
+        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : null);
+        response.put("projectsPosted", employer.getProjectsPosted() != null ? employer.getProjectsPosted() : 0);
+        response.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent()));
+        response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(employer.getTier()));
+
+        List<com.cny.backend.admin.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByEmployerIdOrderByCreatedAtDesc(employerId);
+        List<Map<String, Object>> txList = new ArrayList<>();
+        for (com.cny.backend.admin.entity.PaymentTransaction tx : transactions) {
+            Map<String, Object> tMap = new HashMap<>();
+            tMap.put("transactionId", tx.getId());
+            tMap.put("txnRef", tx.getTxnRef());
+            tMap.put("vnpTransactionNo", tx.getVnpTransactionNo());
+            tMap.put("projectId", tx.getProjectId());
+            tMap.put("packageType", tx.getPackageType());
+            tMap.put("amount", tx.getAmount());
+            tMap.put("paymentMethod", tx.getVnpTransactionNo() != null ? "VNPay" : "PayOS");
+            tMap.put("status", tx.getStatus());
+            tMap.put("createdAt", tx.getCreatedAt() != null ? tx.getCreatedAt().toString() : null);
+            txList.add(tMap);
+        }
+        response.put("transactions", txList);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EmployerDto> getById(@PathVariable Integer id) {
         return employerRepository.findById(id)
@@ -60,36 +102,6 @@ public class EmployerController {
         }
 
         Map<String, Object> response = buildProfileResponse(employer);
-
-        // Fetch latest pending request to overlay pending changes
-        List<EmployerProfileRequest> requests = employerProfileRequestRepository.findByEmployerEmployerIdOrderByCreatedAtDesc(employerId);
-        if (!requests.isEmpty()) {
-            EmployerProfileRequest latest = requests.get(0);
-            if ("PENDING".equals(latest.getStatus())) {
-                response.put("hasPendingRequest", true);
-                if (latest.getDisplayName() != null) response.put("displayName", latest.getDisplayName());
-                if (latest.getFullName() != null) response.put("fullName", latest.getFullName());
-                if (latest.getPhone() != null) response.put("phone", latest.getPhone());
-                if (latest.getCompanyName() != null) response.put("companyName", latest.getCompanyName());
-                if (latest.getCompanyLogoUrl() != null) response.put("companyLogoUrl", latest.getCompanyLogoUrl());
-                if (latest.getCompanyDescription() != null) response.put("companyDescription", latest.getCompanyDescription());
-                if (latest.getWebsite() != null) response.put("website", latest.getWebsite());
-                if (latest.getAddress() != null) response.put("address", latest.getAddress());
-                if (latest.getCity() != null) response.put("city", latest.getCity());
-                if (latest.getCountry() != null) response.put("country", latest.getCountry());
-                if (latest.getCompanySize() != null) response.put("companySize", latest.getCompanySize());
-                if (latest.getIndustry() != null) response.put("industry", latest.getIndustry());
-                if (latest.getTaxCode() != null) response.put("taxCode", latest.getTaxCode());
-
-                Map<String, Object> billing = new HashMap<>();
-                billing.put("bank_name", latest.getBankName() != null ? latest.getBankName() : "");
-                billing.put("account_number", latest.getAccountNumber() != null ? latest.getAccountNumber() : "");
-                billing.put("account_holder", latest.getAccountHolder() != null ? latest.getAccountHolder() : "");
-                billing.put("branch", latest.getBranch() != null ? latest.getBranch() : "");
-                response.put("billing", billing);
-            }
-        }
-
         return ResponseEntity.ok(response);
     }
 
@@ -102,6 +114,13 @@ public class EmployerController {
         Employer employer = employerRepository.findById(employerId).orElse(null);
         if (employer == null) {
             return ResponseEntity.notFound().build();
+        }
+
+        if (Boolean.TRUE.equals(employer.getIsDeleted())) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("success", false);
+            errResponse.put("message", "Tài khoản của bạn đã bị xóa hoặc ngưng hoạt động.");
+            return ResponseEntity.status(403).body(errResponse);
         }
 
         // Intercept direct avatar update
@@ -117,9 +136,6 @@ public class EmployerController {
             return ResponseEntity.ok(response);
         }
 
-        Map<String, Object> billing = asMap(payload.get("billing"));
-
-        
         String displayName = text(payload.get("displayName"));
         if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {
             Map<String, Object> errResponse = new HashMap<>();
@@ -198,119 +214,27 @@ public class EmployerController {
             }
         }
 
-        String bankName = text(billing.get("bankName"));
-        String accountNumber = text(billing.get("accountNumber"));
-        String accountHolder = text(billing.get("accountHolder"));
-        String branch = text(billing.get("branch"));
+        // === Lưu trực tiếp các thông tin công ty & người đại diện vào bảng employers ===
+        employer.setDisplayName(displayName);
+        employer.setFullName(fullName);
+        employer.setPhone(phone);
+        employer.setCompanyName(text(payload.get("companyName")));
+        employer.setCompanyLogoUrl(companyLogoUrl);
+        employer.setCompanyDescription(text(payload.get("companyDescription")));
+        employer.setWebsite(website);
+        employer.setAddress(text(payload.get("address")));
+        employer.setCity(text(payload.get("city")));
+        employer.setCountry(text(payload.get("country")));
+        employer.setCompanySize(companySize);
+        employer.setIndustry(text(payload.get("industry")));
+        employer.setTaxCode(taxCode);
+        employer.setUpdatedAt(LocalDateTime.now());
 
-        if (!isBlank(bankName) || !isBlank(accountNumber) || !isBlank(accountHolder) || !isBlank(branch)) {
-            if (isBlank(bankName) || isBlank(accountNumber) || isBlank(accountHolder)) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Nếu cập nhật thông tin thanh toán, vui lòng điền đầy đủ: Ngân hàng, Số tài khoản và Chủ tài khoản.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (!accountNumber.matches("^[0-9]+$")) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Số tài khoản ngân hàng chỉ được phép chứa các chữ số.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (accountNumber.length() > 30) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Số tài khoản ngân hàng tối đa 30 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (!accountHolder.matches("^[\\p{L} ]+$")) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (accountHolder.length() > 150) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Tên chủ tài khoản tối đa 150 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-            if (branch != null && branch.length() > 100) {
-                Map<String, Object> errResponse = new HashMap<>();
-                errResponse.put("success", false);
-                errResponse.put("message", "Chi nhánh ngân hàng tối đa 100 ký tự.");
-                return ResponseEntity.badRequest().body(errResponse);
-            }
-        }
-
-        List<EmployerProfileRequest> requests = employerProfileRequestRepository.findByEmployerEmployerIdOrderByCreatedAtDesc(employerId);
-        EmployerProfileRequest req;
-        if (!requests.isEmpty() && "PENDING".equals(requests.get(0).getStatus())) {
-            req = requests.get(0);
-            req.setDisplayName(text(payload.get("displayName")));
-            req.setFullName(text(payload.get("fullName")));
-            req.setPhone(text(payload.get("phone")));
-            req.setCompanyName(text(payload.get("companyName")));
-            req.setCompanyLogoUrl(text(payload.get("companyLogoUrl")));
-            req.setCompanyDescription(text(payload.get("companyDescription")));
-            req.setWebsite(text(payload.get("website")));
-            req.setAddress(text(payload.get("address")));
-            req.setCity(text(payload.get("city")));
-            req.setCountry(text(payload.get("country")));
-            req.setCompanySize(text(payload.get("companySize")));
-            req.setIndustry(text(payload.get("industry")));
-            req.setTaxCode(taxCode);
-            req.setBankName(text(billing.get("bankName")));
-            req.setAccountNumber(text(billing.get("accountNumber")));
-            req.setAccountHolder(text(billing.get("accountHolder")));
-            req.setBranch(text(billing.get("branch")));
-            req.setUpdatedAt(LocalDateTime.now());
-        } else {
-            req = EmployerProfileRequest.builder()
-                    .employer(employer)
-                    .displayName(text(payload.get("displayName")))
-                    .fullName(text(payload.get("fullName")))
-                    .phone(text(payload.get("phone")))
-                    .companyName(text(payload.get("companyName")))
-                    .companyLogoUrl(text(payload.get("companyLogoUrl")))
-                    .companyDescription(text(payload.get("companyDescription")))
-                    .website(text(payload.get("website")))
-                    .address(text(payload.get("address")))
-                    .city(text(payload.get("city")))
-                    .country(text(payload.get("country")))
-                    .companySize(text(payload.get("companySize")))
-                    .industry(text(payload.get("industry")))
-                    .taxCode(taxCode)
-                    .bankName(text(billing.get("bankName")))
-                    .accountNumber(text(billing.get("accountNumber")))
-                    .accountHolder(text(billing.get("accountHolder")))
-                    .branch(text(billing.get("branch")))
-                    .status("PENDING")
-                    .build();
-        }
-
-        EmployerProfileRequest savedReq = employerProfileRequestRepository.save(req);
-
-        // Notify MANAGER
-        try {
-            String empName = savedReq.getCompanyName() != null ? savedReq.getCompanyName() : savedReq.getDisplayName();
-            if (empName == null) {
-                empName = employer.getCompanyName() != null ? employer.getCompanyName() : employer.getDisplayName();
-            }
-            notificationService.createNotification(
-                0L,
-                "MANAGER",
-                "Yêu cầu cập nhật hồ sơ doanh nghiệp",
-                "Nhà tuyển dụng " + empName + " vừa gửi yêu cầu cập nhật hồ sơ.",
-                "PROFILE_REQUEST",
-                savedReq.getRequestId().toString()
-            );
-        } catch (Exception ex) {
-            System.err.println("Failed to send notification to manager: " + ex.getMessage());
-        }
+        employerRepository.save(employer);
 
         Map<String, Object> response = buildProfileResponse(employer);
         response.put("success", true);
-        response.put("message", "Yêu cầu thay đổi thông tin của bạn đã được gửi tới Manager để phê duyệt.");
+        response.put("message", "Cập nhật thông tin công ty thành công.");
         return ResponseEntity.ok(response);
     }
 
@@ -339,15 +263,59 @@ public class EmployerController {
     @PostMapping("/{id}/kyc/submit")
     public ResponseEntity<Map<String, Object>> submitKyc(@PathVariable Integer id, @RequestBody com.cny.backend.user.dto.EmployerKycSubmitDto dto) {
         Map<String, Object> response = new HashMap<>();
+
+        // 1. Backend Validation: DTO & File URLs
+        if (dto == null) {
+            response.put("success", false);
+            response.put("message", "Lỗi gửi dữ liệu: Dữ liệu hồ sơ gửi lên rỗng (null).");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getBusinessLicenseUrl() == null || dto.getBusinessLicenseUrl().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Lỗi Backend Validation: Vui lòng đính kèm file Giấy phép kinh doanh (GPKD) hợp lệ trước khi gửi xác thực.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getRepresentativeIdCardUrl() == null || dto.getRepresentativeIdCardUrl().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Lỗi Backend Validation: Vui lòng đính kèm file Căn cước công dân (CCCD) hợp lệ trước khi gửi xác thực.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (dto.getTaxCode() != null && !dto.getTaxCode().trim().isEmpty()) {
+            String taxCodeStr = dto.getTaxCode().trim();
+            if (!taxCodeStr.matches("^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$")) {
+                response.put("success", false);
+                response.put("message", "Lỗi Backend Validation: Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 hoặc 13 chữ số.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (employerRepository.countTaxCodeDuplicate(taxCodeStr, id) > 0) {
+                response.put("success", false);
+                response.put("message", "Lỗi Backend Validation: Mã số thuế này đã được đăng ký bởi doanh nghiệp khác.");
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+
         return employerRepository.findById(id).map(e -> {
-            e.setTaxCode(dto.getTaxCode());
-            e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl());
-            e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl());
+            e.setTaxCode(dto.getTaxCode() != null ? dto.getTaxCode().trim() : null);
+            e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl().trim());
+            e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl().trim());
             e.setKycStatus("PENDING");
+            e.setKycRejectedReason(null);
             e.setKycSubmittedAt(LocalDateTime.now());
             e.setUpdatedAt(LocalDateTime.now());
 
             employerRepository.save(e);
+
+            try {
+                jdbcTemplate.update(
+                    "INSERT INTO kyc_requests (employer_id, status, created_at, updated_at) VALUES (?, 'PENDING', GETDATE(), GETDATE())",
+                    e.getEmployerId()
+                );
+            } catch (Exception ex) {
+                // Table might not exist or schema differs, ignore safely
+            }
             
             // Notify STAFF
             notificationService.createNotification(
@@ -364,12 +332,15 @@ public class EmployerController {
             return ResponseEntity.ok(response);
         }).orElseGet(() -> {
             response.put("success", false);
-            response.put("message", "Không tìm thấy người dùng.");
-            return ResponseEntity.notFound().build();
+            response.put("message", "Không tìm thấy người dùng trong cơ sở dữ liệu.");
+            return ResponseEntity.status(404).body(response);
         });
     }
 
     private EmployerDto mapToDto(Employer e) {
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent());
+        int discount = com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier);
+
         return EmployerDto.builder()
                 .employerId(e.getEmployerId())
                 .email(e.getEmail())
@@ -393,6 +364,9 @@ public class EmployerController {
                 .industry(e.getIndustry())
                 .profileCompleteness(e.getProfileCompleteness())
                 .totalSpent(e.getTotalSpent())
+                .tier(currentTier)
+                .tierDiscount(discount)
+                .lastSpentAt(e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null)
                 .projectsPosted(e.getProjectsPosted())
                 .averageRating(e.getAverageRating())
                 .createdAt(e.getCreatedAt() != null ? e.getCreatedAt().toString() : null)
@@ -411,6 +385,9 @@ public class EmployerController {
     }
 
     private Map<String, Object> buildProfileResponse(Employer employer) {
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent());
+        int discount = com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier);
+
         Map<String, Object> response = new HashMap<>();
         response.put("employerId", employer.getEmployerId());
         response.put("email", employer.getEmail());
@@ -429,9 +406,15 @@ public class EmployerController {
         response.put("taxCode", employer.getTaxCode());
         response.put("profileCompleteness", employer.getProfileCompleteness());
         response.put("totalSpent", employer.getTotalSpent());
+        response.put("tier", currentTier);
+        response.put("tierDiscount", discount);
+        response.put("lastSpentAt", employer.getLastSpentAt() != null ? employer.getLastSpentAt().toString() : null);
         response.put("projectsPosted", employer.getProjectsPosted());
         response.put("averageRating", employer.getAverageRating());
-        response.put("billing", findDefaultBankAccount(employer.getEmployerId()));
+        response.put("billing", new HashMap<>());
+        response.put("currentPackageType", employer.getCurrentPackageType() != null ? employer.getCurrentPackageType() : "PREMIUM");
+        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 99);
+        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : "2030-12-31T23:59:59");
         response.put("kycStatus", employer.getKycStatus());
         response.put("businessLicenseUrl", employer.getBusinessLicenseUrl());
         response.put("representativeIdCardUrl", employer.getRepresentativeIdCardUrl());
@@ -444,26 +427,6 @@ public class EmployerController {
         response.put("kycRejectedReason", employer.getKycRejectedReason());
         response.put("isVerified", employer.getIsVerified());
         return response;
-    }
-
-    private Map<String, Object> findDefaultBankAccount(Integer employerId) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 1 bank_account_id, bank_name, account_number, account_holder, branch, is_default " +
-                        "FROM bank_accounts WHERE employer_id = ? ORDER BY is_default DESC, created_at DESC",
-                employerId
-        );
-        if (rows.isEmpty()) {
-            return new HashMap<>();
-        }
-        return rows.get(0);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> asMap(Object value) {
-        if (value instanceof Map<?, ?>) {
-            return (Map<String, Object>) value;
-        }
-        return new HashMap<>();
     }
 
     private String text(Object value) {
