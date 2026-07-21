@@ -47,6 +47,16 @@ public class PaymentInvoice {
     @Builder.Default
     private String status = "PAID";
 
+    // Viettel SInvoice fields
+    @Column(name = "viettel_invoice_no", length = 50)
+    private String viettelInvoiceNo;
+
+    @Column(name = "viettel_transaction_uuid", length = 100)
+    private String viettelTransactionUuid;
+
+    @Column(name = "viettel_status", length = 50)
+    private String viettelStatus;
+
     @PrePersist
     protected void onCreate() {
         if (issuedAt == null) {

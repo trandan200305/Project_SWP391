@@ -46,4 +46,24 @@ public class EmailService {
             log.error("Failed to send async HTML email to {} in thread {}: {}", to, Thread.currentThread().getName(), e.getMessage());
         }
     }
+
+    @Async("mailTaskExecutor")
+    public void sendEmailWithAttachmentAsync(String to, String subject, String htmlContent, String attachmentFilename, byte[] attachmentBytes) {
+        log.info("Starting async email with attachment to {}", to);
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "utf-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            
+            org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(attachmentBytes);
+            helper.addAttachment(attachmentFilename, resource);
+            
+            mailSender.send(mimeMessage);
+            log.info("Successfully sent async email with attachment to {}", to);
+        } catch (Exception e) {
+            log.error("Failed to send async email with attachment to {}: {}", to, e.getMessage());
+        }
+    }
 }

@@ -68,49 +68,17 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
 
     // Pagination states for projects
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
     const PAGE_SIZE = 5;
 
-    // Filter projects based on status and search query
-    const filteredProjects = useMemo(() => {
-        return projects.filter((proj) => {
-            // Status match
-            let matchesStatus = true;
-            if (statusFilter !== 'ALL') {
-                if (statusFilter === 'PENDING_ALL') {
-                    matchesStatus = proj.status === 'PENDING' || proj.status === 'PENDING_REVIEW';
-                } else {
-                    matchesStatus = proj.status === statusFilter;
-                }
-            }
-
-            // Search query match (title, category name, or description)
-            let matchesQuery = true;
-            if (searchQuery.trim() !== '') {
-                const query = searchQuery.toLowerCase().trim();
-                const titleMatch = proj.title?.toLowerCase().includes(query);
-                const descMatch = proj.description?.toLowerCase().includes(query);
-                const categoryMatch = proj.category?.categoryName?.toLowerCase().includes(query);
-                matchesQuery = titleMatch || descMatch || categoryMatch;
-            }
-
-            return matchesStatus && matchesQuery;
-        });
-    }, [projects, statusFilter, searchQuery]);
+    const filteredProjects = projects;
+    const paginatedProjects = projects;
 
     // Reset currentPage when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [statusFilter, searchQuery]);
-
-    // Adjust currentPage if it goes out of range due to project count changes
-    useEffect(() => {
-        const maxPage = Math.ceil(filteredProjects.length / PAGE_SIZE);
-        if (maxPage > 0 && currentPage > maxPage) {
-            setCurrentPage(maxPage);
-        } else if (filteredProjects.length === 0) {
-            setCurrentPage(1);
-        }
-    }, [filteredProjects.length, currentPage]);
 
     // Reset page to 1 and clear filters when changing activeTab to projects
     useEffect(() => {
@@ -120,11 +88,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
             setSearchQuery('');
         }
     }, [activeTab]);
-
-    const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
-    const paginatedProjects = useMemo(() => {
-        return filteredProjects.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-    }, [filteredProjects, currentPage]);
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -392,13 +355,15 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const fetchProjects = () => {
         if (!user?.id) return;
         setLoadingProjects(true);
-        fetch(`http://localhost:8080/api/projects/employer/${user.id}`)
+        fetch(`http://localhost:8080/api/projects/employer/${user.id}/paginated?page=${currentPage - 1}&size=${PAGE_SIZE}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`)
             .then((res) => {
                 if (!res.ok) throw new Error('Không thể tải danh sách dự án.');
                 return res.json();
             })
             .then((data) => {
-                setProjects(data);
+                setProjects(data.content || []);
+                setTotalPages(data.totalPages || 1);
+                setTotalElements(data.totalElements || 0);
             })
             .catch((err) => {
                 console.error(err);
@@ -407,10 +372,10 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     useEffect(() => {
-        if (user?.id && user?.role === 'EMPLOYER') {
+        if (user?.id && user?.role === 'EMPLOYER' && activeTab === 'projects') {
             fetchProjects();
         }
-    }, [user]);
+    }, [user, activeTab, currentPage, statusFilter, searchQuery]);
 
     useEffect(() => {
         if (!user?.id || user?.role !== 'EMPLOYER') {
@@ -684,16 +649,15 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                     <div className="flex flex-wrap gap-2 items-center">
                                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-2">Trạng thái:</span>
                                         {[
-                                            { value: 'ALL', label: 'Tất cả', count: projects.length },
-                                            { value: 'PUBLISHED', label: 'Đang tuyển', count: projects.filter(p => p.status === 'PUBLISHED').length },
-                                            { value: 'IN_PROGRESS', label: 'Đang làm', count: projects.filter(p => p.status === 'IN_PROGRESS').length },
-                                            { value: 'PENDING_ALL', label: 'Chờ duyệt', count: projects.filter(p => p.status === 'PENDING' || p.status === 'PENDING_REVIEW').length },
-                                            { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán', count: projects.filter(p => p.status === 'PENDING_PAYMENT').length },
-                                            { value: 'CLOSED', label: 'Đã đóng', count: projects.filter(p => p.status === 'CLOSED').length },
-                                            { value: 'REJECTED', label: 'Từ chối', count: projects.filter(p => p.status === 'REJECTED').length },
-                                            { value: 'DRAFT', label: 'Bản nháp', count: projects.filter(p => p.status === 'DRAFT').length },
+                                            { value: 'ALL', label: 'Tất cả' },
+                                            { value: 'PUBLISHED', label: 'Đang tuyển' },
+                                            { value: 'IN_PROGRESS', label: 'Đang làm' },
+                                            { value: 'PENDING_ALL', label: 'Chờ duyệt' },
+                                            { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
+                                            { value: 'CLOSED', label: 'Đã đóng' },
+                                            { value: 'REJECTED', label: 'Từ chối' },
+                                            { value: 'DRAFT', label: 'Bản nháp' },
                                         ].map(item => {
-                                            if (item.count === 0 && item.value !== 'ALL') return null; // Only show status with items, but always show 'All'
                                             const isActive = statusFilter === item.value;
                                             return (
                                                 <button
@@ -707,11 +671,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                     }`}
                                                 >
                                                     <span>{item.label}</span>
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                                        isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-650'
-                                                    }`}>
-                                                        {item.count}
-                                                    </span>
                                                 </button>
                                             );
                                         })}
@@ -883,9 +842,9 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                         {totalPages > 1 && (
                                             <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6 flex-wrap gap-4">
                                                 <span className="text-xs text-slate-500 font-medium">
-                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{(currentPage - 1) * PAGE_SIZE + 1}</span> đến{' '}
-                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, filteredProjects.length)}</span> trong tổng số{' '}
-                                                    <span className="font-extrabold text-slate-800">{filteredProjects.length}</span> dự án
+                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{totalElements > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0}</span> đến{' '}
+                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, totalElements)}</span> trong tổng số{' '}
+                                                    <span className="font-extrabold text-slate-800">{totalElements}</span> dự án
                                                 </span>
                                                 <div className="flex items-center gap-1.5">
                                                     <button

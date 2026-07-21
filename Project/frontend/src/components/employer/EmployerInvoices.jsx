@@ -92,7 +92,7 @@ export default function EmployerInvoices({ user }) {
         setError(null);
         try {
             if (employerId) {
-                const response = await fetch(`http://localhost:8080/api/payment/invoices/employer/${employerId}?page=${targetPage}&size=${pageSize}`);
+                const response = await fetch(`http://localhost:8080/api/payment/invoices/employer/${employerId}?page=${targetPage}&size=${pageSize}&search=${encodeURIComponent(searchTerm)}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data && Array.isArray(data.content)) {
@@ -135,16 +135,16 @@ export default function EmployerInvoices({ user }) {
         fetchInvoices(0);
     }, [employerId]);
 
-    // Filter invoices by search term
-    const filteredInvoices = useMemo(() => {
-        if (!searchTerm.trim()) return invoices;
-        const term = searchTerm.toLowerCase().trim();
-        return invoices.filter(inv =>
-            (inv.invoiceNumber && inv.invoiceNumber.toLowerCase().includes(term)) ||
-            (inv.description && inv.description.toLowerCase().includes(term)) ||
-            (inv.status && inv.status.toLowerCase().includes(term))
-        );
-    }, [invoices, searchTerm]);
+    // Invoices are already filtered by the backend search
+    const filteredInvoices = invoices;
+
+    // Optional: add a debounce effect to auto-search when searchTerm changes
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchInvoices(0);
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     // Statistics
     const totalAmountSpent = useMemo(() => {
@@ -193,6 +193,72 @@ export default function EmployerInvoices({ user }) {
         setTimeout(() => {
             window.print();
         }, 300);
+    };
+
+    const issueInvoice = async (invoiceId) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xuất hóa đơn điện tử cho giao dịch này không?")) return;
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8080/api/payment/invoices/${invoiceId}/issue`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert(`Xuất hóa đơn thành công! Số HĐ: ${data.invoiceNo}`);
+                fetchInvoices(page);
+            } else {
+                alert(`Lỗi xuất hóa đơn: ${data.message || 'Lỗi không xác định'}`);
+            }
+        } catch (err) {
+            alert(`Lỗi kết nối: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadPdf = async (invoiceId, viettelInvoiceNo) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8080/api/payment/invoices/${invoiceId}/pdf`);
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `HoaDon_${viettelInvoiceNo}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } else {
+                const text = await response.text();
+                alert(`Lỗi tải PDF: ${text}`);
+            }
+        } catch (err) {
+            alert(`Lỗi kết nối: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const sendEmail = async (invoiceId) => {
+        if (!window.confirm("Gửi hóa đơn điện tử PDF về email đăng ký của bạn?")) return;
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8080/api/payment/invoices/${invoiceId}/email`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('Đã gửi yêu cầu gửi email thành công!');
+            } else {
+                alert(`Lỗi gửi email: ${data.message || 'Lỗi không xác định'}`);
+            }
+        } catch (err) {
+            alert(`Lỗi kết nối: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -333,21 +399,41 @@ export default function EmployerInvoices({ user }) {
                                         </td>
                                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-1">
+                                                {!invoice.viettelInvoiceNo ? (
+                                                    <button
+                                                        onClick={() => issueInvoice(invoice.invoiceId)}
+                                                        className="inline-flex items-center gap-1 px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm"
+                                                        title="Phát hành Hóa đơn điện tử Viettel"
+                                                    >
+                                                        <FileText className="w-3 h-3" />
+                                                        <span>Xuất HĐĐT</span>
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => downloadPdf(invoice.invoiceId, invoice.viettelInvoiceNo)}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm"
+                                                            title="Tải PDF bản gốc (Viettel)"
+                                                        >
+                                                            <Download className="w-3 h-3" />
+                                                            <span>PDF gốc</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => sendEmail(invoice.invoiceId)}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm"
+                                                            title="Gửi PDF qua Email"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                                            <span>Email</span>
+                                                        </button>
+                                                    </>
+                                                )}
                                                 <button
                                                     onClick={() => setSelectedInvoice(invoice)}
                                                     className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition-all"
-                                                    title="Xem chi tiết hóa đơn"
+                                                    title="Xem bản thể hiện web"
                                                 >
                                                     <Eye className="w-3 h-3" />
-                                                    <span>Xem</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePrint(invoice)}
-                                                    className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm"
-                                                    title="In / Tải hóa đơn"
-                                                >
-                                                    <Printer className="w-3 h-3" />
-                                                    <span>In / Tải</span>
                                                 </button>
                                             </div>
                                         </td>

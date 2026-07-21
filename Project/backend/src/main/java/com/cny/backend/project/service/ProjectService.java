@@ -77,6 +77,11 @@ public class ProjectService {
         return projectRepository.findByClientEmployerIdAndIsDeletedFalse(employerId);
     }
 
+    public Page<Project> getProjectsByEmployerPaginated(Integer employerId, String status, String keyword, int page, int size) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+        return projectRepository.findEmployerProjectsPaginated(employerId, status, keyword, pageable);
+    }
+
     @Transactional
     public Project createProject(ProjectCreateDto dto) {
         Employer client = employerRepository.findById(dto.getClientId())

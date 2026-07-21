@@ -73,6 +73,16 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getProjectsByEmployer(employerId));
     }
 
+    @GetMapping("/employer/{employerId}/paginated")
+    public ResponseEntity<?> getProjectsByEmployerPaginated(
+            @PathVariable Integer employerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(projectService.getProjectsByEmployerPaginated(employerId, status, search, page, size));
+    }
+
     @PostMapping
     public ResponseEntity<?> createProject(@jakarta.validation.Valid @RequestBody ProjectCreateDto dto) {
         try {
