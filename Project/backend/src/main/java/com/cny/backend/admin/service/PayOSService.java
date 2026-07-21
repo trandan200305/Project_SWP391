@@ -10,8 +10,6 @@ import com.cny.backend.user.entity.Employer;
 import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.admin.entity.ServicePackageConfig;
 import com.cny.backend.admin.repository.ServicePackageConfigRepository;
-import com.cny.backend.admin.entity.VnpayConfig;
-import com.cny.backend.admin.repository.VnpayConfigRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,14 +48,15 @@ public class PayOSService {
     @Autowired
     private ServicePackageConfigRepository servicePackageConfigRepository;
 
-    @Autowired
-    private VnpayConfigRepository vnpayConfigRepository;
 
     @Autowired
     private ProjectService projectService;
 
     @Autowired
-    private InvoiceService invoiceService;
+    private com.cny.backend.admin.service.InvoiceService invoiceService;
+
+    @Autowired
+    private com.cny.backend.invoice.service.InvoiceService viettelInvoiceService;
 
     @Autowired
     private DashboardRepository dashboardRepository;
@@ -154,14 +153,7 @@ public class PayOSService {
 
         transactionRepository.save(txn);
 
-        int timeoutMinutes = 30;
-        try {
-            Optional<VnpayConfig> configOpt = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc();
-            if (configOpt.isPresent() && configOpt.get().getSessionTimeout() != null) {
-                timeoutMinutes = configOpt.get().getSessionTimeout();
-            }
-        } catch (Exception e) {}
-        
+        int timeoutMinutes = 30;        
         long expiredAt = LocalDateTime.now().plusMinutes(timeoutMinutes).toEpochSecond(ZoneOffset.ofHours(7));
         
         String pkgType = (packageType != null) ? packageType.toUpperCase() : (project != null && project.getServicePackage() != null ? project.getServicePackage().toUpperCase() : "MEDIUM");
@@ -216,6 +208,12 @@ public class PayOSService {
                 
                 invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich PayOS " + txn.getTxnRef());
 
+                try {
+                    viettelInvoiceService.issueInvoiceForTransaction(txn.getId());
+                } catch (Exception e) {
+                    System.err.println("Failed to issue Viettel electronic invoice via PayOS webhook: " + e.getMessage());
+                }
+
                 if (txn.getProjectId() != null) {
                     projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                 } else if (txn.getPackageType() != null) {
@@ -259,6 +257,12 @@ public class PayOSService {
                     transactionRepository.save(txn);
                     
                     invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich PayOS " + txn.getTxnRef());
+
+                    try {
+                        viettelInvoiceService.issueInvoiceForTransaction(txn.getId());
+                    } catch (Exception e) {
+                        System.err.println("Failed to issue Viettel electronic invoice via PayOS query: " + e.getMessage());
+                    }
 
                     if (txn.getProjectId() != null) {
                         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());

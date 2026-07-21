@@ -44,7 +44,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [sectionsOpen, setSectionsOpen] = useState({
     taskManagement: true,
     moderation: true,
-    finance: true,
     system: true
   });
   const toggleSection = (section) => {
@@ -107,7 +106,7 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
   const [reportTypeFilter, setReportTypeFilter] = useState('ALL');
   const [reportSearch, setReportSearch] = useState('');
 
-  // Finance states
+  // Withdrawal & Transaction states
   const [withdrawals, setWithdrawals] = useState([]);
   const [withdrawalFilter, setWithdrawalFilter] = useState('ALL');
   const [vnpayTxns, setVnpayTxns] = useState([]);
@@ -1804,53 +1803,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                               {item.badge}
                             </span>
                           )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Finance Section */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => toggleSection('finance')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-body-sm font-semibold text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b] transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-3">
-                    <BadgeDollarSign className="w-[18px] h-[18px] stroke-[2.2] text-[#6e7b6c] group-hover:text-[#141b2b] transition-colors" />
-                    <span>FINANCE</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#6e7b6c] group-hover:text-[#141b2b] transition-transform duration-200 ${sectionsOpen.finance ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {sectionsOpen.finance && (
-                  <div className="pl-6 space-y-1 animate-in fade-in duration-200">
-                    {[
-                      { name: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign },
-                      { name: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
-                      { name: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle }
-                    ].map((item) => {
-                      const IconComp = item.icon;
-                      const isActive = activeTab === item.name;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => setActiveTab(item.name)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-[#f7fff2] text-[#006b2c]' 
-                              : 'text-[#3e4a3d] hover:bg-[#f1f3ff] hover:text-[#141b2b]'
-                          }`}
-                        >
-                          {isActive && (
-                            <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[#006b2c] rounded-r-full" />
-                          )}
-                          <div className="flex items-center gap-2.5">
-                            <IconComp className={`w-[16px] h-[16px] stroke-[2.2] transition-colors ${
-                              isActive ? 'text-[#006b2c]' : 'text-[#6e7b6c] group-hover:text-[#141b2b]'
-                            }`} />
-                            <span>{item.label}</span>
-                          </div>
                         </button>
                       );
                     })}
@@ -3975,7 +3927,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                     className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
                   >
                     <option value="CS">CS (Customer Support)</option>
-                    <option value="FIN">FIN (Finance)</option>
                     <option value="MOD">MOD (Moderation)</option>
                     <option value="DIS">DIS (Dispute Resolution)</option>
                   </select>
@@ -4104,7 +4055,6 @@ export default function ManagerDashboardPage({ user, onNavigateToHome, onNavigat
                   className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
                 >
                   <option value="MOD">MOD (Moderation)</option>
-                  <option value="FIN">FIN (Finance)</option>
                   <option value="DIS">DIS (Dispute Resolution)</option>
                   <option value="CS">CS (Customer Support)</option>
                   <option value="IT">IT (Technical Dept)</option>

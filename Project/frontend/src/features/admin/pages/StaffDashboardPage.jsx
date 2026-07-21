@@ -57,7 +57,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
   const currentRole = user?.role || "STAFF";
-  const activeDepartmentCodes = ['FIN', 'MOD', 'DIS', 'CS', 'IT'];
+  const activeDepartmentCodes = ['MOD', 'DIS', 'CS', 'IT'];
   const isActiveDepartment = (department) => activeDepartmentCodes.includes(department?.code);
   const normalizeRole = (role) => String(role || '').toUpperCase();
   const normalizeId = (id) => String(id ?? '');
@@ -82,7 +82,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   // Tab states
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sectionsOpen, setSectionsOpen] = useState({
-    finance: true,
     moderation: true,
     disputeResolution: true,
     customerSupport: true,
@@ -1480,7 +1479,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       .toUpperCase();
 
     if (!normalized) return '';
-    if (normalized.includes('FIN') || normalized.includes('TAI CHINH') || normalized.includes('FINANCE')) return 'FIN';
     if (normalized.includes('MOD') || normalized.includes('KIEM DUYET') || normalized.includes('MODERATION')) return 'MOD';
     if (normalized.includes('DIS') || normalized.includes('TRANH CHAP') || normalized.includes('DISPUTE')) return 'DIS';
     if (normalized.includes('CS') || normalized.includes('HO TRO') || normalized.includes('CUSTOMER SUPPORT') || normalized.includes('SUPPORT')) return 'CS';
@@ -1499,7 +1497,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
     (() => {
       const email = String(user?.email || '').toLowerCase();
       if (email.includes('moderation') || email.includes('mod')) return 'MOD';
-      if (email.includes('finance') || email.includes('fin')) return 'FIN';
       if (email.includes('dispute') || email.includes('dis')) return 'DIS';
       if (email.includes('support') || email.includes('cs')) return 'CS';
       if (email.includes('it') || email.includes('tech')) return 'IT';
@@ -1537,17 +1534,6 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   ];
 
   const departmentSidebarGroups = {
-    FIN: {
-      key: 'finance',
-      title: 'FINANCE',
-      icon: BadgeDollarSign,
-      items: [
-        { id: 'Tasks', label: 'Công việc của tôi', icon: CheckSquare, badge: pendingTasksCount },
-        { id: 'Withdrawals', label: 'Rút tiền', icon: BadgeDollarSign, badge: pendingWithdrawalCount },
-        { id: 'Refunds', label: 'Hoàn tiền', icon: BadgeDollarSign },
-        { id: 'FailedTransactions', label: 'Giao dịch lỗi', icon: AlertTriangle, badge: failedTransactionCount }
-      ]
-    },
     MOD: {
       key: 'moderation',
       title: 'MODERATION',

@@ -8,8 +8,7 @@ export default function PaymentCheckoutModal({ isOpen, onClose, selectedPackage,
   const [payosData, setPayosData] = useState(null);
 
   const gateways = [
-    { id: 'PAYOS', name: 'Thanh toán qua PayOS', description: 'Chuyển khoản bằng mã QR', icon: QrCode, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
-    { id: 'VNPAY', name: 'Cổng thanh toán VNPay', description: 'Thẻ ATM nội địa, Visa/MasterCard', icon: CreditCard, color: 'text-blue-600', bgColor: 'bg-blue-50' }
+    { id: 'PAYOS', name: 'Thanh toán qua PayOS', description: 'Chuyển khoản bằng mã QR', icon: QrCode, color: 'text-emerald-600', bgColor: 'bg-emerald-50' }
   ];
 
   // Reset state when modal opens with a new package
@@ -91,21 +90,6 @@ export default function PaymentCheckoutModal({ isOpen, onClose, selectedPackage,
           setStep(3); // Show iframe
         } else {
           throw new Error('Không nhận được link thanh toán PayOS.');
-        }
-      } else if (selectedBank === 'VNPAY') {
-        const response = await fetch(`http://localhost:8080/api/payment/create-url?packageType=${selectedPackage.packageType}&employerId=${employerId}`, {
-          method: 'POST'
-        });
-        
-        if (!response.ok) {
-          throw new Error('Có lỗi xảy ra khi tạo mã thanh toán VNPay.');
-        }
-        
-        const data = await response.json();
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
-        } else {
-          throw new Error('Không nhận được link thanh toán VNPay.');
         }
       }
     } catch (err) {

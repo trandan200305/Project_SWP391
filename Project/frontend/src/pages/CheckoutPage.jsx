@@ -36,13 +36,7 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
     if (onNavigate) onNavigate('employer_jobs');
   };
 
-  const handleRedirectVnpay = () => {
-    if (paymentUrl) {
-      window.location.href = paymentUrl;
-    } else {
-      alert('Không tìm thấy đường dẫn thanh toán VNPay!');
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50/50 pt-28 pb-16 px-4 sm:px-6 flex items-center justify-center">
@@ -107,37 +101,12 @@ export default function CheckoutPage({ pageParams, onNavigate }) {
                   </p>
                 </div>
               </div>
-
-              {/* VNPay Gateway Option */}
-              <div 
-                onClick={() => setPaymentMethod('vnpay')}
-                className={`border rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all duration-300 ${
-                  paymentMethod === 'vnpay' 
-                    ? 'border-emerald-500 bg-emerald-50/20 shadow-sm' 
-                    : 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/50'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                  paymentMethod === 'vnpay' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <h4 className="font-bold text-slate-800 text-[14px]">Cổng thanh toán điện tử VNPay</h4>
-                  <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">
-                    Thanh toán qua cổng VNPay với thẻ quốc tế Visa/Master, thẻ ATM nội địa hoặc ví điện tử.
-                  </p>
-                </div>
-              </div>
-
             </div>
-
-            {/* VNPay redirect button removed - Using QR Code instead */}
           </div>
 
-          {/* Right Column: Dynamic VietQR presentation OR VNPay Info */}
+          {/* Right Column: Dynamic VietQR presentation OR PayOS Info */}
           <div className="md:col-span-5 bg-slate-50/80 p-8 flex flex-col items-center justify-center">
-            {/* Both VietQR and VNPay now share the same QR code UI as requested by user */}
+            {/* Both VietQR (PayOS) now uses the same QR code UI as requested by user */}
             <div className="w-full space-y-6 text-center animate-in fade-in duration-300">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mã QR Thanh Toán</span>
                 

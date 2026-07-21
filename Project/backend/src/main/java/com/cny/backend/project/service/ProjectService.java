@@ -66,7 +66,7 @@ public class ProjectService {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
 
-    public List<Project> searchProjects(String keyword) {
+    public List<Project> searchProjectEntities(String keyword) {
         return projectRepository.searchProjectsByKeyword("PUBLISHED", keyword);
     }
 
@@ -335,7 +335,7 @@ public class ProjectService {
 
     public Page<ProjectDto> searchProjects(String keyword, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.trim();
-        Page<Project> projects = projectRepository.searchProjectsByKeyword("PUBLISHED", kw, pageable);
+        Page<Project> projects = projectRepository.searchProjectsByKeywordAndCategory("PUBLISHED", kw, null, null, pageable);
         return projects.map(this::mapToDto);
     }
 

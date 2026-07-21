@@ -107,6 +107,11 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [withdrawals, setWithdrawals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLogFilter, setAuditLogFilter] = useState('ALL');
+
+  // Withdrawal Processing States
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
+
   const [timelineModuleFilter, setTimelineModuleFilter] = useState('ALL');
   const [timelineRoleFilter, setTimelineRoleFilter] = useState('ALL');
   const [userGrowthTrend, setUserGrowthTrend] = useState([]);
@@ -144,7 +149,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [vnpaySaving, setVnpaySaving] = useState(false);
   const [vnpaySuccessMessage, setVnpaySuccessMessage] = useState('');
   const [vnpayErrorMessage, setVnpayErrorMessage] = useState('');
-  const [vnpaySubTab, setVnpaySubTab] = useState('config'); // 'config' | 'logs'
+  const [vnpaySubTab, setVnpaySubTab] = useState('logs'); // 'config' | 'logs'
   const [showVnpayConfirmModal, setShowVnpayConfirmModal] = useState(false);
   const [showVnpayEditConfirmModal, setShowVnpayEditConfirmModal] = useState(false);
   const [isEditingVnpay, setIsEditingVnpay] = useState(false);
@@ -166,6 +171,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
   // Financial Dashboard States
   const [paymentTimeFilter, setPaymentTimeFilter] = useState('Hôm nay');
+  const [showPaymentTimeDropdown, setShowPaymentTimeDropdown] = useState(false);
   const [donutHoverState, setDonutHoverState] = useState(null);
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState(null);
@@ -188,6 +194,36 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     };
     fetchAllVnpay();
   }, []);
+
+  // Poll transactions automatically every 5 seconds to show live updates
+  useEffect(() => {
+    let interval;
+    if (activeTab === 'vnpay' || activeTab === 'finance_dashboard') {
+      interval = setInterval(() => {
+        // Update stats
+        adminApi.getVnpayTransactions(0, 1000)
+          .then(res => {
+            if (res && res.content) setAllVnpayTransactions(res.content);
+          })
+          .catch(e => console.error(e));
+
+        // Update logs table if visible
+        if (activeTab === 'vnpay') {
+          adminApi.getVnpayTransactions(vnpayPage, 10)
+            .then(txns => {
+              if (txns && txns.content) {
+                setVnpayTransactions(txns.content);
+                setVnpayTotalPages(txns.totalPages || 1);
+              }
+            })
+            .catch(e => console.error(e));
+        }
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeTab, vnpayPage]);
 
   // --- Financial Dashboard Helper & Data ---
   const paymentStats = useMemo(() => {
@@ -218,6 +254,23 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       }
       if (paymentTimeFilter === 'Năm này') return d.getFullYear() === now.getFullYear();
       if (paymentTimeFilter === 'Năm trước') return d.getFullYear() === now.getFullYear() - 1;
+      if (paymentTimeFilter === '24 giờ') {
+        const start = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+        return d >= start;
+      }
+      if (paymentTimeFilter === '7 ngày') {
+        const start = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+        return d >= start;
+      }
+      if (paymentTimeFilter === '30 ngày') {
+        const start = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        return d >= start;
+      }
+      if (paymentTimeFilter === '1 năm') {
+        const start = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
+        return d >= start;
+      }
+      if (paymentTimeFilter === 'Tất cả' || paymentTimeFilter === 'Tùy chỉnh') return true;
       return true;
     });
 
@@ -585,6 +638,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
     setShowTransferModal(true);
   };
 
+
   const handleExecuteTransfer = (e) => {
     e.preventDefault();
     if (!transferTargetMember || !transferForm.toDepartmentId) return;
@@ -894,6 +948,25 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         console.error('Error audit logs:', err);
         setIsLoading(false);
       });
+
+    adminApi.getWithdrawals()
+      .then(data => {
+        if (Array.isArray(data)) {
+          setWithdrawals(data.map(w => ({
+            id: w.id,
+            amount: w.amount,
+            status: w.status === 'PENDING' ? 'Chờ xử lý' : w.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối',
+            statusRaw: w.status,
+            reason: w.reason || '',
+            date: w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN') : '',
+            user: w.userName || 'Không rõ',
+            email: w.userEmail || '',
+            bank: w.bankName || 'N/A',
+            account: w.accountNumber || 'N/A'
+          })));
+        }
+      })
+      .catch(err => console.error('Error withdrawals:', err));
   };
 
   const fetchUsers = () => {
@@ -1121,9 +1194,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
       });
   };
 
-  
-  const handleWithdrawalAction = (withdrawalId, approve) => {
-    const status = approve ? 'APPROVED' : 'REJECTED';
+  const handleWithdrawalAction = (id, status) => {
     let reason = null;
     if (status === 'REJECTED') {
       reason = window.prompt("Nhập lý do từ chối yêu cầu rút tiền này (bắt buộc):");
@@ -1133,13 +1204,59 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         return;
       }
     }
-    adminApi.processWithdrawal(withdrawalId, status, user?.id, reason)
+    adminApi.processWithdrawal(id, status, user?.id || 1, reason)
       .then(() => {
-        adminApi.getWithdrawals()
-          .then(data => setWithdrawals(data));
+        showToast(status === 'APPROVED' ? 'Đã duyệt yêu cầu rút tiền thành công!' : 'Đã từ chối yêu cầu rút tiền!', 'success');
+        setShowWithdrawalModal(false);
+        setSelectedWithdrawal(null);
         loadDashboardData();
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+      });
+  };
+
+  // --- DISPUTE HANDLERS ---
+  const [selectedDispute, setSelectedDispute] = useState(null);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeNote, setDisputeNote] = useState('');
+
+  const handleResolveDispute = (status) => {
+    if (!selectedDispute) return;
+    const adminId = user?.id || 1;
+    adminApi.resolveDispute(selectedDispute.id, status, disputeNote, adminId)
+      .then(res => {
+        if (res.success) {
+          showToast(res.message || 'Đã xử lý tranh chấp thành công.', 'success');
+          setShowDisputeModal(false);
+          setSelectedDispute(null);
+          setDisputeNote('');
+          loadDashboardData();
+        } else {
+          showToast(res.message || 'Lỗi xử lý tranh chấp.', 'error');
+        }
+      })
+      .catch(console.error);
+  };
+
+  // --- KYC HANDLERS ---
+  const [selectedKyc, setSelectedKyc] = useState(null);
+  const [showKycModal, setShowKycModal] = useState(false);
+
+  const handleModerateKyc = (approve) => {
+    if (!selectedKyc) return;
+    adminApi.moderateKycRequest(selectedKyc.id, approve, selectedKyc.userRole || 'FREELANCER', user?.id || 1)
+      .then(res => {
+        if (res.success) {
+          showToast(approve ? 'Đã duyệt yêu cầu KYC!' : 'Đã từ chối yêu cầu KYC!', approve ? 'success' : 'error');
+          setShowKycModal(false);
+          setSelectedKyc(null);
+          loadDashboardData();
+        } else {
+          showToast('Lỗi xử lý KYC: ' + res.message, 'error');
+        }
+      })
+      .catch(console.error);
   };
 
   
@@ -1584,8 +1701,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     border: 1px solid #e2e8f0;
                     border-radius: 16px;
                     position: absolute;
-                    width: 44rem;
-                    right: 0;
                     top: calc(100% + 10px);
                     overflow: hidden;
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -2632,7 +2747,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 {[
                   { id: 'home', icon: Home, label: 'Trang chủ' },
                   { id: 'dashboard_overview', icon: AlertTriangle, label: 'Tổng quan & Cảnh báo' },
-                  { id: 'dashboard_financials', icon: BadgeDollarSign, label: 'Biểu đồ & Tài chính' },
                   { id: 'dashboard_activity', icon: Activity, label: 'Nhật ký Hoạt động' }
                 ].map(item => (
                   <div 
@@ -2793,7 +2907,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <h1 className="font-display text-2xl font-extrabold text-primary flex items-center gap-3">
               {activeTab === 'home' && <><Home className="w-6 h-6 text-blue-600" /> Hệ thống Quản trị LancerPro</>}
               {activeTab === 'dashboard_overview' && <><AlertTriangle className="w-6 h-6 text-blue-600" /> Tổng quan & Cảnh báo</>}
-              {activeTab === 'dashboard_financials' && <><BadgeDollarSign className="w-6 h-6 text-blue-600" /> Biểu đồ & Tài chính</>}
               {activeTab === 'dashboard_activity' && <><Activity className="w-6 h-6 text-blue-600" /> Nhật ký Hoạt động</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
               {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
@@ -2805,7 +2918,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <p className="text-body-sm text-muted mt-1 ml-9">
               {activeTab === 'home' && 'Tổng quan dịch vụ và lối tắt truy cập nhanh vào các phân hệ nghiệp vụ.'}
               {activeTab === 'dashboard_overview' && 'Giám sát các chỉ số tổng quan, tranh chấp và công việc cần xử lý ngay.'}
-              {activeTab === 'dashboard_financials' && 'High-precision tracking of system registrations, escrow transaction distributions, and commissions.'}
               {activeTab === 'dashboard_activity' && 'Theo dõi các hoạt động mới nhất trên hệ thống theo thời gian thực.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
@@ -3068,142 +3180,122 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             <div className="animate-in fade-in duration-300">
 
               {activeTab === 'dashboard_overview' && (
-              <div className="grid grid-cols-1 gap-8 mb-8 animate-in slide-in-from-bottom-4 duration-500">
-                
-                <div className="space-y-8">
-                  {/* ALERTS SECTION */}
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-rose-500" />
-                      Công việc Giám sát & Xử lý
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                {/* Tranh chấp */}
-                <div className="bg-white p-5 rounded-xl border border-rose-100 shadow-sm border-l-[4px] border-l-rose-500 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
-                      <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <span className="bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold animate-pulse">
-                      XỬ LÝ NGAY
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeDisputes || 0}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Tranh chấp đang mở</p>
-                  </div>
-                </div>
-
-                {/* Yêu cầu rút tiền */}
-                <div className="bg-white p-5 rounded-xl border border-amber-100 shadow-sm border-l-[4px] border-l-amber-500 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                      <RefreshCw className="w-5 h-5" />
-                    </div>
-                    <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
-                      CHỜ DUYỆT
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingWithdrawals || 0}</p>
-                    <p className="text-[12px] font-semibold text-slate-500 mt-1">Yêu cầu rút tiền</p>
-                  </div>
-                </div>
-
-                  {/* Chờ duyệt KYC */}
-                  <div className="bg-white p-5 rounded-xl border border-blue-100 shadow-sm border-l-[4px] border-l-blue-500 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <UserCheck className="w-5 h-5" />
-                      </div>
-                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold truncate">
-                        KYC
-                      </span>
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingKyc || 0}</p>
-                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Profile chờ duyệt</p>
-                    </div>
-                  </div>
-
-                  {/* Task Kiểm duyệt (Staff/Manager) */}
-                  <div className="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm border-l-[4px] border-l-indigo-500 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <Settings className="w-5 h-5" />
-                      </div>
-                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold truncate">
-                        TASKS
-                      </span>
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.pendingVerificationTasks || 0}</p>
-                      <p className="text-[12px] font-semibold text-slate-500 mt-1">Task đang chờ xử lý</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-                  {/* FINANCIAL SECTION MOVED TO FINANCIALS TAB */}
-
-                    {/* Users & Projects */}
+              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 mb-8 max-w-6xl mx-auto w-full">
+                {/* ALERTS SECTION - ACTION CENTER */}
+                <div>
+                  <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-indigo-500" />
-                        Người dùng & Dự án
+                      <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                        <AlertTriangle className="w-6 h-6 text-rose-500" />
+                        Trung Tâm Xử Lý (Action Center)
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        {/* Users */}
-                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                              <Users className="w-5 h-5" />
-                            </div>
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                              <ArrowUpRight className="w-3 h-3" /> +{stats.usersGrowthPercent || 0}%
-                            </span>
-                          </div>
-                          <div className="mt-4">
-                            <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.totalUsers || 0}</p>
-                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng người dùng</p>
-                          </div>
-                        </div>
+                      <p className="text-sm text-slate-500 mt-1">Các tác vụ cần sự chú ý và xử lý ngay lập tức từ Ban Quản Trị.</p>
+                    </div>
+                    <span className="px-3 py-1 bg-rose-50 text-rose-600 font-bold text-xs rounded-full border border-rose-100 flex items-center gap-1.5 animate-pulse shadow-sm">
+                      <span className="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+                      {(stats.activeDisputes || 0) + (stats.pendingWithdrawals || 0) + (stats.pendingKyc || 0) + (stats.pendingVerificationTasks || 0)} Cần xử lý
+                    </span>
+                  </div>
 
-                        {/* Projects */}
-                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                              <CheckCircle2 className="w-5 h-5" />
-                            </div>
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                              <ArrowUpRight className="w-3 h-3" /> +{stats.projectsGrowthPercent || 0}%
-                            </span>
-                          </div>
-                          <div className="mt-4">
-                            <p className="text-2xl font-extrabold text-slate-800 font-mono">{stats.activeProjects || 0}</p>
-                            <p className="text-[12px] font-semibold text-slate-500 mt-1">Dự án In Progress</p>
-                          </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Tranh chấp */}
+                    <div 
+                      onClick={() => { setActiveTab('cms'); setActiveCmsTab('disputes'); }}
+                      className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-rose-300 transition-all duration-300 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                      <div className="flex justify-between items-start relative z-10">
+                        <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-inner group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                          <AlertTriangle className="w-6 h-6" />
                         </div>
+                        {stats.activeDisputes > 0 && (
+                          <span className="bg-rose-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm animate-bounce">
+                            MỨC ĐỘ CAO
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-6 relative z-10">
+                        <p className="text-4xl font-black text-slate-800 font-mono tracking-tight">{stats.activeDisputes || 0}</p>
+                        <p className="text-[13px] font-bold text-slate-500 mt-1 uppercase tracking-wide">Tranh chấp dự án</p>
+                      </div>
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-rose-600 font-semibold text-xs group-hover:text-rose-700">
+                        <span>Chuyển đến Tranh chấp</span>
+                        <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                      </div>
+                    </div>
 
-                        {/* Instant Revenue */}
-                        <div className="bg-gradient-to-br from-yellow-50 to-amber-100 p-5 rounded-xl border border-amber-200 shadow-sm col-span-1 sm:col-span-2">
-                          <div className="flex justify-between items-start">
-                            <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-inner">
-                              <Sparkles className="w-5 h-5" />
-                            </div>
-                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">Hôm nay</span>
-                          </div>
-                          <div className="mt-4">
-                            <p className="text-2xl font-extrabold text-amber-600 font-mono">
-                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
-                            </p>
-                            <p className="text-[12px] font-bold text-amber-700 mt-1 uppercase tracking-wide">Doanh thu tức thì</p>
-                          </div>
+                    {/* Yêu cầu rút tiền */}
+                    <div 
+                      onClick={() => setActiveTab('finance_history')}
+                      className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-amber-300 transition-all duration-300 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                      <div className="flex justify-between items-start relative z-10">
+                        <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                          <RefreshCw className="w-6 h-6" />
                         </div>
+                        {stats.pendingWithdrawals > 0 && (
+                          <span className="bg-amber-100 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm">
+                            CHỜ DUYỆT
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-6 relative z-10">
+                        <p className="text-4xl font-black text-slate-800 font-mono tracking-tight">{stats.pendingWithdrawals || 0}</p>
+                        <p className="text-[13px] font-bold text-slate-500 mt-1 uppercase tracking-wide">Yêu cầu rút tiền</p>
+                      </div>
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-amber-600 font-semibold text-xs group-hover:text-amber-700">
+                        <span>Kiểm tra giao dịch</span>
+                        <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                      </div>
+                    </div>
+
+                    {/* Chờ duyệt KYC */}
+                    <div 
+                      onClick={() => { setActiveTab('cms'); setActiveCmsTab('kyc'); }}
+                      className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                      <div className="flex justify-between items-start relative z-10">
+                        <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+                          <UserCheck className="w-6 h-6" />
+                        </div>
+                      </div>
+                      <div className="mt-6 relative z-10">
+                        <p className="text-4xl font-black text-slate-800 font-mono tracking-tight">{stats.pendingKyc || 0}</p>
+                        <p className="text-[13px] font-bold text-slate-500 mt-1 uppercase tracking-wide">Hồ sơ KYC</p>
+                      </div>
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-blue-600 font-semibold text-xs group-hover:text-blue-700">
+                        <span>Kiểm duyệt ngay</span>
+                        <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                      </div>
+                    </div>
+
+                    {/* Task Kiểm duyệt (Staff/Manager) */}
+                    <div 
+                      onClick={() => setActiveTab('departments')}
+                      className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-300 transition-all duration-300 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                      <div className="flex justify-between items-start relative z-10">
+                        <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+                          <Settings className="w-6 h-6" />
+                        </div>
+                      </div>
+                      <div className="mt-6 relative z-10">
+                        <p className="text-4xl font-black text-slate-800 font-mono tracking-tight">{stats.pendingVerificationTasks || 0}</p>
+                        <p className="text-[13px] font-bold text-slate-500 mt-1 uppercase tracking-wide">Task nội bộ</p>
+                      </div>
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-indigo-600 font-semibold text-xs group-hover:text-indigo-700">
+                        <span>Danh sách Tasks</span>
+                        <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
                       </div>
                     </div>
                   </div>
                 </div>
+
+
+              </div>
               )}
               {activeTab === 'dashboard_activity' && (
               <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto mb-8 w-full">
@@ -3231,8 +3323,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                           </div>
                         </div>
 
-                        <section className="filter-menu-container -left-4 w-[480px] origin-top-left" onClick={e => e.stopPropagation()}>
-                          <div className="grid grid-cols-2 gap-6 text-left">
+                        <section className="filter-menu-container -left-4 w-[280px] origin-top-left" onClick={e => e.stopPropagation()}>
+                          <div className="grid grid-cols-1 gap-6 text-left">
                             <div className="filter-item-list space-y-2">
                               <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Chức năng (Module)</span>
                               <div className="grid grid-cols-1 gap-1.5">
@@ -3260,36 +3352,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                 ))}
                               </div>
                             </div>
-                            <div className="filter-item-list space-y-2">
-                              <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block">Hành động (Action)</span>
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {[
-                                  { value: 'ALL', label: 'Tất cả hành động' },
-                                  { value: 'VERIFY_USER', label: '✅ Duyệt tài khoản' },
-                                  { value: 'CHANGE_STATUS', label: '🔄 Đổi trạng thái' },
-                                  { value: 'INVITE_USER', label: '📨 Mời người dùng' },
-                                  { value: 'UPDATE_FEE_RATE', label: '💰 Cập nhật phí' },
-                                  { value: 'UPDATE_PACKAGE_PRICES', label: '📦 Cập nhật gói' },
-                                  { value: 'UPDATE_PACKAGE_CONFIG', label: '⚙️ Cấu hình gói' },
 
-                                  { value: 'UPDATE_SEO', label: '🌐 Cập nhật SEO' },
-                                  { value: 'TASK_SIGNOFF', label: '📋 Phê duyệt Task' }
-                                ].map(act => (
-                                  <button
-                                    key={act.value}
-                                    onClick={() => setTimelineRoleFilter(act.value)}
-                                    className={`w-full px-2.5 py-1.5 rounded-xl text-left font-bold text-[12px] transition-all border flex items-center gap-2 ${
-                                      timelineRoleFilter === act.value
-                                        ? 'bg-blue-50/75 border-blue-500 text-blue-700 shadow-sm'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <span className={`w-2 h-2 rounded-full ${timelineRoleFilter === act.value ? 'bg-blue-500' : 'bg-slate-300'}`}></span>
-                                    {act.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
                           </div>
                         </section>
                       </div>
@@ -3340,356 +3403,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 </div>
               )}
 
-              {activeTab === 'dashboard_financials' && (
-              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Financials */}
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                      <BadgeDollarSign className="w-5 h-5 text-[#0f4c5c]" />
-                      Tổng quan Tài chính
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      {/* Doanh thu */}
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow col-span-1 sm:col-span-2">
-                        <div className="flex justify-between items-start">
-                          <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <BadgeDollarSign className="w-5 h-5" />
-                          </div>
-                          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-0.5">
-                            <ArrowUpRight className="w-3 h-3" /> +{stats.revenueGrowthPercent || 0}%
-                          </span>
-                        </div>
-                        <div className="mt-4">
-                          <p className="text-2xl font-extrabold text-slate-800 font-mono">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
-                          </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Doanh thu hệ thống (Commission/Fees)</p>
-                        </div>
-                      </div>
 
-                      {/* GMV */}
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mt-2">
-                          <p className="text-xl font-extrabold text-slate-800 font-mono">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalGmv || 0)}
-                          </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Tổng GMV</p>
-                        </div>
-                      </div>
-
-                      {/* Escrow */}
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mt-2">
-                          <p className="text-xl font-extrabold text-slate-800 font-mono">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.escrowBalance || 0)}
-                          </p>
-                          <p className="text-[12px] font-semibold text-slate-500 mt-1">Số dư Ví Escrow</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              {/* Sequence-style Cash Flow Chart */}
-              <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-[0_2px_20px_rgb(0,0,0,0.04)] col-span-full">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/><path d="M11 21v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"/><path d="M3 11h18"/><path d="M3 15h18"/></svg>
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-lg">Dòng tiền (Cash Flow)</h3>
-                  </div>
-                </div>
-
-                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-                  {/* Chart Area */}
-                  <div className="flex-1 h-[260px] relative">
-                    <svg className="w-full h-full" viewBox="0 0 700 240" preserveAspectRatio="none">
-                      {/* Very minimal Y-axis grid */}
-                      <line x1="40" y1="20" x2="680" y2="20" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4,4" />
-                      {/* Zero line */}
-                      <line x1="40" y1="120" x2="680" y2="120" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,4" />
-                      <line x1="40" y1="220" x2="680" y2="220" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4,4" />
-
-                      {/* Minimal Y-axis labels */}
-                      <text x="30" y="25" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">50M</text>
-                      <text x="30" y="124" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">0</text>
-                      <text x="30" y="225" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="end">30M</text>
-
-                      {/* X-axis labels */}
-                      <text x="90" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">18/10</text>
-                      <text x="250" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">25/10</text>
-                      <text x="410" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">02/11</text>
-                      <text x="570" y="235" fill="#94a3b8" fontSize="10" fontWeight="600" textAnchor="middle">09/11</text>
-                      {/* DYNAMIC DATA BARS */}
-                      {[
-                        { x: 70, in: 46, out: 20 },
-                        { x: 110, in: 66, out: 50 },
-                        { x: 150, in: 26, out: 40 },
-                        { x: 190, in: 36, out: 15 },
-                        { x: 230, in: 16, out: 25 },
-                        { x: 270, in: 76, out: 65 },
-                        { x: 310, in: 86, out: 35 },
-                        { x: 350, in: 56, out: 20 },
-                        { x: 390, in: 11, out: 15 },
-                        { x: 430, in: 41, out: 25 },
-                        { x: 470, in: 26, out: 10 },
-                        { x: 510, in: 31, out: 45 },
-                        { x: 550, in: 66, out: 55 },
-                        { x: 590, in: 21, out: 20 },
-                        { x: 630, in: 16, out: 12 },
-                        { x: 670, in: 11, out: 10 }
-                      ].map((data, i) => {
-                         const hasData = stats.totalRevenue > 0;
-                         const hIn = hasData ? data.in : 0;
-                         const hOut = hasData ? data.out : 0;
-                         
-                         return (
-                           <g key={i}>
-                             {/* Income Bar (Upper) */}
-                             {hIn > 0 && <rect x={data.x} y={124 - hIn} width="16" height={hIn} fill="#0f4c5c" rx="8" className="hover:opacity-80 transition-all duration-1000 cursor-pointer" />}
-                             {/* Expense Bar (Lower) */}
-                             {hOut > 0 && <rect x={data.x} y="124" width="16" height={hOut} fill="#22c55e" rx="8" className="hover:opacity-80 transition-all duration-1000 cursor-pointer" />}
-                           </g>
-                         );
-                      })}
-                    </svg>
-                  </div>
-
-                  {/* Summary Area */}
-                  <div className="w-full lg:w-72 flex flex-col justify-center gap-8 lg:border-l border-slate-100 lg:pl-10">
-                    {/* Total Revenue */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#0f4c5c] flex items-center justify-center text-white shadow-sm">
-                          <ArrowUpRight className="w-5 h-5" />
-                        </div>
-                        <span className="text-slate-600 font-semibold">Doanh thu tổng hợp</span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-slate-800 tracking-tight">
-                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
-                        </span>
-                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> {stats.revenueGrowthPercent || 0}%</span>
-                      </div>
-                    </div>
-                    
-                    {/* Instant Revenue */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#22c55e] flex items-center justify-center text-white shadow-sm">
-                          <Zap className="w-5 h-5" />
-                        </div>
-                        <span className="text-slate-600 font-semibold">Doanh thu tức thời</span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-slate-800 tracking-tight">
-                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.instantRevenue || 0)}
-                        </span>
-                        <span className="text-emerald-500 text-xs font-bold flex items-center bg-emerald-50 px-1.5 py-0.5 rounded"><ArrowUpRight className="w-3 h-3"/> Hôm nay</span>
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              )}
-
-              {activeTab === 'dashboard_overview' && (
-              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                        <Users className="w-5 h-5 text-blue-500" /> Biểu đồ Tăng Trưởng Tài Khoản Mới
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-1">So sánh hiệu suất đăng ký thực tế với chu kỳ trước</p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={compareMode} 
-                          onChange={e => setCompareMode(e.target.checked)}
-                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                        <span className="text-[12px] font-bold text-slate-500">So sánh chu kỳ trước</span>
-                      </label>
-
-                      <button className="text-[12px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border border-slate-200 bg-slate-50 px-2.5 py-1 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm hover:bg-white">
-                        <Download className="w-3.5 h-3.5" /> CSV
-                      </button>
-                    </div>
-                  </div>
-
-                  {}
-                  <div className="relative h-64 border border-slate-100 rounded-xl bg-slate-50/50 p-4">
-                    {}
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-slate-300 text-[10px] p-6 pl-12">
-                      <div className="border-b border-slate-200/50 w-full pb-1 text-right">1,200 users</div>
-                      <div className="border-b border-slate-200/50 w-full pb-1 text-right">800 users</div>
-                      <div className="border-b border-slate-200/50 w-full pb-1 text-right">400 users</div>
-                      <div className="w-full text-right">0</div>
-                    </div>
-
-                    <svg 
-                      className="w-full h-full relative z-10 cursor-crosshair" 
-                      viewBox="0 0 600 160"
-                      onMouseMove={handleMouseMove}
-                      onMouseLeave={() => setHoveredPoint(null)}
-                    >
-                      {}
-                      {compareMode && userGrowthTrend.length > 0 && (
-                        <polyline
-                          fill="none"
-                          stroke="#94A3B8"
-                          strokeWidth="2"
-                          strokeDasharray="4,4"
-                          points={getSvgCoordinates(userGrowthTrend, 'compareValue', chartWidth, 160, Math.max(...userGrowthTrend.map(d => Math.max(d.value || 0, d.compareValue || 0))))}
-                        />
-                      )}
-
-                      {}
-                      {userGrowthTrend.length > 0 && (
-                        <>
-                          {}
-                          <path
-                            d={`M 30,140 L ${getSvgCoordinates(userGrowthTrend, 'value', chartWidth, 160, Math.max(...userGrowthTrend.map(d => Math.max(d.value || 0, d.compareValue || 0))))} L ${((userGrowthTrend.length - 1) / (userGrowthTrend.length - 1)) * (chartWidth - 60) + 30},140 Z`}
-                            fill="url(#area-gradient)"
-                            opacity="0.12"
-                          />
-                          {}
-                          <polyline
-                            fill="none"
-                            stroke="#2563EB"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            points={getSvgCoordinates(userGrowthTrend, 'value', chartWidth, 160, Math.max(...userGrowthTrend.map(d => Math.max(d.value || 0, d.compareValue || 0))))}
-                          />
-                        </>
-                      )}
-
-                      {}
-                      {hoveredPoint && (
-                        <>
-                          <line 
-                            x1={hoveredPoint.x} 
-                            y1="10" 
-                            x2={hoveredPoint.x} 
-                            y2="140" 
-                            stroke="#3B82F6" 
-                            strokeWidth="1.5" 
-                            strokeDasharray="2,2" 
-                          />
-                          <circle 
-                            cx={hoveredPoint.x} 
-                            cy={160 - ((hoveredPoint.value / Math.max(...userGrowthTrend.map(d => d.value))) * 120) - 20} 
-                            r="6" 
-                            fill="#2563EB" 
-                            stroke="#FFFFFF" 
-                            strokeWidth="2" 
-                          />
-                        </>
-                      )}
-
-                      {}
-                      <defs>
-                        <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2563EB" />
-                          <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-
-                    {}
-                    {hoveredPoint && (
-                      <div 
-                        className="absolute bg-slate-900 text-white rounded-xl p-3 text-body-sm shadow-xl border border-slate-700 pointer-events-none z-20 flex flex-col gap-1"
-                        style={{
-                          left: `${(hoveredPoint.x / chartWidth) * 90}%`,
-                          top: '15px'
-                        }}
-                      >
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tháng {hoveredPoint.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-500" />
-                          <span className="font-extrabold font-mono text-lg">{hoveredPoint.value} users</span>
-                        </div>
-                        {compareMode && (
-                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800 text-[11px] text-slate-400">
-                            <span className="w-2 h-2 rounded-full bg-slate-500" />
-                            <span>Kỳ trước: <strong className="text-white font-mono">{hoveredPoint.compareValue}</strong></span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between text-muted font-bold text-[11px] mt-2 px-8">
-                    {userGrowthTrend.map((pt, i) => (
-                      <span key={i}>Tháng {pt.label}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              )}
-
-              {activeTab === 'dashboard_financials' && (
-              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                        <BadgeDollarSign className="w-5 h-5 text-emerald-500" /> Doanh Thu Theo Quý
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-1">Phí thu được tích hợp từ DB</p>
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                      Tối ưu Escrow
-                    </span>
-                  </div>
-
-                  <div className="h-64 flex items-end justify-around gap-6 pt-6 relative border border-slate-100 rounded-xl bg-slate-50/50 p-4">
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-slate-300 text-[10px] p-6 pl-10">
-                      <div className="border-b border-slate-200/50 w-full pb-1" />
-                      <div className="border-b border-slate-200/50 w-full pb-1" />
-                      <div className="border-b border-slate-200/50 w-full pb-1" />
-                      <div className="w-full" />
-                    </div>
-
-                    {revenueTrend.map((pt, index) => {
-                      const maxVal = Math.max(...revenueTrend.map(d => d.value || 1));
-                      const percentHeight = (pt.value / maxVal) * 80;
-                      return (
-                        <div key={index} className="flex flex-col justify-end items-center gap-3 relative z-10 w-full group h-full">
-                          <div 
-                            className="bg-blue-100 w-10 hover:bg-blue-600 rounded-t-lg transition-all duration-300 shadow-sm cursor-pointer relative"
-                            style={{ height: `${percentHeight}%` }}
-                          >
-                            {}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-lg whitespace-nowrap">
-                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(pt.value)}
-                            </div>
-                          </div>
-                          <span className="text-[11px] font-extrabold text-slate-500">{pt.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-body-sm">
-                    <span className="text-muted">Doanh thu cao nhất:</span>
-                    <span className="font-extrabold text-emerald-600">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.max(...revenueTrend.map(d => d.value || 0)))}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              )}
 
               {activeTab === 'dashboard_activity' && (
               <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full">
@@ -3699,17 +3413,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)
                   </h3>
                   <div className="flex items-center gap-4">
-                    <select 
-                      value={auditLogFilter}
-                      onChange={(e) => setAuditLogFilter(e.target.value)}
-                      className="text-body-sm font-medium border border-slate-200 text-slate-600 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 bg-white hover:bg-slate-50 transition-colors"
-                    >
-                      <option value="ALL">Tất cả chức năng</option>
-                      <option value="USER_MANAGEMENT">Tài khoản & Người dùng</option>
-                      <option value="PROJECTS">Kiểm duyệt Dự án</option>
-                      <option value="FINANCE">Quản lý Tài chính</option>
-                      <option value="SYSTEM">Hệ thống</option>
-                    </select>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -3725,7 +3428,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {auditLogs
-                        .filter(log => auditLogFilter === 'ALL' || log.module === auditLogFilter)
                         .slice(0, 15).map((log) => (
                         <tr key={log.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
                           <td className="p-4 pl-6 text-slate-500 font-medium">
@@ -4596,6 +4298,53 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       }
 
                       
+                      if (activeCmsTab === 'disputes') {
+                        return (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-slate-100 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider">
+                                  <th className="p-3 pl-6">ID</th>
+                                  <th className="p-3">Dự án</th>
+                                  <th className="p-3">Khách hàng</th>
+                                  <th className="p-3">Freelancer</th>
+                                  <th className="p-3 text-right">Số tiền</th>
+                                  <th className="p-3 text-center">Trạng thái</th>
+                                  <th className="p-3 text-center pr-6">Thao tác</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {data.map((row, i) => (
+                                  <tr key={i} className="hover:bg-slate-50 transition-colors text-body-sm">
+                                    <td className="p-3 pl-6 font-semibold text-slate-700">#{row.id}</td>
+                                    <td className="p-3 truncate max-w-[200px] text-slate-800 font-medium" title={row.projectTitle}>{row.projectTitle}</td>
+                                    <td className="p-3 text-slate-600">{row.clientName}</td>
+                                    <td className="p-3 text-slate-600">{row.freelancerName}</td>
+                                    <td className="p-3 font-bold text-rose-600 text-right">{row.amount?.toLocaleString('vi-VN')} đ</td>
+                                    <td className="p-3 text-center">
+                                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                                        row.status === 'OPEN' || row.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                                        'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                      }`}>
+                                        {row.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center pr-6">
+                                      <button 
+                                        onClick={() => { setSelectedDispute(row); setShowDisputeModal(true); }}
+                                        className="px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-[11px] font-bold rounded-lg transition-all shadow-sm"
+                                      >
+                                        Xử lý
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      }
+
                       const headers = Object.keys(data[0]);
                       return (
                         <div className="overflow-x-auto">
@@ -4834,9 +4583,36 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                       {filter}
                     </button>
                   ))}
-                  <button className="px-4 py-1.5 rounded-full text-xs font-medium text-gray-300 bg-transparent border border-gray-600 hover:border-gray-400 flex items-center gap-1">
-                    Tùy chỉnh <ChevronDown className="w-3 h-3" />
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowPaymentTimeDropdown(!showPaymentTimeDropdown)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
+                        ['24 giờ', '7 ngày', '30 ngày', '1 năm', 'Tùy chỉnh', 'Tất cả'].includes(paymentTimeFilter)
+                          ? 'bg-[#00b86b] text-white border border-[#00b86b]'
+                          : 'bg-transparent text-gray-300 border border-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      {['24 giờ', '7 ngày', '30 ngày', '1 năm', 'Tùy chỉnh', 'Tất cả'].includes(paymentTimeFilter) ? paymentTimeFilter : 'Tùy chỉnh'} <ChevronDown className="w-3 h-3" />
+                    </button>
+                    {showPaymentTimeDropdown && (
+                      <div className="absolute top-full left-0 mt-2 w-32 bg-[#2a2a2a] border border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden py-1">
+                        {['24 giờ', '7 ngày', '30 ngày', '1 năm', 'Tùy chỉnh', 'Tất cả'].map(opt => (
+                          <button
+                            key={opt}
+                            onClick={() => {
+                              setPaymentTimeFilter(opt);
+                              setShowPaymentTimeDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors ${
+                              paymentTimeFilter === opt ? 'bg-[#00b86b]/10 text-[#00b86b]' : 'text-gray-300 hover:bg-[#3a3a3a]'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Top Stats Cards */}
@@ -4987,6 +4763,87 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
           {activeTab === 'finance_history' && (
             <div className="space-y-8 animate-in fade-in duration-300">
+
+              {/* --- BẢNG YÊU CẦU RÚT TIỀN --- */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                  <div>
+                    <h3 className="font-bold text-primary text-[17px]">Yêu cầu Rút tiền</h3>
+                    <p className="text-[12px] text-slate-500 mt-1">Danh sách yêu cầu rút tiền từ Freelancer chờ phê duyệt.</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      adminApi.getWithdrawals().then(data => {
+                        if (Array.isArray(data)) {
+                          setWithdrawals(data.map(w => ({
+                            id: w.id, amount: w.amount,
+                            status: w.status === 'PENDING' ? 'Chờ xử lý' : w.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối',
+                            statusRaw: w.status, reason: w.reason || '',
+                            date: w.createdAt ? new Date(w.createdAt).toLocaleString('vi-VN') : '',
+                            user: w.userName || 'Không rõ', email: w.userEmail || '',
+                            bank: w.bankName || 'N/A', account: w.accountNumber || 'N/A'
+                          })));
+                        }
+                      });
+                    }}
+                    className="p-2.5 text-slate-400 hover:text-slate-655 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all duration-200 bg-white"
+                    title="Tải lại yêu cầu rút tiền"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
+                        <th className="p-4 pl-6">ID</th>
+                        <th className="p-4">Ngày yêu cầu</th>
+                        <th className="p-4">Thành viên</th>
+                        <th className="p-4 text-right">Số tiền (VND)</th>
+                        <th className="p-4 text-center">Trạng thái</th>
+                        <th className="p-4 text-center pr-6">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {withdrawals.length > 0 ? withdrawals.map(w => (
+                        <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-4 pl-6 text-sm font-semibold text-slate-700">#{w.id}</td>
+                          <td className="p-4 text-sm text-slate-600">{w.date}</td>
+                          <td className="p-4">
+                            <p className="text-sm font-bold text-slate-800">{w.user}</p>
+                            <p className="text-xs text-slate-400">{w.email}</p>
+                          </td>
+                          <td className="p-4 text-sm font-extrabold text-rose-600 text-right">{w.amount.toLocaleString('vi-VN')}</td>
+                          <td className="p-4 text-center">
+                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                              w.statusRaw === 'PENDING' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                              w.statusRaw === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                              'bg-rose-50 text-rose-600 border border-rose-100'
+                            }`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center pr-6">
+                            <button
+                              onClick={() => { setSelectedWithdrawal(w); setShowWithdrawalModal(true); }}
+                              className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 text-xs font-bold rounded-lg transition-all shadow-sm"
+                            >
+                              Xử lý
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan="6" className="p-8 text-center text-slate-500 italic text-sm">
+                            Không có yêu cầu rút tiền nào đang chờ.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <div>
@@ -6589,6 +6446,189 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
         </div>
       </div>
 
+
+      {/* WITHDRAWAL MODAL */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showWithdrawalModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden transition-all duration-300 ${showWithdrawalModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 className="font-bold text-slate-800 text-lg">Xử lý Yêu cầu Rút tiền</h3>
+            <button onClick={() => { setShowWithdrawalModal(false); setSelectedWithdrawal(null); }} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-5">
+            {selectedWithdrawal && (
+              <>
+                <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-[11px] font-bold text-blue-500 uppercase tracking-wider">Số tiền yêu cầu</p>
+                    <p className="text-2xl font-extrabold text-blue-700 mt-1">{selectedWithdrawal.amount.toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Trạng thái</p>
+                    <p className={`text-sm font-bold mt-1 ${
+                      selectedWithdrawal.statusRaw === 'PENDING' ? 'text-amber-600' :
+                      selectedWithdrawal.statusRaw === 'APPROVED' ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>{selectedWithdrawal.status}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  <h4 className="font-bold text-slate-700 text-sm border-b border-slate-200 pb-2">Thông tin thụ hưởng</h4>
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <p className="text-[11px] text-slate-500">Tên thành viên</p>
+                      <p className="text-sm font-bold text-slate-800">{selectedWithdrawal.user}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-500">Ngân hàng</p>
+                      <p className="text-sm font-bold text-slate-800">{selectedWithdrawal.bank}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[11px] text-slate-500">Số tài khoản</p>
+                      <p className="text-sm font-mono font-bold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200 mt-1 inline-block">{selectedWithdrawal.account}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedWithdrawal.statusRaw === 'PENDING' && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
+                    <p>Vui lòng chuyển khoản số tiền <strong>{selectedWithdrawal.amount.toLocaleString('vi-VN')} ₫</strong> đến số tài khoản trên trước khi nhấn Duyệt yêu cầu.</p>
+                  </div>
+                )}
+                
+                {selectedWithdrawal.statusRaw === 'REJECTED' && selectedWithdrawal.reason && (
+                  <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-800">
+                    <span className="font-bold">Lý do từ chối:</span> {selectedWithdrawal.reason}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
+            <button 
+              onClick={() => { setShowWithdrawalModal(false); setSelectedWithdrawal(null); }}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200 transition-colors"
+            >
+              Đóng
+            </button>
+            {selectedWithdrawal?.statusRaw === 'PENDING' && (
+              <>
+                <button 
+                  onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'REJECTED')}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
+                >
+                  Từ chối
+                </button>
+                <button 
+                  onClick={() => handleWithdrawalAction(selectedWithdrawal.id, 'APPROVED')}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Đã chuyển khoản & Duyệt
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* DISPUTE MODAL */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${showDisputeModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <div className={`bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden transition-all duration-300 ${showDisputeModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}>
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              Xử lý Tranh chấp
+            </h3>
+            <button onClick={() => { setShowDisputeModal(false); setSelectedDispute(null); setDisputeNote(''); }} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-5">
+            {selectedDispute && (
+              <>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-rose-600 uppercase">Ưu tiên: {selectedDispute.priority || 'MEDIUM'}</span>
+                    <h3 className="text-body-lg font-bold text-slate-800">{selectedDispute.projectTitle}</h3>
+                  </div>
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                    selectedDispute.status === 'OPEN' || selectedDispute.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                    'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                  }`}>
+                    {selectedDispute.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Khách hàng</p>
+                    <p className="font-bold text-slate-800 text-sm">{selectedDispute.clientName}</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Freelancer</p>
+                    <p className="font-bold text-slate-800 text-sm">{selectedDispute.freelancerName}</p>
+                  </div>
+                </div>
+
+                <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-xl flex justify-between items-center">
+                  <span className="text-sm font-bold text-slate-700">Giá trị tranh chấp:</span>
+                  <span className="text-lg text-rose-600 font-extrabold">{selectedDispute.amount?.toLocaleString('vi-VN')} VND</span>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-slate-700">Lý do tranh chấp:</p>
+                  <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 border border-slate-100">
+                    {selectedDispute.reason || 'Không có mô tả chi tiết'}
+                  </div>
+                </div>
+
+                {(selectedDispute.status === 'OPEN' || selectedDispute.status === 'PENDING') && (
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <p className="text-sm font-bold text-slate-700">Ghi chú xử lý (Bắt buộc):</p>
+                    <textarea 
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+                      placeholder="Nhập lý do hoặc quyết định phân xử..."
+                      value={disputeNote}
+                      onChange={e => setDisputeNote(e.target.value)}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
+            <button 
+              onClick={() => { setShowDisputeModal(false); setSelectedDispute(null); setDisputeNote(''); }}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200 transition-colors"
+            >
+              Đóng
+            </button>
+            {(selectedDispute?.status === 'OPEN' || selectedDispute?.status === 'PENDING') && (
+              <>
+                <button 
+                  onClick={() => handleResolveDispute('RESOLVED_CLIENT_FAVOR')}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all active:scale-95"
+                >
+                  Xử lý cho Khách hàng
+                </button>
+                <button 
+                  onClick={() => handleResolveDispute('RESOLVED_FREELANCER_FAVOR')}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+                >
+                  Xử lý cho Freelancer
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* TRANSACTION DETAILS MODAL */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${selectedTxnDetails ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>

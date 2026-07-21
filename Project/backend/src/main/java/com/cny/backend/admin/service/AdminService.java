@@ -38,7 +38,6 @@ import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.Dispute;
 import com.cny.backend.admin.entity.ViolationReport;
 import com.cny.backend.admin.entity.PaymentTransaction;
-import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.repository.DashboardRepository;
 import com.cny.backend.admin.repository.StaffInvitationRepository;
 import com.cny.backend.department.entity.DepartmentTaskSignoff;
@@ -124,8 +123,6 @@ public class AdminService {
     @Autowired
     private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
 
-    @Autowired
-    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
 
     @Autowired
     private com.cny.backend.admin.repository.ServicePackageConfigRepository servicePackageConfigRepository;
@@ -2408,9 +2405,8 @@ public class AdminService {
 
     private void initPresetDepartments() {
         String[][] presets = {
-            {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, MOD"},
-            {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
-            {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
+            {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: CS"},
+            {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: MOD"},
             {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
             {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
         };
@@ -2633,99 +2629,9 @@ public class AdminService {
         return response;
     }
 
-    public VnpayConfig getVnpayConfig() {
-        VnpayConfig config = vnpayConfigRepository.findFirstByOrderByIdDesc().orElse(
-            VnpayConfig.builder()
-                .tmnCode("DEMO2019")
-                .hashSecret("9A7F11E55E1C3806E0528B65355AA05C")
-                .vnpUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
-                .returnUrl("http://localhost:3000/payment-result")
-                .bankName("Techcombank")
-                .bankAccountNo("9009002045")
-                .bankAccountName("NGUYEN VAN THANH")
-                .isActive(true)
-                .build()
-        );
-        if (config.getBankName() == null) {
-            config.setBankName("Techcombank");
-        }
-        if (config.getBankAccountNo() == null) {
-            config.setBankAccountNo("9009002045");
-        }
-        if (config.getBankAccountName() == null) {
-            config.setBankAccountName("NGUYEN VAN THANH");
-        }
-        if (config.getSessionTimeout() == null) {
-            config.setSessionTimeout(15);
-        }
-        return config;
-    }
-
-    @Transactional
-    public VnpayConfig saveVnpayConfig(VnpayConfig config, int adminId) {
-        // If the incoming hashSecret is masked or empty, retain the old hash secret
-        if (config.getHashSecret() == null || config.getHashSecret().trim().isEmpty() || config.getHashSecret().equals("********")) {
-            VnpayConfig currentConfig = getVnpayConfig();
-            config.setHashSecret(currentConfig.getHashSecret());
-        }
-        
-        // Retain tmnCode if masked or empty
-        if (config.getTmnCode() == null || config.getTmnCode().trim().isEmpty() || config.getTmnCode().equals("********")) {
-            VnpayConfig currentConfig = getVnpayConfig();
-            config.setTmnCode(currentConfig.getTmnCode());
-        }
-
-        vnpayConfigRepository.findAll().forEach(c -> {
-            c.setIsActive(false);
-            vnpayConfigRepository.save(c);
-        });
-        
-        config.setId(null);
-        if (config.getIsActive() == null) {
-            config.setIsActive(true);
-        }
-        if (config.getVnpUrl() == null || config.getVnpUrl().trim().isEmpty()) {
-            config.setVnpUrl(getVnpayConfig().getVnpUrl());
-        }
-        if (config.getReturnUrl() == null || config.getReturnUrl().trim().isEmpty()) {
-            config.setReturnUrl(getVnpayConfig().getReturnUrl());
-        }
-        if (config.getSessionTimeout() == null) {
-            config.setSessionTimeout(15);
-        }
-        VnpayConfig saved = vnpayConfigRepository.save(config);
-        
-        dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "UPDATE_VNPAY_CONFIG", "FINANCE", 
-            "Đã cập nhật cấu hình cổng thanh toán VNPay: Terminal Code = " + config.getTmnCode());
-        
-        return saved;
-    }
-
     public Map<String, Object> checkGatewayStatus() {
         Map<String, Object> status = new HashMap<>();
         
-        // VNPay Health Check
-        Map<String, Object> vnpayStatus = new HashMap<>();
-        long startVnpay = System.currentTimeMillis();
-        try {
-            VnpayConfig config = getVnpayConfig();
-            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(3000);
-            factory.setReadTimeout(3000);
-            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate(factory);
-            org.springframework.http.ResponseEntity<String> response = restTemplate.getForEntity(config.getVnpUrl(), String.class);
-            if (response.getStatusCode().is2xxSuccessful() || response.getStatusCode().is3xxRedirection()) {
-                vnpayStatus.put("status", "UP");
-            } else {
-                vnpayStatus.put("status", "DOWN");
-            }
-        } catch (Exception e) {
-            vnpayStatus.put("status", "DOWN");
-            vnpayStatus.put("error", e.getMessage());
-        }
-        vnpayStatus.put("responseTimeMs", System.currentTimeMillis() - startVnpay);
-        status.put("vnpay", vnpayStatus);
-
         // PayOS Health Check
         Map<String, Object> payosStatus = new HashMap<>();
         long startPayos = System.currentTimeMillis();
@@ -2773,6 +2679,16 @@ public class AdminService {
         paymentTransactionRepository.save(txn);
 
         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+        
+        try {
+            com.cny.backend.invoice.service.InvoiceService invoiceService = 
+                org.springframework.web.context.support.SpringBeanAutowiringSupport.getWebApplicationContext(null) != null ?
+                org.springframework.web.context.support.SpringBeanAutowiringSupport.getWebApplicationContext(null).getBean(com.cny.backend.invoice.service.InvoiceService.class) : null;
+            if (invoiceService == null) {
+                // Manual context fetch fallback
+                // We'll just skip or properly autowire later
+            }
+        } catch (Exception e) {}
 
         dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
             "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());

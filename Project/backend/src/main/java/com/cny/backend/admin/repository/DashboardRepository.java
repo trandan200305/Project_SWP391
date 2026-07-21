@@ -183,7 +183,8 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     @Query(value = "INSERT INTO admin_audit_logs (admin_id, source_email, action, module, description, created_at) VALUES (:adminId, :sourceEmail, :action, :module, :description, GETDATE())", nativeQuery = true)
     void logAudit(@Param("adminId") int adminId, @Param("sourceEmail") String sourceEmail, @Param("action") String action, @Param("module") String module, @Param("description") String description);
 
-    @Query(value = "SELECT l.log_id as id, l.action as status, l.action as action, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source, " +
+    @Query(value = "SELECT * FROM ( " +
+        "SELECT l.log_id as id, l.action as status, l.action as action, l.module, l.description as detail, l.created_at as timestamp, COALESCE(l.source_email, a.email) as source, " +
         "CASE " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM admins) OR a.email IS NOT NULL THEN 'ADMIN' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM managers) THEN 'MANAGER' " +
@@ -191,7 +192,36 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM employers) THEN 'EMPLOYER' " +
         "WHEN COALESCE(l.source_email, a.email) IN (SELECT email FROM freelancers) THEN 'FREELANCER' " +
         "ELSE 'SYSTEM' END as role " +
-        "FROM admin_audit_logs l LEFT JOIN admins a ON l.admin_id = a.admin_id ORDER BY l.created_at DESC", nativeQuery = true)
+        "FROM admin_audit_logs l LEFT JOIN admins a ON l.admin_id = a.admin_id " +
+        "UNION ALL " +
+        "SELECT (h.id + 1000000) as id, 'LOGIN' as status, 'LOGIN' as action, 'USER_MANAGEMENT' as module, " +
+        "CONCAT(N'Đăng nhập vào hệ thống (IP: ', COALESCE(h.ip_address, 'N/A'), ')') as detail, " +
+        "h.login_at as timestamp, " +
+        "COALESCE(f.email, e.email, a.email, m.email, s.email, 'Unknown') as source, " +
+        "CASE " +
+        "WHEN h.admin_id IS NOT NULL THEN 'ADMIN' " +
+        "WHEN h.manager_id IS NOT NULL THEN 'MANAGER' " +
+        "WHEN h.staff_id IS NOT NULL THEN 'STAFF' " +
+        "WHEN h.employer_id IS NOT NULL THEN 'EMPLOYER' " +
+        "WHEN h.freelancer_id IS NOT NULL THEN 'FREELANCER' " +
+        "END as role " +
+        "FROM login_history h " +
+        "LEFT JOIN freelancers f ON h.freelancer_id = f.freelancer_id " +
+        "LEFT JOIN employers e ON h.employer_id = e.employer_id " +
+        "LEFT JOIN admins a ON h.admin_id = a.admin_id " +
+        "LEFT JOIN managers m ON h.manager_id = m.manager_id " +
+        "LEFT JOIN staff s ON h.staff_id = s.staff_id " +
+        "UNION ALL " +
+        "SELECT (f.freelancer_id + 2000000) as id, 'REGISTER' as status, 'REGISTER' as action, 'USER_MANAGEMENT' as module, " +
+        "N'Đăng ký tài khoản Freelancer' as detail, " +
+        "f.created_at as timestamp, f.email as source, 'FREELANCER' as role " +
+        "FROM freelancers f " +
+        "UNION ALL " +
+        "SELECT (e.employer_id + 3000000) as id, 'REGISTER' as status, 'REGISTER' as action, 'USER_MANAGEMENT' as module, " +
+        "N'Đăng ký tài khoản Employer' as detail, " +
+        "e.created_at as timestamp, e.email as source, 'EMPLOYER' as role " +
+        "FROM employers e " +
+        ") AS combined_logs ORDER BY timestamp DESC", nativeQuery = true)
     List<AuditLogProjection> getAuditLogs();
 
     
