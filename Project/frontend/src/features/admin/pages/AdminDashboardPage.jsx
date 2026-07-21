@@ -3405,63 +3405,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
 
 
-              {activeTab === 'dashboard_activity' && (
-              <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto w-full">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                  <h3 className="font-bold text-primary text-body-md flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nhật Ký Hoạt Động Hệ Thống Gần Nhất (Audit)
-                  </h3>
-                  <div className="flex items-center gap-4">
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
-                        <th className="p-4 pl-6">Thời gian</th>
-                        <th className="p-4">Actor</th>
-                        <th className="p-4">Nghiệp vụ chi tiết</th>
-                        <th className="p-4">Trạng thái</th>
-                        <th className="p-4 text-center">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {auditLogs
-                        .slice(0, 15).map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors text-body-sm">
-                          <td className="p-4 pl-6 text-slate-500 font-medium">
-                            {new Date(log.timestamp).toLocaleString('vi-VN', {
-                                day: '2-digit', month: '2-digit', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit'
-                            })}
-                          </td>
-                          <td className="p-4 font-bold text-primary">{log.source}</td>
-                          <td className="p-4 text-slate-600 max-w-[350px] break-words whitespace-pre-wrap leading-relaxed">{log.detail}</td>
-                          <td className="p-4">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                              log.status === 'Approved' || log.status === 'Verified' ? 'bg-emerald-50 text-emerald-700' :
-                              log.status === 'Critical' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
-                              {log.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-center">
-                            <button 
-                              onClick={() => setSelectedActivity(log)}
-                              className="text-slate-400 hover:text-blue-600 rounded-lg p-1.5 hover:bg-slate-100 transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              </div>
-              )}
+
             </div>
           )}
 

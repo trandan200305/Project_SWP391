@@ -230,7 +230,6 @@ public class PayOSService {
                         com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
                     });
                 }
-                }
 
                 if (txn.getProjectId() != null) {
                     projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
@@ -297,7 +296,6 @@ public class PayOSService {
                         employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
                             com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
                         });
-                    }
                     }
 
                     if (txn.getProjectId() != null) {

@@ -145,6 +145,8 @@ public class AdminService {
     @Autowired
     private com.cny.backend.notification.repository.SystemNotificationRepository systemNotificationRepository;
 
+    @Autowired
+    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
@@ -2680,15 +2682,7 @@ public class AdminService {
 
         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
         
-        try {
-            com.cny.backend.invoice.service.InvoiceService invoiceService = 
-                org.springframework.web.context.support.SpringBeanAutowiringSupport.getWebApplicationContext(null) != null ?
-                org.springframework.web.context.support.SpringBeanAutowiringSupport.getWebApplicationContext(null).getBean(com.cny.backend.invoice.service.InvoiceService.class) : null;
-            if (invoiceService == null) {
-                // Manual context fetch fallback
-                // We'll just skip or properly autowire later
-            }
-        } catch (Exception e) {}
+
 
         dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
             "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());
@@ -2696,6 +2690,12 @@ public class AdminService {
         result.put("success", true);
         result.put("message", "Duyệt giao dịch và kích hoạt dự án thành công.");
         return result;
+    }
+
+    public com.cny.backend.admin.entity.VnpayConfig getVnpayConfig() {
+        return vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc()
+            .orElseGet(() -> vnpayConfigRepository.findFirstByOrderByIdDesc()
+                .orElseThrow(() -> new RuntimeException("Cấu hình VNPay chưa được thiết lập")));
     }
 
     public List<com.cny.backend.admin.dto.PendingGigDto> getPendingGigs() {
