@@ -633,7 +633,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                 <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
                                 <span className="text-sm font-semibold">Đang tải danh sách dự án...</span>
                             </div>
-                        ) : projects.length === 0 ? (
+                        ) : projects.length === 0 && statusFilter === 'ALL' && !searchQuery ? (
                             <div className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50/50">
                                 <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
                                     <Briefcase className="w-6 h-6" />
