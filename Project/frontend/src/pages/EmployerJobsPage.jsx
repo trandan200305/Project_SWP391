@@ -58,7 +58,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
     
-    const [activeTab, setActiveTab] = useState('company'); 
+    const [activeTab, setActiveTab] = useState('projects'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
