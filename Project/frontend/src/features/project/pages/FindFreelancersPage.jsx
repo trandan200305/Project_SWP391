@@ -60,7 +60,8 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
     setIsLoading(true);
     try {
       let url = 'http://localhost:8080/api/freelancers?';
-      if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+      const cleanKeyword = (keyword || '').trim();
+      if (cleanKeyword) url += `&keyword=${encodeURIComponent(cleanKeyword)}`;
       if (minRate) url += `&minRate=${minRate}`;
       if (maxRate) url += `&maxRate=${maxRate}`;
       if (minRating) url += `&minRating=${minRating}`;
