@@ -304,6 +304,19 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         } catch (err) {
             console.error("Error fetching contract details:", err);
         }
+
+        // Hiển thị thông báo rõ ràng nếu dự án chưa bắt đầu (chưa có Freelancer nhận việc)
+        if (proj.status === 'PUBLISHED' || proj.status === 'PENDING' || proj.status === 'DRAFT' || proj.status === 'PENDING_PAYMENT') {
+            const statusLabel = proj.status === 'PUBLISHED' ? 'Đang tuyển' : proj.status === 'PENDING' ? 'Chờ duyệt' : proj.status === 'PENDING_PAYMENT' ? 'Chờ thanh toán' : 'Bản nháp';
+            const confirmViewDetails = window.confirm(
+                `Dự án này chưa được giao cho Freelancer (Trạng thái: ${statusLabel}), nên chưa có tiến độ công việc để hiển thị.\n\nBạn có muốn chuyển sang trang xem Chi tiết công việc tuyển dụng của dự án không?`
+            );
+            if (!confirmViewDetails) return;
+        } else {
+            alert("Không tìm thấy thông tin hợp đồng / tiến độ công việc cho dự án này trên hệ thống.");
+            return;
+        }
+
         const mappedJob = {
             ...proj,
             id: proj.projectId,
