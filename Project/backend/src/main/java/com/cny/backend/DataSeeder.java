@@ -486,47 +486,12 @@ public class DataSeeder implements CommandLineRunner {
                 Integer maBankId = maBankIds.get(0);
                 Integer qhBankId = qhBankIds.get(0);
 
-                // 2. Seed withdrawal_requests if empty
-                Integer withdrawalCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM withdrawal_requests", Integer.class);
-                if (withdrawalCount != null && withdrawalCount == 0) {
-                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 12000000, ?, 'PENDING', GETDATE())",
-                            maFreelancerId, maBankId);
-                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 5000000, ?, 'PENDING', GETDATE())",
-                            qhFreelancerId, qhBankId);
-                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 3500000, ?, 'APPROVED', DATEADD(day, -3, GETDATE()))",
-                            maFreelancerId, maBankId);
-                    jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 1500000, ?, 'REJECTED', DATEADD(day, -5, GETDATE()))",
-                            qhFreelancerId, qhBankId);
-                }
-
-                // Also automatically seed withdrawal requests for user 'tdan9704@gmail.com' if they exist in the DB
-                List<Integer> customIds = jdbcTemplate.queryForList("SELECT freelancer_id FROM freelancers WHERE email = 'tdan9704@gmail.com'", Integer.class);
-                if (!customIds.isEmpty()) {
-                    Integer customId = customIds.get(0);
-                    List<Integer> customBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, customId);
-                    if (customBankIds.isEmpty()) {
-                        jdbcTemplate.update("INSERT INTO bank_accounts (freelancer_id, bank_name, account_number, account_holder, is_default) VALUES (?, ?, ?, ?, 1)",
-                                customId, "MB Bank", "9999999999", "TRAN DAN");
-                        customBankIds = jdbcTemplate.queryForList("SELECT bank_account_id FROM bank_accounts WHERE freelancer_id = ?", Integer.class, customId);
-                    }
-                    Integer customBankId = customBankIds.get(0);
-
-                    // Check if they already have withdrawal requests, if not seed some
-                    Integer customWdCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM withdrawal_requests WHERE freelancer_id = ?", Integer.class, customId);
-                    if (customWdCount != null && customWdCount == 0) {
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 8000000, ?, 'PENDING', GETDATE())",
-                                customId, customBankId);
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 15000000, ?, 'APPROVED', DATEADD(day, -2, GETDATE()))",
-                                customId, customBankId);
-                        jdbcTemplate.update("INSERT INTO withdrawal_requests (freelancer_id, amount, bank_account_id, status, created_at) VALUES (?, 2000000, ?, 'REJECTED', DATEADD(day, -4, GETDATE()))",
-                                customId, customBankId);
-                    }
-                }
+                // 2. Withdrawal requests are managed purely by actual users and real system transactions. No dummy seeding.
 
                 // 3. Seed admin_audit_logs if empty
                 Integer auditLogCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM admin_audit_logs", Integer.class);
                 if (auditLogCount != null && auditLogCount == 0) {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer Minh Anh', GETDATE())",
+                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer', GETDATE())",
                             adminId);
                     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
                             adminId);
@@ -536,24 +501,7 @@ public class DataSeeder implements CommandLineRunner {
                 Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
                 if (ticketCount != null && ticketCount == 0) {
                     jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
-                            "VALUES (?, NULL, N'Hỗ trợ rút tiền', N'Yêu cầu rút tiền chưa nhận được', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
-                    Integer tId1 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
-
-                    jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                            "VALUES (?, ?, NULL, NULL, N'Chào Admin, tôi đã gửi yêu cầu rút tiền từ hôm qua nhưng chưa thấy tài khoản nhận được tiền. Nhờ admin kiểm tra giúp tôi với ạ.', 0, DATEADD(hour, -2, GETDATE()))", tId1, maFreelancerId);
-                    jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                            "VALUES (?, NULL, NULL, ?, N'Chào bạn Minh Anh, chúng tôi đã tiếp nhận yêu cầu. Yêu cầu của bạn đang được Phòng Tài chính xử lý. Vui lòng chờ trong giây lát.', 1, DATEADD(hour, -1, GETDATE()))", tId1, adminId);
-
-                    List<Integer> clientIds = jdbcTemplate.queryForList("SELECT employer_id FROM employers WHERE email = 'client@lancerpro.vn'", Integer.class);
-                    if (!clientIds.isEmpty()) {
-                        Integer clientId = clientIds.get(0);
-                        jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
-                                "VALUES (NULL, ?, N'Duyệt dự án mới', N'Bài đăng dự án ở trạng thái chờ duyệt', 'OPEN', 'LOW', GETDATE(), GETDATE())", clientId);
-                        Integer tId2 = jdbcTemplate.queryForObject("SELECT IDENT_CURRENT('support_tickets')", Integer.class);
-
-                        jdbcTemplate.update("INSERT INTO ticket_messages (ticket_id, sender_freelancer_id, sender_employer_id, sender_admin_id, message_text, is_read, sent_at) " +
-                                "VALUES (?, NULL, ?, NULL, N'Tôi vừa đăng dự án mới nhưng trạng thái là PENDING_REVIEW. Bao lâu thì bài đăng của tôi được hiển thị?', 0, DATEADD(hour, -3, GETDATE()))", tId2, clientId);
-                    }
+                            "VALUES (?, NULL, N'Hỗ trợ tài khoản', N'Hỗ trợ xác thực tài khoản', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
                 }
 
                 // 5. Seed violation_reports if empty
@@ -561,31 +509,9 @@ public class DataSeeder implements CommandLineRunner {
                 if (reportCount != null && reportCount == 0) {
                     jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
                             "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
-                    jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
-                            "VALUES ('USER', 'USR-405', N'Nguyễn Minh Anh', N'Vũ Hoàng Nam', 'MEDIUM', 'RESOLVED', N'Lời lẽ thô tục xúc phạm trong khung chat', N'https://example.com/evidence2.jpg', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
                 }
 
-                // 6. Seed disputes if empty (include RESOLVED_CLIENT_FAVOR for Refunds)
-                Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
-                if (disputeCount != null && disputeCount == 0) {
-                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (1, N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
-                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (1, N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
-                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (1, N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
-                }
-
-                // 7. Seed payment_transactions if empty
-                Integer transactionCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_transactions", Integer.class);
-                if (transactionCount != null && transactionCount == 0) {
-                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
-                            "VALUES ('TXN12345678', 1, 101, 15000000, 'SUCCESS', '14012345', GETDATE(), GETDATE())");
-                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
-                            "VALUES ('TXN87654321', 1, 102, 5000000, 'FAILED', 'N/A', DATEADD(day, -1, GETDATE()), DATEADD(day, -1, GETDATE()))");
-                    jdbcTemplate.update("INSERT INTO payment_transactions (txn_ref, employer_id, project_id, amount, status, vnp_transaction_no, created_at, updated_at) " +
-                            "VALUES ('TXN99999999', 1, 103, 3500000, 'PENDING', 'N/A', DATEADD(hour, -2, GETDATE()), DATEADD(hour, -2, GETDATE()))");
-                }
+                // 6. Financial disputes & transactions are created exclusively by real user activity. No dummy seeding.
 
                 // 8. Seed warning_templates if empty
                 Integer warningCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM warning_templates", Integer.class);

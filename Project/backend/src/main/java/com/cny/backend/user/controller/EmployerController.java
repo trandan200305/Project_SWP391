@@ -6,9 +6,8 @@ import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.user.repository.EmployerProfileRequestRepository;
 import com.cny.backend.user.dto.EmployerDto;
 import com.cny.backend.user.repository.FreelancerRepository;
-import com.cny.backend.project.repository.ProjectRepository;
-import com.cny.backend.project.repository.ContractRepository;
-import com.cny.backend.admin.repository.DisputeRepository;
+import com.cny.backend.dashboard.repository.ApiFrequencyStatRepository;
+import com.cny.backend.dashboard.entity.ApiFrequencyStat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,6 +28,9 @@ public class EmployerController {
 
     @Autowired
     private EmployerRepository employerRepository;
+
+    @Autowired
+    private ApiFrequencyStatRepository apiStatRepo;
 
     @Autowired
     private com.cny.backend.admin.repository.PaymentTransactionRepository paymentTransactionRepository;
@@ -410,6 +412,29 @@ public class EmployerController {
         if (payload.containsKey("industry")) employer.setIndustry(text(payload.get("industry")));
         if (payload.containsKey("taxCode")) employer.setTaxCode(taxCode);
         employer.setUpdatedAt(LocalDateTime.now());
+
+        // 3. Fake Approval logic for test
+        // System will auto approve for now
+        System.out.println("Auto approving KYC for employer " + employerId);
+        
+        // Mock updating the VNPT eKYC APIs stats for dashboard
+        java.util.List<String> apisToUpdate = java.util.List.of(
+            "/ai/v1/ocr/id/front",
+            "/ai/v1/ocr/id/back",
+            "/ai/v4/web/standard/face/liveness",
+            "/ai/v1/face/one",
+            "/ai/v5/card/liveness"
+        );
+
+        for (String path : apisToUpdate) {
+            java.util.List<ApiFrequencyStat> stats = apiStatRepo.findByPath(path);
+            if (!stats.isEmpty()) {
+                ApiFrequencyStat stat = stats.get(0);
+                stat.setTotal(stat.getTotal() + 1);
+                stat.setSuccess(stat.getSuccess() + 1);
+                apiStatRepo.save(stat);
+            }
+        }
 
         employerRepository.save(employer);
 

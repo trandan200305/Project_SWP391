@@ -32,6 +32,15 @@ public class ViettelSInvoiceService {
     @Value("${viettel.sinvoice.taxcode:0100109106-507}")
     private String taxCode;
 
+    @Value("${viettel.sinvoice.template-code:1/001}")
+    private String templateCode;
+
+    @Value("${viettel.sinvoice.invoice-series:C24TYY}")
+    private String invoiceSeries;
+
+    @Value("${viettel.sinvoice.invoice-type:1}")
+    private String invoiceType;
+
     public ViettelSInvoiceService(ObjectMapper objectMapper) {
         this.restTemplate = new RestTemplate();
         this.objectMapper = objectMapper;
@@ -76,9 +85,9 @@ public class ViettelSInvoiceService {
         
         // Cấu trúc generalInvoiceInfo
         Map<String, Object> generalInfo = new HashMap<>();
-        generalInfo.put("invoiceType", "1"); // 1: Hóa đơn GTGT
-        generalInfo.put("templateCode", "1/001");
-        generalInfo.put("invoiceSeries", "C24TYY");
+        generalInfo.put("invoiceType", invoiceType); 
+        generalInfo.put("templateCode", templateCode);
+        generalInfo.put("invoiceSeries", invoiceSeries);
         generalInfo.put("currencyCode", "VND");
         generalInfo.put("paymentStatus", true);
         generalInfo.put("transactionUuid", txnUuid);
@@ -184,7 +193,7 @@ public class ViettelSInvoiceService {
         Map<String, String> payload = new HashMap<>();
         payload.put("supplierTaxCode", taxCode.contains("-") ? taxCode : username); // Use the correct supplierTaxCode (usually matches username for branch)
         payload.put("invoiceNo", invoiceNo);
-        payload.put("templateCode", "1/001"); // Template code used in createInvoice
+        payload.put("templateCode", templateCode); // Template code used in createInvoice
         payload.put("fileType", "PDF"); // Yêu cầu trả về định dạng PDF
 
         HttpHeaders headers = new HttpHeaders();

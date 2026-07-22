@@ -59,7 +59,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
     
-    const [activeTab, setActiveTab] = useState('projects'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -88,33 +87,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         }
     }, [initialStatusFilter]);
 
-    // Reset page to 1 and clear filters when changing activeTab to projects
-    useEffect(() => {
-        if (activeTab === 'projects') {
-            setCurrentPage(1);
-            if (initialStatusFilter) {
-                setStatusFilter(initialStatusFilter);
-            } else {
-                setStatusFilter('ALL');
-            }
-            setSearchQuery('');
-        }
-    }, [activeTab, initialStatusFilter]);
-
-    // Scroll-to-top khi chuyển trang phân trang — chạy SAU khi React render xong
-    const projectListRef = useRef(null);
-    const isFirstPageRender = useRef(true);
-    useEffect(() => {
-        if (isFirstPageRender.current) {
-            isFirstPageRender.current = false;
-            return;
-        }
-        if (projectListRef.current) {
-            projectListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }, [currentPage]);
+    // Remove activeTab dependency
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -412,10 +385,10 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     useEffect(() => {
-        if (user?.id && user?.role === 'EMPLOYER' && activeTab === 'projects') {
+        if (user?.id && user?.role === 'EMPLOYER') {
             fetchProjects();
         }
-    }, [user, activeTab, currentPage, statusFilter, searchQuery]);
+    }, [user, currentPage, statusFilter, searchQuery]);
 
     useEffect(() => {
         if (!user?.id || user?.role !== 'EMPLOYER') {

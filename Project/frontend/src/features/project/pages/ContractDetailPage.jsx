@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
-  Banknote, 
   FileText, 
   Check, 
   X, 

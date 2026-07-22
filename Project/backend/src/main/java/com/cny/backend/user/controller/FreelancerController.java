@@ -15,9 +15,9 @@ import com.cny.backend.user.dto.*;
 import com.cny.backend.auth.service.*;
 import com.cny.backend.admin.service.*;
 import com.cny.backend.chat.service.*;
-import com.cny.backend.user.service.*;
-
-
+import com.cny.backend.user.service.FreelancerService;
+import com.cny.backend.dashboard.repository.ApiFrequencyStatRepository;
+import com.cny.backend.dashboard.entity.ApiFrequencyStat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,6 +44,9 @@ public class FreelancerController {
 
     @Autowired
     private FreelancerService freelancerService;
+
+    @Autowired
+    private ApiFrequencyStatRepository apiStatRepo;
 
     @Autowired
     private EmployerRepository employerRepository;
@@ -457,6 +460,28 @@ public class FreelancerController {
             f.setKycSubmittedAt(java.time.LocalDateTime.now());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             f.setProfileCompleteness(calculateCompleteness(f));
+            
+            System.out.println("Auto approving KYC for freelancer " + id);
+            f.setKycStatus("APPROVED"); // Mock auto approve
+            
+            // Mock updating the VNPT eKYC APIs stats for dashboard
+            java.util.List<String> apisToUpdate = java.util.List.of(
+                "/ai/v1/ocr/id/front",
+                "/ai/v1/ocr/id/back",
+                "/ai/v4/web/standard/face/liveness",
+                "/ai/v1/face/one",
+                "/ai/v5/card/liveness"
+            );
+
+            for (String path : apisToUpdate) {
+                java.util.List<ApiFrequencyStat> stats = apiStatRepo.findByPath(path);
+                if (!stats.isEmpty()) {
+                    ApiFrequencyStat stat = stats.get(0);
+                    stat.setTotal(stat.getTotal() + 1);
+                    stat.setSuccess(stat.getSuccess() + 1);
+                    apiStatRepo.save(stat);
+                }
+            }
             
             freelancerRepository.save(f);
             

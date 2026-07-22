@@ -12,6 +12,12 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+      },
+      '/vnpt-api': {
+        target: 'https://sandbox-idg.vnpt.vn',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/vnpt-api/, '')
       }
     }
   }

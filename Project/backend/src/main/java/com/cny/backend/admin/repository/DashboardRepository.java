@@ -167,11 +167,11 @@ public interface DashboardRepository extends JpaRepository<Admin, Integer> {
     }
 
     
-    @Query(value = "SELECT w.withdrawal_id as id, w.amount, w.status, w.reason, w.created_at as createdAt, b.bank_name as bankName, b.account_number as accountNumber, f.email as freelancerEmail, f.display_name as freelancerName FROM withdrawal_requests w JOIN freelancers f ON w.freelancer_id = f.freelancer_id JOIN bank_accounts b ON w.bank_account_id = b.bank_account_id ORDER BY w.created_at DESC", nativeQuery = true)
+    @Query(value = "SELECT w.withdrawal_id as id, w.amount, w.status, w.reject_reason as reason, w.created_at as createdAt, b.bank_name as bankName, b.account_number as accountNumber, f.email as freelancerEmail, f.display_name as freelancerName FROM withdrawal_requests w JOIN freelancers f ON w.freelancer_id = f.freelancer_id JOIN bank_accounts b ON w.bank_account_id = b.bank_account_id ORDER BY w.created_at DESC", nativeQuery = true)
     List<WithdrawalProjection> getAllWithdrawalRequests();
 
     @Modifying
-    @Query(value = "UPDATE withdrawal_requests SET status = :status, reason = :reason, processed_at = GETDATE(), processed_by = :adminId WHERE withdrawal_id = :withdrawalId", nativeQuery = true)
+    @Query(value = "UPDATE withdrawal_requests SET status = :status, reject_reason = :reason, processed_at = GETDATE(), processed_by = :adminId WHERE withdrawal_id = :withdrawalId", nativeQuery = true)
     void processWithdrawalRequest(@Param("withdrawalId") int withdrawalId, @Param("status") String status, @Param("reason") String reason, @Param("adminId") int adminId);
 
     @Modifying

@@ -121,27 +121,7 @@ public class DepartmentService {
             throw new IllegalArgumentException("Manager đã thuộc phòng ban này.");
         }
 
-        
-        long fromManagerCount = managerRepository.findAll().stream()
-                .filter(m -> m.getDepartmentEntity() != null
-                        && m.getDepartmentEntity().getDepartmentId().equals(fromDept.getDepartmentId())
-                        && !Boolean.TRUE.equals(m.getIsDeleted()))
-                .count();
-        if (fromManagerCount <= 1) {
-            throw new IllegalArgumentException(
-                    "Phòng ban '" + fromDept.getName() + "' phải giữ tối thiểu 1 Manager. Không thể điều chuyển.");
-        }
 
-        
-        long toManagerCount = managerRepository.findAll().stream()
-                .filter(m -> m.getDepartmentEntity() != null
-                        && m.getDepartmentEntity().getDepartmentId().equals(toDept.getDepartmentId())
-                        && !Boolean.TRUE.equals(m.getIsDeleted()))
-                .count();
-        if (toManagerCount >= toDept.getMaxManagers()) {
-            throw new IllegalArgumentException(
-                    "Phòng ban '" + toDept.getName() + "' đã đạt giới hạn " + toDept.getMaxManagers() + " Manager.");
-        }
 
         
         manager.setDepartmentEntity(toDept);
@@ -175,16 +155,7 @@ public class DepartmentService {
             throw new IllegalArgumentException("Staff đã thuộc phòng ban này.");
         }
 
-        
-        long fromStaffCount = staffRepository.findAll().stream()
-                .filter(s -> s.getDepartmentEntity() != null
-                        && s.getDepartmentEntity().getDepartmentId().equals(fromDept.getDepartmentId())
-                        && !Boolean.TRUE.equals(s.getIsDeleted()))
-                .count();
-        if (fromStaffCount <= 1) {
-            throw new IllegalArgumentException(
-                    "Phòng ban '" + fromDept.getName() + "' phải giữ tối thiểu 1 Staff. Không thể điều chuyển.");
-        }
+
 
         
         staff.setDepartmentEntity(toDept);
