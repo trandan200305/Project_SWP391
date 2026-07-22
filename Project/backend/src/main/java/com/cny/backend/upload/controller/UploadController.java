@@ -36,7 +36,9 @@ public class UploadController {
     ));
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "type", required = false) String type) {
         Map<String, Object> response = new HashMap<>();
 
         if (file.isEmpty()) {
@@ -49,6 +51,23 @@ public class UploadController {
             response.put("success", false);
             response.put("message", "Dung lượng file vượt quá giới hạn tối đa cho phép (50MB).");
             return ResponseEntity.badRequest().body(response);
+        }
+
+        // Kiểm tra riêng cho loại hình ảnh nếu type = image
+        if ("image".equalsIgnoreCase(type)) {
+            long maxImageSize = 10 * 1024 * 1024; // 10MB
+            if (file.getSize() > maxImageSize) {
+                response.put("success", false);
+                response.put("message", "Dung lượng tệp hình ảnh vượt quá giới hạn cho phép (10MB).");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String contentType = file.getContentType();
+            if (contentType != null && !contentType.toLowerCase().startsWith("image/")) {
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn tệp hình ảnh hợp lệ (MIME Type phải bắt đầu bằng image/).");
+                return ResponseEntity.badRequest().body(response);
+            }
         }
 
         String originalFilename = file.getOriginalFilename();
