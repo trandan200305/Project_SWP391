@@ -50,8 +50,8 @@ public class InvoiceService {
                 .buyerName("Employer ID: " + txn.getEmployerId()) // Mock name for now
                 .buyerEmail("employer" + txn.getEmployerId() + "@mock.com") // Mock email
                 .totalAmount(txn.getAmount())
-                .invoiceTemplate(config.getTemplateCode() != null ? config.getTemplateCode() : "01GTKT0/001")
-                .invoiceSeries(config.getInvoiceSeries() != null ? config.getInvoiceSeries() : "AA/22E")
+                .invoiceTemplate(config.getTemplateCode() != null ? config.getTemplateCode() : "1/001")
+                .invoiceSeries(config.getInvoiceSeries() != null ? config.getInvoiceSeries() : "C24TYY")
                 .status("PENDING")
                 .build();
 

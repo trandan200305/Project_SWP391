@@ -92,6 +92,12 @@ export const adminApi = {
       headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
+  convertRole: (userId, currentRole, adminId) => {
+    return fetch(`http://localhost:8080/api/admin/users/${userId}/convert-role?role=${currentRole}`, {
+      method: 'PUT',
+      headers: getAdminHeaders(adminId)
+    }).then(res => res.json());
+  },
   moderateProject: (projectId, approve, reasonParam, adminId) => {
     return fetch(`http://localhost:8080/api/admin/moderation/projects/${projectId}/moderate?approve=${approve}&reason=${reasonParam}`, {
       method: 'PUT',

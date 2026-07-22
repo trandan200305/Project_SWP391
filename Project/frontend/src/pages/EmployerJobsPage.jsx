@@ -58,7 +58,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
     
-    const [activeTab, setActiveTab] = useState('company'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -80,14 +79,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         setCurrentPage(1);
     }, [statusFilter, searchQuery]);
 
-    // Reset page to 1 and clear filters when changing activeTab to projects
-    useEffect(() => {
-        if (activeTab === 'projects') {
-            setCurrentPage(1);
-            setStatusFilter('ALL');
-            setSearchQuery('');
-        }
-    }, [activeTab]);
+    // Remove activeTab dependency
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -372,10 +364,10 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     useEffect(() => {
-        if (user?.id && user?.role === 'EMPLOYER' && activeTab === 'projects') {
+        if (user?.id && user?.role === 'EMPLOYER') {
             fetchProjects();
         }
-    }, [user, activeTab, currentPage, statusFilter, searchQuery]);
+    }, [user, currentPage, statusFilter, searchQuery]);
 
     useEffect(() => {
         if (!user?.id || user?.role !== 'EMPLOYER') {

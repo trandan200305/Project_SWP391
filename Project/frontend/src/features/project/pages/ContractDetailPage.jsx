@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
-  DollarSign, 
   FileText, 
   Check, 
   X, 
@@ -401,7 +400,6 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
             <div className="text-left md:text-right shrink-0">
               <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Tổng ngân sách</span>
               <div className="text-2xl font-black text-blue-600 flex items-center md:justify-end">
-                <DollarSign className="w-6 h-6 -mr-1" />
                 {Number(contract.agreedAmount).toLocaleString('vi-VN')} VNĐ
               </div>
             </div>

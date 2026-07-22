@@ -117,6 +117,18 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/users/{id}/convert-role")
+    public ResponseEntity<Map<String, Object>> convertUserRole(
+            @PathVariable("id") int id,
+            @RequestParam("role") String currentRole,
+            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
+        Map<String, Object> response = adminService.convertRole(id, currentRole, adminId);
+        if (response.containsKey("success") && !(Boolean) response.get("success")) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
 
 
     @GetMapping("/audit-logs")
@@ -179,7 +191,7 @@ public class AdminController {
     @Autowired
     private AdminRepository adminRepository;
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<AdminDto> getById(@PathVariable Integer id) {
         return adminRepository.findById(id).map(a -> ResponseEntity.ok(mapToDto(a))).orElse(ResponseEntity.notFound().build());
     }
