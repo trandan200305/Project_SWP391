@@ -678,9 +678,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                             { value: 'ALL',             label: 'Tất cả' },
                                             { value: 'PUBLISHED',       label: 'Đang tuyển' },
                                             { value: 'IN_PROGRESS',     label: 'Đang làm' },
-                                            { value: 'PENDING_REVIEW',  label: 'Chờ duyệt' },
-                                            { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
-                                            { value: 'CLOSED',          label: 'Đã đóng' },
+                                                                                                                                    { value: 'CLOSED',          label: 'Đã đóng' },
                                         ].map(item => {
                                             const isActive = statusFilter === item.value;
                                             return (
