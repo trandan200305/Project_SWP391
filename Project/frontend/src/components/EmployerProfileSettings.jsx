@@ -1068,11 +1068,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                     <span
                                         className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Ngân sách trọn gói (VND) *</span>
                         <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             required
-                            value={editForm.budgetFixed}
-                            onChange={(e) => setEditForm(prev => ({...prev, budgetFixed: e.target.value}))}
-                            placeholder="VD: 5000000 (Bắt buộc nhập)"
+                            value={editForm.budgetFixed ? Number(String(editForm.budgetFixed).replace(/\./g, '')).toLocaleString('vi-VN') : ''}
+                            onChange={(e) => {
+                                const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                setEditForm(prev => ({...prev, budgetFixed: raw}));
+                            }}
+                            placeholder="VD: 5.000.000 (Bắt buộc nhập)"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-850 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                         />
                     </label>) : (<div className="grid grid-cols-2 gap-4">
@@ -1080,13 +1084,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                         <span
                                             className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối thiểu (VND) *</span>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 required
-                                value={editForm.budgetMin}
-                                onChange={(e) => setEditForm(prev => ({
-                                    ...prev, budgetMin: e.target.value
-                                }))}
-                                placeholder="VD: 2000000 (Bắt buộc)"
+                                value={editForm.budgetMin ? Number(String(editForm.budgetMin).replace(/\./g, '')).toLocaleString('vi-VN') : ''}
+                                onChange={(e) => {
+                                    const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                    setEditForm(prev => ({...prev, budgetMin: raw}));
+                                }}
+                                placeholder="VD: 2.000.000 (Bắt buộc)"
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
@@ -1094,13 +1100,15 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                         <span
                                             className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">Tối đa (VND) *</span>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 required
-                                value={editForm.budgetMax}
-                                onChange={(e) => setEditForm(prev => ({
-                                    ...prev, budgetMax: e.target.value
-                                }))}
-                                placeholder="VD: 10000000 (Bắt buộc)"
+                                value={editForm.budgetMax ? Number(String(editForm.budgetMax).replace(/\./g, '')).toLocaleString('vi-VN') : ''}
+                                onChange={(e) => {
+                                    const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                    setEditForm(prev => ({...prev, budgetMax: raw}));
+                                }}
+                                placeholder="VD: 10.000.000 (Bắt buộc)"
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-855 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                             />
                         </label>
