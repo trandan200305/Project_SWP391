@@ -48,6 +48,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   const [freelancerComment, setFreelancerComment] = useState('');
   const [submittingContractReview, setSubmittingContractReview] = useState(false);
   const [freelancerSubmittedReview, setFreelancerSubmittedReview] = useState(null);
+  const [myContractReview, setMyContractReview] = useState(null);
 
   const isClient = user && contract && user.role === 'EMPLOYER' && contract.clientId === user.id;
   const isFreelancer = user && contract && user.role === 'FREELANCER' && contract.freelancerId === user.id;
@@ -68,11 +69,12 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   const fetchFreelancerReview = async () => {
     if (contractId && user) {
       try {
-        const list = await api.get(`/reviews/contract/${contractId}`);
+        const list = await api.get(`/reviews/contract/${contractId}/general`);
         if (list) {
-          const review = list.find(r => r.reviewerId === user.id && r.reviewerType === 'FREELANCER');
+          const review = list.find(r => r.reviewerId === user.id);
           if (review) {
             setFreelancerSubmittedReview(review);
+            setMyContractReview(review);
           }
         }
       } catch (err) {
@@ -93,6 +95,13 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       onNavigate('employer_profile');
     } else {
       onNavigate('your_jobs');
+    }
+  };
+
+  const handleReviewFreelancerClick = () => {
+    const section = document.getElementById('contract-review-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -229,12 +238,17 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       setSubmittingContractReview(true);
       setActionError(null);
 
-      const result = await api.post(`/reviews/contract/${contractId}/freelancer?freelancerId=${user.id}`, {
+      const endpoint = isFreelancer 
+        ? `/reviews/contract/${contractId}/freelancer?freelancerId=${user.id}`
+        : `/reviews/contract/${contractId}/employer?employerId=${user.id}`;
+
+      const result = await api.post(endpoint, {
         rating: freelancerRating,
         comment: freelancerComment.trim()
       });
       setFreelancerSubmittedReview(result);
-      showSuccess('Đã gửi đánh giá khách hàng thành công!');
+      setMyContractReview(result);
+      showSuccess('Đã gửi đánh giá thành công!');
     } catch (err) {
       setActionError(err.message || 'Lỗi kết nối máy chủ.');
     } finally {
@@ -769,12 +783,12 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
           )}
         </div>
 
-        {/* Review Employer Section */}
-        {isFreelancer && (contract.status === 'COMPLETED' || contract.status === 'CLOSED') && (
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mt-8">
+        {/* Review Section */}
+        {(isFreelancer || isClient) && (contract.status === 'COMPLETED' || contract.status === 'CLOSED') && (
+          <div id="contract-review-section" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mt-8">
             <h3 className="font-extrabold text-base text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-              Đánh giá Khách hàng
+              {isFreelancer ? 'Đánh giá Khách hàng' : 'Đánh giá Freelancer'}
             </h3>
             {freelancerSubmittedReview ? (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
