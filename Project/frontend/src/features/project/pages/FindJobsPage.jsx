@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bookmark, Loader2, RefreshCw } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
@@ -28,6 +28,21 @@ export default function FindJobsPage({ onNavigate, user }) {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
+
+  // Scroll-to-top ref — scroll lên đầu trang kết quả mỗi khi chuyển trang
+  const topAnchorRef = useRef(null);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (topAnchorRef.current) {
+      topAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [page]);
 
   // Fetch metadata từ Database khi component mount
   useEffect(() => {
@@ -175,7 +190,6 @@ export default function FindJobsPage({ onNavigate, user }) {
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatCurrency = (amount) => {
@@ -405,7 +419,7 @@ export default function FindJobsPage({ onNavigate, user }) {
         </div>
 
         {/* CỘT PHẢI - DANH SÁCH DỰ ÁN */}
-        <div className="md:col-span-3 flex flex-col gap-6">
+        <div ref={topAnchorRef} className="md:col-span-3 flex flex-col gap-6">
           
           {/* Header */}
           <div className="flex justify-between items-center">

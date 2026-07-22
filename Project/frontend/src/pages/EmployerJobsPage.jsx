@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
     ArrowLeft,
     BadgeCheck,
@@ -88,6 +88,21 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
             setSearchQuery('');
         }
     }, [activeTab]);
+
+    // Scroll-to-top khi chuyển trang phân trang — chạy SAU khi React render xong
+    const projectListRef = useRef(null);
+    const isFirstPageRender = useRef(true);
+    useEffect(() => {
+        if (isFirstPageRender.current) {
+            isFirstPageRender.current = false;
+            return;
+        }
+        if (projectListRef.current) {
+            projectListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [currentPage]);
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -611,7 +626,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                 )}
 
                 {/* Main Content Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
+                <div ref={projectListRef} className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
                     <div className="p-6">
                         {loadingProjects ? (
                             <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
