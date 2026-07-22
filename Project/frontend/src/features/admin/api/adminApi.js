@@ -106,7 +106,7 @@ export const adminApi = {
       headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
-  getVerificationTasks: () => api.get('/admin/verification-tasks'),
+  getVerificationTasks: (staffId) => api.get(staffId ? `/admin/verification-tasks?staffId=${staffId}` : '/admin/verification-tasks'),
   createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
   moderateKycRequest: (requestId, approve, role, adminId) => {
     return fetch(`http://localhost:8080/api/admin/kyc/requests/${requestId}/moderate?approve=${approve}&role=${role}`, {

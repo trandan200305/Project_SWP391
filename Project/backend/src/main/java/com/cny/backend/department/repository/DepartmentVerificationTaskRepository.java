@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DepartmentVerificationTaskRepository extends JpaRepository<DepartmentVerificationTask, Integer> {
     List<DepartmentVerificationTask> findByStatus(String status);
+    List<DepartmentVerificationTask> findByAssignedToEmail(String assignedToEmail);
 }

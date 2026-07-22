@@ -205,8 +205,8 @@ public class AdminController {
     }
 
     @GetMapping("/verification-tasks")
-    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
-        return ResponseEntity.ok(adminService.getVerificationTasks());
+    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks(@RequestParam(name = "staffId", required = false) Integer staffId) {
+        return ResponseEntity.ok(adminService.getVerificationTasks(staffId));
     }
 
     @PostMapping("/verification-tasks")

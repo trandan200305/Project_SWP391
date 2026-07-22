@@ -2115,12 +2115,28 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getVerificationTasks() {
+        return getVerificationTasks(null);
+    }
+
+    public List<Map<String, Object>> getVerificationTasks(Integer staffId) {
 
         initPresetDepartments();
 
-        List<DepartmentVerificationTask> tasks = departmentVerificationTaskRepository.findAll();
+        List<DepartmentVerificationTask> tasks;
+        if (staffId != null) {
+            Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findById(staffId);
+            if (staffOpt.isPresent()) {
+                String staffEmail = staffOpt.get().getEmail();
+                tasks = departmentVerificationTaskRepository.findByAssignedToEmail(staffEmail);
+            } else {
+                tasks = new ArrayList<>();
+            }
+        } else {
+            tasks = departmentVerificationTaskRepository.findAll();
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         for (DepartmentVerificationTask task : tasks) {
             Map<String, Object> map = new HashMap<>();
             map.put("taskId", task.getTaskId());
@@ -2180,7 +2196,6 @@ public class AdminService {
             if (!map.containsKey("creatorName")) {
                 map.put("creatorName", task.getAssignedToEmail() != null ? task.getAssignedToEmail() : null);
             }
-            
 
             List<DepartmentTaskSignoff> signoffs = departmentTaskSignoffRepository.findByVerificationTask(task);
             List<Map<String, Object>> signoffList = new ArrayList<>();
