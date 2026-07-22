@@ -614,10 +614,7 @@ public class DataSeeder implements CommandLineRunner {
 
             String[][] departments = {
                 {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: CS"},
-<<<<<<< HEAD
                 {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: MOD"},
-=======
->>>>>>> origin/setup-depart-for-manager+staff
                 {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
                 {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
             };

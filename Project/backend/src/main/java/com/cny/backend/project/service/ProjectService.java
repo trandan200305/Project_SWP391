@@ -154,7 +154,7 @@ public class ProjectService {
         Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(appliedPackage);
         if (configOpt.isPresent()) {
             durationDays = configOpt.get().getDurationDays();
-            serviceFee = configOpt.get().getPrice() != null ? configOpt.get().getPrice().doubleValue() : 0.0;
+            serviceFee = configOpt.get().getPrice();
         } else {
             if ("REGULAR".equals(appliedPackage)) durationDays = 15;
             if ("PREMIUM".equals(appliedPackage)) durationDays = 30;
