@@ -740,7 +740,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                             <div>
                                                                 <div className="flex items-center gap-2 flex-wrap mb-1.5">
                                                                     <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                                                        {proj.category?.categoryName || 'General'}
+                                                                        {proj.category?.categoryName || 'Chung'}
                                                                     </span>
                                                                     <span className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[proj.status] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                                                         {statusLabels[proj.status] || proj.status}

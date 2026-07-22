@@ -168,7 +168,7 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                {project.categoryName || 'General'}
+                                {project.categoryName || 'Chung'}
                             </span>
                             <span className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[project.servicePackage] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                 Gói dịch vụ: {project.servicePackage}

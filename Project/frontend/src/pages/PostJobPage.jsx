@@ -341,7 +341,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           
           <div className="flex items-center gap-1.5 bg-secondary-light border border-secondary/20 px-3 py-1 rounded-full text-secondary-dark">
             <Sparkles className="w-3.5 h-3.5 text-secondary" />
-            <span className="text-xs font-bold">Employer Workspace</span>
+            <span className="text-xs font-bold">Không gian làm việc Nhà tuyển dụng</span>
           </div>
         </div>
 
