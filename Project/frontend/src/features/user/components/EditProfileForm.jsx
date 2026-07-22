@@ -226,6 +226,7 @@ const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
   );
 };
 
+export default function EditProfileForm({
   role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, categories, primarySkills, setPrimarySkills, avatarUrl, fetchProfileData
 }) {
   const [showCompleteness, setShowCompleteness] = React.useState(false);

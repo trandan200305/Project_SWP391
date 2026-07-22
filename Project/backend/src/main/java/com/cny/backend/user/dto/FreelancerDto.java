@@ -66,5 +66,6 @@ public class FreelancerDto {
     private Boolean isVerified;
     private String primarySkills;
     private String expertiseField;
+    private String experienceLevel;
 }
 

@@ -438,6 +438,7 @@ public class FreelancerController {
         FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
         String primarySkills = profile != null ? profile.getPrimarySkills() : null;
         String expertiseField = profile != null ? profile.getExpertiseField() : null;
+        String experienceLevel = profile != null ? profile.getExperienceLevel() : null;
 
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -476,6 +477,7 @@ public class FreelancerController {
                 .isVerified(f.getIsVerified())
                 .primarySkills(primarySkills)
                 .expertiseField(expertiseField)
+                .experienceLevel(experienceLevel)
                 .build();
     }
 

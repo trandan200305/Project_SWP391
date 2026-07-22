@@ -61,7 +61,6 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   const [primarySkills, setPrimarySkills] = useState('');
-  const [expertiseField, setExpertiseField] = useState('Khác');
   const [hourlyRate, setHourlyRate] = useState(0);
 
   // Freelancer Read-only Stats
