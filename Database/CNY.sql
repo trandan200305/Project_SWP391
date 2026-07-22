@@ -887,6 +887,9 @@ CREATE TABLE freelancer_profiles (
     profile_completeness  INT DEFAULT 0,
     projects_completed    INT DEFAULT 0,
     total_earnings        DECIMAL(15,2) DEFAULT 0,
+    primary_skills        NVARCHAR(500) NULL,
+    expertise_field       NVARCHAR(200) NULL,
+    experience_level      NVARCHAR(100) NULL,
     created_at            DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at            DATETIME2 NOT NULL DEFAULT GETDATE()
 );
@@ -1135,6 +1138,9 @@ BEGIN
         profile_completeness  INT             DEFAULT 0,
         projects_completed    INT             DEFAULT 0,
         total_earnings        DECIMAL(15,2)   DEFAULT 0,
+        primary_skills        NVARCHAR(500)   NULL,
+        expertise_field       NVARCHAR(200)   NULL,
+        experience_level      NVARCHAR(100)   NULL,
         created_at            DATETIME2 NOT NULL DEFAULT GETDATE(),
         updated_at            DATETIME2 NOT NULL DEFAULT GETDATE()
     );
