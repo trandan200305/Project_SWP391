@@ -68,6 +68,9 @@ public class ProjectService {
     @Autowired
     private SkillRepository skillRepository;
 
+    @Autowired
+    private ContractRepository contractRepository;
+
     public List<Project> getPublishedProjects() {
         return projectRepository.findByIsDeletedFalseAndStatusOrderByCreatedAtDesc("PUBLISHED");
     }
@@ -82,7 +85,21 @@ public class ProjectService {
 
     public Page<Project> getProjectsByEmployerPaginated(Integer employerId, String status, String keyword, int page, int size) {
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
-        return projectRepository.findEmployerProjectsPaginated(employerId, status, keyword, pageable);
+        Page<Project> projectsPage = projectRepository.findEmployerProjectsPaginated(employerId, status, keyword, pageable);
+        
+        for (Project p : projectsPage.getContent()) {
+            try {
+                contractRepository.findByProjectProjectId(p.getProjectId()).ifPresent(c -> {
+                    if (c.getAgreedAmount() != null) {
+                        p.setAgreedAmount(c.getAgreedAmount());
+                    }
+                });
+            } catch (Exception e) {
+                // fallback
+            }
+        }
+
+        return projectsPage;
     }
 
     @Transactional

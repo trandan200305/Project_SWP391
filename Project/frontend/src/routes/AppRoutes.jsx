@@ -164,6 +164,7 @@ export default function AppRoutes({
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
+        initialStatusFilter={pageParams?.statusFilter}
       />
     );
   }

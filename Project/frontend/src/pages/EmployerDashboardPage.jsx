@@ -248,7 +248,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
               <div className="flex items-baseline justify-between">
                 <h3 className="text-lg font-extrabold text-sky-700">{formatCurrency(completedProjectsSpent)}</h3>
                 <button
-                  onClick={() => onNavigate('employer_jobs')}
+                  onClick={() => onNavigate('employer_jobs', { statusFilter: 'CLOSED' })}
                   className="text-xs font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
                 >
                   Chi tiết <ChevronRight className="w-3 h-3" />

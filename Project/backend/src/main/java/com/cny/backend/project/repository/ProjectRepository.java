@@ -101,7 +101,7 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
     
     @Query("SELECT p FROM Project p WHERE p.client.employerId = :employerId AND p.isDeleted = false " +
-           "AND (:status IS NULL OR :status = 'ALL' OR p.status = :status) " +
+           "AND (:status IS NULL OR :status = 'ALL' OR p.status = :status OR (:status = 'CLOSED' AND p.status = 'COMPLETED')) " +
            "AND (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Project> findEmployerProjectsPaginated(@Param("employerId") Integer employerId,
                                                 @Param("status") String status,

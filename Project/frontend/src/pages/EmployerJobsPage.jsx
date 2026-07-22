@@ -51,7 +51,7 @@ const emptyForm = {
     }
 };
 
-export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUserUpdate}) {
+export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUserUpdate, initialStatusFilter}) {
     const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -64,7 +64,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const [loadingProjects, setLoadingProjects] = useState(false);
 
     // Search and filter states
-    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
     // Pagination states for projects
@@ -81,14 +81,25 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         setCurrentPage(1);
     }, [searchQuery]);
 
+    // Sync initialStatusFilter when provided
+    useEffect(() => {
+        if (initialStatusFilter) {
+            setStatusFilter(initialStatusFilter);
+        }
+    }, [initialStatusFilter]);
+
     // Reset page to 1 and clear filters when changing activeTab to projects
     useEffect(() => {
         if (activeTab === 'projects') {
             setCurrentPage(1);
-            setStatusFilter('ALL');
+            if (initialStatusFilter) {
+                setStatusFilter(initialStatusFilter);
+            } else {
+                setStatusFilter('ALL');
+            }
             setSearchQuery('');
         }
-    }, [activeTab]);
+    }, [activeTab, initialStatusFilter]);
 
     // Scroll-to-top khi chuyển trang phân trang — chạy SAU khi React render xong
     const projectListRef = useRef(null);
@@ -773,9 +784,13 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                                 </h4>
                                                             </div>
                                                             <div className="text-right sm:shrink-0 flex sm:flex-col items-baseline sm:items-end justify-between gap-1">
-                                                                <span className="text-xs text-slate-400 font-medium">Ngân sách</span>
+                                                                <span className="text-xs text-slate-400 font-medium">
+                                                                    {proj.agreedAmount || proj.agreed_amount ? 'Giá thầu chốt' : 'Ngân sách'}
+                                                                </span>
                                                                 <span className="font-extrabold text-emerald-600 text-sm">
-                                                                    {isFixed ? (
+                                                                    {proj.agreedAmount || proj.agreed_amount ? (
+                                                                        new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(proj.agreedAmount || proj.agreed_amount)
+                                                                    ) : isFixed ? (
                                                                         proj.budgetFixed ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(proj.budgetFixed) : 'Thỏa thuận'
                                                                     ) : (
                                                                         proj.budgetMin && proj.budgetMax ? `${new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(proj.budgetMin)} - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(proj.budgetMax)}` : 'Thỏa thuận'

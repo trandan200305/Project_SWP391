@@ -118,4 +118,15 @@ public class Project {
         inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
     private List<Skill> skills;
+
+    @jakarta.persistence.Transient
+    private java.math.BigDecimal agreedAmount;
+
+    public java.math.BigDecimal getAgreedAmount() {
+        return agreedAmount;
+    }
+
+    public void setAgreedAmount(java.math.BigDecimal agreedAmount) {
+        this.agreedAmount = agreedAmount;
+    }
 }
