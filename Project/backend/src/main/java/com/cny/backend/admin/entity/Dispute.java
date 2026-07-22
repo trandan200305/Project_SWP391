@@ -22,7 +22,7 @@ public class Dispute {
     @Column(name = "dispute_id")
     private Integer disputeId;
 
-    @Column(name = "contract_id")
+    @Column(name = "contract_id", nullable = false)
     private Integer contractId;
 
     @Column(name = "raised_by_freelancer_id")

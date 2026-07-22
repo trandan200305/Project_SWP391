@@ -1207,19 +1207,23 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
 
   useEffect(() => {
     if (initialPartner && initialPartner.id) {
-      if (user?.role === "EMPLOYER" && initialPartner.role === "FREELANCER") {
+      const isOppositeRoles =
+        (user?.role === "EMPLOYER" && initialPartner.role === "FREELANCER") ||
+        (user?.role === "FREELANCER" && initialPartner.role === "EMPLOYER");
+
+      if (isOppositeRoles) {
         handleStartDirectChat(
           initialPartner.id,
           initialPartner.role,
           initialPartner.name,
-          initialPartner.avatarUrl,
+          initialPartner.avatarUrl || initialPartner.avatar,
         );
       } else {
         handleViewProfile({
           id: initialPartner.id,
           role: initialPartner.role,
           name: initialPartner.name,
-          avatarUrl: initialPartner.avatarUrl,
+          avatarUrl: initialPartner.avatarUrl || initialPartner.avatar,
         });
       }
     }

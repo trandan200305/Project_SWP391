@@ -121,6 +121,9 @@ public class AdminService {
     private com.cny.backend.admin.repository.DisputeRepository disputeRepository;
 
     @Autowired
+    private com.cny.backend.project.repository.ContractRepository contractRepository;
+
+    @Autowired
     private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
 
 
@@ -1143,6 +1146,21 @@ public class AdminService {
             Dispute dispute = disputeOpt.get();
             dispute.setStatus(status);
             disputeRepository.save(dispute);
+            
+            if (dispute.getContractId() != null) {
+                Optional<com.cny.backend.project.entity.Contract> contractOpt = contractRepository.findById(dispute.getContractId());
+                if (contractOpt.isPresent()) {
+                    com.cny.backend.project.entity.Contract contract = contractOpt.get();
+                    contract.setStatus("RESOLVED");
+                    contractRepository.save(contract);
+                    
+                    if (contract.getProject() != null) {
+                        com.cny.backend.project.entity.Project project = contract.getProject();
+                        project.setStatus("CLOSED");
+                        projectRepository.save(project);
+                    }
+                }
+            }
             
             writeAuditLog(adminId, "RESOLVE_DISPUTE", "MODERATION", "Xử lý khiếu nại #" + id + " thành " + status + " | Ghi chú: " + (note != null ? note : ""));
             

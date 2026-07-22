@@ -53,7 +53,7 @@ export default function AppRoutes({
     return <StaffDashboardPage user={user} onNavigateToHome={() => handleNavigate('home')} onNavigate={handleNavigate} onLogout={onLogout} />;
   }
 
-  if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences') {
+  if (currentPage === 'profile' || currentPage === 'edit_profile' || currentPage === 'preferences' || currentPage === 'revenue') {
     let initialTab = currentPage;
     if (currentPage === 'profile' && pageParams?.tab === 'portfolio') {
         initialTab = 'Hồ sơ năng lực';

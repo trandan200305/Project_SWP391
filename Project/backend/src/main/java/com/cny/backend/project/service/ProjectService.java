@@ -108,7 +108,10 @@ public class ProjectService {
             throw new IllegalArgumentException("Mô tả công việc phải có nhiều hơn 50 ký tự.");
         }
 
-        String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED";
+        String type = dto.getProjectType() != null ? dto.getProjectType() : "FIXED_PRICE";
+        if ("FIXED".equals(type)) {
+            type = "FIXED_PRICE";
+        }
 
         if ("RANGE".equals(type)) {
             if (dto.getBudgetMin() != null || dto.getBudgetMax() != null) {
@@ -168,7 +171,7 @@ public class ProjectService {
                 .projectType(type)
                 .budgetMin("RANGE".equals(type) ? dto.getBudgetMin() : null)
                 .budgetMax("RANGE".equals(type) ? dto.getBudgetMax() : null)
-                .budgetFixed("FIXED".equals(type) ? dto.getBudgetFixed() : null)
+                .budgetFixed("FIXED_PRICE".equals(type) ? dto.getBudgetFixed() : null)
                 .deadline(dto.getDeadline())
                 .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(durationDays)) 
@@ -473,8 +476,11 @@ public class ProjectService {
                 ? project.getSkills().stream().map(Skill::getSkillName).toList()
                 : List.of();
 
+        Integer employerId = project.getClient() != null ? project.getClient().getEmployerId() : null;
+
         return ProjectDto.builder()
                 .id(project.getProjectId())
+                .employerId(employerId)
                 .title(project.getTitle())
                 .isNew(isNew)
                 .employerName(employerName)

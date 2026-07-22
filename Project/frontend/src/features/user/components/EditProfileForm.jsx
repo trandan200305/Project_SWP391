@@ -1,5 +1,5 @@
 import React from 'react';
-import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star } from 'lucide-react';
+import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star, RefreshCw } from 'lucide-react';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 
 const InputRow = ({ label, value, onChange, placeholder, type = 'text', prefix, suffix }) => (
@@ -44,6 +44,19 @@ const VIETNAM_PROVINCES = [
   "Thái Bình", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang"
 ];
 
+const EXPERTISE_FIELDS = [
+  "IT & Lập trình",
+  "Thiết kế & Đồ họa",
+  "Marketing & Bán hàng",
+  "Viết lách & Dịch thuật",
+  "Video & Nhiếp ảnh",
+  "Hành chính & Trợ lý",
+  "Tài chính & Kế toán",
+  "Kỹ thuật & Kiến trúc",
+  "Pháp lý",
+  "Khác"
+];
+
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
   <div className="flex justify-between items-center py-1 gap-2" title={title}>
     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
@@ -58,9 +71,191 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
   </div>
 );
 
-export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, categories
+const SkillTagSelector = ({ primarySkills, setPrimarySkills }) => {
+  const [allSkills, setAllSkills] = React.useState([]);
+  const [searchText, setSearchText] = React.useState('');
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    fetch('http://localhost:8080/api/skills')
+      .then(res => res.json())
+      .then(data => {
+        setAllSkills(data || []);
+      })
+      .catch(err => console.error("Lỗi tải danh mục kỹ năng:", err));
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedSkills = React.useMemo(() => {
+    return primarySkills ? primarySkills.split(',').map(s => s.trim()).filter(Boolean) : [];
+  }, [primarySkills]);
+
+  const suggestions = React.useMemo(() => {
+    if (!searchText.trim()) {
+      return allSkills.filter(s => !selectedSkills.some(sel => sel.toLowerCase() === s.skillName.toLowerCase())).slice(0, 10);
+    }
+    const query = searchText.toLowerCase();
+    return allSkills.filter(s => 
+      s.skillName.toLowerCase().includes(query) &&
+      !selectedSkills.some(sel => sel.toLowerCase() === s.skillName.toLowerCase())
+    );
+  }, [allSkills, selectedSkills, searchText]);
+
+  const handleSelectSkill = (skillName) => {
+    const newSelected = [...selectedSkills, skillName];
+    setPrimarySkills(newSelected.join(', '));
+    setSearchText('');
+    setShowDropdown(false);
+  };
+
+  const handleRemoveSkill = (skillName) => {
+    const newSelected = selectedSkills.filter(s => s !== skillName);
+    setPrimarySkills(newSelected.join(', '));
+  };
+
+  const handleCreateNewSkill = async () => {
+    const cleanText = searchText.trim();
+    if (!cleanText) return;
+    
+    try {
+      const response = await fetch('http://localhost:8080/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skillName: cleanText })
+      });
+      if (response.ok) {
+        const newSkill = await response.json();
+        setAllSkills(prev => [...prev, newSkill]);
+        handleSelectSkill(newSkill.skillName);
+        alert(`Đã đề xuất kỹ năng "${newSkill.skillName}" thành công! Kỹ năng này đang ở trạng thái chờ duyệt và chỉ hiển thị trên hồ sơ của bạn.`);
+      } else {
+        alert("Không thể đề xuất kỹ năng mới.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi tạo kỹ năng mới.");
+    }
+  };
+
+  const isExactMatch = allSkills.some(s => s.skillName.toLowerCase() === searchText.trim().toLowerCase());
+
+  return (
+    <div className="flex justify-between items-start sm:block relative" ref={dropdownRef}>
+      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-1 block">Kỹ năng chuyên môn</span>
+      <div className="w-[160px] sm:w-full">
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selectedSkills.map((skill, index) => (
+            <span 
+              key={index}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-lg border border-indigo-100/50 shadow-sm"
+            >
+              {skill}
+              <button 
+                type="button"
+                onClick={() => handleRemoveSkill(skill)}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-indigo-400 hover:text-indigo-650 hover:bg-indigo-100 transition-colors font-extrabold text-[10px]"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {selectedSkills.length === 0 && (
+            <span className="text-xs text-gray-400 italic font-medium py-1">Chưa chọn kỹ năng nào</span>
+          )}
+        </div>
+
+        <div className="relative">
+          <input 
+            type="text"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Tìm kiếm hoặc gõ kỹ năng mới..."
+            className="text-sm font-semibold text-gray-900 border border-gray-100 hover:border-gray-200 focus:border-blue-500 bg-gray-50/20 focus:bg-white rounded px-2.5 py-1.5 transition-all outline-none w-full text-right sm:text-left focus:shadow-sm"
+          />
+
+          {showDropdown && (
+            <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-100 shadow-xl rounded-xl max-h-[220px] overflow-y-auto divide-y divide-gray-50">
+              {suggestions.map((skill) => (
+                <button
+                  key={skill.skillId}
+                  type="button"
+                  onClick={() => handleSelectSkill(skill.skillName)}
+                  className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-indigo-50/60 hover:text-indigo-600 transition-colors flex items-center justify-between"
+                >
+                  <span>{skill.skillName}</span>
+                  {!skill.isActive && (
+                    <span className="text-[10px] font-semibold text-amber-500 bg-amber-50 px-1 py-0.5 rounded border border-amber-100/50">Chờ duyệt</span>
+                  )}
+                </button>
+              ))}
+
+              {searchText.trim() && !isExactMatch && (
+                <button
+                  type="button"
+                  onClick={handleCreateNewSkill}
+                  className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-blue-600 bg-blue-50/40 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-1.5"
+                >
+                  <span className="text-sm font-light">+</span> Đề xuất thêm: "{searchText.trim()}" (Chờ duyệt)
+                </button>
+              )}
+
+              {suggestions.length === 0 && (!searchText.trim() || isExactMatch) && (
+                <div className="px-4 py-2.5 text-xs text-gray-400 italic text-center font-medium">
+                  Không tìm thấy gợi ý nào thêm
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, categories, primarySkills, setPrimarySkills, avatarUrl, fetchProfileData
 }) {
+  const [showCompleteness, setShowCompleteness] = React.useState(false);
+  const completenessRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (completenessRef.current && !completenessRef.current.contains(e.target)) {
+        setShowCompleteness(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const completenessItems = React.useMemo(() => {
+    return [
+      { name: 'Xác thực Danh tính (KYC)', points: 20, done: kycStatus === 'APPROVED' },
+      { name: 'Xác thực Email', points: 15, done: !!emailVerified },
+      { name: 'Số điện thoại', points: 10, done: !!(phone && phone.trim().length > 0) },
+      { name: 'Địa chỉ cụ thể', points: 10, done: !!(address && address.trim().length > 0) },
+      { name: 'Lĩnh vực chuyên môn', points: 10, done: !!(expertiseField && expertiseField.trim()) },
+      { name: 'Kỹ năng chuyên môn', points: 10, done: !!(primarySkills && primarySkills.trim()) },
+      { name: 'Giới thiệu bản thân (>30 ký tự)', points: 10, done: !!(bio && bio.trim().length >= 30) },
+      { name: 'Ảnh đại diện', points: 5, done: !!avatarUrl },
+      { name: 'Chức danh nghề nghiệp', points: 5, done: !!(professionalTitle && professionalTitle.trim()) },
+      { name: 'Mức lương kỳ vọng', points: 5, done: !!(hourlyRate && hourlyRate > 0) },
+    ];
+  }, [kycStatus, emailVerified, phone, address, expertiseField, primarySkills, bio, avatarUrl, professionalTitle, hourlyRate]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column (Main Editable Info) */}
@@ -158,6 +353,7 @@ export default function EditProfileForm({
                   </div>
                 </div>
                 <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
+                <SkillTagSelector primarySkills={primarySkills} setPrimarySkills={setPrimarySkills} />
               </>
             )}
 
@@ -231,12 +427,16 @@ export default function EditProfileForm({
             {/* Vị trí địa lý - Chung cho Freelancer & Employer */}
             {(role === 'freelancer' || role === 'employer') && (
               <>
-                <SelectRow label="Quốc gia" value={country} onChange={e=>{setCountry(e.target.value); if(e.target.value === 'Việt Nam') setCity(VIETNAM_PROVINCES[0]); else setCity('Chờ cập nhật');}} options={['Việt Nam', 'Chờ cập nhật']} />
-                <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={country === 'Việt Nam' ? VIETNAM_PROVINCES : ['Chờ cập nhật']} />
+                <div className="flex justify-between items-center sm:block">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-1 block">Quốc gia</span>
+                  <div className="text-sm font-semibold text-gray-700 bg-gray-50/50 border border-gray-100 rounded px-2.5 py-1.5 w-full text-right sm:text-left cursor-not-allowed">
+                    Việt Nam
+                  </div>
+                </div>
+                <SelectRow label="Tỉnh/Thành Phố" value={city} onChange={e=>setCity(e.target.value)} options={VIETNAM_PROVINCES} />
                 <InputRow label="Địa chỉ cụ thể" value={address} onChange={e=>setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã..." />
               </>
             )}
-            <InputRow label="Múi giờ (Timezone)" value={timezone} onChange={e=>setTimezone(e.target.value)} placeholder="Asia/Ho_Chi_Minh..." />
           </div>
         </div>
 
@@ -258,19 +458,19 @@ export default function EditProfileForm({
            </div>
            <div className="space-y-4">
               <ReadOnlyRow 
-                 label="Tình trạng tài khoản" 
+                 label="Tình trạng" 
                  value={status === 'BANNED' ? 'Bị khóa' : 'Đang hoạt động'} 
-                 badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wide ${status === 'BANNED' ? 'text-red-600 bg-red-50' : 'text-[#34A853] bg-[#E6F4EA]'}`} 
+                 badgeClass={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide ${status === 'BANNED' ? 'text-red-600 bg-red-50' : 'text-[#34A853] bg-[#E6F4EA]'}`} 
               />
               <ReadOnlyRow 
                  label="Xác thực Email" 
                  value={emailVerified ? 'Đã xác thực' : 'Chưa xác thực'} 
-                 badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${emailVerified ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`} 
+                 badgeClass={`text-[11px] font-bold px-2 py-0.5 rounded-md ${emailVerified ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'}`} 
               />
               <ReadOnlyRow 
                  label={<>Xác thực Danh tính <br/>(KYC)</>} 
                  value={kycStatus === 'APPROVED' ? 'Đã duyệt' : kycStatus === 'PENDING' ? 'Đang chờ duyệt' : kycStatus === 'REJECTED' ? 'Bị từ chối' : 'Chưa xác thực'} 
-                 badgeClass={`text-xs font-bold px-2 py-0.5 rounded-md ${kycStatus === 'APPROVED' ? 'text-blue-600 bg-blue-50' : kycStatus === 'PENDING' ? 'text-yellow-600 bg-yellow-50' : kycStatus === 'REJECTED' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`} 
+                 badgeClass={`text-[11px] font-bold px-2 py-0.5 rounded-md ${kycStatus === 'APPROVED' ? 'text-blue-600 bg-blue-50' : kycStatus === 'PENDING' ? 'text-yellow-600 bg-yellow-50' : kycStatus === 'REJECTED' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`} 
               />
               <ReadOnlyRow label="Ngày tạo tài khoản" value={formatDate(createdAt)} icon={Clock} />
               <ReadOnlyRow label="Lần đăng nhập cuối" value={formatDateTime ? formatDateTime(lastLoginAt) : formatDate(lastLoginAt)} icon={Activity} />
@@ -279,17 +479,64 @@ export default function EditProfileForm({
 
         {/* Role Specific Stats */}
         {(role === 'freelancer' || role === 'employer') && (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative">
            {/* Background Deco */}
-           <div className="absolute -right-4 -top-4 text-gray-50 opacity-50 pointer-events-none">
-             <BarChart2 className="w-24 h-24" />
+           <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+             <div className="absolute -right-4 -top-4 text-gray-50 opacity-50">
+               <BarChart2 className="w-24 h-24" />
+             </div>
            </div>
 
            <h3 className="font-bold text-gray-900 text-base mb-5 relative z-10">Thống kê Hoạt động</h3>
            
            {role === 'freelancer' ? (
              <div className="space-y-4 relative z-10">
-               <ReadOnlyRow label="Độ hoàn thiện hồ sơ" value={`${profileCompleteness}%`} badgeClass="text-sm font-extrabold text-blue-600" />
+               <div className="relative" ref={completenessRef}>
+                 <div 
+                   onClick={() => setShowCompleteness(!showCompleteness)}
+                   className="cursor-pointer hover:bg-blue-50/50 -mx-2 px-2 py-1 rounded-lg transition-colors group flex justify-between items-center"
+                   title="Xem chi tiết các mục cần hoàn thiện"
+                 >
+                   <span className="text-[11px] font-bold text-gray-400 group-hover:text-blue-600 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
+                     Độ hoàn thiện hồ sơ
+                   </span>
+                   <div className="flex items-center gap-2">
+                       <button 
+                           onClick={(e) => { e.stopPropagation(); if(fetchProfileData) fetchProfileData(); }} 
+                           className="text-gray-400 hover:text-blue-600 transition-colors" 
+                           title="Tải lại % độ hoàn thiện hồ sơ"
+                       >
+                           <RefreshCw className="w-3.5 h-3.5" />
+                       </button>
+                       <span className="text-sm font-extrabold text-blue-600 group-hover:underline whitespace-nowrap">{profileCompleteness}%</span>
+                   </div>
+                 </div>
+                 
+                 {showCompleteness && (
+                   <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 shadow-xl rounded-xl z-50 p-4">
+                     <h4 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider border-b border-gray-100 pb-2">Tiêu chí hoàn thiện ({profileCompleteness}%)</h4>
+                     <ul className="space-y-2.5">
+                       {completenessItems.map((item, idx) => (
+                         <li key={idx} className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             {item.done ? (
+                               <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                             ) : (
+                               <div className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0" />
+                             )}
+                             <span className={`text-[11px] font-semibold ${item.done ? 'text-gray-800' : 'text-gray-400'}`}>
+                               {item.name}
+                             </span>
+                           </div>
+                           <span className={`text-[10px] font-bold ${item.done ? 'text-green-600' : 'text-gray-400'}`}>
+                             +{item.points}%
+                           </span>
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                 )}
+               </div>
                <ReadOnlyRow label="Tổng thu nhập" value={`${totalEarnings} VNĐ`} icon={DollarSign} badgeClass="text-sm font-extrabold text-green-600" />
                <ReadOnlyRow label="Dự án hoàn thành" value={projectsCompleted} icon={Briefcase} />
                <ReadOnlyRow label="Đánh giá trung bình" value={`${averageRating} / 5`} icon={Star} badgeClass="text-sm font-extrabold text-yellow-500" />

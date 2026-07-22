@@ -74,12 +74,6 @@ export default function UserSettings({
       {/* Left Sidebar Menu for Preferences */}
       <div className="md:col-span-1 flex flex-col gap-2">
         <button 
-          onClick={() => setPrefTab('notifications')}
-          className={`text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-3 ${prefTab === 'notifications' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
-        >
-          <List className="w-4 h-4" /> Tùy chọn chung
-        </button>
-        <button 
           onClick={() => setPrefTab('privacy')}
           className={`text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-3 ${prefTab === 'privacy' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
         >
@@ -110,34 +104,6 @@ export default function UserSettings({
       {/* Content Area for Preferences */}
       <div className="md:col-span-3">
         
-        {prefTab === 'notifications' && (
-          <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm max-w-2xl">
-            <h3 className="font-bold text-gray-900 text-xl mb-6 flex items-center gap-2"><List className="w-5 h-5 text-gray-500" /> Tùy chọn chung</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-800">Thông báo Email</p>
-                  <p className="text-sm text-gray-500 mt-1">Nhận email khi có tin nhắn mới hoặc cập nhật dự án.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-800">Hiển thị trực tuyến</p>
-                  <p className="text-sm text-gray-500 mt-1">Cho phép người khác thấy khi bạn đang online.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
-
         {prefTab === 'privacy' && (
           <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm max-w-2xl">
             <h3 className="font-bold text-gray-900 text-xl mb-6 flex items-center gap-2"><EyeOff className="w-5 h-5 text-gray-500" /> Quyền riêng tư</h3>
@@ -333,31 +299,33 @@ export default function UserSettings({
         {prefTab === 'danger' && role !== 'admin' && (
           <div className="bg-white p-8 rounded-xl border border-red-200 shadow-sm max-w-2xl">
             <h3 className="font-bold text-gray-900 text-xl mb-4 flex items-center gap-2"><Trash2 className="w-5 h-5 text-red-500" /> Xóa Tài Khoản</h3>
-            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               Khi bạn xóa tài khoản, tất cả dữ liệu bao gồm hồ sơ, dự án, lịch sử giao dịch và tin nhắn sẽ bị xóa vĩnh viễn và không thể khôi phục.
             </p>
-            
-            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg mb-6">
-              <h4 className="font-bold text-orange-800 text-sm flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4" /> Yêu cầu nghiệp vụ trước khi xóa:
-              </h4>
-              <ul className="list-disc list-inside text-sm text-orange-700 space-y-1.5 ml-1 font-medium">
-                <li>Bạn không được có dự án nào đang trong trạng thái "Đang thực hiện".</li>
-                <li>Số dư trong Ví (Wallet) và trong Quỹ trung gian (Escrow) phải bằng 0.</li>
-                <li>Không có khiếu nại (Dispute) nào đang mở liên quan đến bạn.</li>
-              </ul>
-              <p className="text-xs text-orange-600 mt-3 font-medium italic">* (Hiện tại hệ thống đang trong giai đoạn thử nghiệm nên tạm thời bỏ qua các bước kiểm tra này. Bạn vẫn có thể xóa tài khoản bình thường).</p>
-            </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Vui lòng nhập <span className="font-bold text-red-600">DELETE</span> để xác nhận:</label>
-              <input type="text" value={deleteInput} onChange={e=>setDeleteInput(e.target.value)} placeholder="Nhập DELETE..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all bg-gray-50 focus:bg-white" />
+            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg mb-6">
+              <h4 className="font-bold text-orange-800 text-sm mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> Yêu cầu bắt buộc trước khi xóa:
+              </h4>
+              <ul className="list-disc list-inside text-sm text-orange-700 space-y-1.5 ml-1">
+                {role === 'freelancer' ? (
+                  <>
+                    <li>Không có hợp đồng/dự án nào đang trong trạng thái <span className="font-semibold">Đang thực hiện</span> hoặc <span className="font-semibold">Chờ duyệt</span>.</li>
+                    <li>Không có <span className="font-semibold">tranh chấp hoặc khiếu nại</span> nào đang mở.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Không có dự án đăng tuyển nào đang <span className="font-semibold">Mở</span> hoặc <span className="font-semibold">Chờ duyệt</span>.</li>
+                    <li>Không có hợp đồng/dự án nào đang <span className="font-semibold">thực hiện</span> với Freelancer.</li>
+                    <li>Không có <span className="font-semibold">tranh chấp hoặc khiếu nại</span> nào đang mở.</li>
+                  </>
+                )}
+              </ul>
             </div>
             
             <button 
               onClick={handleDeleteAccount} 
-              disabled={deleteInput !== 'DELETE'} 
-              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors w-full sm:w-auto shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors w-full sm:w-auto shadow-sm"
             >
               Xác nhận Xóa Tài Khoản
             </button>

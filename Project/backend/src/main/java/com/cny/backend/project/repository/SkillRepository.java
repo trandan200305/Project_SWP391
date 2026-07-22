@@ -13,4 +13,5 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
     List<Skill> findByCategoryId(Integer categoryId);
     List<Skill> findByCategoryIdAndIsActiveTrueOrderBySkillNameAsc(Integer categoryId);
     Optional<Skill> findFirstBySkillNameIgnoreCase(String skillName);
+    Optional<Skill> findBySkillNameIgnoreCase(String skillName);
 }

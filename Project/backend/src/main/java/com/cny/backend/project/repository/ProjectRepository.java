@@ -109,4 +109,7 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
                                                 Pageable pageable);
     
     int countByCategoryCategoryIdAndStatusAndIsDeletedFalse(Integer categoryId, String status);
+    
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.client.employerId = :employerId AND p.status IN ('OPEN', 'PENDING') AND p.isDeleted = false")
+    int countActiveProjectsByEmployerId(@Param("employerId") Integer employerId);
 }

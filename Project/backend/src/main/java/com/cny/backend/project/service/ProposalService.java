@@ -175,7 +175,7 @@ public class ProposalService {
                 .project(project)
                 .freelancer(proposal.getFreelancer())
                 .client(project.getClient())
-                .title("Hợp đồng: " + project.getTitle())
+                .title(project.getTitle())
                 .agreedAmount(proposal.getBidAmount())
                 .startDate(LocalDate.now())
                 .status("ACTIVE")

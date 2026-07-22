@@ -24,7 +24,7 @@ public class FreelancerPortfolio {
     @JoinColumn(name = "freelancer_id", nullable = false)
     private Freelancer freelancer;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(name = "attachment_url", length = 500)
@@ -33,7 +33,7 @@ public class FreelancerPortfolio {
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "related_service")
+    @Column(name = "related_service", columnDefinition = "NVARCHAR(255)")
     private String relatedService;
 
     @Column(name = "product_link", length = 500)

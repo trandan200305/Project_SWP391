@@ -5,12 +5,13 @@ import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
 import EmployerExpensesTab from '../components/EmployerExpensesTab.jsx';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
+import RevenueDashboard from './RevenueDashboard.jsx';
 
 export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate }) {
   const [role, setRole] = useState(user.role.toLowerCase());
   const [targetId, setTargetId] = useState(user.id);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
-  const [prefTab, setPrefTab] = useState('notifications'); // 'notifications', 'security', 'danger'
+  const [prefTab, setPrefTab] = useState('privacy'); // 'privacy', 'security', 'danger'
 
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -27,6 +28,9 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [hideLocation, setHideLocation] = useState(false);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // ================= KYC STATE =================
   const [kycStatus, setKycStatus] = useState('UNVERIFIED');
@@ -56,6 +60,9 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+  const [primarySkills, setPrimarySkills] = useState('');
+  const [expertiseField, setExpertiseField] = useState('Khác');
+  const [hourlyRate, setHourlyRate] = useState(0);
 
   // Freelancer Read-only Stats
   const [profileCompleteness, setProfileCompleteness] = useState(0);
@@ -76,10 +83,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
 
 
-  // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
-  useEffect(() => {
+  const fetchProfileData = React.useCallback(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
-
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
     setProfessionalTitle(''); setExpertiseField(''); setAddress(''); setCity(''); setCountry('');
@@ -88,7 +93,6 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     setTotalSpent(0); setProjectsPosted(0);
     setKycStatus('UNVERIFIED'); setKycRejectedReason('');
     setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
-
     fetch(endpoint)
       .then(res => res.text())
       .then(text => {
@@ -132,6 +136,9 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           if (data.totalEarnings) setTotalEarnings(data.totalEarnings);
           if (data.projectsCompleted) setProjectsCompleted(data.projectsCompleted);
           if (data.averageRating) setAverageRating(data.averageRating);
+          if (data.primarySkills) setPrimarySkills(data.primarySkills);
+          if (data.expertiseField) setExpertiseField(data.expertiseField);
+          if (data.hourlyRate) setHourlyRate(data.hourlyRate);
         } else if (role === 'employer') {
           if (data.companyName) setCompanyName(data.companyName);
           if (data.fullName) setFullName(data.fullName);
@@ -154,6 +161,20 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
       });
   }, [role, targetId]);
 
+  // Hàm: Tải dữ liệu hồ sơ người dùng từ máy chủ (Chạy mỗi khi đổi Role hoặc ID)
+  useEffect(() => {
+    setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
+    setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
+    setProfessionalTitle(''); setAddress(''); setCity(''); setCountry(''); setPrimarySkills('');
+    setHideEmail(false); setHidePhone(false); setHideLocation(false); setHourlyRate(0);
+    setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
+    setTotalSpent(0); setProjectsPosted(0);
+    setKycStatus('UNVERIFIED'); setKycRejectedReason('');
+    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
+
+    fetchProfileData();
+  }, [fetchProfileData]);
+
 
 
   // Hàm: Lưu thông tin chỉnh sửa hồ sơ
@@ -163,9 +184,10 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
 
     let payload = {};
     if (role === 'freelancer') {
-      payload = { displayName, fullName, phone, professionalTitle, expertiseField, bio, hourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation };
+      const parsedHourlyRate = hourlyRate ? Number(hourlyRate) : null;
+      payload = { email, displayName, fullName, phone, professionalTitle, expertiseField, bio, hourlyRate: parsedHourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills };
     } else if (role === 'employer') {
-      payload = { displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
+      payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
 
     fetch(endpoint, {
@@ -175,8 +197,12 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     })
       .then(async res => {
         const data = await res.json();
-        if (res.ok && data.success) {
-          alert('Đã lưu thông tin hồ sơ thành công!');
+        if (res.ok) {
+          if (role === 'employer') {
+            alert(data.message || 'Yêu cầu thay đổi thông tin của bạn đã được gửi tới Manager để phê duyệt.');
+          } else {
+            alert('Đã lưu thông tin hồ sơ thành công!');
+          }
         } else {
           alert(data.message || 'Lỗi kết nối máy chủ!');
         }
@@ -187,6 +213,82 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   };
 
 
+
+  const handleDeleteAccount = () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác!")) {
+      return;
+    }
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}?confirmationText=DELETE`;
+    fetch(endpoint, {
+      method: 'DELETE'
+    })
+      .then(async res => {
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert('Tài khoản của bạn đã được xóa thành công.');
+          onLogout();
+        } else {
+          alert(data.message || 'Lỗi khi xóa tài khoản.');
+        }
+      })
+      .catch(err => {
+        alert('Lỗi kết nối máy chủ!');
+      });
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert('Mật khẩu mới phải có ít nhất 6 ký tự!');
+      return;
+    }
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: targetId,
+          role: role.toUpperCase(),
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert(data.message || 'Mật khẩu hiện tại không chính xác.');
+      }
+    } catch (err) {
+      alert('Lỗi kết nối máy chủ!');
+    }
+  };
+
+  const handleSavePrivacy = (privacyUpdates) => {
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
+    let payload = {};
+    if (role === 'freelancer') {
+      const parsedHourlyRate = hourlyRate ? Number(hourlyRate) : null;
+      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, hourlyRate: parsedHourlyRate, ...privacyUpdates };
+    } else if (role === 'employer') {
+      payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, ...privacyUpdates };
+    }
+
+    fetch(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(err => {
+      console.error('Lỗi khi lưu quyền riêng tư:', err);
+    });
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
@@ -230,7 +332,10 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
     adminLevel, setAdminLevel,
     handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency,
-    isOwnProfile, categories
+    isOwnProfile, categories,
+    primarySkills, setPrimarySkills, handleSavePrivacy,
+    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword,
+    fetchProfileData
   };
 
   const tabs = isOwnProfile
@@ -341,22 +446,29 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
                     {role === 'freelancer' ? (displayName || fullName || 'Unnamed Freelancer') : (displayName || fullName || 'Unnamed Company')}
                     {(kycStatus === 'APPROVED') && <CheckCircle className="w-7 h-7 text-blue-500 flex-shrink-0" />}
                   </h2>
-                  <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500 font-medium">
-                    {role === 'freelancer' && professionalTitle && (
-                      <span className="flex items-center gap-1">
-                        {professionalTitle}
+                  <div className="flex items-center flex-wrap gap-x-5 gap-y-2 mt-2 text-sm text-gray-600 font-medium">
+                    {role === 'freelancer' && (
+                      <span className="flex items-center gap-1.5 text-gray-800 font-bold bg-gray-100/80 px-2.5 py-1 rounded-md border border-gray-200/50 shadow-sm">
+                        {professionalTitle || expertiseField || 'Freelancer'}
                       </span>
                     )}
 
                     {role === 'employer' && (
-                      <span className="flex items-center gap-1 text-indigo-600 font-bold">
+                      <span className="flex items-center gap-1.5 text-indigo-700 bg-indigo-50 font-bold px-2.5 py-1 rounded-md border border-indigo-100 shadow-sm">
                         Doanh nghiệp
                       </span>
                     )}
 
-                    <div className="flex items-center gap-1" title="Đánh giá trung bình">
-                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                      <span className="font-bold text-gray-900 text-sm">{averageRating || '0.0'}</span>
+
+
+                    <div className="flex items-center gap-1.5" title="Đánh giá trung bình & Số dự án">
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 rounded text-yellow-700 font-bold border border-yellow-100">
+                        <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+                        <span>{averageRating || '0.0'}</span>
+                      </div>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wide">
+                        ({role === 'freelancer' ? (projectsCompleted || 0) : (projectsPosted || 0)} dự án)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -366,6 +478,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
             {/* Tab Contents Area */}
 
             <div className="p-6 sm:px-10 py-8 border-t border-gray-100">
+
                {activeTab === 'profile' && <UserProfile {...allProps} />}
                {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
                {activeTab === 'expenses' && <EmployerExpensesTab employerId={targetId} />}
@@ -807,7 +920,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
               )}
 
                {activeTab === 'preferences' && <UserSettings {...allProps} />}
-
+               {activeTab === 'revenue' && <RevenueDashboard {...allProps} />}
             </div>
           </div>
         </main>

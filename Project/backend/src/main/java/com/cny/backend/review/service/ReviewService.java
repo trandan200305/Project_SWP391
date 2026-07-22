@@ -105,6 +105,14 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ReviewDto> getReviewsForFreelancer(Integer freelancerId) {
+        return reviewRepository.findByRevieweeFreelancerProfileId(freelancerId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private Contract getCompletedContract(Integer contractId) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Contract not found."));
@@ -175,6 +183,7 @@ public class ReviewService {
                 .revieweeAvatar(revieweeFreelancer != null ? revieweeFreelancer.getAvatarUrl() : revieweeEmployer.getAvatarUrl())
                 .rating(review.getRating())
                 .comment(review.getComment())
+                .contractTitle(review.getContract().getTitle())
                 .createdAt(review.getCreatedAt())
                 .build();
     }

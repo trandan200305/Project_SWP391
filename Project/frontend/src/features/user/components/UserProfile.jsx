@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2, Building2, Award } from 'lucide-react';
+import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2, Building2, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import PortfolioSection from './PortfolioSection';
 import { api } from '../../../api/apiClient';
 import { getImageUrl } from '../../../utils/imageHelper.js';
@@ -30,7 +30,7 @@ export default function UserProfile({
   user, role, targetId,
   setActiveTab, onNavigate, bio, companyDescription, address, city, country, phone, email, hourlyRate, website,
   formatCurrency, totalEarnings, totalSpent, formatCompactCurrency, projectsCompleted, projectsPosted, averageRating, profileCompleteness,
-  hideEmail, hidePhone, hideLocation
+  hideEmail, hidePhone, hideLocation, primarySkills, expertiseField
 }) {
   const isOwner = user && targetId === user.id;
 
@@ -57,6 +57,40 @@ export default function UserProfile({
             <p className="text-[15px] text-gray-600 font-medium leading-relaxed whitespace-pre-line relative z-10">
               {(role === 'freelancer' ? bio : companyDescription) || 'Chưa có thông tin giới thiệu.'}
             </p>
+          </div>
+        )}
+
+        {/* Skills & Expertise Section */}
+        {role === 'freelancer' && (primarySkills || expertiseField) && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
+            {expertiseField && (
+              <div className={primarySkills ? "mb-8" : ""}>
+                <h3 className="font-extrabold text-gray-900 text-lg mb-4">
+                  Lĩnh vực chuyên môn
+                </h3>
+                <span className="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-bold rounded-xl border border-blue-100/50 shadow-sm transition-transform hover:scale-105 duration-200 inline-block">
+                  {expertiseField}
+                </span>
+              </div>
+            )}
+
+            {primarySkills && (
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-lg mb-4">
+                  Kỹ năng chuyên môn
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {primarySkills.split(',').map(s => s.trim()).filter(Boolean).map((skill, index) => (
+                    <span 
+                      key={index} 
+                      className="px-3.5 py-1.5 bg-indigo-50/70 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100/50 shadow-sm transition-transform hover:scale-105 duration-200"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -156,6 +190,7 @@ export default function UserProfile({
 function FreelancerReviewsSection({ freelancerId }) {
   const [reviews, setReviews] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
   React.useEffect(() => {
     api.get(`/reviews/freelancer/${freelancerId}`)
@@ -167,6 +202,14 @@ function FreelancerReviewsSection({ freelancerId }) {
         setLoading(false);
       });
   }, [freelancerId]);
+
+  const handlePrev = () => {
+    setCurrentIndex(prev => (prev === 0 ? reviews.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => (prev === reviews.length - 1 ? 0 : prev + 1));
+  };
 
   if (loading) {
     return <div className="text-xs text-slate-500 font-medium py-4">Đang tải đánh giá từ khách hàng...</div>;
@@ -180,46 +223,95 @@ function FreelancerReviewsSection({ freelancerId }) {
     );
   }
 
+  const activeReview = reviews[currentIndex];
+  if (!activeReview) return null;
+
+  const reviewerName = activeReview.reviewerName || activeReview.reviewerEmployerName || "Khách hàng";
+  const reviewerAvatar = activeReview.reviewerAvatar || activeReview.reviewerEmployerAvatar;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-      <h3 className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
-        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-        Đánh giá từ Khách hàng ({reviews.length})
-      </h3>
-      <div className="divide-y divide-gray-100 space-y-4">
-        {reviews.map((review) => (
-          <div key={review.reviewId} className="pt-4 first:pt-0 space-y-2">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
-                  {review.reviewerEmployerAvatar ? (
-                    <img src={review.reviewerEmployerAvatar} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    review.reviewerEmployerName ? review.reviewerEmployerName.charAt(0).toUpperCase() : 'C'
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800 text-sm">{review.reviewerEmployerName}</h4>
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {new Date(review.createdAt).toLocaleDateString('vi-VN')}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star 
-                    key={s} 
-                    className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
-                  />
-                ))}
-              </div>
-            </div>
-            <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
-              {review.comment || 'Không có nhận xét chi tiết.'}
-            </p>
+      <div className="flex justify-between items-center">
+        <h3 className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
+          <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+          Đánh giá từ Khách hàng ({reviews.length})
+        </h3>
+        
+        {reviews.length > 1 && (
+          <div className="flex items-center gap-2">
+            <button 
+              type="button"
+              onClick={handlePrev}
+              className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors shadow-sm"
+              title="Đánh giá trước"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-gray-400 select-none px-1">
+              {currentIndex + 1} / {reviews.length}
+            </span>
+            <button 
+              type="button"
+              onClick={handleNext}
+              className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors shadow-sm"
+              title="Đánh giá tiếp theo"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-        ))}
+        )}
       </div>
+
+      <div className="space-y-4 min-h-[120px] transition-all duration-300">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 text-sm overflow-hidden">
+              {reviewerAvatar ? (
+                <img src={reviewerAvatar} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                reviewerName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800 text-sm">{reviewerName}</h4>
+              <span className="text-[10px] text-gray-400 font-medium flex flex-wrap items-center gap-1.5 mt-0.5">
+                <span>{new Date(activeReview.createdAt).toLocaleDateString('vi-VN')}</span>
+                {activeReview.contractTitle && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span>Dự án: <span className="text-indigo-650 font-bold">{activeReview.contractTitle}</span></span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star 
+                key={s} 
+                className={`w-3.5 h-3.5 ${s <= activeReview.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
+              />
+            ))}
+          </div>
+        </div>
+        <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11 italic bg-gray-50/50 p-4 rounded-xl border border-gray-100/50">
+          "{activeReview.comment || 'Không có nhận xét chi tiết.'}"
+        </p>
+      </div>
+
+      {reviews.length > 1 && (
+        <div className="flex justify-center gap-1.5 pt-2">
+          {reviews.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setCurrentIndex(idx)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-indigo-600 w-4' : 'bg-gray-200 hover:bg-gray-300'}`}
+              title={`Xem đánh giá ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

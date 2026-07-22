@@ -163,6 +163,8 @@ export default function YourJobsPage({ onNavigate, user }) {
       case 'ACTIVE': return 'Đang thực hiện';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CLOSED': return 'Đã đóng';
+      case 'DISPUTED': return 'Tranh chấp / Khiếu nại';
+      case 'RESOLVED': return 'Đã phân xử';
       default: return status;
     }
   };
@@ -172,6 +174,8 @@ export default function YourJobsPage({ onNavigate, user }) {
       case 'ACTIVE': return 'bg-cyan-50 text-cyan-700 border-cyan-150';
       case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-150';
       case 'CLOSED': return 'bg-slate-100 text-slate-650 border-slate-200';
+      case 'DISPUTED': return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'RESOLVED': return 'bg-emerald-50 text-emerald-700 border-emerald-150';
       default: return 'bg-slate-55 text-slate-600 border-slate-200';
     }
   };
@@ -199,9 +203,9 @@ export default function YourJobsPage({ onNavigate, user }) {
   // Filter contracts based on tab
   const filteredContracts = contracts.filter(c => {
     if (activeTab === 'received') {
-      return c.status === 'ACTIVE';
+      return c.status === 'ACTIVE' || c.status === 'DISPUTED';
     } else if (activeTab === 'completed') {
-      return c.status === 'COMPLETED' || c.status === 'CLOSED';
+      return c.status === 'COMPLETED' || c.status === 'CLOSED' || c.status === 'RESOLVED';
     }
     return false;
   });
@@ -246,7 +250,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             Đã nộp thầu ({proposals.length})
           </button>
           
-          <button
+           <button
             onClick={() => handleTabClick('received')}
             className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-bold transition-all duration-250 ${
               activeTab === 'received'
@@ -255,7 +259,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             }`}
           >
             <Briefcase className="w-4 h-4" />
-            Đang thực hiện ({contracts.filter(c => c.status === 'ACTIVE').length})
+            Đang thực hiện ({contracts.filter(c => c.status === 'ACTIVE' || c.status === 'DISPUTED').length})
           </button>
           
           <button
@@ -267,7 +271,7 @@ export default function YourJobsPage({ onNavigate, user }) {
             }`}
           >
             <CheckCircle className="w-4 h-4" />
-            Đã hoàn thành ({contracts.filter(c => c.status === 'COMPLETED' || c.status === 'CLOSED').length})
+            Đã hoàn thành ({contracts.filter(c => c.status === 'COMPLETED' || c.status === 'CLOSED' || c.status === 'RESOLVED').length})
           </button>
         </div>
 
