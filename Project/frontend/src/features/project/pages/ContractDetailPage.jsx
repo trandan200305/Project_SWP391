@@ -99,9 +99,10 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   };
 
   const handleReviewFreelancerClick = () => {
-    const section = document.getElementById('contract-review-section');
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
+    const commentInput = document.getElementById('freelancer-review-comment');
+    if (commentInput) {
+      commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      commentInput.focus();
     }
   };
 
@@ -828,6 +829,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét chi tiết (Tùy chọn)</label>
                   <textarea
+                    id="freelancer-review-comment"
                     rows="3"
                     value={freelancerComment}
                     onChange={(e) => setFreelancerComment(e.target.value)}
