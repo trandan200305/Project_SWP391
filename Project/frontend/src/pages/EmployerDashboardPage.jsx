@@ -136,6 +136,8 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
     tier = 'ĐỒNG',
     runningProjects = [],
     runningProjectsCount = 0,
+    completedProjectsCount = 0,
+    completedProjectsSpent = 0,
     pendingDeliverables = [],
     pendingDeliverablesCount = 0,
     favoriteFreelancers = [],
@@ -205,104 +207,128 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 sm:-mt-20 relative z-20 space-y-8">
 
-        {/* 4 KPI Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* 5 KPI Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {/* Card 1: Dự án đang chạy */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
-                <Briefcase className="w-6 h-6" />
+          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                <Briefcase className="w-5 h-5" />
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
                 Đang chạy
               </span>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dự án đang thực hiện</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Đang thực hiện</p>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-3xl font-extrabold text-slate-900">{runningProjectsCount}</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">{runningProjectsCount}</h3>
                 <button
                   onClick={() => onNavigate('employer_jobs')}
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 group-hover:translate-x-0.5 transition"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
                 >
-                  Chi tiết <ChevronRight className="w-3.5 h-3.5" />
+                  Xem <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Card 2: Tổng chi tiêu */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
-                <DollarSign className="w-6 h-6" />
+          {/* Card 2: Dự án đã hoàn thành & Tổng số tiền nghiệm thu */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                Đã thanh toán
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
+                {completedProjectsCount} dự án
               </span>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng chi tiêu lũy kế</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Dự án hoàn thành</p>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">{formatCurrency(totalSpent)}</h3>
+                <h3 className="text-lg font-extrabold text-sky-700">{formatCurrency(completedProjectsSpent)}</h3>
+                <button
+                  onClick={() => onNavigate('employer_jobs')}
+                  className="text-xs font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
+                >
+                  Chi tiết <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Tổng chi tiêu */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                Tích lũy
+              </span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng chi tiêu lũy kế</p>
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-lg font-extrabold text-slate-900">{formatCurrency(totalSpent)}</h3>
                 <button
                   onClick={() => onNavigate('employer_invoices')}
-                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 group-hover:translate-x-0.5 transition"
+                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
                 >
-                  Hóa đơn <ChevronRight className="w-3.5 h-3.5" />
+                  Hóa đơn <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Deliverable chờ duyệt */}
-          <div className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition border ${pendingDeliverablesCount > 0 ? 'border-amber-300 ring-2 ring-amber-400/20' : 'border-slate-200/80'} group relative overflow-hidden`}>
+          {/* Card 4: Deliverable chờ duyệt */}
+          <div className={`bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border ${pendingDeliverablesCount > 0 ? 'border-amber-300 ring-2 ring-amber-400/20' : 'border-slate-200/80'} group relative overflow-hidden`}>
             {pendingDeliverablesCount > 0 && (
-              <div className="absolute top-0 right-0 w-2 h-full bg-amber-400 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-1.5 h-full bg-amber-400 animate-pulse"></div>
             )}
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
-                <FileCheck className="w-6 h-6" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                <FileCheck className="w-5 h-5" />
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pendingDeliverablesCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200 font-bold' : 'bg-slate-100 text-slate-600'}`}>
-                {pendingDeliverablesCount > 0 ? 'Cần duyệt ngay' : 'Không có mới'}
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${pendingDeliverablesCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200 font-bold' : 'bg-slate-100 text-slate-600'}`}>
+                {pendingDeliverablesCount > 0 ? 'Cần duyệt' : '0 mới'}
               </span>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sản phẩm chờ phê duyệt</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sản phẩm chờ duyệt</p>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-3xl font-extrabold text-slate-900">{pendingDeliverablesCount}</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">{pendingDeliverablesCount}</h3>
                 {pendingDeliverablesCount > 0 && (
                   <a
                     href="#pending-deliverables-section"
-                    className="text-xs font-semibold text-amber-600 hover:text-amber-800 flex items-center gap-1 group-hover:translate-x-0.5 transition"
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
                   >
-                    Xem sản phẩm <ChevronRight className="w-3.5 h-3.5" />
+                    Duyệt <ChevronRight className="w-3 h-3" />
                   </a>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Card 4: Freelancer ưa thích / Đã hợp tác */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
-                <Star className="w-6 h-6" />
+          {/* Card 5: Freelancer ưa thích / Đã hợp tác */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                <Star className="w-5 h-5" />
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
-                {isRecommendation ? 'Gợi ý nổi bật' : 'Đã hợp tác'}
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
+                {isRecommendation ? 'Gợi ý' : 'Đã hợp tác'}
               </span>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Freelancer ưa thích</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Freelancer ưa thích</p>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-3xl font-extrabold text-slate-900">{favoriteFreelancersCount}</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">{favoriteFreelancersCount}</h3>
                 <button
                   onClick={() => onNavigate('find_freelancers')}
-                  className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1 group-hover:translate-x-0.5 transition"
+                  className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
                 >
-                  Danh sách <ChevronRight className="w-3.5 h-3.5" />
+                  Danh sách <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>

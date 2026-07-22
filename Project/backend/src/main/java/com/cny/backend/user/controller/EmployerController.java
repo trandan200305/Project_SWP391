@@ -123,6 +123,33 @@ public class EmployerController {
         response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier));
         response.put("projectsPosted", employer.getProjectsPosted() != null ? employer.getProjectsPosted() : 0);
 
+        // 1b. Aggregated completed projects & completed spent
+        int completedProjectsCount = 0;
+        java.math.BigDecimal completedProjectsSpent = java.math.BigDecimal.ZERO;
+        try {
+            Map<String, Object> completedStats = jdbcTemplate.queryForMap(
+                "SELECT COUNT(DISTINCT p.project_id) AS completed_count, COALESCE(SUM(c.agreed_amount), 0) AS completed_spent " +
+                "FROM projects p " +
+                "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status = 'COMPLETED' " +
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status = 'COMPLETED' OR c.status = 'COMPLETED')",
+                employerId
+            );
+            if (completedStats != null) {
+                Number cCount = (Number) completedStats.get("completed_count");
+                if (cCount != null) completedProjectsCount = cCount.intValue();
+                Object cSpent = completedStats.get("completed_spent");
+                if (cSpent instanceof java.math.BigDecimal) {
+                    completedProjectsSpent = (java.math.BigDecimal) cSpent;
+                } else if (cSpent instanceof Number) {
+                    completedProjectsSpent = new java.math.BigDecimal(((Number) cSpent).toString());
+                }
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        response.put("completedProjectsCount", completedProjectsCount);
+        response.put("completedProjectsSpent", completedProjectsSpent);
+
         // 2. Running Projects & Contracts
         List<Map<String, Object>> activeProjectsList = new ArrayList<>();
         try {
