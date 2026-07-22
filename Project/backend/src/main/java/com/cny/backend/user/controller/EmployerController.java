@@ -455,9 +455,9 @@ public class EmployerController {
         response.put("projectsPosted", employer.getProjectsPosted());
         response.put("averageRating", employer.getAverageRating());
         response.put("billing", new HashMap<>());
-        response.put("currentPackageType", employer.getCurrentPackageType() != null ? employer.getCurrentPackageType() : "PREMIUM");
-        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 99);
-        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : "2030-12-31T23:59:59");
+        response.put("currentPackageType", employer.getCurrentPackageType());
+        response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 0);
+        response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : null);
         response.put("kycStatus", employer.getKycStatus());
         response.put("businessLicenseUrl", employer.getBusinessLicenseUrl());
         response.put("representativeIdCardUrl", employer.getRepresentativeIdCardUrl());
