@@ -12,6 +12,7 @@ import LoginModal from '../features/auth/components/LoginModal.jsx';
 import RegisterModal from '../features/auth/components/RegisterModal.jsx';
 import EmployerProfileSettings from '../components/EmployerProfileSettings.jsx';
 import EmployerJobsPage from '../pages/EmployerJobsPage.jsx';
+import EmployerProjectDetailsPage from '../pages/EmployerProjectDetailsPage.jsx';
 import PostJobPage from '../pages/PostJobPage.jsx';
 import FindJobsPage from '../features/project/pages/FindJobsPage.jsx';
 import FindFreelancersPage from '../features/project/pages/FindFreelancersPage.jsx';
@@ -154,6 +155,16 @@ export default function AppRoutes({
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
+      />
+    );
+  }
+  if (currentPage === 'employer_project_details') {
+    return (
+      <EmployerProjectDetailsPage
+        projectId={pageParams?.projectId}
+        initialTab={pageParams?.initialTab}
+        user={user}
+        onNavigate={handleNavigate}
       />
     );
   }
