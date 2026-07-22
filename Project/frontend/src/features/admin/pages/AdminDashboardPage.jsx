@@ -4084,7 +4084,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 {[
                   { id: 'seo', label: 'Cấu hình Hệ thống' },
                   { id: 'categories', label: 'Danh mục Việc làm', count: jobCategories.length },
-                  { id: 'kyc', label: 'Duyệt KYC', count: kycRequests.length },
+
                   { id: 'profileRequests', label: 'Duyệt Profile', count: profileRequests.length },
                   { id: 'disputes', label: 'Tranh chấp', count: disputes.length },
                   { id: 'reports', label: 'Báo cáo vi phạm', count: reports.length },

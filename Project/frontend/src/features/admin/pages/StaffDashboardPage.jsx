@@ -2391,13 +2391,7 @@ export default function StaffDashboardPage({
               r.status === "Pending",
           ).length,
         },
-        // nut xac thuc kyc
-        {
-          id: "KYC",
-          label: "Xác thực KYC",
-          icon: UserCheck,
-          badge: pendingKycCount,
-        },
+
         // nut lich su hoat dong
         { id: "ModHistory", label: "Lịch sử hoạt động", icon: FileText },
       ],

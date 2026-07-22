@@ -343,16 +343,18 @@ public class EmployerController {
             e.setTaxCode(dto.getTaxCode() != null ? dto.getTaxCode().trim() : null);
             e.setBusinessLicenseUrl(dto.getBusinessLicenseUrl().trim());
             e.setRepresentativeIdCardUrl(dto.getRepresentativeIdCardUrl().trim());
-            e.setKycStatus("PENDING");
+            e.setKycStatus("APPROVED");
+            e.setIsVerified(true);
             e.setKycRejectedReason(null);
             e.setKycSubmittedAt(LocalDateTime.now());
+            e.setKycReviewedAt(LocalDateTime.now());
             e.setUpdatedAt(LocalDateTime.now());
 
             employerRepository.save(e);
 
             try {
                 jdbcTemplate.update(
-                    "INSERT INTO kyc_requests (employer_id, status, created_at, updated_at) VALUES (?, 'PENDING', GETDATE(), GETDATE())",
+                    "INSERT INTO kyc_requests (employer_id, status, created_at, updated_at) VALUES (?, 'APPROVED', GETDATE(), GETDATE())",
                     e.getEmployerId()
                 );
             } catch (Exception ex) {
@@ -363,14 +365,14 @@ public class EmployerController {
             notificationService.createNotification(
                 0L, // Global for staff
                 "STAFF",
-                "Yêu cầu xác minh danh tính KYC mới",
-                "Nhà tuyển dụng " + (e.getCompanyName() != null ? e.getCompanyName() : e.getDisplayName()) + " vừa gửi yêu cầu xác minh doanh nghiệp.",
+                "Xác minh danh tính KYC thành công",
+                "Nhà tuyển dụng " + (e.getCompanyName() != null ? e.getCompanyName() : e.getDisplayName()) + " đã được tự động xác minh danh tính.",
                 "INFO",
                 "KYC-EMP-" + e.getEmployerId()
             );
 
             response.put("success", true);
-            response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
+            response.put("message", "Xác thực KYC thành công!");
             return ResponseEntity.ok(response);
         }).orElseGet(() -> {
             response.put("success", false);

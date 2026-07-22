@@ -548,12 +548,7 @@ export default function ManagerDashboardPage({
           badge: violationReports.filter((r) => r.status === "Chờ xử lý")
             .length,
         },
-        {
-          id: "KYC",
-          label: "Xác thực KYC",
-          icon: UserCheck,
-          badge: kycRequests.filter((r) => r.status === "Pending").length,
-        },
+
       );
     } else if (activeDeptCode === "DIS") {
       common.push(
@@ -617,7 +612,7 @@ export default function ManagerDashboardPage({
         },
         { id: "Moderation", label: "Hàng đợi kiểm duyệt", icon: Gavel },
         { id: "Reports", label: "Báo cáo vi phạm", icon: FileText },
-        { id: "KYC", label: "Xác thực KYC", icon: UserCheck },
+
         { id: "Support", label: "Hỗ trợ khách hàng", icon: MessageSquare },
       );
     }

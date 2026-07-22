@@ -402,8 +402,10 @@ public class FreelancerController {
             f.setIdCardFrontUrl(dto.getIdCardFrontUrl());
             f.setIdCardBackUrl(dto.getIdCardBackUrl());
             f.setPortraitUrl(dto.getPortraitUrl());
-            f.setKycStatus("PENDING");
+            f.setKycStatus("APPROVED");
+            f.setIsVerified(true);
             f.setKycSubmittedAt(java.time.LocalDateTime.now());
+            f.setKycReviewedAt(java.time.LocalDateTime.now());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             f.setProfileCompleteness(calculateCompleteness(f));
             
@@ -413,14 +415,14 @@ public class FreelancerController {
             notificationService.createNotification(
                 0L, // Global for staff
                 "STAFF",
-                "Yêu cầu xác minh danh tính KYC mới",
-                "Freelancer " + (f.getFullName() != null ? f.getFullName() : f.getDisplayName()) + " vừa gửi yêu cầu xác minh danh tính.",
+                "Xác minh danh tính KYC thành công",
+                "Freelancer " + (f.getFullName() != null ? f.getFullName() : f.getDisplayName()) + " đã được tự động xác minh danh tính.",
                 "INFO",
                 "KYC-FL-" + f.getProfileId()
             );
 
             response.put("success", true);
-            response.put("message", "Đã nộp hồ sơ KYC thành công. Đang chờ duyệt.");
+            response.put("message", "Xác thực KYC thành công!");
             return ResponseEntity.ok(response);
         }).orElseGet(() -> {
             response.put("success", false);
