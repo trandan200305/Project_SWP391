@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
+import { validateImageFile, validateDocumentFile } from '../utils/fileValidation.js';
 import EmployerSupportTickets from './employer/EmployerSupportTickets.jsx';
 import EmployerInvoices from './employer/EmployerInvoices.jsx';
 
@@ -413,15 +414,11 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             .finally(() => setLoading(false));
     }, [user]);
 
-    // Validation helper for verification files (Allows any file type for Staff review)
+    // Validation helper for verification files (Allows documents & images, max 50MB)
     const validateVerificationFile = (file, label) => {
-        if (!file) return { valid: false, message: 'Vui lòng chọn file đính kèm.' };
-        const maxMB = 50;
-        if (file.size > maxMB * 1024 * 1024) {
-            return {
-                valid: false,
-                message: `File ${label} dung lượng vượt quá ${maxMB}MB.`
-            };
+        const result = validateDocumentFile(file, 50);
+        if (!result.valid) {
+            return { valid: false, message: `[${label}] ${result.message}` };
         }
         return { valid: true };
     };
