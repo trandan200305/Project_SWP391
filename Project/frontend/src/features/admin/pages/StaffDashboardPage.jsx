@@ -6692,126 +6692,17 @@ export default function StaffDashboardPage({
 
               return (
                 <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex flex-col gap-3">
-                  {showAssignStaffDrawer && (
-                    <div className="bg-white p-3.5 rounded-xl border border-indigo-200 shadow-sm flex flex-col sm:flex-row items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex-1 w-full">
-                        <label className="block text-xs font-bold text-indigo-900 mb-1">
-                          Chọn nhân viên để phân công nhiệm vụ:
-                        </label>
-                        <select
-                          value={selectedAssignStaffEmail}
-                          onChange={(e) =>
-                            setSelectedAssignStaffEmail(e.target.value)
-                          }
-                          className="w-full h-10 rounded-lg border border-indigo-300 bg-indigo-50/50 px-3 text-xs font-bold text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        >
-                          <option value="">
-                            -- Chọn nhân viên thuộc phòng Tranh chấp --
-                          </option>
-                          {(() => {
-                            const currentDeptCode =
-                              staffDepartmentCode || "DIS";
-                            const filteredStaff = staffList.filter((s) => {
-                              const code = String(
-                                s.departmentCode || s.deptCode || s.code || "",
-                              ).toUpperCase();
-                              const name = String(
-                                s.departmentName || s.department || "",
-                              ).toLowerCase();
-                              const email = String(s.email || "").toLowerCase();
-
-                              if (currentDeptCode === "DIS") {
-                                return (
-                                  code === "DIS" ||
-                                  name.includes("tranh chấp") ||
-                                  name.includes("dispute") ||
-                                  email.includes("dispute")
-                                );
-                              } else if (currentDeptCode === "MOD") {
-                                return (
-                                  code === "MOD" ||
-                                  name.includes("kiểm duyệt") ||
-                                  name.includes("moderation") ||
-                                  email.includes("moderation")
-                                );
-                              } else if (currentDeptCode === "FIN") {
-                                return (
-                                  code === "FIN" ||
-                                  name.includes("tài chính") ||
-                                  name.includes("finance") ||
-                                  email.includes("finance")
-                                );
-                              } else if (currentDeptCode === "CS") {
-                                return (
-                                  code === "CS" ||
-                                  name.includes("hỗ trợ") ||
-                                  name.includes("support") ||
-                                  email.includes("support")
-                                );
-                              }
-                              return true;
-                            });
-
-                            if (filteredStaff.length > 0) {
-                              return filteredStaff.map((s) => (
-                                <option
-                                  key={s.id || s.staffId || s.email}
-                                  value={s.email}
-                                >
-                                  {s.fullName || s.displayName || s.email} (
-                                  {s.email})
-                                </option>
-                              ));
-                            }
-
-                            return [
-                              {
-                                email: "staff.dispute@gmail.com",
-                                name: "Nhân viên Tranh chấp",
-                              },
-                              {
-                                email: "staff.dispute2@gmail.com",
-                                name: "Nhân viên Tranh chấp 2",
-                              },
-                            ].map((s) => (
-                              <option key={s.email} value={s.email}>
-                                {s.name} ({s.email})
-                              </option>
-                            ));
-                          })()}
-                        </select>
-                      </div>
-                      <div className="flex gap-2 w-full sm:w-auto self-end">
-                        <button
-                          type="button"
-                          onClick={() => setShowAssignStaffDrawer(false)}
-                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer"
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleAssignDisputeToStaff(selectedAssignStaffEmail)
-                          }
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-lg shadow transition-all cursor-pointer"
-                        >
-                          Xác nhận phân công
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex justify-end gap-3 w-full">
                     {!isReadOnlyHistory && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowAssignStaffDrawer(!showAssignStaffDrawer)
-                        }
-                        className="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        onClick={() => {
+                          const myEmail = user?.email || "staff.dispute@gmail.com";
+                          handleAssignDisputeToStaff(myEmail);
+                        }}
+                        className="py-2.5 px-6 bg-[#006b2c] hover:bg-[#005221] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        Phân công công việc
+                        Tiếp nhận khiếu nại
                       </button>
                     )}
                   </div>
