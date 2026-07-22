@@ -229,10 +229,6 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
 
   const handleSubmitContractReview = async (e) => {
     e.preventDefault();
-    if (!freelancerComment.trim()) {
-      setActionError('Vui lòng nhập nhận xét.');
-      return;
-    }
 
     try {
       setSubmittingContractReview(true);
@@ -830,13 +826,12 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét chi tiết *</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Nhận xét chi tiết (Tùy chọn)</label>
                   <textarea
-                    required
                     rows="3"
                     value={freelancerComment}
                     onChange={(e) => setFreelancerComment(e.target.value)}
-                    placeholder="Hãy chia sẻ trải nghiệm làm việc của bạn với khách hàng này..."
+                    placeholder="Hãy chia sẻ trải nghiệm làm việc của bạn..."
                     className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
                   />
                 </div>
