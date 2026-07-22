@@ -27,7 +27,7 @@ public class PaymentInvoice {
     @Column(name = "employer_id")
     private Integer employerId;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String description;
 
     @Column(nullable = false, precision = 18, scale = 2)
@@ -46,6 +46,16 @@ public class PaymentInvoice {
     @Column(length = 20)
     @Builder.Default
     private String status = "PAID";
+
+    // Viettel SInvoice fields
+    @Column(name = "viettel_invoice_no", length = 50)
+    private String viettelInvoiceNo;
+
+    @Column(name = "viettel_transaction_uuid", length = 100)
+    private String viettelTransactionUuid;
+
+    @Column(name = "viettel_status", length = 50)
+    private String viettelStatus;
 
     @PrePersist
     protected void onCreate() {

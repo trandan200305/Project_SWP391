@@ -10,8 +10,6 @@ import com.cny.backend.user.entity.Employer;
 import com.cny.backend.user.repository.EmployerRepository;
 import com.cny.backend.admin.entity.ServicePackageConfig;
 import com.cny.backend.admin.repository.ServicePackageConfigRepository;
-import com.cny.backend.admin.entity.VnpayConfig;
-import com.cny.backend.admin.repository.VnpayConfigRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,14 +48,15 @@ public class PayOSService {
     @Autowired
     private ServicePackageConfigRepository servicePackageConfigRepository;
 
-    @Autowired
-    private VnpayConfigRepository vnpayConfigRepository;
 
     @Autowired
     private ProjectService projectService;
 
     @Autowired
-    private InvoiceService invoiceService;
+    private com.cny.backend.admin.service.InvoiceService invoiceService;
+
+    @Autowired
+    private com.cny.backend.invoice.service.InvoiceService viettelInvoiceService;
 
     @Autowired
     private DashboardRepository dashboardRepository;
@@ -110,11 +109,23 @@ public class PayOSService {
         if (project != null && project.getServiceFee() != null) {
             price = project.getServiceFee();
         } else if (packageType != null) {
-            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(packageType.toUpperCase());
+            String pkgUpper = packageType.toUpperCase();
+            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(pkgUpper);
             if (configOpt.isPresent()) {
                 price = configOpt.get().getPrice();
             } else {
-                throw new IllegalArgumentException("Không tìm thấy cấu hình giá cho gói dịch vụ: " + packageType);
+                double defaultPrice = "PREMIUM".equals(pkgUpper) ? 500000.0 : ("MEDIUM".equals(pkgUpper) ? 250000.0 : 100000.0);
+                int duration = "PREMIUM".equals(pkgUpper) ? 30 : ("MEDIUM".equals(pkgUpper) ? 10 : 20);
+                ServicePackageConfig newCfg = ServicePackageConfig.builder()
+                        .packageType(pkgUpper)
+                        .price(defaultPrice)
+                        .durationDays(duration)
+                        .postLimit(10)
+                        .build();
+                try {
+                    servicePackageConfigRepository.save(newCfg);
+                } catch (Exception e) {}
+                price = defaultPrice;
             }
         } else {
             throw new IllegalArgumentException("Vui lòng cung cấp projectId hoặc packageType");
@@ -146,7 +157,7 @@ public class PayOSService {
         PaymentTransaction txn = PaymentTransaction.builder()
                 .txnRef(txnRef)
                 .employerId(employerId)
-                .projectId(project != null ? project.getProjectId() : null)
+                .projectId(project != null ? project.getProjectId() : (projectId != null ? projectId : null))
                 .packageType(packageType != null ? packageType.toUpperCase() : null)
                 .amount(feeAmount)
                 .status("PENDING")
@@ -154,14 +165,7 @@ public class PayOSService {
 
         transactionRepository.save(txn);
 
-        int timeoutMinutes = 30;
-        try {
-            Optional<VnpayConfig> configOpt = vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc();
-            if (configOpt.isPresent() && configOpt.get().getSessionTimeout() != null) {
-                timeoutMinutes = configOpt.get().getSessionTimeout();
-            }
-        } catch (Exception e) {}
-        
+        int timeoutMinutes = 30;        
         long expiredAt = LocalDateTime.now().plusMinutes(timeoutMinutes).toEpochSecond(ZoneOffset.ofHours(7));
         
         String pkgType = (packageType != null) ? packageType.toUpperCase() : (project != null && project.getServicePackage() != null ? project.getServicePackage().toUpperCase() : "MEDIUM");
@@ -216,16 +220,39 @@ public class PayOSService {
                 
                 invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich PayOS " + txn.getTxnRef());
 
+                try {
+                    viettelInvoiceService.issueInvoiceForTransaction(txn.getId());
+                } catch (Exception e) {
+                    System.err.println("Failed to issue Viettel electronic invoice via PayOS webhook: " + e.getMessage());
+                }
+                if (txn.getEmployerId() != null && txn.getAmount() != null) {
+                    employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                        com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
+                    });
+                }
+
                 if (txn.getProjectId() != null) {
                     projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                 } else if (txn.getPackageType() != null) {
                     employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
-                        servicePackageConfigRepository.findByPackageType(txn.getPackageType().toUpperCase()).ifPresent(config -> {
-                            employer.setCurrentPackageType(txn.getPackageType().toUpperCase());
-                            employer.setPackagePostQuota(config.getPostLimit());
-                            employer.setPackageExpiryDate(LocalDateTime.now().plusDays(config.getDurationDays()));
-                            employerRepository.save(employer);
-                        });
+                        String pkgUpper = txn.getPackageType().toUpperCase();
+                        int postLimit = 10;
+                        int durationDays = 30;
+
+                        Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(pkgUpper);
+                        if (configOpt.isPresent()) {
+                            postLimit = configOpt.get().getPostLimit();
+                            durationDays = configOpt.get().getDurationDays();
+                        } else {
+                            if ("REGULAR".equals(pkgUpper)) { postLimit = 5; durationDays = 15; }
+                            else if ("PREMIUM".equals(pkgUpper)) { postLimit = 20; durationDays = 30; }
+                        }
+
+                        int currentQuota = employer.getPackagePostQuota() != null && employer.getPackagePostQuota() > 0 ? employer.getPackagePostQuota() : 0;
+                        employer.setCurrentPackageType(pkgUpper);
+                        employer.setPackagePostQuota(currentQuota + postLimit);
+                        employer.setPackageExpiryDate(LocalDateTime.now().plusDays(durationDays));
+                        employerRepository.save(employer);
                     });
                 }
                 
@@ -260,16 +287,39 @@ public class PayOSService {
                     
                     invoiceService.generateInvoiceForTransaction(txn, "Thanh toan giao dich PayOS " + txn.getTxnRef());
 
+                    try {
+                        viettelInvoiceService.issueInvoiceForTransaction(txn.getId());
+                    } catch (Exception e) {
+                        System.err.println("Failed to issue Viettel electronic invoice via PayOS query: " + e.getMessage());
+                    }
+                    if (txn.getEmployerId() != null && txn.getAmount() != null) {
+                        employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
+                            com.cny.backend.user.util.EmployerTierUtils.updateEmployerSpending(employer, txn.getAmount(), employerRepository);
+                        });
+                    }
+
                     if (txn.getProjectId() != null) {
                         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
                     } else if (txn.getPackageType() != null) {
                         employerRepository.findById(txn.getEmployerId()).ifPresent(employer -> {
-                            servicePackageConfigRepository.findByPackageType(txn.getPackageType().toUpperCase()).ifPresent(config -> {
-                                employer.setCurrentPackageType(txn.getPackageType().toUpperCase());
-                                employer.setPackagePostQuota(config.getPostLimit());
-                                employer.setPackageExpiryDate(LocalDateTime.now().plusDays(config.getDurationDays()));
-                                employerRepository.save(employer);
-                            });
+                            String pkgUpper = txn.getPackageType().toUpperCase();
+                            int postLimit = 10;
+                            int durationDays = 30;
+
+                            Optional<ServicePackageConfig> configOpt = servicePackageConfigRepository.findByPackageType(pkgUpper);
+                            if (configOpt.isPresent()) {
+                                postLimit = configOpt.get().getPostLimit();
+                                durationDays = configOpt.get().getDurationDays();
+                            } else {
+                                if ("REGULAR".equals(pkgUpper)) { postLimit = 5; durationDays = 15; }
+                                else if ("PREMIUM".equals(pkgUpper)) { postLimit = 20; durationDays = 30; }
+                            }
+
+                            int currentQuota = employer.getPackagePostQuota() != null && employer.getPackagePostQuota() > 0 ? employer.getPackagePostQuota() : 0;
+                            employer.setCurrentPackageType(pkgUpper);
+                            employer.setPackagePostQuota(currentQuota + postLimit);
+                            employer.setPackageExpiryDate(LocalDateTime.now().plusDays(durationDays));
+                            employerRepository.save(employer);
                         });
                     }
                 }

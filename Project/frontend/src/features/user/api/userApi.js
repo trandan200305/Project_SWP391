@@ -23,5 +23,9 @@ export const userApi = {
     
     deleteUserAccount: async (role, id, confirmationText) => {
         return await api.delete(`${getRolePath(role)}/${id}?confirmationText=${confirmationText}`);
+    },
+
+    getEmployerExpenses: async (employerId) => {
+        return await api.get(`/employers/${employerId}/expenses`);
     }
 };

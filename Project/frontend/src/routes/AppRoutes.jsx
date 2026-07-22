@@ -115,13 +115,26 @@ export default function AppRoutes({
     );
   }
 
-  if (currentPage === 'employer_jobs') {
+  if (currentPage === 'employer_invoices') {
     return (
-      <EmployerJobsPage
+      <EmployerProfileSettings
         user={user}
         onNavigateHome={() => handleNavigate('home')}
         onNavigate={handleNavigate}
         onUserUpdate={onUserUpdate}
+        initialTab="invoices"
+      />
+    );
+  }
+
+  if (currentPage === 'employer_support') {
+    return (
+      <EmployerProfileSettings
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+        initialTab="support"
       />
     );
   }
@@ -134,7 +147,16 @@ export default function AppRoutes({
       />
     );
   }
-
+  if (currentPage === 'employer_jobs') {
+    return (
+      <EmployerJobsPage
+        user={user}
+        onNavigateHome={() => handleNavigate('home')}
+        onNavigate={handleNavigate}
+        onUserUpdate={onUserUpdate}
+      />
+    );
+  }
   if (currentPage === 'post_job') {
     return (
       <PostJobPage
@@ -150,6 +172,7 @@ export default function AppRoutes({
       <PaymentResultPage
         pageParams={pageParams}
         onNavigate={handleNavigate}
+        user={user}
       />
     );
   }

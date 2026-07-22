@@ -38,7 +38,6 @@ import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.Dispute;
 import com.cny.backend.admin.entity.ViolationReport;
 import com.cny.backend.admin.entity.PaymentTransaction;
-import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.repository.DashboardRepository;
 import com.cny.backend.admin.repository.StaffInvitationRepository;
 import com.cny.backend.department.entity.DepartmentTaskSignoff;
@@ -124,8 +123,6 @@ public class AdminService {
     @Autowired
     private com.cny.backend.admin.repository.WarningTemplateRepository warningTemplateRepository;
 
-    @Autowired
-    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
 
     @Autowired
     private com.cny.backend.admin.repository.ServicePackageConfigRepository servicePackageConfigRepository;
@@ -148,6 +145,8 @@ public class AdminService {
     @Autowired
     private com.cny.backend.notification.repository.SystemNotificationRepository systemNotificationRepository;
 
+    @Autowired
+    private com.cny.backend.admin.repository.VnpayConfigRepository vnpayConfigRepository;
     private static final Set<String> PROTECTED_ADMIN_EMAILS = Set.of(
         "luongnd2625F@gmail.com",
         "admin@lancerpro.com"
@@ -193,6 +192,38 @@ public class AdminService {
                 if (ir != null) instantRevenue = ir;
             } catch(Exception e) {}
 
+            double totalGmv = 0.0;
+            try {
+                Double dbGmv = dashboardRepository.calculateTotalGmv();
+                if (dbGmv != null) totalGmv = dbGmv;
+            } catch(Exception e) {}
+
+            double escrowBalance = 0.0;
+            try {
+                Double dbEscrow = dashboardRepository.calculateEscrowBalance();
+                if (dbEscrow != null) escrowBalance = dbEscrow;
+            } catch(Exception e) {}
+
+            int pendingKyc = 0;
+            try {
+                pendingKyc = dashboardRepository.countPendingKycFreelancers() + dashboardRepository.countPendingKycEmployers();
+            } catch(Exception e) {}
+
+            int pendingVerificationTasks = 0;
+            try {
+                pendingVerificationTasks = dashboardRepository.countPendingVerificationTasks();
+            } catch(Exception e) {}
+
+            List<String> recentActivities = new ArrayList<>();
+            try {
+                List<com.cny.backend.admin.repository.DashboardRepository.AuditLogProjection> logs = dashboardRepository.getAuditLogs();
+                for (int i = 0; i < Math.min(5, logs.size()); i++) {
+                    com.cny.backend.admin.repository.DashboardRepository.AuditLogProjection log = logs.get(i);
+                    String timeStr = log.getTimestamp() != null ? log.getTimestamp().toString().substring(0, 16) : "";
+                    recentActivities.add(timeStr + " | " + log.getSource() + " - " + log.getDetail());
+                }
+            } catch(Exception e) {}
+
             return AdminStatsDto.builder()
                     .totalUsers(totalUsers)
                     .activeProjects(activeProjects)
@@ -203,6 +234,11 @@ public class AdminService {
                     .projectsGrowthPercent(0.0)
                     .revenueGrowthPercent(0.0)
                     .instantRevenue(instantRevenue)
+                    .totalGmv(totalGmv)
+                    .escrowBalance(escrowBalance)
+                    .pendingKyc(pendingKyc)
+                    .pendingVerificationTasks(pendingVerificationTasks)
+                    .recentActivities(recentActivities)
                     .build();
         } catch (Exception e) {
             return AdminStatsDto.builder()
@@ -215,6 +251,11 @@ public class AdminService {
                     .projectsGrowthPercent(5.0)
                     .revenueGrowthPercent(8.2)
                     .instantRevenue(0.0)
+                    .totalGmv(1285000.0)
+                    .escrowBalance(500000.0)
+                    .pendingKyc(5)
+                    .pendingVerificationTasks(3)
+                    .recentActivities(new ArrayList<>())
                     .build();
         }
     }
@@ -909,9 +950,11 @@ public class AdminService {
                 .id(p.getId())
                 .status(p.getStatus())
                 .module(p.getModule())
+                .action(p.getAction())
                 .detail(detail)
                 .timestamp(p.getTimestamp())
                 .source(p.getSource())
+                .role(p.getRole())
                 .build();
         }).collect(Collectors.toList());
     }
@@ -2451,9 +2494,8 @@ public class AdminService {
 
     private void initPresetDepartments() {
         String[][] presets = {
-            {"FIN", "Phòng Tài chính (Finance)", "Quản lý rút tiền, hoàn tiền, escrow, giao dịch | Liên kết với: DIS, MOD"},
-            {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: FIN, CS"},
-            {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: FIN, MOD"},
+            {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: CS"},
+            {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: MOD"},
             {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
             {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
         };
@@ -2676,99 +2718,9 @@ public class AdminService {
         return response;
     }
 
-    public VnpayConfig getVnpayConfig() {
-        VnpayConfig config = vnpayConfigRepository.findFirstByOrderByIdDesc().orElse(
-            VnpayConfig.builder()
-                .tmnCode("DEMO2019")
-                .hashSecret("9A7F11E55E1C3806E0528B65355AA05C")
-                .vnpUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
-                .returnUrl("http://localhost:3000/payment-result")
-                .bankName("Techcombank")
-                .bankAccountNo("9009002045")
-                .bankAccountName("NGUYEN VAN THANH")
-                .isActive(true)
-                .build()
-        );
-        if (config.getBankName() == null) {
-            config.setBankName("Techcombank");
-        }
-        if (config.getBankAccountNo() == null) {
-            config.setBankAccountNo("9009002045");
-        }
-        if (config.getBankAccountName() == null) {
-            config.setBankAccountName("NGUYEN VAN THANH");
-        }
-        if (config.getSessionTimeout() == null) {
-            config.setSessionTimeout(15);
-        }
-        return config;
-    }
-
-    @Transactional
-    public VnpayConfig saveVnpayConfig(VnpayConfig config, int adminId) {
-        // If the incoming hashSecret is masked or empty, retain the old hash secret
-        if (config.getHashSecret() == null || config.getHashSecret().trim().isEmpty() || config.getHashSecret().equals("********")) {
-            VnpayConfig currentConfig = getVnpayConfig();
-            config.setHashSecret(currentConfig.getHashSecret());
-        }
-        
-        // Retain tmnCode if masked or empty
-        if (config.getTmnCode() == null || config.getTmnCode().trim().isEmpty() || config.getTmnCode().equals("********")) {
-            VnpayConfig currentConfig = getVnpayConfig();
-            config.setTmnCode(currentConfig.getTmnCode());
-        }
-
-        vnpayConfigRepository.findAll().forEach(c -> {
-            c.setIsActive(false);
-            vnpayConfigRepository.save(c);
-        });
-        
-        config.setId(null);
-        if (config.getIsActive() == null) {
-            config.setIsActive(true);
-        }
-        if (config.getVnpUrl() == null || config.getVnpUrl().trim().isEmpty()) {
-            config.setVnpUrl(getVnpayConfig().getVnpUrl());
-        }
-        if (config.getReturnUrl() == null || config.getReturnUrl().trim().isEmpty()) {
-            config.setReturnUrl(getVnpayConfig().getReturnUrl());
-        }
-        if (config.getSessionTimeout() == null) {
-            config.setSessionTimeout(15);
-        }
-        VnpayConfig saved = vnpayConfigRepository.save(config);
-        
-        dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "UPDATE_VNPAY_CONFIG", "FINANCE", 
-            "Đã cập nhật cấu hình cổng thanh toán VNPay: Terminal Code = " + config.getTmnCode());
-        
-        return saved;
-    }
-
     public Map<String, Object> checkGatewayStatus() {
         Map<String, Object> status = new HashMap<>();
         
-        // VNPay Health Check
-        Map<String, Object> vnpayStatus = new HashMap<>();
-        long startVnpay = System.currentTimeMillis();
-        try {
-            VnpayConfig config = getVnpayConfig();
-            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(3000);
-            factory.setReadTimeout(3000);
-            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate(factory);
-            org.springframework.http.ResponseEntity<String> response = restTemplate.getForEntity(config.getVnpUrl(), String.class);
-            if (response.getStatusCode().is2xxSuccessful() || response.getStatusCode().is3xxRedirection()) {
-                vnpayStatus.put("status", "UP");
-            } else {
-                vnpayStatus.put("status", "DOWN");
-            }
-        } catch (Exception e) {
-            vnpayStatus.put("status", "DOWN");
-            vnpayStatus.put("error", e.getMessage());
-        }
-        vnpayStatus.put("responseTimeMs", System.currentTimeMillis() - startVnpay);
-        status.put("vnpay", vnpayStatus);
-
         // PayOS Health Check
         Map<String, Object> payosStatus = new HashMap<>();
         long startPayos = System.currentTimeMillis();
@@ -2816,6 +2768,8 @@ public class AdminService {
         paymentTransactionRepository.save(txn);
 
         projectService.publishProjectAfterPayment(txn.getProjectId(), txn.getAmount());
+        
+
 
         dashboardRepository.logAudit(adminId, getCurrentAdminEmail(), "MANUAL_RECONCILE_PAYMENT", "FINANCE", 
             "Duyệt giao dịch VNPay thủ công cho dự án ID: " + txn.getProjectId() + ", Mã tham chiếu: " + txn.getTxnRef());
@@ -2823,6 +2777,12 @@ public class AdminService {
         result.put("success", true);
         result.put("message", "Duyệt giao dịch và kích hoạt dự án thành công.");
         return result;
+    }
+
+    public com.cny.backend.admin.entity.VnpayConfig getVnpayConfig() {
+        return vnpayConfigRepository.findFirstByIsActiveTrueOrderByIdDesc()
+            .orElseGet(() -> vnpayConfigRepository.findFirstByOrderByIdDesc()
+                .orElseThrow(() -> new RuntimeException("Cấu hình VNPay chưa được thiết lập")));
     }
 
     public List<com.cny.backend.admin.dto.PendingGigDto> getPendingGigs() {
@@ -3179,6 +3139,47 @@ public class AdminService {
             response.put("message", "Không tìm thấy yêu cầu chuyển phòng ban.");
         }
         return response;
+    }
+
+    public List<Map<String, Object>> getTopSpenders() {
+        List<Employer> topList = employerRepository.findTopSpenders();
+        List<Map<String, Object>> result = new ArrayList<>();
+        int rank = 1;
+        for (Employer e : topList) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("rank", rank++);
+            item.put("employerId", e.getEmployerId());
+            item.put("displayName", e.getDisplayName());
+            item.put("email", e.getEmail());
+            item.put("companyName", e.getCompanyName());
+            item.put("avatarUrl", e.getAvatarUrl());
+            item.put("totalSpent", e.getTotalSpent() != null ? e.getTotalSpent() : java.math.BigDecimal.ZERO);
+            item.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent()));
+            item.put("lastSpentAt", e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null);
+            result.add(item);
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> getChurnWarnings() {
+        java.math.BigDecimal minSpent = new java.math.BigDecimal("10000000"); // 10 Triệu
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(60); // Inactive 60+ days
+        List<Employer> churnList = employerRepository.findChurnRiskEmployers(minSpent, cutoffDate);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Employer e : churnList) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("employerId", e.getEmployerId());
+            item.put("displayName", e.getDisplayName());
+            item.put("email", e.getEmail());
+            item.put("phone", e.getPhone());
+            item.put("companyName", e.getCompanyName());
+            item.put("totalSpent", e.getTotalSpent());
+            item.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(e.getTotalSpent()));
+            item.put("lastSpentAt", e.getLastSpentAt() != null ? e.getLastSpentAt().toString() : null);
+            item.put("warningReason", "Employer VIP đã dừng nạp tiền/chi tiêu trên 60 ngày.");
+            result.add(item);
+        }
+        return result;
     }
 }
 

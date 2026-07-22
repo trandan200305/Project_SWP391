@@ -79,11 +79,16 @@ public class FreelancerController {
             dtos = dtos.stream().filter(f -> {
                 boolean matches = true;
                 
-                // Category match (expertiseField)
+                // Category match (expertiseField - list of IDs)
                 if (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) {
-                    String catLower = category.trim().toLowerCase();
+                    String catId = category.trim();
                     String expField = f.getExpertiseField();
-                    if (expField == null || !expField.toLowerCase().contains(catLower)) {
+                    if (expField != null) {
+                        java.util.List<String> ids = java.util.Arrays.asList(expField.split(",\\s*"));
+                        if (!ids.contains(catId)) {
+                            matches = false;
+                        }
+                    } else {
                         matches = false;
                     }
                 }
@@ -289,6 +294,23 @@ public class FreelancerController {
             if(updated.getAvatarUrl() != null) f.setAvatarUrl(updated.getAvatarUrl());
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
+
+            // Synchronize with FreelancerProfile
+            FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId())
+                    .orElseGet(() -> {
+                        FreelancerProfile newProfile = new FreelancerProfile();
+                        newProfile.setFreelancer(f);
+                        return newProfile;
+                    });
+            if(updated.getProfessionalTitle() != null) profile.setProfessionalTitle(updated.getProfessionalTitle());
+            if(updated.getExpertiseField() != null) profile.setExpertiseField(updated.getExpertiseField());
+            if(updated.getBio() != null) profile.setBio(updated.getBio());
+            if(updated.getHourlyRate() != null) profile.setHourlyRate(updated.getHourlyRate());
+            if(updated.getAddress() != null) profile.setAddress(updated.getAddress());
+            if(updated.getCity() != null) profile.setCity(updated.getCity());
+            if(updated.getCountry() != null) profile.setCountry(updated.getCountry());
+            freelancerProfileRepository.save(profile);
+
             return ResponseEntity.ok(mapToDto(saved));
         }).orElse(ResponseEntity.notFound().build());
     }

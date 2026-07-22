@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, XCircle, ArrowRight, Home, Briefcase } from 'lucide-react';
 
-export default function PaymentResultPage({ pageParams, onNavigate }) {
+export default function PaymentResultPage({ pageParams, onNavigate, user }) {
   const status = pageParams?.status || 'failed';
   const projectId = pageParams?.projectId || 'N/A';
 
@@ -13,7 +13,13 @@ export default function PaymentResultPage({ pageParams, onNavigate }) {
 
   const handleGoJobs = () => {
     window.history.replaceState({}, document.title, '/');
-    if (onNavigate) onNavigate('employer_jobs');
+    if (onNavigate) {
+      if (user?.role === 'EMPLOYER') {
+        onNavigate('employer_jobs');
+      } else {
+        onNavigate('your_jobs');
+      }
+    }
   };
 
   const isSuccess = status === 'success';

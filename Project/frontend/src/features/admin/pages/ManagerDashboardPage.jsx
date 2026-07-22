@@ -157,7 +157,7 @@ export default function ManagerDashboardPage({
   const [reportTypeFilter, setReportTypeFilter] = useState("ALL");
   const [reportSearch, setReportSearch] = useState("");
 
-  // Finance states
+  // Withdrawal & Transaction states
   const [withdrawals, setWithdrawals] = useState([]);
   const [withdrawalFilter, setWithdrawalFilter] = useState("ALL");
   const [vnpayTxns, setVnpayTxns] = useState([]);
@@ -2516,6 +2516,11 @@ export default function ManagerDashboardPage({
                       />
                       <span>{item.label}</span>
                     </div>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -5190,10 +5195,177 @@ export default function ManagerDashboardPage({
                             >
                               Xem chi tiết
                             </button>
+                            {w.statusRaw === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleWithdrawalAction(w.id, 'APPROVED');
+                                  }}
+                                  className="px-2.5 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer ml-2"
+                                >
+                                  Duyệt
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleWithdrawalAction(w.id, 'REJECTED');
+                                  }}
+                                  className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-[#ba1a1a] border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer ml-2"
+                                >
+                                  Từ chối
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
                       {withdrawals.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="text-center py-8 text-sm text-[#6e7b6c]"
+                          >
+                            Chưa có yêu cầu rút tiền nào cần xử lý.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ---------------- TAB: REFUNDS (Hoàn tiền) ---------------- */}
+          {activeTab === 'Refunds' && (() => {
+            const refundsList = escalationCases.filter(esc => esc.raw?.status === 'RESOLVED_CLIENT_FAVOR');
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Quản lý Hoàn tiền</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Lịch sử hoàn trả tiền ký quỹ Escrow về tài khoản Client do tranh chấp được giải quyết.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  <h2 className="text-title-md font-extrabold text-[#141b2b]">Danh sách giao dịch hoàn tiền ({refundsList.length})</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {refundsList.map(ref => (
+                      <div key={ref.id} className="border border-[#e9edff] rounded-xl p-4 bg-[#f9f9ff] flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-[#006b2c] bg-[#f7fff2] px-2 py-0.5 rounded border border-[#bdcaba]">#{ref.id}</span>
+                            <span className="text-xs font-bold text-[#006b2c] bg-emerald-100 px-2 py-0.5 rounded">Đã hoàn tiền</span>
+                          </div>
+                          <h3 className="text-body-md font-bold text-[#141b2b] mb-1">{ref.title}</h3>
+                          <div className="text-xs text-[#3e4a3d] space-y-1">
+                            <p>Dự án gốc: <strong className="text-[#141b2b]">{ref.raw?.projectTitle}</strong></p>
+                            <p>Nhận hoàn tiền (Client): <strong>{ref.raw?.clientName}</strong></p>
+                            <p>Đối tác (Freelancer): <strong>{ref.raw?.freelancerName}</strong></p>
+                            <p className="mt-2 text-body-sm font-extrabold text-rose-600">Số tiền hoàn lại: {(ref.raw?.amount || 0).toLocaleString('vi-VN')} VND</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {refundsList.length === 0 && (
+                      <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
+                        Chưa có lịch sử hoàn tiền nào được ghi nhận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ---------------- TAB: FAILED TRANSACTIONS (Giao dịch lỗi) ---------------- */}
+          {activeTab === 'FailedTransactions' && (() => {
+            const filteredTxns = vnpayTxns.filter(t => {
+              if (vnpayFilter !== 'ALL' && t.status !== vnpayFilter) return false;
+              if (financeSearch) {
+                const term = financeSearch.toLowerCase();
+                return t.txnRef.toLowerCase().includes(term) || t.vnpTxnNo.toLowerCase().includes(term);
+              }
+              return true;
+            });
+
+            const handleReconcile = (id) => {
+              const adminId = user?.id || 1;
+              if (window.confirm(`Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${id}?`)) {
+                adminApi.reconcileVnpayTransaction(id, adminId)
+                  .then(res => {
+                    if (res.success) {
+                      showToast(res.message, 'success');
+                      fetchVnpayTransactions();
+                    } else {
+                      showToast(res.message, 'error');
+                    }
+                  }).catch(err => {
+                    console.error(err);
+                    showToast('Có lỗi xảy ra khi đối soát giao dịch.', 'error');
+                  });
+              }
+            };
+
+            return (
+              <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+                <div>
+                  <h1 className="text-headline-lg font-extrabold text-[#141b2b]">Đối soát giao dịch PayOS</h1>
+                  <p className="text-body-sm text-[#3e4a3d] mt-1">Quản lý và đối soát các giao dịch thanh toán từ ví PayOS.</p>
+                </div>
+
+                <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4">
+                  {/* Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
+                    <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
+                      {[
+                        { key: 'ALL', label: 'Tất cả' },
+                        { key: 'FAILED', label: 'Giao dịch lỗi (FAILED)' },
+                        { key: 'SUCCESS', label: 'Thành công (SUCCESS)' },
+                        { key: 'PENDING', label: 'Chờ xử lý (PENDING)' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setVnpayFilter(tab.key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                            vnpayFilter === tab.key 
+                              ? 'bg-white text-[#006b2c] shadow-sm' 
+                              : 'text-[#6e7b6c] hover:text-[#141b2b]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="w-full md:w-72 relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo mã giao dịch..."
+                        value={financeSearch}
+                        onChange={(e) => setFinanceSearch(e.target.value)}
+                        className="w-full bg-[#f1f3ff] border-none placeholder-[#6e7b6c] pl-10 pr-4 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="min-w-full divide-y divide-[#e9edff] text-left">
+                      <thead>
+                        <tr className="bg-[#f9f9ff]">
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã Đối Soát (TxnRef)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Số Tiền (VND)</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Mã GD VNPay</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thời gian</th>
+                          <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
                         <tr>
                           <td
                             colSpan="6"
@@ -5681,7 +5853,6 @@ export default function ManagerDashboardPage({
                   className="w-full bg-[#f1f3ff] border border-transparent px-3 py-2 rounded-lg text-body-sm focus:outline-none focus:ring-2 focus:ring-[#006b2c]/30 focus:bg-white border-[#e1e8fd]"
                 >
                   <option value="MOD">MOD (Moderation)</option>
-                  <option value="FIN">FIN (Finance)</option>
                   <option value="DIS">DIS (Dispute Resolution)</option>
                   <option value="CS">CS (Customer Support)</option>
                   <option value="IT">IT (Technical Dept)</option>

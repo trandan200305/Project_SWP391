@@ -167,6 +167,9 @@ export const adminApi = {
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return api.post('/admin/service-packages', prices, { headers });
   },
+  // BI & Analytics API
+  getTopSpenders: () => api.get('/admin/analytics/top-spenders'),
+  getChurnWarnings: () => api.get('/admin/analytics/churn-warnings'),
   // Notification API
   getNotifications: (role, userId) => api.get(`/notifications/${role}/${userId}`),
   markNotificationAsRead: (id) => api.put(`/notifications/${id}/read`),

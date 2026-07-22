@@ -59,7 +59,7 @@ const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon, title }) => (
 );
 
 export default function EditProfileForm({
-  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl
+  role, bio, setBio, companyDescription, setCompanyDescription, displayName, setDisplayName, fullName, setFullName, phone, setPhone, email, setEmail, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, hourlyRate, setHourlyRate, companyName, setCompanyName, website, setWebsite, companySize, setCompanySize, industry, setIndustry, taxCode, setTaxCode, adminLevel, country, setCountry, city, setCity, address, setAddress, timezone, setTimezone, status, emailVerified, createdAt, lastLoginAt, formatDate, formatDateTime, handleSaveProfile, profileCompleteness, totalEarnings, totalSpent, projectsCompleted, projectsPosted, averageRating, kycStatus, companyLogoUrl, setCompanyLogoUrl, categories
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -112,7 +112,51 @@ export default function EditProfileForm({
 
             {role === 'freelancer' && (
               <>
-                <InputRow label="Chức danh nghề nghiệp" value={professionalTitle} onChange={e=>setProfessionalTitle(e.target.value)} placeholder="VD: UI/UX Designer..." />
+                <div className="col-span-1 sm:col-span-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider sm:mb-2 block">
+                    Chức danh nghề nghiệp (Chọn các lĩnh vực làm việc) <span className="text-red-500">*</span>
+                  </span>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-1 bg-white border border-gray-200 rounded-xl p-4">
+                    {((categories && categories.length > 0) ? categories : [
+                      { categoryId: 1, categoryName: "Lập trình & Công nghệ" },
+                      { categoryId: 2, categoryName: "Thiết kế & Đồ họa" },
+                      { categoryId: 3, categoryName: "Marketing & Bán hàng" },
+                      { categoryId: 4, categoryName: "Viết lách & Dịch thuật" },
+                      { categoryId: 5, categoryName: "Video, Ảnh & Âm thanh" },
+                      { categoryId: 6, categoryName: "Hành chính & Trợ lý ảo" },
+                      { categoryId: 7, categoryName: "Kế toán & Tư vấn" }
+                    ]).map(cat => {
+                      const catId = String(cat.categoryId || cat.id);
+                      const catName = cat.categoryName || cat.name;
+                      const isChecked = expertiseField && expertiseField.split(/,\s*/).includes(catId);
+                      return (
+                        <label key={catId} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm font-semibold text-gray-700 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={!!isChecked}
+                            onChange={(e) => {
+                              let currentIds = expertiseField ? expertiseField.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                              let currentNames = professionalTitle ? professionalTitle.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                              if (e.target.checked) {
+                                if (!currentIds.includes(catId)) {
+                                  currentIds.push(catId);
+                                  currentNames.push(catName);
+                                }
+                              } else {
+                                currentIds = currentIds.filter(id => id !== catId);
+                                currentNames = currentNames.filter(name => name !== catName);
+                              }
+                              setExpertiseField(currentIds.join(','));
+                              setProfessionalTitle(currentNames.join(', '));
+                            }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span>{catName}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
                 <InputRow label="Mức lương mong muốn / Giờ" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="0" type="number" suffix="VNĐ" />
               </>
             )}

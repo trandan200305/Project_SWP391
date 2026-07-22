@@ -1,0 +1,91 @@
+# TỔNG HỢP TEST CASES CHO ROLE ADMIN
+
+Bạn hãy mở file Excel của bạn ra, tìm đến các Sheet tương ứng ở dưới đây, copy các bảng này và dán đè (Paste) vào phần nội dung Test Cases nhé.
+
+## 📋 Dành cho Sheet: **Auth_Security**
+
+*Hãy bôi đen và copy bảng dưới đây (từ cột Test Case ID đến cột Tester) và dán vào dòng trống ở sheet Auth_Security:*
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions | Round 1 | Test date | Tester |
+|---|---|---|---|---|---|---|---|
+| TC_ADM_001 | [Authentication] Login Valid | 1. Truy cập /admin/login 2. Nhập Email & Pass đúng 3. Submit <br><br> **Input:** Email: admin@lancerpro.com Pass: [Valid] | Đăng nhập thành công, chuyển hướng vào Dashboard | Admin is logged in | | | |
+| TC_ADM_002 | [Authentication] Login Invalid Pass | 1. Nhập Email đúng, Pass sai 2. Submit <br><br> **Input:** Pass: WrongPass123 | Lỗi 'Tài khoản hoặc mật khẩu không chính xác' | Admin is logged in | | | |
+| TC_ADM_003 | [Authentication] Login Empty | 1. Bỏ trống Email & Pass 2. Submit <br><br> **Input:** Email:  Pass:  | Nút Submit bị disable hoặc Form báo lỗi 'Trường này bắt buộc' (Front-end validation) | Admin is logged in | | | |
+| TC_ADM_004 | [Authentication] Login Injection | 1. Nhập SQL Injection vào Email 2. Submit <br><br> **Input:** Email: ' OR 1=1-- | Bị từ chối, báo lỗi sai tài khoản hoặc format không hợp lệ | Admin is logged in | | | |
+| TC_ADM_005 | [Authentication] Login XSS | 1. Nhập XSS payload vào Email 2. Submit <br><br> **Input:** Email: <script>alert(1)</script> | Form reject email format hoặc Backend mã hóa ký tự, từ chối login | Admin is logged in | | | |
+| TC_ADM_006 | [Authentication] Login Long Text | 1. Nhập Pass > 255 ký tự 2. Submit <br><br> **Input:** Pass: [String 300 chars] | Báo lỗi 'Mật khẩu hoặc tài khoản sai', DB không bị crash vì độ dài | Admin is logged in | | | |
+| TC_ADM_007 | [Authentication] Login Invalid Role | 1. Đăng nhập bằng tài khoản Freelancer/Employer <br><br> **Input:** Email: user@gmail.com | Lỗi 'Không có quyền truy cập dành cho quản trị viên' (Forbidden 403) | Admin is logged in | | | |
+| TC_ADM_008 | [Authentication] Session Expiry | 1. Đăng nhập 2. Đợi JWT hết hạn 3. Click chuyển tab | Lỗi 401 Unauthorized, tự động đẩy về trang Login | Admin is logged in | | | |
+| TC_ADM_009 | [Authentication] Concurrent Login | 1. Đăng nhập cùng 1 tài khoản Admin trên 2 trình duyệt khác nhau | Cả 2 trình duyệt đều được truy cập (hoặc theo rule dự án, đẩy trình duyệt cũ ra) | Admin is logged in | | | |
+
+---
+
+## 📋 Dành cho Sheet: **Staff_Workspaces**
+
+*Hãy bôi đen và copy bảng dưới đây (từ cột Test Case ID đến cột Tester) và dán vào dòng trống ở sheet Staff_Workspaces:*
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions | Round 1 | Test date | Tester |
+|---|---|---|---|---|---|---|---|
+| TC_ADM_051 | [System Admin] Staff Invite Normal | 1. Thêm Staff mới bằng Email <br><br> **Input:** Email: valid@test.com | Tạo thành công, gửi email | Admin is logged in | | | |
+| TC_ADM_052 | [System Admin] Staff Invite Duplicate | 1. Thêm Staff bằng Email đã tồn tại trong DB <br><br> **Input:** Email: existing@gmail.com | Lỗi: 'Email này đã tồn tại trong hệ thống' | Admin is logged in | | | |
+| TC_ADM_053 | [System Admin] Staff Invite Invalid format | 1. Thêm Email sai định dạng <br><br> **Input:** Email: admin#gmail,com | Front-end hoặc Backend bắt lỗi Validation định dạng Email | Admin is logged in | | | |
+
+---
+
+## 📋 Dành cho Sheet: **ROLE ADMIN (Tính năng độc quyền)**
+
+*Hãy bôi đen và copy bảng dưới đây (từ cột Test Case ID đến cột Tester) và dán vào dòng trống ở sheet ROLE ADMIN (Tính năng độc quyền):*
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions | Round 1 | Test date | Tester |
+|---|---|---|---|---|---|---|---|
+| TC_ADM_010 | [Dashboard] Load Stats Normal | 1. Vào Dashboard 2. Quan sát Tổng doanh thu & Số đơn <br><br> **Input:** Mặc định: 30 days | Dữ liệu tải chính xác, đúng với CSDL | Admin is logged in | | | |
+| TC_ADM_011 | [Dashboard] Zero Data Handling | 1. Kết nối Backend vào DB trống (0 giao dịch) 2. Load Dashboard | Không bị lỗi chia cho 0, hiển thị Doanh thu 0đ, Số đơn 0, Chart hiển thị 'Chưa có dữ liệu' | Admin is logged in | | | |
+| TC_ADM_012 | [Dashboard] Spam Filter | 1. Click cực nhanh liên tục qua lại giữa 'Today', 'Week', 'Month' | UI không bị giật/lag, API call không bị dội (debounce/cancel request) hoặc render đúng kết quả của click cuối cùng | Admin is logged in | | | |
+| TC_ADM_013 | [Dashboard] Donut Chart Hover | 1. Rê chuột chầm chậm vào 1 cung màu trên biểu đồ Donut | Tooltip hiện ra với tọa độ chính xác, hiển thị đúng dữ liệu slice, phát âm thanh click nhẹ | Admin is logged in | | | |
+| TC_ADM_014 | [Dashboard] Donut Mouse Escape | 1. Rê chuột cực nhanh qua biểu đồ rồi kéo văng ra khỏi màn hình hoặc ra khỏi div biểu đồ | Tooltip bị ẩn đi gọn gàng (hàm onMouseLeave hoạt động đúng), không bị kẹt form rác trên UI | Admin is logged in | | | |
+| TC_ADM_015 | [Dashboard] Donut Coordinate Limit | 1. Scroll trang xuống dưới cùng, sau đó mới hover vào biểu đồ | Tooltip vẫn lấy chuẩn tọa độ chuột (clientY/pageY) không bị lệch khung | Admin is logged in | | | |
+| TC_ADM_016 | [User Management] Pagination Boundary | 1. Sửa URL trực tiếp page=-1 hoặc page=999999 <br><br> **Input:** page=-1 | Hệ thống chặn lại, đưa về page=1 hoặc hiển thị 'Không có dữ liệu' mà không crash Backend | Admin is logged in | | | |
+| TC_ADM_017 | [User Management] Search SQLi | 1. Nhập '%' hoặc '_' vào ô tìm kiếm người dùng <br><br> **Input:** Keyword: % | Không bị Dump toàn bộ database, trả về kết quả có chứa dấu % hoặc xử lý escape query an toàn | Admin is logged in | | | |
+| TC_ADM_018 | [User Management] Search Special Chars | 1. Nhập emoji, ký tự Unicode dài vào ô search <br><br> **Input:** Keyword: 😊😊 | Xử lý bình thường, tìm kiếm chuỗi khớp hoặc không ra kết quả | Admin is logged in | | | |
+| TC_ADM_019 | [User Management] Ban Normal | 1. Khóa tài khoản ACTIVE 2. Điền lý do 3. Submit <br><br> **Input:** Lý do: Spam | Tài khoản thành BANNED, bị ép đăng xuất khỏi phiên hiện tại nếu có thể | Admin is logged in | | | |
+| TC_ADM_020 | [User Management] Ban Empty Reason | 1. Khóa tài khoản nhưng Bỏ trống lý do <br><br> **Input:** Lý do: [Rỗng] | Hệ thống vẫn cho khóa (hoặc báo lỗi nếu require reason), không gây NullPointerException | Admin is logged in | | | |
+| TC_ADM_021 | [User Management] Ban Extremely Long Reason | 1. Điền lý do khóa tài khoản > 5000 ký tự <br><br> **Input:** Lý do: [5000 chars] | Hệ thống báo lỗi vượt quá giới hạn ký tự, hoặc cắt bớt (truncate), không sập CSDL (Data truncation error) | Admin is logged in | | | |
+| TC_ADM_022 | [User Management] Unban Normal | 1. Mở khóa tài khoản đang BANNED | Chuyển thành ACTIVE | Admin is logged in | | | |
+| TC_ADM_023 | [Finance] Fee Normal Update | 1. Cập nhật phí sàn 10% <br><br> **Input:** Fee: 10 | Lưu thành công, API update DB | Admin is logged in | | | |
+| TC_ADM_024 | [Finance] Fee Upper Limit | 1. Cập nhật phí sàn 100% <br><br> **Input:** Fee: 100 | Lưu thành công (Hoặc cảnh báo), hợp đồng mới sẽ cắt 100% doanh thu | Admin is logged in | | | |
+| TC_ADM_025 | [Finance] Fee Over Limit | 1. Cập nhật phí sàn 101% <br><br> **Input:** Fee: 101 | Báo lỗi Validation 'Phí phải từ 0 - 100%' | Admin is logged in | | | |
+| TC_ADM_026 | [Finance] Fee Negative Limit | 1. Cập nhật phí sàn âm <br><br> **Input:** Fee: -1 hoặc -0.1 | Báo lỗi Validation 'Phí không được nhỏ hơn 0' | Admin is logged in | | | |
+| TC_ADM_027 | [Finance] Fee String Input | 1. Cố tình gửi request post /fee-config bằng Postman với string <br><br> **Input:** Fee: 'abc' | Backend trả lỗi HTTP 400 Bad Request, không crash server | Admin is logged in | | | |
+| TC_ADM_028 | [Finance] Fee Decimal Precision | 1. Nhập phí 10.123456% <br><br> **Input:** Fee: 10.123456 | Lưu thành công nhưng làm tròn 2 số (10.12) hoặc từ chối | Admin is logged in | | | |
+| TC_ADM_029 | [Finance] Package Update Normal | 1. Sửa giá gói Medium <br><br> **Input:** Price: 50,000 | Thành công | Admin is logged in | | | |
+| TC_ADM_030 | [Finance] Package Negative Price | 1. Sửa giá gói thành số âm <br><br> **Input:** Price: -10000 | Báo lỗi Validation không được là số âm | Admin is logged in | | | |
+| TC_ADM_031 | [Finance] Package Zero Price | 1. Sửa giá gói thành 0 <br><br> **Input:** Price: 0 | Thành công (Thành gói Miễn phí) hoặc báo lỗi nếu không cho phép | Admin is logged in | | | |
+| TC_ADM_032 | [Finance] Package BigInt Price | 1. Nhập giá 99,999,999,999 VNĐ <br><br> **Input:** Price: 99,999,999,999 | Báo lỗi vượt quá ngân sách cho phép, không gây Data Overflow trong CSDL | Admin is logged in | | | |
+| TC_ADM_033 | [VNPay] Query Status Normal | 1. Truy vấn giao dịch hợp lệ | Báo cáo khớp dữ liệu giữa VNPay server và Local DB | Admin is logged in | | | |
+| TC_ADM_034 | [VNPay] Query Status Invalid ID | 1. Truy vấn giao dịch không tồn tại trên VNPay <br><br> **Input:** ID fake | Trả về lỗi 'Mã GD không tồn tại' hoặc VNPay Code '97' | Admin is logged in | | | |
+| TC_ADM_035 | [VNPay] Refund Normal | 1. Hoàn tiền 1 phần giao dịch <br><br> **Input:** Amount: 10,000 | Hoàn tiền thành công, trạng thái PARTIAL_REFUND | Admin is logged in | | | |
+| TC_ADM_036 | [VNPay] Refund Greater Than Original | 1. Hoàn tiền số tiền lớn hơn tổng GD gốc <br><br> **Input:** Amount gốc: 100k, Refund: 150k | API từ chối: 'Số tiền hoàn vượt quá số tiền GD gốc' | Admin is logged in | | | |
+| TC_ADM_037 | [VNPay] Refund Negative Amount | 1. Nhập số tiền hoàn là âm <br><br> **Input:** Amount: -50000 | Báo lỗi Validation số tiền không hợp lệ | Admin is logged in | | | |
+| TC_ADM_038 | [VNPay] Refund Double Submit | 1. Double click liên tục vào nút Xác nhận Hoàn tiền (Race Condition) | Chỉ xử lý 1 request đầu tiên, các request sau bị chặn hoặc lock Transaction, tránh hoàn 2 lần | Admin is logged in | | | |
+| TC_ADM_039 | [Moderation] KYC Approve Normal | 1. Duyệt KYC hợp lệ | Cập nhật thành APPROVED | Admin is logged in | | | |
+| TC_ADM_040 | [Moderation] KYC Race Condition | 1. Mở 1 hồ sơ KYC trên 2 tab. Tab 1 ấn Approve, Tab 2 ấn Reject | Tab 2 báo lỗi 'Hồ sơ này đã được xử lý bởi một Quản trị viên khác' (Data Concurrency) | Admin is logged in | | | |
+| TC_ADM_041 | [Moderation] KYC Reject Empty Reason | 1. Từ chối KYC nhưng bỏ trống lý do <br><br> **Input:** Reason: [Rỗng] | Hệ thống yêu cầu bắt buộc nhập lý do | Admin is logged in | | | |
+| TC_ADM_042 | [Moderation] Project Approve | 1. Duyệt dự án hợp lệ | Dự án thành PUBLISHED | Admin is logged in | | | |
+| TC_ADM_043 | [Moderation] Project Reject | 1. Từ chối dự án với lý do hợp lệ | Dự án bị hủy, email gửi cho Employer | Admin is logged in | | | |
+| TC_ADM_044 | [Moderation] Report Resolve Ban | 1. Xử lý báo cáo -> Khóa user bị report <br><br> **Input:** Action: BANNED | Báo cáo thành RESOLVED, user bị BANNED đồng thời | Admin is logged in | | | |
+| TC_ADM_045 | [Moderation] Report Ignore | 1. Xử lý báo cáo -> Bỏ qua (Không khóa ai) <br><br> **Input:** Action: Cảnh cáo/Bỏ qua | Báo cáo thành RESOLVED, không ai bị khóa | Admin is logged in | | | |
+| TC_ADM_046 | [Moderation] Dispute Normal Resolve | 1. Nhập tỷ lệ 70% Freelancer - 30% Employer 2. Xác nhận <br><br> **Input:** Tỷ lệ: 70-30 | Chia đúng tiền trong hợp đồng Escrow cho 2 bên | Admin is logged in | | | |
+| TC_ADM_047 | [Moderation] Dispute Over 100% | 1. Nhập tỷ lệ 70% và 40% (Tổng = 110%) <br><br> **Input:** Tỷ lệ: 70-40 | Lỗi Validation: Tổng tỷ lệ hoàn tiền phải chính xác bằng 100% | Admin is logged in | | | |
+| TC_ADM_048 | [Moderation] Dispute Under 100% | 1. Nhập tỷ lệ 50% và 40% (Tổng = 90%) <br><br> **Input:** Tỷ lệ: 50-40 | Lỗi Validation: Tổng tỷ lệ phải chính xác bằng 100% | Admin is logged in | | | |
+| TC_ADM_049 | [Moderation] Dispute Negative % | 1. Nhập tỷ lệ -10% và 110% <br><br> **Input:** Tỷ lệ: -10 và 110 | Lỗi Validation: Tỷ lệ không được âm | Admin is logged in | | | |
+| TC_ADM_050 | [Moderation] Dispute Empty Reason | 1. Giải quyết tranh chấp không có note/lý do | Lưu bình thường (nếu note là optional) hoặc bắt buộc điền | Admin is logged in | | | |
+| TC_ADM_054 | [System Admin] Change User Pass Normal | 1. Đổi trực tiếp pass của User A <br><br> **Input:** Pass mới: Admin123! | Thành công, User A dùng pass mới đăng nhập được | Admin is logged in | | | |
+| TC_ADM_055 | [System Admin] Change User Pass Weak | 1. Đổi trực tiếp pass sang siêu yếu (1 ký tự) <br><br> **Input:** Pass mới: 1 | Bắt lỗi độ mạnh mật khẩu (Tối thiểu 6-8 ký tự) | Admin is logged in | | | |
+| TC_ADM_056 | [System Admin] Change User Pass Long | 1. Đổi trực tiếp pass sang siêu dài (>300 chars) <br><br> **Input:** Pass mới: [300 chars] | Bắt lỗi độ dài tối đa hoặc Truncation error | Admin is logged in | | | |
+| TC_ADM_057 | [Withdrawal] Withdrawal Approve Normal | 1. Duyệt yêu cầu rút tiền hợp lệ | Chuyển sang SUCCESS, update số dư ví | Admin is logged in | | | |
+| TC_ADM_058 | [Withdrawal] Withdrawal Reject Normal | 1. Từ chối rút tiền kèm lý do <br><br> **Input:** Lý do: Sai STK | Chuyển sang REJECTED, cộng trả lại số dư vào ví User | Admin is logged in | | | |
+| TC_ADM_059 | [Withdrawal] Withdrawal Double Click | 1. Cố tình gọi API Approve và Reject đồng thời bằng Postman | Chỉ ghi nhận 1 trạng thái đầu tiên, request thứ 2 bị chặn (Transaction Isolation / Versioning) | Admin is logged in | | | |
+| TC_ADM_060 | [Withdrawal] Withdrawal Insufficient Funds | 1. User gửi request rút tiền, sau đó bằng cách nào đó đã tiêu sạch tiền trong ví, Admin sau đó vào Approve | Admin bị chặn lúc Approve vì Backend check lại số dư ví không đủ tại thời điểm Approve | Admin is logged in | | | |
+
+---
+

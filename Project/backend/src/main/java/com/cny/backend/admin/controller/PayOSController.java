@@ -25,8 +25,6 @@ public class PayOSController {
     @Autowired
     private PayOSService payOSService;
 
-    @Autowired
-    private PaymentController paymentController;
 
     @Autowired
     private PayOS payOS;
@@ -39,8 +37,9 @@ public class PayOSController {
             HttpServletRequest request) {
         
         if (!payOSService.isPayosHealthy()) {
-            System.out.println("PayOS is DOWN. Falling back to VNPay.");
-            return (ResponseEntity<?>) paymentController.createPaymentUrl(projectId, packageType, employerId, request);
+            Map<String, String> err = new HashMap<>();
+            err.put("message", "Cổng thanh toán PayOS đang bảo trì. Vui lòng thử lại sau.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(err);
         }
 
         try {

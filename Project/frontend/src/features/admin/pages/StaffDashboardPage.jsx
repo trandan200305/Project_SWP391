@@ -141,7 +141,6 @@ export default function StaffDashboardPage({
   // Tab states
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [sectionsOpen, setSectionsOpen] = useState({
-    finance: true,
     moderation: true,
     disputeResolution: true,
     customerSupport: true,
@@ -2176,13 +2175,6 @@ export default function StaffDashboardPage({
   };
 
   const staffDepartmentCode = (() => {
-    const email = String(user?.email || "").toLowerCase();
-    if (email.includes("moderation") || email.includes("mod")) return "MOD";
-    if (email.includes("finance") || email.includes("fin")) return "FIN";
-    if (email.includes("dispute") || email.includes("dis")) return "DIS";
-    if (email.includes("support") || email.includes("cs")) return "CS";
-    if (email.includes("it") || email.includes("tech")) return "IT";
-
     return (
       normalizeDepartmentCode(myProfile?.departmentCode) ||
       normalizeDepartmentCode(user?.departmentCode) ||
@@ -2191,7 +2183,15 @@ export default function StaffDashboardPage({
       normalizeDepartmentCode(user?.departmentName) ||
       normalizeDepartmentCode(myProfile?.specialization) ||
       normalizeDepartmentCode(user?.specialization) ||
-      "CS"
+      (() => {
+        const email = String(user?.email || "").toLowerCase();
+        if (email.includes("moderation") || email.includes("mod")) return "MOD";
+        if (email.includes("finance") || email.includes("fin")) return "FIN";
+        if (email.includes("dispute") || email.includes("dis")) return "DIS";
+        if (email.includes("support") || email.includes("cs")) return "CS";
+        if (email.includes("it") || email.includes("tech")) return "IT";
+        return "CS";
+      })()
     );
   })();
 
@@ -5825,10 +5825,10 @@ export default function StaffDashboardPage({
                 <div className="space-y-6 max-w-7xl mx-auto">
                   <div>
                     <h1 className="text-headline-lg font-extrabold text-[#141b2b]">
-                      Đối soát giao dịch VNPay
+                      Đối soát giao dịch PayOS
                     </h1>
                     <p className="text-body-sm text-[#3e4a3d] mt-1">
-                      Quản lý và đối soát các giao dịch thanh toán từ ví VNPay.
+                      Quản lý và đối soát các giao dịch thanh toán từ ví PayOS.
                     </p>
                   </div>
 

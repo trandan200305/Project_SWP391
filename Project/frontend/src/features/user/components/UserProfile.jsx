@@ -1,7 +1,16 @@
 import React from 'react';
-import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2 } from 'lucide-react';
+import { User, Briefcase, MapPin, Phone, Mail, DollarSign, Globe, Star, Edit3, BarChart2, Building2, Award } from 'lucide-react';
 import PortfolioSection from './PortfolioSection';
 import { api } from '../../../api/apiClient';
+import { getImageUrl } from '../../../utils/imageHelper.js';
+
+const getTierBadge = (totalSpentAmount) => {
+  const spent = parseFloat(totalSpentAmount) || 0;
+  if (spent >= 50000000) return { name: 'PLATINUM', label: 'Bạch Kim 💎', bg: 'bg-purple-100 text-purple-700 border-purple-300', discount: '15%' };
+  if (spent >= 20000000) return { name: 'GOLD', label: 'Vàng 🥇', bg: 'bg-amber-100 text-amber-700 border-amber-300', discount: '10%' };
+  if (spent >= 5000000) return { name: 'SILVER', label: 'Bạc 🥈', bg: 'bg-slate-100 text-slate-700 border-slate-300', discount: '5%' };
+  return { name: 'BRONZE', label: 'Đồng 🥉', bg: 'bg-orange-100 text-orange-700 border-orange-300', discount: '0%' };
+};
 
 const ReadOnlyRow = ({ label, value, badgeClass, icon: Icon }) => (
   <div className="flex justify-between items-center py-1">
@@ -95,6 +104,49 @@ export default function UserProfile({
           </div>
         </div>
 
+        {role === 'employer' && (() => {
+          const tierInfo = getTierBadge(totalSpent);
+          return (
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white rounded-2xl p-5 shadow-md border border-slate-800 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span className={`px-3 py-1 text-xs font-black rounded-full border shadow-sm ${tierInfo.bg}`}>
+                    HẠNG KHÁCH HÀNG: {tierInfo.label}
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-700/60">
+                    Ưu đãi: Giảm {tierInfo.discount} khi mua gói
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">Tích lũy chi tiêu: <strong className="text-white font-bold">{formatCurrency ? formatCurrency(totalSpent) : `${totalSpent || 0} VNĐ`}</strong></p>
+              </div>
+              <Award className="w-9 h-9 text-amber-400 shrink-0 ml-2" />
+            </div>
+          );
+        })()}
+
+        {(role === 'freelancer' || role === 'employer') && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
+              <p className="text-lg xl:text-xl font-black text-indigo-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? formatCompactCurrency(totalEarnings) : formatCompactCurrency(totalSpent)}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Tổng thu nhập' : 'Đã chi tiêu'}</p>
+            </div>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
+              <p className="text-lg xl:text-xl font-black text-emerald-600 mb-1 break-words w-full px-1">{role === 'freelancer' ? projectsCompleted : projectsPosted}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role === 'freelancer' ? 'Dự án' : 'Dự án đã đăng'}</p>
+            </div>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
+              <div className="flex items-center justify-center gap-1 mb-1 break-words w-full px-1">
+                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 shrink-0" />
+                <p className="text-lg xl:text-xl font-black text-gray-900">{averageRating}</p>
+              </div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đánh giá</p>
+            </div>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center hover:-translate-y-1 transition-transform cursor-default">
+              <p className="text-lg xl:text-xl font-black text-blue-500 mb-1 break-words w-full px-1">{profileCompleteness}%</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hoàn thiện</p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
@@ -160,6 +212,15 @@ function FreelancerReviewsSection({ freelancerId }) {
                     className={`w-3.5 h-3.5 ${s <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} 
                   />
                 ))}
+              </div>
+            </div>
+            <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
+              {review.comment || 'Không có nhận xét chi tiết.'}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
               </div>
             </div>
             <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">

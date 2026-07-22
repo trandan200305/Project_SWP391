@@ -30,7 +30,9 @@ public class AdminAuditLogDto {
     private int id;
     private String status;
     private String module;
+    private String action;
     private String detail;
     private Object timestamp;
     private String source;
+    private String role;
 }

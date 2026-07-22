@@ -66,6 +66,9 @@ public class DataSeeder implements CommandLineRunner {
     private com.cny.backend.department.repository.DepartmentTransferRequestRepository departmentTransferRequestRepository;
 
     @Autowired
+    private PaymentInvoiceRepository paymentInvoiceRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
@@ -95,6 +98,55 @@ public class DataSeeder implements CommandLineRunner {
         
         seedAdminEntities();
         seedStaffAndManagers();
+
+        if (paymentInvoiceRepository.count() == 0) {
+            seedInvoices();
+        }
+    }
+
+    private void seedInvoices() {
+        var employers = employerRepository.findAll();
+        if (employers.isEmpty()) return;
+
+        for (Employer emp : employers) {
+            PaymentInvoice inv1 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260715-" + emp.getEmployerId() + "01")
+                    .transactionId(1001 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Thanh toán gói dịch vụ Doanh nghiệp VIP (Enterprise Package)")
+                    .amount(new BigDecimal("2500000.00"))
+                    .taxAmount(new BigDecimal("250000.00"))
+                    .totalAmount(new BigDecimal("2750000.00"))
+                    .issuedAt(LocalDateTime.now().minusDays(5))
+                    .status("PAID")
+                    .build();
+
+            PaymentInvoice inv2 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260718-" + emp.getEmployerId() + "02")
+                    .transactionId(1002 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Nạp tiền vào tài khoản LancerPro (Ví Employer)")
+                    .amount(new BigDecimal("5000000.00"))
+                    .taxAmount(BigDecimal.ZERO)
+                    .totalAmount(new BigDecimal("5000000.00"))
+                    .issuedAt(LocalDateTime.now().minusDays(2))
+                    .status("PAID")
+                    .build();
+
+            PaymentInvoice inv3 = PaymentInvoice.builder()
+                    .invoiceNumber("INV-20260720-" + emp.getEmployerId() + "03")
+                    .transactionId(1003 + emp.getEmployerId())
+                    .employerId(emp.getEmployerId())
+                    .description("Thanh toán phí đăng tin dự án Nổi bật (Featured Job)")
+                    .amount(new BigDecimal("500000.00"))
+                    .taxAmount(new BigDecimal("50000.00"))
+                    .totalAmount(new BigDecimal("550000.00"))
+                    .issuedAt(LocalDateTime.now().minusHours(6))
+                    .status("PAID")
+                    .build();
+
+            paymentInvoiceRepository.saveAll(List.of(inv1, inv2, inv3));
+        }
     }
 
     private void seedAdminOnly() {
@@ -488,12 +540,12 @@ public class DataSeeder implements CommandLineRunner {
                 // 6. Seed disputes if empty (include RESOLVED_CLIENT_FAVOR for Refunds)
                 Integer disputeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM disputes", Integer.class);
                 if (disputeCount != null && disputeCount == 0) {
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
-                    jdbcTemplate.update("INSERT INTO disputes (project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
-                            "VALUES (N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Xây dựng Website bán hàng Laravel', N'LancerPro Client', N'Nguyễn Minh Anh', 15000000, N'Freelancer chậm tiến độ bàn giao sản phẩm', 'HIGH', 'OPEN', GETDATE(), GETDATE())");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Thiết kế Banner Sự kiện', N'TechFlow Corporation', N'Lê Thủy Tiên', 2000000, N'Yêu cầu hoàn trả 50% chi phí do thiết kế lỗi', 'MEDIUM', 'RESOLVED', DATEADD(day, -3, GETDATE()), DATEADD(day, -3, GETDATE()))");
+                    jdbcTemplate.update("INSERT INTO disputes (contract_id, project_title, client_name, freelancer_name, amount, reason, priority, status, created_at, updated_at) " +
+                            "VALUES (1, N'Thiết kế Landing Page Bất Động Sản', N'Vingroup Agency', N'Nguyễn Minh Anh', 4500000, N'Freelancer không bàn giao source code', 'HIGH', 'RESOLVED_CLIENT_FAVOR', DATEADD(day, -2, GETDATE()), DATEADD(day, -2, GETDATE()))");
                 }
 
                 // 7. Seed payment_transactions if empty
@@ -562,7 +614,10 @@ public class DataSeeder implements CommandLineRunner {
 
             String[][] departments = {
                 {"MOD", "Phòng Kiểm duyệt (Moderation)", "Duyệt dự án, kiểm duyệt nội dung, KYC | Liên kết với: CS"},
+<<<<<<< HEAD
                 {"DIS", "Phòng Tranh chấp (Dispute Resolution)", "Xử lý tranh chấp, phân xử hợp đồng | Liên kết với: MOD"},
+=======
+>>>>>>> origin/setup-depart-for-manager+staff
                 {"CS", "Phòng Hỗ trợ (Customer Support)", "Support tickets, hỗ trợ người dùng | Liên kết với: MOD, IT"},
                 {"IT", "Phòng Kỹ thuật (IT & Development)", "Bảo trì hệ thống, cấu hình, SEO, CMS | Liên kết với: CS, MOD"}
             };
