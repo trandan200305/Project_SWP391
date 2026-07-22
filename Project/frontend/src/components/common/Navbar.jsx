@@ -407,8 +407,8 @@ export default function Navbar({
                 >
                   <img
                     src={
-                      user.avatar
-                        ? getImageUrl(user.avatar)
+                      user.avatar || user.avatarUrl
+                        ? getImageUrl(user.avatar || user.avatarUrl)
                         : `https://ui-avatars.com/api/?name=${user.name}`
                     }
                     alt={user.name}
@@ -453,6 +453,15 @@ export default function Navbar({
 
                     {user?.role === "EMPLOYER" && (
                       <>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("employer_dashboard");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                        >
+                          <Sparkles className="w-4 h-4 text-indigo-600" /> Dashboard tổng quan
+                        </button>
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
@@ -513,31 +522,25 @@ export default function Navbar({
                         >
                           <DollarSign className="w-4 h-4" /> Thống kê doanh thu
                         </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("profile");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                        >
+                          <User className="w-4 h-4" /> Hồ sơ cá nhân
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("edit_profile");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                        >
+                          <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
+                        </button>
                       </>
-                    )}
-
-                    {user?.role === "FREELANCER" && (
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("profile");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                      >
-                        <User className="w-4 h-4" /> Hồ sơ cá nhân
-                      </button>
-                    )}
-
-                    {user?.role === "FREELANCER" && (
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          if (onNavigate) onNavigate("edit_profile");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                      >
-                        <Edit3 className="w-4 h-4" /> Sửa thông tin cá nhân
-                      </button>
                     )}
 
                     <button

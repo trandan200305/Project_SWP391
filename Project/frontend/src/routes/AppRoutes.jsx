@@ -22,6 +22,7 @@ import ContractDetailPage from '../features/project/pages/ContractDetailPage.jsx
 import PaymentResultPage from '../pages/PaymentResultPage.jsx';
 import CheckoutPage from '../pages/CheckoutPage.jsx';
 import PackageSelectionPage from '../pages/employer/PackageSelectionPage.jsx';
+import EmployerDashboardPage from '../pages/EmployerDashboardPage.jsx';
 
 export default function AppRoutes({
   currentPage,
@@ -145,6 +146,14 @@ export default function AppRoutes({
       <PackageSelectionPage 
         user={user} 
         onNavigate={handleNavigate} 
+      />
+    );
+  }
+  if (currentPage === 'employer_dashboard' || currentPage === 'dashboard') {
+    return (
+      <EmployerDashboardPage
+        user={user}
+        onNavigate={handleNavigate}
       />
     );
   }

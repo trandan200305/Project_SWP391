@@ -353,9 +353,9 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
 
   if (!contract) return null;
 
-  // Check if all milestones are approved to allow project completion
+  // Check if all milestones are completed (backend sets status to 'COMPLETED' when deliverable is approved)
   const allMilestonesApproved = contract.milestones && contract.milestones.length > 0 && 
-    contract.milestones.every(m => m.status === 'APPROVED');
+    contract.milestones.every(m => m.status === 'COMPLETED');
 
   return (
     <div className="pt-24 pb-16 bg-slate-50 min-h-screen">

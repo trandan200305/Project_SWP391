@@ -589,9 +589,17 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                 throw new Error(data.message || 'Cập nhật thất bại.');
             }
 
-            // 2. Không cần gọi onUserUpdate ở đây vì thông tin mới chưa được Admin duyệt.
-            // Chỉ cần hiển thị thông báo thành công và cuộn lên đầu trang.
-            setNotice({type: 'success', message: data.message});
+            if (onUserUpdate && (form.companyLogoUrl || data.companyLogoUrl)) {
+                const newLogo = form.companyLogoUrl || data.companyLogoUrl;
+                onUserUpdate({
+                    ...user,
+                    avatar: newLogo,
+                    avatarUrl: newLogo,
+                    companyLogoUrl: newLogo
+                });
+            }
+
+            setNotice({type: 'success', message: data.message || 'Cập nhật thông tin công ty thành công.'});
             window.scrollTo({top: 0, behavior: 'smooth'});
 
         } catch (error) {

@@ -133,7 +133,7 @@ public class ContractManagementService {
             throw new IllegalArgumentException("Không thể hoàn thành hợp đồng do hợp đồng chưa tạo bất kỳ mốc công việc nào.");
         }
         for (Milestone m : milestones) {
-            if (!"APPROVED".equals(m.getStatus())) {
+            if (!"COMPLETED".equals(m.getStatus())) {
                 throw new IllegalArgumentException("Không thể hoàn thành hợp đồng do vẫn còn mốc công việc chưa hoàn thành/phê duyệt: " + m.getTitle());
             }
         }

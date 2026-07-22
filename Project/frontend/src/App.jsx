@@ -134,6 +134,8 @@ export default function App() {
       "employer_invoices",
       "employer_support",
       "employer_jobs",
+      "employer_dashboard",
+      "dashboard",
       "employer_project_details",
       "profile",
       "checkout",
@@ -164,7 +166,7 @@ export default function App() {
       setCurrentPage("home");
       return;
     }
-    if (["employer_profile", "employer_invoices", "employer_support"].includes(page) && user?.role !== "EMPLOYER") {
+    if (["employer_profile", "employer_invoices", "employer_support", "employer_jobs", "employer_dashboard", "dashboard"].includes(page) && user?.role !== "EMPLOYER") {
       setCurrentPage("home");
       return;
     }

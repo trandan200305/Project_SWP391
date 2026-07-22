@@ -100,6 +100,133 @@ public class EmployerController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{employerId}/dashboard")
+    public ResponseEntity<Map<String, Object>> getEmployerDashboard(@PathVariable Integer employerId) {
+        Employer employer = employerRepository.findById(employerId).orElse(null);
+        if (employer == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+
+        // 1. Core Profile & Expenses info
+        response.put("employerId", employer.getEmployerId());
+        response.put("displayName", employer.getDisplayName());
+        String effectiveLogo = (employer.getCompanyLogoUrl() != null && !employer.getCompanyLogoUrl().trim().isEmpty())
+                ? employer.getCompanyLogoUrl()
+                : employer.getAvatarUrl();
+        response.put("avatarUrl", effectiveLogo);
+        response.put("companyLogoUrl", effectiveLogo);
+        response.put("totalSpent", employer.getTotalSpent() != null ? employer.getTotalSpent() : java.math.BigDecimal.ZERO);
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent());
+        response.put("tier", currentTier);
+        response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier));
+        response.put("projectsPosted", employer.getProjectsPosted() != null ? employer.getProjectsPosted() : 0);
+
+        // 2. Running Projects & Contracts
+        List<Map<String, Object>> activeProjectsList = new ArrayList<>();
+        try {
+            activeProjectsList = jdbcTemplate.queryForList(
+                "SELECT DISTINCT p.project_id, p.title, p.budget_fixed, p.budget_min, p.budget_max, p.status AS project_status, p.created_at AS project_created_at, p.proposal_count, " +
+                "c.contract_id, c.agreed_amount, c.status AS contract_status, c.start_date, c.end_date, " +
+                "f.freelancer_id, f.display_name AS freelancer_name, f.avatar_url AS freelancer_avatar, f.professional_title " +
+                "FROM projects p " +
+                "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status IN ('ACTIVE', 'IN_PROGRESS', 'PENDING_SIGN') " +
+                "LEFT JOIN freelancers f ON c.freelancer_id = f.freelancer_id " +
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('APPROVED', 'IN_PROGRESS', 'HIRED', 'ACTIVE') OR c.contract_id IS NOT NULL) " +
+                "ORDER BY p.project_id DESC",
+                employerId
+            );
+        } catch (Exception e) {
+            // fallback gracefully
+        }
+        response.put("runningProjects", activeProjectsList);
+        response.put("runningProjectsCount", activeProjectsList.size());
+
+        // 3. Deliverables pending review (SUBMITTED)
+        List<Map<String, Object>> pendingDeliverables = new ArrayList<>();
+        try {
+            pendingDeliverables = jdbcTemplate.queryForList(
+                "SELECT d.deliverable_id, d.title AS deliverable_title, d.notes, d.submitted_at, d.status, " +
+                "m.milestone_id, m.title AS milestone_title, m.amount AS milestone_amount, " +
+                "c.contract_id, c.title AS contract_title, " +
+                "f.freelancer_id, f.display_name AS freelancer_name, f.avatar_url AS freelancer_avatar " +
+                "FROM deliverables d " +
+                "JOIN milestones m ON d.milestone_id = m.milestone_id " +
+                "JOIN contracts c ON m.contract_id = c.contract_id " +
+                "JOIN freelancers f ON c.freelancer_id = f.freelancer_id " +
+                "WHERE c.client_id = ? AND d.status = 'SUBMITTED' " +
+                "ORDER BY d.submitted_at DESC",
+                employerId
+            );
+
+            for (Map<String, Object> deliv : pendingDeliverables) {
+                Integer delivId = (Integer) deliv.get("deliverable_id");
+                List<Map<String, Object>> files = jdbcTemplate.queryForList(
+                    "SELECT file_id, file_url, file_name, file_size FROM deliverable_files WHERE deliverable_id = ?",
+                    delivId
+                );
+                deliv.put("files", files);
+            }
+        } catch (Exception e) {
+            // fallback gracefully
+        }
+        response.put("pendingDeliverables", pendingDeliverables);
+        response.put("pendingDeliverablesCount", pendingDeliverables.size());
+
+        // 4. Favorite / Hired Freelancers
+        List<Map<String, Object>> favoriteFreelancers = new ArrayList<>();
+        boolean isRecommendation = false;
+        try {
+            favoriteFreelancers = jdbcTemplate.queryForList(
+                "SELECT f.freelancer_id, f.display_name, f.avatar_url, f.professional_title, f.average_rating, f.hourly_rate, f.total_earnings, f.city, " +
+                "COUNT(c.contract_id) AS total_contracts " +
+                "FROM freelancers f " +
+                "JOIN contracts c ON f.freelancer_id = c.freelancer_id " +
+                "WHERE c.client_id = ? AND f.is_deleted = 0 " +
+                "GROUP BY f.freelancer_id, f.display_name, f.avatar_url, f.professional_title, f.average_rating, f.hourly_rate, f.total_earnings, f.city " +
+                "ORDER BY total_contracts DESC, f.average_rating DESC",
+                employerId
+            );
+
+            if (favoriteFreelancers.isEmpty()) {
+                isRecommendation = true;
+                favoriteFreelancers = jdbcTemplate.queryForList(
+                    "SELECT TOP 6 f.freelancer_id, f.display_name, f.avatar_url, f.professional_title, f.average_rating, f.hourly_rate, f.total_earnings, f.city, " +
+                    "0 AS total_contracts " +
+                    "FROM freelancers f " +
+                    "WHERE f.is_deleted = 0 AND f.status = 'ACTIVE' " +
+                    "ORDER BY f.average_rating DESC, f.projects_completed DESC"
+                );
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        response.put("favoriteFreelancers", favoriteFreelancers);
+        response.put("favoriteFreelancersCount", favoriteFreelancers.size());
+        response.put("isRecommendation", isRecommendation);
+
+        // 5. Recent transactions log
+        List<com.cny.backend.admin.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByEmployerIdOrderByCreatedAtDesc(employerId);
+        List<Map<String, Object>> txList = new ArrayList<>();
+        int maxTx = Math.min(transactions.size(), 5);
+        for (int i = 0; i < maxTx; i++) {
+            com.cny.backend.admin.entity.PaymentTransaction tx = transactions.get(i);
+            Map<String, Object> tMap = new HashMap<>();
+            tMap.put("transactionId", tx.getId());
+            tMap.put("txnRef", tx.getTxnRef());
+            tMap.put("amount", tx.getAmount());
+            tMap.put("packageType", tx.getPackageType());
+            tMap.put("paymentMethod", tx.getVnpTransactionNo() != null ? "VNPay" : "PayOS");
+            tMap.put("status", tx.getStatus());
+            tMap.put("createdAt", tx.getCreatedAt() != null ? tx.getCreatedAt().toString() : null);
+            txList.add(tMap);
+        }
+        response.put("recentTransactions", txList);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EmployerDto> getById(@PathVariable Integer id) {
         return employerRepository.findById(id)

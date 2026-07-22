@@ -142,20 +142,8 @@ public class DeliverableService {
         deliverableRepository.save(deliverable);
         milestoneRepository.save(milestone);
 
-        if (approve) {
-            // Check if all milestones are completed
-            boolean allCompleted = true;
-            for (Milestone m : milestoneRepository.findByContractContractIdOrderByMilestoneIdAsc(contract.getContractId())) {
-                if (!"COMPLETED".equals(m.getStatus())) {
-                    allCompleted = false;
-                    break;
-                }
-            }
-            if (allCompleted) {
-                contract.setStatus("COMPLETED");
-                contractRepository.save(contract);
-            }
-        }
+        // NOTE: Auto-completing the contract is intentionally removed.
+        // The employer must manually click "Complete Contract" after reviewing all milestones.
 
         return mapToDto(deliverable);
     }
