@@ -147,8 +147,9 @@ public class ProjectService {
             throw new IllegalArgumentException("Bạn đã sử dụng hết số lượt đăng bài của gói hiện tại. Vui lòng mua gói mới để nhận thêm lượt đăng.");
         }
 
-        // Deduct 1 quota
+        // Deduct 1 quota and increment projectsPosted
         client.setPackagePostQuota(client.getPackagePostQuota() - 1);
+        client.setProjectsPosted((client.getProjectsPosted() != null ? client.getProjectsPosted() : 0) + 1);
         employerRepository.save(client);
 
         appliedPackage = client.getCurrentPackageType() != null ? client.getCurrentPackageType() : "MEDIUM";
@@ -175,7 +176,7 @@ public class ProjectService {
                 .deadline(dto.getDeadline())
                 .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(durationDays)) 
-                .status("PENDING") 
+                .status("PUBLISHED") 
                 .servicePackage(appliedPackage)
                 .serviceFee(serviceFee)
                 .proposalCount(0)
@@ -193,9 +194,9 @@ public class ProjectService {
                 notificationService.createNotification(
                     staff.getStaffId().longValue(),
                     "STAFF",
-                    "Dự án mới cần duyệt",
-                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng và đang chờ kiểm duyệt.",
-                    "TASK",
+                    "Dự án mới đã đăng",
+                    "Dự án '" + savedProject.getTitle() + "' vừa được đăng trực tiếp lên hệ thống.",
+                    "INFO",
                     savedProject.getProjectId().toString()
                 );
             }
