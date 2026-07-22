@@ -76,8 +76,9 @@ public class EmployerController {
         response.put("packagePostQuota", employer.getPackagePostQuota() != null ? employer.getPackagePostQuota() : 0);
         response.put("packageExpiryDate", employer.getPackageExpiryDate() != null ? employer.getPackageExpiryDate().toString() : null);
         response.put("projectsPosted", employer.getProjectsPosted() != null ? employer.getProjectsPosted() : 0);
-        response.put("tier", com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent()));
-        response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(employer.getTier()));
+        String currentTier = com.cny.backend.user.util.EmployerTierUtils.calculateTier(employer.getTotalSpent());
+        response.put("tier", currentTier);
+        response.put("tierDiscount", com.cny.backend.user.util.EmployerTierUtils.getTierDiscountPercentage(currentTier));
 
         List<com.cny.backend.admin.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByEmployerIdOrderByCreatedAtDesc(employerId);
         List<Map<String, Object>> txList = new ArrayList<>();
