@@ -542,11 +542,10 @@ export default function ManagerDashboardPage({
           badge: moderationItems.filter((i) => i.status === "Pending").length,
         },
         {
-          id: "Reports",
-          label: "Báo cáo vi phạm",
-          icon: FileText,
-          badge: violationReports.filter((r) => r.status === "Chờ xử lý")
-            .length,
+          id: "Disputes",
+          label: "Gửi khiếu nại",
+          icon: ShieldAlert,
+          badge: openDisputeCount,
         },
 
       );
@@ -554,7 +553,7 @@ export default function ManagerDashboardPage({
       common.push(
         {
           id: "Disputes",
-          label: "Tranh chấp Freelancer - Employer",
+          label: "Gửi khiếu nại",
           icon: ShieldAlert,
           badge: openDisputeCount,
         },
@@ -601,7 +600,7 @@ export default function ManagerDashboardPage({
       common.push(
         {
           id: "Disputes",
-          label: "Giải quyết tranh chấp",
+          label: "Gửi khiếu nại",
           icon: ShieldAlert,
           badge: openDisputeCount,
         },
@@ -611,7 +610,7 @@ export default function ManagerDashboardPage({
           icon: BadgeDollarSign,
         },
         { id: "Moderation", label: "Hàng đợi kiểm duyệt", icon: Gavel },
-        { id: "Reports", label: "Báo cáo vi phạm", icon: FileText },
+
 
         { id: "Support", label: "Hỗ trợ khách hàng", icon: MessageSquare },
       );

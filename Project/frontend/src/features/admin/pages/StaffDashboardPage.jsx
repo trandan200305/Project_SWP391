@@ -2379,17 +2379,12 @@ export default function StaffDashboardPage({
           icon: Gavel,
           badge: pendingModerationCount,
         },
-        // nut bao cao vi pham
+        // nut gui khieu nai
         {
-          id: "Reports",
-          label: "Báo cáo vi phạm",
+          id: "Disputes",
+          label: "Gửi khiếu nại",
           icon: ShieldAlert,
-          badge: violationReports.filter(
-            (r) =>
-              r.status === "Chờ xử lý" ||
-              r.status === "PENDING" ||
-              r.status === "Pending",
-          ).length,
+          badge: openDisputeCount,
         },
 
         // nut lich su hoat dong
@@ -2409,7 +2404,7 @@ export default function StaffDashboardPage({
         },
         {
           id: "Disputes",
-          label: "Tranh chấp Freelancer - Employer",
+          label: "Gửi khiếu nại",
           icon: ShieldAlert,
           badge: openDisputeCount,
         },
