@@ -126,7 +126,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const [loadingProposals, setLoadingProposals] = useState(false);
 
     const completion = useMemo(() => {
-        const keys = ['displayName', 'fullName', 'phone', 'companyName', 'companyDescription', 'website', 'address', 'city', 'country', 'companySize', 'industry'];
+        const keys = ['fullName', 'phone', 'companyName', 'companyDescription', 'taxCode'];
         const filled = keys.filter((key) => String(form[key] || '').trim()).length;
         return Math.round((filled / keys.length) * 100);
     }, [form]);
