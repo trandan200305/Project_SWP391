@@ -60,6 +60,9 @@ public class FreelancerController {
     @Autowired
     private com.cny.backend.project.repository.JobCategoryRepository jobCategoryRepository;
 
+    @Autowired
+    private com.cny.backend.project.repository.SkillRepository skillRepository;
+
     /** Lấy danh sách tất cả freelancer (mặc định không filter) */
     @GetMapping
     public ResponseEntity<List<FreelancerDto>> getAllFreelancers(
@@ -68,7 +71,30 @@ public class FreelancerController {
             @RequestParam(value = "experienceLevel", required = false) String experienceLevel,
             @RequestParam(value = "minRate", required = false) java.math.BigDecimal minRate,
             @RequestParam(value = "maxRate", required = false) java.math.BigDecimal maxRate,
-            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating) {
+            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating,
+            @RequestParam(value = "skillIds", required = false) String skillIds) {
+        
+        // Parse skillIds and find matching skill names from database
+        java.util.List<String> targetSkillNames = new java.util.ArrayList<>();
+        if (skillIds != null && !skillIds.trim().isEmpty()) {
+            try {
+                java.util.List<Integer> ids = java.util.Arrays.stream(skillIds.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(Integer::parseInt)
+                        .collect(Collectors.toList());
+                for (Integer id : ids) {
+                    skillRepository.findById(id).ifPresent(s -> {
+                        if (s.getSkillName() != null) {
+                            targetSkillNames.add(s.getSkillName().toLowerCase().trim());
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                // ignore parsing exceptions
+            }
+        }
+
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         List<FreelancerDto> dtos = freelancers.stream().map(f -> {
             FreelancerDto dto = mapToDto(f);
@@ -83,7 +109,8 @@ public class FreelancerController {
         if ((keyword != null && !keyword.trim().isEmpty()) || 
             (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) ||
             (experienceLevel != null && !experienceLevel.trim().isEmpty()) ||
-            minRate != null || maxRate != null || minRating != null) {
+            minRate != null || maxRate != null || minRating != null ||
+            !targetSkillNames.isEmpty()) {
             
             dtos = dtos.stream().filter(f -> {
                 boolean matches = true;
@@ -147,6 +174,30 @@ public class FreelancerController {
                 if (matches && minRating != null) {
                     java.math.BigDecimal rating = f.getAverageRating();
                     if (rating == null || rating.compareTo(minRating) < 0) {
+                        matches = false;
+                    }
+                }
+
+                // Skill match (at least one matching skill, case-insensitive)
+                if (matches && !targetSkillNames.isEmpty()) {
+                    String flSkillsStr = f.getPrimarySkills();
+                    if (flSkillsStr != null) {
+                        java.util.List<String> flSkills = java.util.Arrays.stream(flSkillsStr.split("[,;|\\n\\r]+"))
+                                .map(String::trim)
+                                .map(String::toLowerCase)
+                                .filter(s -> !s.isEmpty())
+                                .collect(Collectors.toList());
+                        boolean hasMatchingSkill = false;
+                        for (String targetSkill : targetSkillNames) {
+                            if (flSkills.stream().anyMatch(fs -> fs.contains(targetSkill) || targetSkill.contains(fs))) {
+                                hasMatchingSkill = true;
+                                break;
+                            }
+                        }
+                        if (!hasMatchingSkill) {
+                            matches = false;
+                        }
+                    } else {
                         matches = false;
                     }
                 }

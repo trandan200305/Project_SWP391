@@ -13,6 +13,25 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
 
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [skills, setSkills] = useState([]);
+  const [activeSkillIds, setActiveSkillIds] = useState([]);
+  const [isSkillDropdownOpen, setIsSkillDropdownOpen] = useState(false);
+  const [skillSearchQuery, setSkillSearchQuery] = useState('');
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.skill-dropdown-container')) {
+        setIsSkillDropdownOpen(false);
+      }
+    };
+    if (isSkillDropdownOpen) {
+      document.addEventListener('click', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, [isSkillDropdownOpen]);
 
   useEffect(() => {
     if (initialKeyword !== undefined) {
@@ -28,6 +47,14 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
       .catch(e => console.error('Error fetching categories:', e));
   }, []);
 
+  // Fetch skills on mount
+  useEffect(() => {
+    fetch('http://localhost:8080/api/skills')
+      .then(res => res.json())
+      .then(data => setSkills(data || []))
+      .catch(e => console.error('Error fetching skills:', e));
+  }, []);
+
   // Fetch freelancers based on active filters
   const fetchFreelancers = async () => {
     setIsLoading(true);
@@ -38,6 +65,7 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
       if (maxRate) url += `&maxRate=${maxRate}`;
       if (minRating) url += `&minRating=${minRating}`;
       if (selectedCategory && selectedCategory !== 'all') url += `&category=${encodeURIComponent(selectedCategory)}`;
+      if (activeSkillIds && activeSkillIds.length > 0) url += `&skillIds=${activeSkillIds.join(',')}`;
 
       const res = await fetch(url);
       if (res.ok) {
@@ -54,7 +82,7 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
   // Trigger search on mount or when select filters change
   useEffect(() => {
     fetchFreelancers();
-  }, [selectedCategory, minRating]);
+  }, [selectedCategory, minRating, activeSkillIds]);
 
   const showError = (msg) => {
     setErrorToast(msg);
@@ -80,6 +108,9 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
     setMaxRate('');
     setKeyword('');
     setSelectedCategory('');
+    setActiveSkillIds([]);
+    setIsSkillDropdownOpen(false);
+    setSkillSearchQuery('');
     setIsLoading(true);
     fetch('http://localhost:8080/api/freelancers')
       .then(res => res.json())
@@ -91,6 +122,23 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
         console.error(e);
         setIsLoading(false);
       });
+  };
+
+  const displayedSkills = (selectedCategory
+    ? skills.filter(sk => String(sk.categoryId) === String(selectedCategory))
+    : skills
+  ).filter(sk => 
+    sk.skillName && sk.skillName.toLowerCase().includes(skillSearchQuery.toLowerCase().trim())
+  );
+
+  const handleSkillChange = (skillId) => {
+    setActiveSkillIds(prev => {
+      if (prev.includes(skillId)) {
+        return prev.filter(id => id !== skillId);
+      } else {
+        return [...prev, skillId];
+      }
+    });
   };
 
   const formatRate = (rate) => {
@@ -166,7 +214,12 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
               <div className="w-full md:w-48">
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setActiveSkillIds([]);
+                    setSkillSearchQuery('');
+                    setIsSkillDropdownOpen(false);
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Tất cả ngành nghề</option>
@@ -212,7 +265,7 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
               </div>
 
               {/* Reset filter button at the right end */}
-              {(minRating || minRate || maxRate || keyword || selectedCategory) && (
+              {(minRating || minRate || maxRate || keyword || selectedCategory || activeSkillIds.length > 0) && (
                 <div className="flex items-center w-full md:w-auto md:ml-auto">
                   <button
                     type="button"
@@ -224,6 +277,106 @@ export default function FindFreelancersPage({ onNavigate, initialKeyword = '', u
                 </div>
               )}
             </div>
+
+            {/* Filter by Skills (Searchable Dropdown Select) */}
+            {skills.length > 0 && (
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 skill-dropdown-container">
+                <div className="text-xs font-bold text-slate-705 uppercase tracking-wide">Kỹ năng yêu cầu:</div>
+                
+                <div className="flex flex-wrap items-center gap-3 relative">
+                  {/* Dropdown Select Container */}
+                  <div className="relative w-full md:w-64">
+                    {/* Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSkillDropdownOpen(!isSkillDropdownOpen)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-left text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center transition-all font-semibold"
+                    >
+                      <span className="truncate">
+                        {activeSkillIds.length > 0
+                          ? `Đã chọn ${activeSkillIds.length} kỹ năng`
+                          : 'Chọn kỹ năng...'}
+                      </span>
+                      <span className="text-slate-400 text-xs">▼</span>
+                    </button>
+
+                    {/* Popover Dropdown Menu */}
+                    {isSkillDropdownOpen && (
+                      <div className="absolute left-0 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-30 p-2.5 flex flex-col gap-2">
+                        {/* Search Input */}
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Tìm nhanh kỹ năng..."
+                            value={skillSearchQuery}
+                            onChange={(e) => setSkillSearchQuery(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-md pl-2.5 pr-7 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-semibold"
+                          />
+                          {skillSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setSkillSearchQuery('')}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 text-sm font-bold"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+
+                        {/* List of filtered skills */}
+                        <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
+                          {displayedSkills.length === 0 ? (
+                            <span className="text-slate-400 text-xs italic p-1">Không tìm thấy kỹ năng</span>
+                          ) : (
+                            displayedSkills.map(sk => {
+                              const isChecked = activeSkillIds.includes(sk.skillId);
+                              return (
+                                <button
+                                  key={sk.skillId}
+                                  type="button"
+                                  onClick={() => handleSkillChange(sk.skillId)}
+                                  className={`text-left text-xs px-2.5 py-2 rounded-md transition-all font-semibold flex justify-between items-center ${
+                                    isChecked
+                                      ? 'bg-blue-50 text-blue-750 font-bold'
+                                      : 'hover:bg-slate-50 text-slate-700'
+                                  }`}
+                                >
+                                  <span>{sk.skillName}</span>
+                                  {isChecked && <span className="text-blue-600 font-bold">✓</span>}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Skill Tags (displayed next to the dropdown select) */}
+                  <div className="flex flex-wrap gap-1.5 flex-1 min-w-[200px]">
+                    {activeSkillIds.map(id => {
+                      const sk = skills.find(s => s.skillId === id);
+                      if (!sk) return null;
+                      return (
+                        <span
+                          key={id}
+                          className="bg-blue-50 text-blue-800 text-xs px-2.5 py-1 rounded-md border border-blue-200/50 flex items-center gap-1 font-bold shadow-sm"
+                        >
+                          <span>{sk.skillName}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleSkillChange(id)}
+                            className="hover:bg-blue-200 text-blue-800 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px] transition-all ml-0.5"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </form>
 

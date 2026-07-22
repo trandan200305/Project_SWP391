@@ -76,6 +76,11 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        try {
+            jdbcTemplate.update("DELETE FROM skills WHERE LOWER(skill_name) = 'abc'");
+        } catch (Exception e) {
+            System.err.println("Cleanup warning: " + e.getMessage());
+        }
         
         seedFixedDepartments();
         
