@@ -221,14 +221,5 @@ function FreelancerReviewsSection({ freelancerId }) {
         ))}
       </div>
     </div>
-              </div>
-            </div>
-            <p className="text-sm text-gray-650 font-medium leading-relaxed whitespace-pre-wrap pl-11">
-              {review.comment || 'Không có nhận xét chi tiết.'}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }

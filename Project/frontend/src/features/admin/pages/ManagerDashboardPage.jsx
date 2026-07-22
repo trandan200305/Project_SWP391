@@ -5366,21 +5366,73 @@ export default function ManagerDashboardPage({
                           <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Trạng thái</th>
                           <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">Thời gian</th>
                           <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider text-right">Thao tác</th>
-                        <tr>
-                          <td
-                            colSpan="6"
-                            className="text-center py-8 text-sm text-[#6e7b6c]"
-                          >
-                            Chưa có khiếu nại thanh toán nào cần xử lý.
-                          </td>
                         </tr>
-                      )}
-                    </tbody>
+                      </thead>
+                      <tbody className="divide-y divide-[#e9edff] bg-white">
+                        {filteredTxns.length > 0 ? (
+                          filteredTxns.map((t) => (
+                            <tr key={t.id} className="hover:bg-[#f7fff2]/30 transition-colors">
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#141b2b]">
+                                #{t.id}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#006b2c]">
+                                {t.txnRef}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-extrabold text-emerald-600 text-right">
+                                {t.amount.toLocaleString("vi-VN")}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm text-[#3e4a3d]">
+                                {t.vnpTxnNo}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    t.status === "SUCCESS"
+                                      ? "bg-[#f7fff2] text-[#006b2c]"
+                                      : t.status === "FAILED"
+                                        ? "bg-[#ffdad6] text-[#ba1a1a]"
+                                        : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-body-sm font-bold text-[#3e4a3d]">
+                                {t.date}
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-right text-xs font-bold">
+                                {t.status === "FAILED" ? (
+                                  <button
+                                    onClick={() => handleReconcile(t.id)}
+                                    className="px-3 py-1 bg-white hover:bg-[#006b2c] hover:text-white text-[#006b2c] border border-[#bdcaba] rounded-lg transition-colors"
+                                  >
+                                    Đối soát lại
+                                  </button>
+                                ) : (
+                                  <span className="text-[#6e7b6c] font-normal">
+                                    N/A
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="7"
+                              className="text-center py-10 text-[#6e7b6c] text-sm"
+                            >
+                              Không tìm thấy giao dịch nào.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
                   </table>
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ---------------- TAB: DISPUTE HISTORY (Lịch sử xử lý tranh chấp) ---------------- */}
           {activeTab === "DisputeHistory" && (
