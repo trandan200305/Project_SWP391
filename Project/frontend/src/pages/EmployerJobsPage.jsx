@@ -295,16 +295,14 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     const handleProjectTitleClick = async (proj) => {
-        if (proj.status === 'IN_PROGRESS' || proj.status === 'CLOSED') {
-            try {
-                const contractDetails = await contractApi.getContractByProjectId(proj.projectId, user.id);
-                if (contractDetails && contractDetails.contractId) {
-                    onNavigate('contract_details', { contractId: contractDetails.contractId });
-                    return;
-                }
-            } catch (err) {
-                console.error("Error fetching contract details:", err);
+        try {
+            const contractDetails = await contractApi.getContractByProjectId(proj.projectId, user.id);
+            if (contractDetails && contractDetails.contractId) {
+                onNavigate('contract_details', { contractId: contractDetails.contractId });
+                return;
             }
+        } catch (err) {
+            console.error("Error fetching contract details:", err);
         }
         const mappedJob = {
             ...proj,
