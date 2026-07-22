@@ -252,36 +252,36 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                                 ) : (
                                     <div className="space-y-4">
                                         {proposals.map((prop) => (
-                                            <div key={prop.proposalId} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors text-left relative">
+                                            <div key={prop?.proposalId} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors text-left relative">
                                                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-3">
                                                     <div className="flex items-center gap-3">
-                                                        {prop.freelancerAvatar ? (
+                                                        {prop?.freelancerAvatar ? (
                                                             <img
                                                                 src={prop.freelancerAvatar}
-                                                                alt={prop.freelancerName}
+                                                                alt={prop.freelancerName || 'Freelancer'}
                                                                 className="w-10 h-10 rounded-full object-cover border border-slate-200"
                                                             />
                                                         ) : (
                                                             <div className="w-10 h-10 bg-blue-100 text-blue-600 font-bold rounded-full flex items-center justify-center text-sm">
-                                                                {prop.freelancerName.charAt(0)}
+                                                                {(prop?.freelancerName || 'F').charAt(0).toUpperCase()}
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <h4 className="font-bold text-sm text-slate-900">{prop.freelancerName}</h4>
-                                                            <p className="text-[11px] text-slate-400 font-medium">{prop.freelancerTitle || 'Freelancer tự do'}</p>
+                                                            <h4 className="font-bold text-sm text-slate-900">{prop?.freelancerName || 'Freelancer ẩn danh'}</h4>
+                                                            <p className="text-[11px] text-slate-400 font-medium">{prop?.freelancerTitle || 'Freelancer tự do'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-left sm:text-right shrink-0">
                                                         <p className="text-sm font-extrabold text-emerald-600">
-                                                            {Number(prop.bidAmount).toLocaleString('vi-VN')} VNĐ
+                                                            {Number(prop?.bidAmount || 0).toLocaleString('vi-VN')} VNĐ
                                                         </p>
-                                                        <p className="text-[10px] text-slate-400 font-bold">Thời gian: {prop.estimatedDays} ngày</p>
+                                                        <p className="text-[10px] text-slate-400 font-bold">Thời gian: {prop?.estimatedDays || 0} ngày</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-xs text-slate-650 bg-white border border-slate-100 rounded-lg p-3 leading-relaxed whitespace-pre-line text-left mb-3">
-                                                    {prop.coverLetter}
+                                                    {prop?.coverLetter}
                                                 </div>
-                                                {prop.cvUrl && (
+                                                {prop?.cvUrl && (
                                                     <div className="mb-3">
                                                         <a 
                                                             href={prop.cvUrl} 
@@ -296,14 +296,14 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                                                 )}
                                                 
                                                 <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                                                    {prop.status === 'SUBMITTED' ? (
+                                                    {prop?.status === 'SUBMITTED' ? (
                                                         <>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => onNavigate('messenger', {
                                                                     id: prop.freelancerId,
                                                                     role: 'FREELANCER',
-                                                                    name: prop.freelancerName,
+                                                                    name: prop.freelancerName || 'Freelancer',
                                                                     avatar: prop.freelancerAvatar
                                                                 })}
                                                                 className="px-3.5 py-1.5 rounded-lg text-slate-700 bg-white border border-slate-250 hover:bg-slate-50 text-xs font-bold transition-all"
@@ -346,7 +346,7 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                                         <Loader2 className="w-6 h-6 animate-spin text-cyan-600" />
                                         <span className="text-xs font-semibold">Đang tải hợp đồng...</span>
                                     </div>
-                                ) : !contract ? (
+                                ) : (!contract || !contract.contractId) ? (
                                     <div className="py-16 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl p-8 max-w-md mx-auto my-4">
                                         <Briefcase className="w-10 h-10 text-slate-350 mx-auto mb-3" />
                                         <h4 className="font-bold text-slate-800 text-xs mb-1">Dự án chưa có tiến độ</h4>
@@ -368,22 +368,22 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                                             <div>
                                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Freelancer đang đảm nhận</span>
                                                 <div className="flex items-center gap-2">
-                                                    {contract.freelancerAvatar ? (
-                                                        <img src={contract.freelancerAvatar} alt={contract.freelancerName} className="w-8 h-8 rounded-full object-cover" />
+                                                    {contract?.freelancerAvatar ? (
+                                                        <img src={contract.freelancerAvatar} alt={contract.freelancerName || 'Freelancer'} className="w-8 h-8 rounded-full object-cover" />
                                                     ) : (
                                                         <div className="w-8 h-8 bg-blue-50 text-blue-600 font-bold rounded-full flex items-center justify-center text-xs">
-                                                            {contract.freelancerName.charAt(0)}
+                                                            {(contract?.freelancerName || 'F').charAt(0).toUpperCase()}
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <h4 className="font-bold text-sm text-slate-900">{contract.freelancerName}</h4>
-                                                        <span className="text-[10px] text-slate-400">{contract.freelancerTitle || 'Freelancer tự do'}</span>
+                                                        <h4 className="font-bold text-sm text-slate-900">{contract?.freelancerName || 'Freelancer ẩn danh'}</h4>
+                                                        <span className="text-[10px] text-slate-400">{contract?.freelancerTitle || 'Freelancer tự do'}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-left sm:text-right shrink-0">
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Ngân sách hợp đồng</p>
-                                                <p className="text-base font-black text-emerald-600">{Number(contract.agreedAmount).toLocaleString('vi-VN')} VNĐ</p>
+                                                <p className="text-base font-black text-emerald-600">{Number(contract?.agreedAmount || 0).toLocaleString('vi-VN')} VNĐ</p>
                                                 <button
                                                     onClick={() => onNavigate('contract_details', { contractId: contract.contractId })}
                                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 mt-1"
