@@ -243,6 +243,8 @@ export default function StaffDashboardPage({
   const [showReportEscalateForm, setShowReportEscalateForm] = useState(false);
   const [reportEscalateReason, setReportEscalateReason] = useState("");
   const [escalationCases, setEscalationCases] = useState([]);
+  const [showDisputeEscalateForm, setShowDisputeEscalateForm] = useState(false);
+  const [disputeEscalateReason, setDisputeEscalateReason] = useState("");
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [staffList, setStaffList] = useState([]);
@@ -908,6 +910,45 @@ export default function StaffDashboardPage({
     });
     setConfirmCountdown(null);
     setShowConfirmModal(true);
+  };
+
+  const handleEscalateDispute = async (reason) => {
+    if (!selectedDispute) return;
+    if (!reason) {
+      showToast("Vui lòng chọn lý do chuyển cấp!", "error");
+      return;
+    }
+    const rawId = selectedDispute.raw?.id || selectedDispute.id;
+
+    try {
+      const res = await adminApi.resolveDispute(rawId, "ESCALATED", reason, user?.adminId || user?.id || 1);
+      if (res.success) {
+        showToast("Đã chuyển cấp khiếu nại lên Manager thành công!", "success");
+        const existingTask = tasks.find(
+          (t) =>
+            t.taskType === "DISPUTE_RESOLUTION" &&
+            Number(t.referenceId) === Number(rawId),
+        );
+        if (existingTask) {
+          await adminApi.escalateVerificationTask(
+            existingTask.taskId,
+            reason,
+            user?.email || "staff@gmail.com",
+          );
+        }
+        setShowDisputeModal(false);
+        setSelectedDispute(null);
+        setShowDisputeEscalateForm(false);
+        setDisputeEscalateReason("");
+        fetchTasks();
+        fetchModerationData();
+      } else {
+        showToast(res.message || "Có lỗi xảy ra", "error");
+      }
+    } catch (error) {
+      console.error("Error escalating dispute:", error);
+      showToast("Lỗi kết nối tới máy chủ", "error");
+    }
   };
   // bao cao vi pham
   const fetchModerationData = () => {
@@ -6608,6 +6649,8 @@ export default function StaffDashboardPage({
                   setShowDisputeModal(false);
                   setSelectedDispute(null);
                   setDisputeNote("");
+                  setShowDisputeEscalateForm(false);
+                  setDisputeEscalateReason("");
                 }}
                 className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e7b6c] hover:bg-[#f1f4f0]"
               >
@@ -6678,18 +6721,74 @@ export default function StaffDashboardPage({
 
               return (
                 <div className="px-6 py-4 border-t border-[#e1e8fd] bg-gray-50 rounded-b-xl flex flex-col gap-3">
+                  {showDisputeEscalateForm && (
+                    <div className="bg-[#fff5f4] border border-[#ffdad6] p-4 rounded-xl space-y-3 mb-4 animate-in fade-in zoom-in-95 duration-150">
+                      <p className="text-body-sm font-bold text-[#ba1a1a]">
+                        Chọn lý do chuyển cấp khiếu nại:
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          "Hợp đồng phức tạp cần Manager phân xử",
+                          "Số tiền tranh chấp quá lớn",
+                          "Hai bên bất đồng sâu sắc không thể hòa giải",
+                          "Lý do khác",
+                        ].map((reason, idx) => (
+                          <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="disputeEscalateReason"
+                              value={reason}
+                              checked={disputeEscalateReason === reason}
+                              onChange={(e) => setDisputeEscalateReason(e.target.value)}
+                              className="mt-1"
+                            />
+                            <span className="text-body-sm text-[#3e4a3d]">{reason}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowDisputeEscalateForm(false);
+                            setDisputeEscalateReason("");
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEscalateDispute(disputeEscalateReason)}
+                          className="px-4 py-1.5 bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-extrabold rounded-lg shadow transition-all cursor-pointer"
+                        >
+                          Xác nhận chuyển cấp
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-3 w-full">
-                    {!isReadOnlyHistory && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const myEmail = user?.email || "staff.dispute@gmail.com";
-                          handleAssignDisputeToStaff(myEmail);
-                        }}
-                        className="py-2.5 px-6 bg-[#006b2c] hover:bg-[#005221] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        Tiếp nhận khiếu nại
-                      </button>
+                    {!isReadOnlyHistory && !showDisputeEscalateForm && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowDisputeEscalateForm(true)}
+                          className="py-2.5 px-6 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          Chuyển cấp
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const myEmail = user?.email || "staff.dispute@gmail.com";
+                            handleAssignDisputeToStaff(myEmail);
+                          }}
+                          className="py-2.5 px-6 bg-[#006b2c] hover:bg-[#005221] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          Tiếp nhận khiếu nại
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
