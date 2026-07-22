@@ -3896,9 +3896,7 @@ export default function ManagerDashboardPage({
                             <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">
                               Date
                             </th>
-                            <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">
-                              Status
-                            </th>
+
                             <th className="px-4 py-3 text-right text-label-md text-[#6e7b6c] uppercase tracking-wider">
                               Hành động
                             </th>
@@ -3938,16 +3936,7 @@ export default function ManagerDashboardPage({
                               <td className="px-4 py-4 text-body-sm font-bold text-[#3e4a3d]">
                                 {item.subDate}
                               </td>
-                              <td className="px-4 py-4">
-                                <span
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === "Approved"
-                                    ? "bg-[#f7fff2] text-[#006b2c]"
-                                    : "bg-amber-100 text-amber-800"
-                                    }`}
-                                >
-                                  {item.status}
-                                </span>
-                              </td>
+
                               <td className="px-4 py-4 text-right">
                                 {(() => {
                                   const isAssigned = tasks.some(
@@ -3995,7 +3984,7 @@ export default function ManagerDashboardPage({
                           {filteredPendingItems.length === 0 && (
                             <tr>
                               <td
-                                colSpan="6"
+                                colSpan="5"
                                 className="px-4 py-8 text-center text-[#6e7b6c] text-sm"
                               >
                                 Không có nội dung nào đang chờ kiểm duyệt.

@@ -4557,9 +4557,7 @@ export default function StaffDashboardPage({
                           <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">
                             Ngày gửi
                           </th>
-                          <th className="px-4 py-3 text-label-md text-[#6e7b6c] uppercase tracking-wider">
-                            Trạng thái
-                          </th>
+
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#e1e8fd] bg-white">
@@ -4616,25 +4614,13 @@ export default function StaffDashboardPage({
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-4">
-                              <span
-                                className={`px-2 py-1 rounded text-[10px] font-bold ${
-                                  item.status === "Approved"
-                                    ? "bg-[#f7fff2] text-[#006b2c]"
-                                    : item.status === "Rejected"
-                                      ? "bg-[#ffdad6] text-[#ba1a1a]"
-                                      : "bg-amber-100 text-amber-800"
-                                }`}
-                              >
-                                {statusLabel(item.status)}
-                              </span>
-                            </td>
+
                           </tr>
                         ))}
                         {moderationItems.length === 0 && (
                           <tr>
                             <td
-                              colSpan="5"
+                              colSpan="4"
                               className="px-4 py-8 text-center text-[#6e7b6c] text-sm"
                             >
                               Không có nội dung nào đang chờ kiểm duyệt.
