@@ -402,6 +402,7 @@ public class EmployerController {
             return ResponseEntity.ok(response);
         }
 
+
         String displayName = text(payload.get("displayName"));
         if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {
             Map<String, Object> errResponse = new HashMap<>();

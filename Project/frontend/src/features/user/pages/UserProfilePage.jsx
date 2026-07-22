@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, CheckCircle, Star, MapPin } from 'lucide-react';
+import { Camera, CheckCircle, Star, MapPin, Plus } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
@@ -7,15 +7,24 @@ import EmployerExpensesTab from '../components/EmployerExpensesTab.jsx';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 import RevenueDashboard from './RevenueDashboard.jsx';
 
-export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate }) {
-  const [role, setRole] = useState(user.role.toLowerCase());
-  const [targetId, setTargetId] = useState(user.id);
+export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate, targetRole, targetUserId }) {
+  const initialRole = (targetRole || user?.role || 'employer').toLowerCase();
+  const initialTargetId = targetUserId || user?.employerId || user?.freelancerId || user?.userId || user?.id;
+
+  const [role, setRole] = useState(initialRole);
+  const [targetId, setTargetId] = useState(initialTargetId);
   const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
   const [prefTab, setPrefTab] = useState('privacy'); // 'privacy', 'security', 'danger'
 
   useEffect(() => {
     setActiveTab(defaultTab);
-  }, [defaultTab]);
+    if (user) {
+      const r = (targetRole || user.role || 'employer').toLowerCase();
+      const id = targetUserId || user.employerId || user.freelancerId || user.userId || user.id;
+      setRole(r);
+      setTargetId(id);
+    }
+  }, [defaultTab, user, targetRole, targetUserId]);
 
   // ================= COMMON STATE =================
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -81,9 +90,36 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [projectsPosted, setProjectsPosted] = useState(0);
 
 
+  // Settings state
+  const [deleteInput, setDeleteInput] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+
+  // UI / misc state
+  const [adminLevel, setAdminLevel] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
+
+  // Work profile (freelancer)
+  const [workProfile, setWorkProfile] = useState({
+    expertiseField: '', professionalTitle: '', bio: '', personalWebsite: '',
+    experienceLevel: '', primarySkills: '', servicesOffered: '', isAvailable: true, availabilityType: ''
+  });
+  const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(false);
+
+  // Portfolio (freelancer)
+  const [portfolios, setPortfolios] = useState([]);
+  const [isAddingPortfolio, setIsAddingPortfolio] = useState(false);
+  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [newPortfolio, setNewPortfolio] = useState({ title: '', attachmentUrl: '', description: '', relatedService: '', productLink: '' });
+  const [attachmentType, setAttachmentType] = useState('url');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
 
   const fetchProfileData = React.useCallback(() => {
-    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
+    const effectiveTargetId = targetId || user?.employerId || user?.freelancerId || user?.userId || user?.id;
+    if (!effectiveTargetId) return;
+
+    const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${effectiveTargetId}` : `http://localhost:8080/api/employers/${effectiveTargetId}`;
     setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
     setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
     setProfessionalTitle(''); setExpertiseField(''); setAddress(''); setCity(''); setCountry('');
@@ -93,13 +129,12 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     setKycStatus('UNVERIFIED'); setKycRejectedReason('');
     setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
     fetch(endpoint)
-      .then(res => res.text())
-      .then(text => {
-        if (!text) {
-          console.log("Không tìm thấy ID này trong CSDL!");
-          return;
-        }
-        const data = JSON.parse(text);
+      .then(res => {
+        if (!res.ok) throw new Error('Không tìm thấy tài khoản');
+        return res.json();
+      })
+      .then(data => {
+        if (!data) return;
 
         if (data.displayName) setDisplayName(data.displayName);
         if (data.email) setEmail(data.email);
@@ -290,6 +325,81 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     });
   };
 
+  // ================= WORK PROFILE HANDLERS =================
+  const handleSaveWorkProfile = async () => {
+    try {
+      const endpoint = `http://localhost:8080/api/${role}s/${targetId}/profile`;
+      await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...workProfile })
+      });
+      setIsEditingWorkProfile(false);
+      alert('Đã lưu hồ sơ năng lực thành công!');
+    } catch (err) {
+      alert('Lỗi khi lưu hồ sơ!');
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedFile(file);
+    const sizeKB = (file.size / 1024).toFixed(1);
+    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+    const ext = file.name.split('.').pop().toUpperCase();
+    let dimensions = 'N/A';
+    if (file.type.startsWith('image/')) {
+      dimensions = await new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(`${img.width} x ${img.height}`);
+        img.src = URL.createObjectURL(file);
+      });
+    }
+    setFilePreview({ format: ext, size: `${sizeKB} KB (${sizeMB} MB)`, dimensions });
+  };
+
+  const handleSavePortfolio = async () => {
+    if (!newPortfolio.title || !newPortfolio.description) {
+      alert('Vui lòng điền đầy đủ Tiêu đề và Mô tả!');
+      return;
+    }
+    let attachmentUrl = newPortfolio.attachmentUrl;
+    if (attachmentType === 'file' && selectedFile) {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      try {
+        const res = await fetch('http://localhost:8080/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) attachmentUrl = data.fileUrl;
+      } catch (err) { alert('Lỗi upload file!'); return; }
+    }
+    try {
+      const res = await fetch(`http://localhost:8080/api/freelancers/${targetId}/portfolios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newPortfolio, attachmentUrl })
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setPortfolios(prev => [...prev, saved]);
+        setNewPortfolio({ title: '', attachmentUrl: '', description: '', relatedService: '', productLink: '' });
+        setSelectedFile(null); setFilePreview(null); setIsAddingPortfolio(false);
+        alert('Đã lưu hồ sơ năng lực!');
+      }
+    } catch (err) { alert('Lỗi lưu portfolio!'); }
+  };
+
+  const handleDeletePortfolio = async (portfolioId) => {
+    if (!window.confirm('Bạn chắc chắn muốn xóa hồ sơ này?')) return;
+    try {
+      await fetch(`http://localhost:8080/api/freelancers/${targetId}/portfolios/${portfolioId}`, { method: 'DELETE' });
+      setPortfolios(prev => prev.filter(p => (p.portfolioId || p.id) !== portfolioId));
+    } catch (err) { alert('Lỗi xóa portfolio!'); }
+  };
+
+
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
     const d = new Date(dateString);
@@ -324,7 +434,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     avatarUrl, setAvatarUrl, displayName, setDisplayName, email, setEmail, phone, setPhone, language, setLanguage,
     isUploadingAvatar, setIsUploadingAvatar,
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
-    kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+    kycStatus, setKycStatus, isVerified, setIsVerified, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
+    taxCode, setTaxCode, businessLicenseUrl, setBusinessLicenseUrl, representativeIdCardUrl, setRepresentativeIdCardUrl,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
     fullName, setFullName, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
@@ -335,6 +446,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     isOwnProfile, categories,
     primarySkills, setPrimarySkills, handleSavePrivacy,
     currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword,
+    deleteInput, setDeleteInput,
     fetchProfileData
   };
 
