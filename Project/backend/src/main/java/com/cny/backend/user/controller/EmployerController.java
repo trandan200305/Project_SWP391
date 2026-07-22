@@ -265,13 +265,8 @@ public class EmployerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
-        Map<String, Object> response = new HashMap<>();
-        if (confirmationText == null || !confirmationText.equals("DELETE")) {
-            response.put("success", false);
-            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
-            return ResponseEntity.badRequest().body(response);
-        }
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
         return employerRepository.findById(id).map(e -> {
             int activeProjects = projectRepository.countActiveProjectsByEmployerId(id);
             if (activeProjects > 0) {

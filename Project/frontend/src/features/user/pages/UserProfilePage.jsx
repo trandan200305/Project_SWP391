@@ -217,7 +217,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     if (!window.confirm("Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác!")) {
       return;
     }
-    const endpoint = `http://localhost:8080/api/${role}s/${targetId}?confirmationText=DELETE`;
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}`;
     fetch(endpoint, {
       method: 'DELETE'
     })
@@ -253,7 +253,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           userId: targetId,
           role: role.toUpperCase(),
           currentPassword,
-          newPassword
+          newPassword,
+          confirmPassword
         })
       });
       const data = await res.json();
