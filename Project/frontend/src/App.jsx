@@ -134,6 +134,7 @@ export default function App() {
       "employer_invoices",
       "employer_support",
       "employer_jobs",
+      "employer_project_details",
       "profile",
       "checkout",
       "contract_details",

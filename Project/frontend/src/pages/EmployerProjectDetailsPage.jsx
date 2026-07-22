@@ -507,7 +507,7 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
             {selectedProposalForAccept && (
                 <MilestoneSetupModal
                     proposal={selectedProposalForAccept}
-                    employerId={user.id}
+                    employerId={user?.id}
                     onClose={() => setSelectedProposalForAccept(null)}
                     onSuccess={handleAcceptSuccess}
                 />
