@@ -191,13 +191,6 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
 
             <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={() => onNavigate('post_job')}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition transform active:scale-95"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Đăng dự án mới</span>
-              </button>
-              <button
                 onClick={() => onNavigate('find_freelancers')}
                 className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/15 backdrop-blur-sm flex items-center gap-2 transition transform active:scale-95"
               >
@@ -494,7 +487,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
 
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => onNavigate('messenger', { partnerId: proj.freelancer_id, partnerRole: 'FREELANCER' })}
+                              onClick={() => onNavigate('messenger', { id: proj.freelancer_id, role: 'FREELANCER', name: proj.freelancer_name, avatarUrl: proj.freelancer_avatar })}
                               className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-lg border border-slate-200 flex items-center gap-1.5 transition"
                             >
                               <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
@@ -528,31 +521,39 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
-                      {isRecommendation ? 'Freelancer gợi ý xuất sắc' : 'Freelancer đã hợp tác'}
+                      {isRecommendation ? 'Freelancer nổi bật' : 'Freelancer đã từng hợp tác'}
                     </h2>
                     <p className="text-[11px] text-slate-500">
-                      {isRecommendation ? 'Top đối tác uy tín nhất sàn' : 'Các chuyên gia bạn đã từng thuê'}
+                      {isRecommendation ? 'Gợi ý ứng viên hàng đầu cho bạn' : 'Danh sách ứng viên ưu tú'}
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={() => onNavigate('find_freelancers')}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
+                >
+                  Khám phá thêm
+                </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {favoriteFreelancers.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4">Chưa có Freelancer nào trong danh sách</p>
+                  <p className="text-xs text-slate-400 text-center py-4">Chưa có Freelancer nào</p>
                 ) : (
-                  favoriteFreelancers.slice(0, 5).map((free) => (
-                    <div key={free.freelancer_id} className="p-3 bg-slate-50 hover:bg-indigo-50/30 transition rounded-xl border border-slate-200/80 flex items-center justify-between gap-3">
+                  favoriteFreelancers.map((free) => (
+                    <div key={free.freelancer_id} className="flex items-center justify-between gap-3 p-3 bg-slate-50/70 hover:bg-slate-50 rounded-xl border border-slate-200/70 transition">
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={getImageUrl(free.avatar_url)}
                           alt={free.display_name}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/20 shrink-0"
-                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(free.display_name || 'User'); }}
+                          className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
+                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(free.display_name); }}
                         />
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-900 truncate">{free.display_name}</h4>
-                          <p className="text-[11px] text-slate-500 truncate">{free.professional_title || 'Chuyên viên Freelancer'}</p>
+                          <h4 className="font-bold text-xs text-slate-900 truncate hover:text-indigo-600 cursor-pointer" onClick={() => onNavigate('freelancer_profile', { freelancerId: free.freelancer_id })}>
+                            {free.display_name}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 truncate">{free.professional_title || 'Freelancer Professional'}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="flex items-center gap-0.5 text-[11px] font-bold text-amber-600">
                               ★ {free.average_rating ? Number(free.average_rating).toFixed(1) : '5.0'}
@@ -565,7 +566,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                       </div>
 
                       <button
-                        onClick={() => onNavigate('messenger', { partnerId: free.freelancer_id, partnerRole: 'FREELANCER' })}
+                        onClick={() => onNavigate('messenger', { id: free.freelancer_id, role: 'FREELANCER', name: free.display_name, avatarUrl: free.avatar_url })}
                         title="Gửi tin nhắn"
                         className="p-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg border border-slate-200 transition shadow-sm shrink-0"
                       >
