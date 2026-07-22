@@ -175,7 +175,7 @@ public class ProjectService {
                 .deadline(dto.getDeadline())
                 .workForm(dto.getWorkForm() != null ? dto.getWorkForm() : "ONLINE")
                 .postingExpires(LocalDate.now().plusDays(durationDays)) 
-                .status("PENDING") 
+                .status("PUBLISHED") 
                 .servicePackage(appliedPackage)
                 .serviceFee(serviceFee)
                 .proposalCount(0)

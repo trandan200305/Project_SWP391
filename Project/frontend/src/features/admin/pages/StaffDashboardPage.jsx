@@ -4514,7 +4514,6 @@ export default function StaffDashboardPage({
                         {[
                           { id: "ALL", label: "Tất cả" },
                           { id: "PROFILE", label: "Hồ sơ" },
-                          { id: "PROJECT", label: "Dự án" },
                           { id: "GIG", label: "Dịch vụ" },
                           { id: "REVIEW", label: "Báo cáo" },
                         ].map((qTab) => (
