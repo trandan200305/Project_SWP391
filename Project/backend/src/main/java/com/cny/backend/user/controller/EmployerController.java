@@ -242,19 +242,19 @@ public class EmployerController {
         }
 
         // === Lưu trực tiếp các thông tin công ty & người đại diện vào bảng employers ===
-        employer.setDisplayName(displayName);
-        employer.setFullName(fullName);
-        employer.setPhone(phone);
-        employer.setCompanyName(text(payload.get("companyName")));
-        employer.setCompanyLogoUrl(companyLogoUrl);
-        employer.setCompanyDescription(text(payload.get("companyDescription")));
-        employer.setWebsite(website);
-        employer.setAddress(text(payload.get("address")));
-        employer.setCity(text(payload.get("city")));
-        employer.setCountry(text(payload.get("country")));
-        employer.setCompanySize(companySize);
-        employer.setIndustry(text(payload.get("industry")));
-        employer.setTaxCode(taxCode);
+        if (payload.containsKey("displayName")) employer.setDisplayName(displayName);
+        if (payload.containsKey("fullName")) employer.setFullName(fullName);
+        if (payload.containsKey("phone")) employer.setPhone(phone);
+        if (payload.containsKey("companyName")) employer.setCompanyName(text(payload.get("companyName")));
+        if (payload.containsKey("companyLogoUrl")) employer.setCompanyLogoUrl(companyLogoUrl);
+        if (payload.containsKey("companyDescription")) employer.setCompanyDescription(text(payload.get("companyDescription")));
+        if (payload.containsKey("website")) employer.setWebsite(website);
+        if (payload.containsKey("address")) employer.setAddress(text(payload.get("address")));
+        if (payload.containsKey("city")) employer.setCity(text(payload.get("city")));
+        if (payload.containsKey("country")) employer.setCountry(text(payload.get("country")));
+        if (payload.containsKey("companySize")) employer.setCompanySize(companySize);
+        if (payload.containsKey("industry")) employer.setIndustry(text(payload.get("industry")));
+        if (payload.containsKey("taxCode")) employer.setTaxCode(taxCode);
         employer.setUpdatedAt(LocalDateTime.now());
 
         employerRepository.save(employer);
