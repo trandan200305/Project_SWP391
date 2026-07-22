@@ -78,7 +78,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     // Reset currentPage when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [statusFilter, searchQuery]);
+    }, [searchQuery]);
 
     // Reset page to 1 and clear filters when changing activeTab to projects
     useEffect(() => {
@@ -675,21 +675,22 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                     <div className="flex flex-wrap gap-2 items-center">
                                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-2">Trạng thái:</span>
                                         {[
-                                            { value: 'ALL', label: 'Tất cả' },
-                                            { value: 'PUBLISHED', label: 'Đang tuyển' },
-                                            { value: 'IN_PROGRESS', label: 'Đang làm' },
-                                            { value: 'PENDING_ALL', label: 'Chờ duyệt' },
+                                            { value: 'ALL',             label: 'Tất cả' },
+                                            { value: 'PUBLISHED',       label: 'Đang tuyển' },
+                                            { value: 'IN_PROGRESS',     label: 'Đang làm' },
+                                            { value: 'PENDING_REVIEW',  label: 'Chờ duyệt' },
                                             { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
-                                            { value: 'CLOSED', label: 'Đã đóng' },
-                                            { value: 'REJECTED', label: 'Từ chối' },
-                                            { value: 'DRAFT', label: 'Bản nháp' },
+                                            { value: 'CLOSED',          label: 'Đã đóng' },
                                         ].map(item => {
                                             const isActive = statusFilter === item.value;
                                             return (
                                                 <button
                                                     key={item.value}
                                                     type="button"
-                                                    onClick={() => setStatusFilter(item.value)}
+                                                    onClick={() => {
+                                                        setStatusFilter(item.value);
+                                                        setCurrentPage(1);
+                                                    }}
                                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
                                                         isActive 
                                                             ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/10' 
