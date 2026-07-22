@@ -2511,11 +2511,7 @@ export default function ManagerDashboardPage({
                       />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-[#006b2c] text-white">
-                        {item.badge}
-                      </span>
-                    )}
+
                   </button>
                 );
               })}
