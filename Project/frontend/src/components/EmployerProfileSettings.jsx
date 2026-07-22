@@ -310,7 +310,9 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const handleViewProposals = (projectId) => {
         setSelectedProjectForProposals(projectId);
         setLoadingProposals(true);
-        fetch(`http://localhost:8080/api/proposals/project/${projectId}?userId=${user.id}&role=EMPLOYER`)
+        const userId = user?.id || user?.employerId || user?.userId;
+        const role = user?.role || 'EMPLOYER';
+        fetch(`http://localhost:8080/api/proposals/project/${projectId}?userId=${userId}&role=${role}`)
             .then((res) => {
                 if (!res.ok) throw new Error('Không thể tải danh sách báo giá.');
                 return res.json();
@@ -743,49 +745,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                             </div>
                         )}
 
-                        <div className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-level-1 space-y-1">
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('company')}
-                                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
-                                    activeTab === 'company'
-                                        ? 'bg-slate-900 text-white shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                                }`}
-                            >
-                                <Building2 className="w-4 h-4" />
-                                <span>Thông tin công ty</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('invoices')}
-                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
-                                    activeTab === 'invoices'
-                                        ? 'bg-emerald-600 text-white shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                                }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <FileText className="w-4 h-4" />
-                                    <span>Hóa đơn & Chứng từ</span>
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('support')}
-                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
-                                    activeTab === 'support'
-                                        ? 'bg-cyan-600 text-white shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                                }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <LifeBuoy className="w-4 h-4" />
-                                    <span>Hỗ trợ kỹ thuật & Sự cố</span>
-                                </div>
-                                <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-full font-extrabold">NEW</span>
-                            </button>
-                        </div>
+
                     </aside>
 
                     {activeTab === 'support' ? (
@@ -1380,6 +1340,18 @@ function TextArea({label, value, onChange}) {
     </label>);
 }
 
+const formatAmountInput = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    const raw = String(val).replace(/\D/g, '');
+    if (!raw) return '';
+    return new Intl.NumberFormat('vi-VN').format(Number(raw));
+};
+
+const parseAmountInput = (val) => {
+    if (!val) return '';
+    return String(val).replace(/\D/g, '');
+};
+
 function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
     const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
     const [milestones, setMilestones] = useState([
@@ -1635,10 +1607,11 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                             </div>
                                             <div>
                                                 <input 
-                                                    type="number" 
-                                                    value={milestone.amount}
-                                                    onChange={(e) => handleMilestoneChange(idx, 'amount', e.target.value)}
-                                                    placeholder="Số tiền (VNĐ)"
+                                                    type="text" 
+                                                    inputMode="numeric"
+                                                    value={formatAmountInput(milestone.amount)}
+                                                    onChange={(e) => handleMilestoneChange(idx, 'amount', parseAmountInput(e.target.value))}
+                                                    placeholder="Số tiền (VD: 5.000.000 VNĐ)"
                                                     className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-xs focus:outline-none focus:border-blue-500"
                                                     required
                                                 />

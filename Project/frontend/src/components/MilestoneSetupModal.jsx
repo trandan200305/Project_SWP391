@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 
+const formatAmountInput = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    const raw = String(val).replace(/\D/g, '');
+    if (!raw) return '';
+    return new Intl.NumberFormat('vi-VN').format(Number(raw));
+};
+
+const parseAmountInput = (val) => {
+    if (!val) return '';
+    return String(val).replace(/\D/g, '');
+};
+
 export default function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
     const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
     const [milestones, setMilestones] = useState([
@@ -252,10 +264,11 @@ export default function MilestoneSetupModal({ proposal, employerId, onClose, onS
                                                 <div>
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Số tiền thanh toán (VNĐ)</label>
                                                     <input 
-                                                        type="number"
-                                                        value={m.amount}
-                                                        onChange={(e) => handleMilestoneChange(index, 'amount', e.target.value)}
-                                                        placeholder="VD: 5000000"
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={formatAmountInput(m.amount)}
+                                                        onChange={(e) => handleMilestoneChange(index, 'amount', parseAmountInput(e.target.value))}
+                                                        placeholder="VD: 5.000.000"
                                                         className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:border-blue-500 focus:outline-none"
                                                         required
                                                     />

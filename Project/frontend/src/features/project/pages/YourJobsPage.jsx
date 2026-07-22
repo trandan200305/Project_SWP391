@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Briefcase, Calendar, DollarSign, ArrowRight, Trash2, Users, Clock, CheckCircle } from 'lucide-react';
+import { Bookmark, Briefcase, Calendar, Banknote, ArrowRight, Trash2, Users, Clock, CheckCircle } from 'lucide-react';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 import { contractApi } from '../../../api/contractApi';
 import { api } from '../../../api/apiClient';
@@ -422,7 +422,6 @@ export default function YourJobsPage({ onNavigate, user }) {
                   {/* Bid Amount & Days */}
                   <div className="md:col-span-2 text-center text-sm font-semibold text-slate-700 flex items-center justify-center gap-1.5 md:flex-row flex-row-reverse">
                     <span className="md:hidden text-xs font-semibold text-slate-400 uppercase tracking-wider mr-auto">Giá thầu:</span>
-                    <DollarSign className="w-4 h-4 text-slate-400 hidden md:inline" />
                     <span>{Number(proposal.bidAmount).toLocaleString('vi-VN')} Đ / {proposal.estimatedDays} ngày</span>
                   </div>
 
@@ -514,7 +513,6 @@ export default function YourJobsPage({ onNavigate, user }) {
                   {/* Agreed Budget */}
                   <div className="md:col-span-2 text-center text-sm font-bold text-slate-800 flex items-center justify-center gap-1.5 md:flex-row flex-row-reverse">
                     <span className="md:hidden text-xs font-semibold text-slate-400 uppercase tracking-wider mr-auto">Ngân sách:</span>
-                    <DollarSign className="w-4 h-4 text-slate-400 hidden md:inline" />
                     <span>{Number(contract.agreedAmount).toLocaleString('vi-VN')} VNĐ</span>
                   </div>
 

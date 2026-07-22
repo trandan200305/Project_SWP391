@@ -55,7 +55,9 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
     const fetchProposals = async () => {
         try {
             setLoadingProposals(true);
-            const data = await api.get(`/proposals/project/${projectId}?userId=${user.id}&role=EMPLOYER`);
+            const userId = user?.id || user?.employerId || user?.userId;
+            const role = user?.role || 'EMPLOYER';
+            const data = await api.get(`/proposals/project/${projectId}?userId=${userId}&role=${role}`);
             setProposals(data || []);
         } catch (err) {
             console.error("Error fetching proposals:", err);
