@@ -138,6 +138,7 @@ export default function App() {
       "dashboard",
       "employer_project_details",
       "profile",
+      "view_profile",
       "checkout",
       "contract_details",
     ];

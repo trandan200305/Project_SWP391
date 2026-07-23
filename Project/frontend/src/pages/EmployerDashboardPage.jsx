@@ -16,6 +16,9 @@ import {
   Sparkles,
   ArrowUpRight,
   MessageSquare,
+  Users,
+  Star,
+  UserCheck,
 } from 'lucide-react';
 import { api } from '../api/apiClient';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper';
@@ -30,6 +33,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
   const [reviewModalData, setReviewModalData] = useState(null); // deliverable object being reviewed
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [freelancerRatingFilter, setFreelancerRatingFilter] = useState('ALL');
 
 
 
@@ -152,10 +156,19 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
     completedProjectsSpent = 0,
     pendingDeliverables = [],
     pendingDeliverablesCount = 0,
+    favoriteFreelancers = [],
+    favoriteFreelancersCount = 0,
+    isRecommendation = false,
 
     recentTransactions = [],
     packageInfo = {}
   } = dashboardData || {};
+
+  const filteredFavoriteFreelancers = (favoriteFreelancers || []).filter((f) => {
+    if (freelancerRatingFilter === 'ALL') return true;
+    const minRating = Number(freelancerRatingFilter);
+    return Number(f.average_rating || 0) >= minRating;
+  });
 
   const effectiveCompanyLogo = companyLogoUrl || avatarUrl;
 
@@ -516,6 +529,114 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section: Freelancer đã làm việc cùng / Đã hợp tác */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      {isRecommendation ? 'Freelancer nổi bật gợi ý' : 'Freelancer đã làm việc cùng'}
+                      {filteredFavoriteFreelancers.length > 0 && (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-700 border border-purple-200">
+                          {filteredFavoriteFreelancers.length}
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {isRecommendation 
+                        ? 'Danh sách các ứng viên uy tín hàng đầu trên hệ thống' 
+                        : 'Các Freelancer đã từng ký hợp đồng và hoàn thành dự án cùng bạn'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Rating Filter buttons */}
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  {[
+                    { value: 'ALL', label: 'Tất cả' },
+                    { value: '4.5', label: '4.5★' },
+                    { value: '4', label: '4★' },
+                    { value: '3', label: '3★' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFreelancerRatingFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                        freelancerRatingFilter === opt.value
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredFavoriteFreelancers.length === 0 ? (
+                <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-600">Không tìm thấy Freelancer phù hợp</p>
+                  <p className="text-xs text-slate-400 mt-1">Thử thay đổi bộ lọc đánh giá hoặc tìm kiếm thêm ứng viên mới.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredFavoriteFreelancers.map((free) => (
+                    <div key={free.freelancer_id} className="bg-slate-50/70 hover:bg-slate-50 transition rounded-xl p-4 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div 
+                        className="flex items-center gap-3.5 cursor-pointer hover:opacity-90 transition min-w-0 flex-1"
+                        onClick={() => onNavigate('view_profile', { targetRole: 'FREELANCER', targetUserId: free.freelancer_id })}
+                      >
+                        <img
+                          src={getImageUrl(free.avatar_url)}
+                          alt={free.display_name}
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/20 shrink-0"
+                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(free.display_name || 'Freelancer'); }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900 truncate hover:text-purple-600 transition">{free.display_name}</h4>
+                            {free.average_rating ? (
+                              <span className="flex items-center gap-0.5 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                {Number(free.average_rating).toFixed(1)}
+                              </span>
+                            ) : null}
+                            {free.total_contracts > 0 && (
+                              <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs border border-purple-100">
+                                {free.total_contracts} hợp đồng
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">{free.professional_title || 'Freelancer tự do'}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 justify-end">
+                        <button
+                          onClick={() => onNavigate('messenger', { id: free.freelancer_id, role: 'FREELANCER', name: free.display_name, avatarUrl: free.avatar_url })}
+                          className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs border border-slate-200 flex items-center gap-1.5 transition"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Nhắn tin</span>
+                        </button>
+                        <button
+                          onClick={() => onNavigate('view_profile', { targetRole: 'FREELANCER', targetUserId: free.freelancer_id })}
+                          className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded-xl text-xs border border-purple-200 transition"
+                        >
+                          Xem hồ sơ
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
