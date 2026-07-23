@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
+import { api } from '../api/apiClient';
 
 const formatAmountInput = (val) => {
     if (val === null || val === undefined || val === '') return '';
@@ -111,19 +112,7 @@ export default function MilestoneSetupModal({ proposal, employerId, onClose, onS
 
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8080/api/proposals/${proposal.proposalId}/accept?employerId=${employerId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: customMilestones ? JSON.stringify(customMilestones) : null
-            });
-
-            if (!response.ok) {
-                const msg = await response.text();
-                throw new Error(msg || 'Chấp nhận báo giá thất bại.');
-            }
-
+            await api.post(`/proposals/${proposal.proposalId}/accept?employerId=${employerId}`, customMilestones || null);
             onSuccess();
         } catch (err) {
             setError(err.message || 'Lỗi khi chấp nhận báo giá.');

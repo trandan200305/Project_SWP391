@@ -8,6 +8,9 @@ import com.cny.backend.user.dto.EmployerDto;
 import com.cny.backend.user.repository.FreelancerRepository;
 import com.cny.backend.dashboard.repository.ApiFrequencyStatRepository;
 import com.cny.backend.dashboard.entity.ApiFrequencyStat;
+import com.cny.backend.project.repository.ProjectRepository;
+import com.cny.backend.project.repository.ContractRepository;
+import com.cny.backend.admin.repository.DisputeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -133,7 +136,7 @@ public class EmployerController {
                 "SELECT COUNT(DISTINCT p.project_id) AS completed_count, COALESCE(SUM(c.agreed_amount), 0) AS completed_spent " +
                 "FROM projects p " +
                 "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status = 'COMPLETED' " +
-                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status = 'COMPLETED' OR c.status = 'COMPLETED')",
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('COMPLETED', 'CLOSED') OR c.status = 'COMPLETED')",
                 employerId
             );
             if (completedStats != null) {
@@ -162,7 +165,7 @@ public class EmployerController {
                 "FROM projects p " +
                 "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status IN ('ACTIVE', 'IN_PROGRESS', 'PENDING_SIGN') " +
                 "LEFT JOIN freelancers f ON c.freelancer_id = f.freelancer_id " +
-                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('APPROVED', 'IN_PROGRESS', 'HIRED', 'ACTIVE') OR c.contract_id IS NOT NULL) " +
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('APPROVED', 'OPEN', 'IN_PROGRESS', 'HIRED', 'ACTIVE') OR c.contract_id IS NOT NULL) " +
                 "ORDER BY p.project_id DESC",
                 employerId
             );
@@ -253,6 +256,89 @@ public class EmployerController {
         }
         response.put("recentTransactions", txList);
 
+        // 6. Service Packages & Subscriptions info for Dashboard
+        Map<String, Object> packageInfo = new HashMap<>();
+        String currentPackageName = "Gói Cơ Bản (Miễn phí)";
+        String currentPackageExpiry = "Không giới hạn";
+        boolean hasActivePackage = false;
+
+        List<Map<String, Object>> packageHistory = new ArrayList<>();
+
+        for (com.cny.backend.admin.entity.PaymentTransaction tx : transactions) {
+            if ("SUCCESS".equalsIgnoreCase(tx.getStatus()) && tx.getPackageType() != null && !tx.getPackageType().trim().isEmpty()) {
+                Map<String, Object> pItem = new HashMap<>();
+                String pType = tx.getPackageType().toUpperCase();
+                String pName = "Gói " + pType;
+                String pDesc = "Quyền lợi thành viên vLance & Ưu tiên tuyển dụng";
+                
+                if (pType.contains("VIP") || pType.contains("ENTERPRISE") || pType.contains("PLATINUM")) {
+                    pName = "Gói VIP Doanh Nghiệp";
+                    pDesc = "Đăng dự án không giới hạn, Ưu tiên hiển thị Top 1 & Hỗ trợ CSKH 24/7";
+                } else if (pType.contains("PRO") || pType.contains("GOLD")) {
+                    pName = "Gói Chuyên Nghiệp (PRO)";
+                    pDesc = "Tăng 50% số lượng đề xuất ứng viên & Đánh dấu bài đăng Nổi bật";
+                } else if (pType.contains("BASIC") || pType.contains("SILVER") || pType.contains("BOOST")) {
+                    pName = "Gói Nâng Cấp Nổi Bật";
+                    pDesc = "Đẩy bài đăng lên đầu trang & Đánh dấu huy hiệu Đã xác thực";
+                }
+
+                LocalDateTime startDt = tx.getCreatedAt() != null ? tx.getCreatedAt() : LocalDateTime.now();
+                LocalDateTime endDt = startDt.plusDays(30);
+
+                boolean isActive = LocalDateTime.now().isBefore(endDt);
+
+                if (!hasActivePackage && isActive) {
+                    hasActivePackage = true;
+                    currentPackageName = pName;
+                    currentPackageExpiry = endDt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+                }
+
+                pItem.put("packageName", pName);
+                pItem.put("packageInfo", pDesc);
+                pItem.put("quantity", 1);
+                pItem.put("startDate", startDt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                pItem.put("endDate", endDt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                pItem.put("amount", tx.getAmount());
+                pItem.put("status", isActive ? "Hoạt động" : "Hết hạn");
+                pItem.put("isActive", isActive);
+
+                packageHistory.add(pItem);
+            }
+        }
+
+        packageInfo.put("currentPackageName", currentPackageName);
+        packageInfo.put("currentPackageExpiry", currentPackageExpiry);
+        packageInfo.put("hasActivePackage", hasActivePackage);
+        packageInfo.put("packageHistory", packageHistory);
+
+        // Calculate remaining job posts
+        int totalProjectsPosted = projectRepository.findByClientEmployerIdAndIsDeletedFalse(employerId).size();
+        int maxPosts = 5;
+        if (hasActivePackage) {
+            if (currentPackageName.contains("VIP") || currentPackageName.contains("ENTERPRISE")) {
+                maxPosts = 999;
+            } else if (currentPackageName.contains("PRO")) {
+                maxPosts = 30;
+            } else {
+                maxPosts = 15;
+            }
+        } else {
+            if ("KIM CƯƠNG".equalsIgnoreCase(currentTier) || "PLATINUM".equalsIgnoreCase(currentTier)) maxPosts = 50;
+            else if ("VÀNG".equalsIgnoreCase(currentTier) || "GOLD".equalsIgnoreCase(currentTier)) maxPosts = 20;
+            else if ("BẠC".equalsIgnoreCase(currentTier) || "SILVER".equalsIgnoreCase(currentTier)) maxPosts = 10;
+            else maxPosts = 5;
+        }
+
+        int postsRemaining = Math.max(0, maxPosts - totalProjectsPosted);
+        String remainingPostsDisplay = (maxPosts >= 999) ? "Không giới hạn" : (postsRemaining + " lượt bài đăng");
+
+        packageInfo.put("postsLimit", maxPosts >= 999 ? "Không giới hạn" : maxPosts);
+        packageInfo.put("postsUsed", totalProjectsPosted);
+        packageInfo.put("postsRemaining", postsRemaining);
+        packageInfo.put("remainingPostsDisplay", remainingPostsDisplay);
+
+        response.put("packageInfo", packageInfo);
+
         return ResponseEntity.ok(response);
     }
 
@@ -318,6 +404,7 @@ public class EmployerController {
             response.put("message", "Cập nhật ảnh đại diện thành công.");
             return ResponseEntity.ok(response);
         }
+
 
         String displayName = text(payload.get("displayName"));
         if (isBlank(displayName) || displayName.length() < 3 || displayName.length() > 50) {

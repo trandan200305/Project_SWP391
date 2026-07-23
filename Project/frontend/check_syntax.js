@@ -3,7 +3,7 @@ import * as acorn from 'acorn';
 import jsx from 'acorn-jsx';
 
 const parser = acorn.Parser.extend(jsx());
-const code = fs.readFileSync('src/features/admin/pages/AdminDashboardPage.jsx', 'utf-8');
+const code = fs.readFileSync('src/pages/EmployerJobsPage.jsx', 'utf-8');
 
 try {
   parser.parse(code, { sourceType: 'module', ecmaVersion: 2020 });

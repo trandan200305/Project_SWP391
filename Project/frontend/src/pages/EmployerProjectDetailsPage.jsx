@@ -69,7 +69,8 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
     const fetchContractDetails = async () => {
         try {
             setLoadingContract(true);
-            const data = await contractApi.getContractByProjectId(projectId, user.id);
+            const employerId = user?.id || user?.employerId || user?.userId;
+            const data = await contractApi.getContractByProjectId(projectId, employerId);
             setContract(data);
         } catch (err) {
             console.error("Error fetching contract:", err);
@@ -168,7 +169,7 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
-                                {project.categoryName || 'General'}
+                                {project.categoryName || 'Chung'}
                             </span>
                             <span className={`text-[10px] font-extrabold uppercase border px-2.5 py-0.5 rounded-md ${statusColors[project.servicePackage] || 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                 Gói dịch vụ: {project.servicePackage}

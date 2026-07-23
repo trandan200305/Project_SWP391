@@ -59,7 +59,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
 
     const empId = user?.employerId || user?.id || user?.userId;
     if (empId) {
-      fetch(`http://localhost:8080/api/employers/${empId}/profile`)
+      fetch(`http://localhost:8080/api/employers/${empId}/dashboard`)
         .then(res => res.json())
         .then(data => setEmployerQuota(data))
         .catch(err => console.error('Error fetching employer quota:', err));
@@ -158,7 +158,8 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
       return;
     }
 
-    if (employerQuota && (!employerQuota.packagePostQuota || employerQuota.packagePostQuota <= 0)) {
+    const packageInfo = employerQuota?.packageInfo;
+    if (packageInfo && packageInfo.postsRemaining !== undefined && packageInfo.postsRemaining <= 0 && packageInfo.postsLimit !== 'Không giới hạn') {
       setNotice({ type: 'error', message: 'Tài khoản của bạn đã hết lượt đăng bài. Vui lòng mua gói dịch vụ mới để tiếp tục đăng tin.' });
       return;
     }
@@ -340,7 +341,7 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           
           <div className="flex items-center gap-1.5 bg-secondary-light border border-secondary/20 px-3 py-1 rounded-full text-secondary-dark">
             <Sparkles className="w-3.5 h-3.5 text-secondary" />
-            <span className="text-xs font-bold">Employer Workspace</span>
+            <span className="text-xs font-bold">Không gian làm việc Nhà tuyển dụng</span>
           </div>
         </div>
 
@@ -355,23 +356,19 @@ export default function PostJobPage({ user, onNavigateHome, onNavigate }) {
           </div>
         )}
 
-        {employerQuota && (
-          <div className={`p-4 rounded-2xl mb-6 flex items-center justify-between border shadow-sm ${
-            (employerQuota.packagePostQuota > 0)
-              ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950'
-              : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 text-amber-950'
-          }`}>
+        {employerQuota?.packageInfo && (
+          <div className="p-4 rounded-2xl mb-6 flex items-center justify-between border shadow-sm bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                 <Package className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm font-bold">
-                  Gói dịch vụ: <span className="uppercase text-indigo-700 font-extrabold">{employerQuota.currentPackageType || 'CHƯA DÙNG GÓI'}</span> — 
-                  Lượt còn lại: <strong className="text-emerald-700 font-black text-base ml-1">{employerQuota.packagePostQuota || 0} bài đăng</strong>
+                  Gói dịch vụ: <span className="uppercase text-indigo-700 font-extrabold">{employerQuota.packageInfo.currentPackageName || 'Gói Tiêu Chuẩn'}</span> — 
+                  Lượt đăng bài còn lại: <strong className="text-emerald-700 font-black text-base ml-1">{employerQuota.packageInfo.remainingPostsDisplay || 'Không giới hạn'}</strong>
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Hạn dùng gói: {employerQuota.packageExpiryDate ? new Date(employerQuota.packageExpiryDate).toLocaleDateString('vi-VN') : 'Không có'}
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Hạn dùng gói: {employerQuota.packageInfo.currentPackageExpiry || 'Không giới hạn'}
                 </p>
               </div>
             </div>

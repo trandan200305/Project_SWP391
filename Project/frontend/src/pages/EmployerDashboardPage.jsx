@@ -3,25 +3,22 @@ import {
   Briefcase,
   DollarSign,
   FileCheck,
-  Star,
-  Plus,
   Search,
-  MessageSquare,
-  ExternalLink,
   CheckCircle2,
   XCircle,
   Clock,
   ChevronRight,
   TrendingUp,
-  Award,
   AlertCircle,
   Paperclip,
   Download,
   Loader2,
   Sparkles,
   ArrowUpRight,
-  ShieldCheck,
-  UserCheck
+  MessageSquare,
+  Users,
+  Star,
+  UserCheck,
 } from 'lucide-react';
 import { api } from '../api/apiClient';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper';
@@ -36,11 +33,17 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
   const [reviewModalData, setReviewModalData] = useState(null); // deliverable object being reviewed
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [freelancerRatingFilter, setFreelancerRatingFilter] = useState('ALL');
 
-  const employerId = user?.employerId || user?.id;
+
+
+  const employerId = user?.employerId || user?.id || user?.userId;
 
   const fetchDashboardData = async () => {
-    if (!employerId) return;
+    if (!employerId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -90,11 +93,24 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
   };
 
   const getTierColor = (tier) => {
-    switch (tier) {
+    switch (tier?.toUpperCase()) {
+      case 'PLATINUM':
       case 'KIM CƯƠNG': return 'from-cyan-500 to-blue-600 text-white';
+      case 'GOLD':
       case 'VÀNG': return 'from-amber-400 to-yellow-600 text-white';
+      case 'SILVER':
       case 'BẠC': return 'from-slate-300 to-slate-500 text-white';
       default: return 'from-amber-700 to-amber-900 text-white'; // ĐỒNG
+    }
+  };
+
+  const getTierDisplayName = (tier) => {
+    switch (tier?.toUpperCase()) {
+      case 'PLATINUM': return 'KIM CƯƠNG';
+      case 'GOLD': return 'VÀNG';
+      case 'SILVER': return 'BẠC';
+      case 'BRONZE': return 'ĐỒNG';
+      default: return tier || 'ĐỒNG';
     }
   };
 
@@ -143,8 +159,16 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
     favoriteFreelancers = [],
     favoriteFreelancersCount = 0,
     isRecommendation = false,
-    recentTransactions = []
+
+    recentTransactions = [],
+    packageInfo = {}
   } = dashboardData || {};
+
+  const filteredFavoriteFreelancers = (favoriteFreelancers || []).filter((f) => {
+    if (freelancerRatingFilter === 'ALL') return true;
+    const minRating = Number(freelancerRatingFilter);
+    return Number(f.average_rating || 0) >= minRating;
+  });
 
   const effectiveCompanyLogo = companyLogoUrl || avatarUrl;
 
@@ -182,7 +206,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                     Chào mừng, {companyName || displayName}!
                   </h1>
                   <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${getTierColor(tier)} shadow-sm border border-white/20`}>
-                    Hạng {tier}
+                    Hạng {getTierDisplayName(tier)}
                   </span>
                 </div>
                 <p className="text-slate-300 text-sm mt-1 flex items-center gap-2">
@@ -207,8 +231,8 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 sm:-mt-20 relative z-20 space-y-8">
 
-        {/* 5 KPI Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* 4 KPI Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Dự án đang chạy */}
           <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
             <div className="flex items-center justify-between mb-3">
@@ -310,29 +334,6 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
             </div>
           </div>
 
-          {/* Card 5: Freelancer ưa thích / Đã hợp tác */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200/80 group">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition duration-300">
-                <Star className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
-                {isRecommendation ? 'Gợi ý' : 'Đã hợp tác'}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Freelancer ưa thích</p>
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">{favoriteFreelancersCount}</h3>
-                <button
-                  onClick={() => onNavigate('find_freelancers')}
-                  className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-0.5 group-hover:translate-x-0.5 transition"
-                >
-                  Danh sách <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Deliverables Pending Review Section */}
@@ -344,7 +345,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  Deliverable chờ bạn duyệt
+                  Sản phẩm bàn giao chờ duyệt
                   {pendingDeliverablesCount > 0 && (
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-500 text-white">
                       {pendingDeliverablesCount}
@@ -438,7 +439,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
           )}
         </div>
 
-        {/* Layout Grid: Running Projects (Left) + Favorite Freelancers & Transactions (Right) */}
+        {/* Layout Grid: Running Projects (Left) + Package & Transactions (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column (2 Cols): Dự án đang chạy */}
@@ -533,75 +534,161 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Right Column (1 Col): Freelancer Ưa thích & Recent Spending */}
-          <div className="space-y-6">
-
-            {/* Freelancer Ưa thích / Gợi ý */}
+            {/* Section: Freelancer đã làm việc cùng / Đã hợp tác */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-violet-50 text-violet-600">
-                    <Star className="w-4 h-4" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+                    <Users className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">
-                      {isRecommendation ? 'Freelancer nổi bật' : 'Freelancer đã từng hợp tác'}
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      {isRecommendation ? 'Freelancer nổi bật gợi ý' : 'Freelancer đã làm việc cùng'}
+                      {filteredFavoriteFreelancers.length > 0 && (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-700 border border-purple-200">
+                          {filteredFavoriteFreelancers.length}
+                        </span>
+                      )}
                     </h2>
-                    <p className="text-[11px] text-slate-500">
-                      {isRecommendation ? 'Gợi ý ứng viên hàng đầu cho bạn' : 'Danh sách ứng viên ưu tú'}
+                    <p className="text-xs text-slate-500">
+                      {isRecommendation 
+                        ? 'Danh sách các ứng viên uy tín hàng đầu trên hệ thống' 
+                        : 'Các Freelancer đã từng ký hợp đồng và hoàn thành dự án cùng bạn'}
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => onNavigate('find_freelancers')}
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
-                >
-                  Khám phá thêm
-                </button>
+
+                {/* Rating Filter buttons */}
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  {[
+                    { value: 'ALL', label: 'Tất cả' },
+                    { value: '4.5', label: '4.5★' },
+                    { value: '4', label: '4★' },
+                    { value: '3', label: '3★' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFreelancerRatingFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                        freelancerRatingFilter === opt.value
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {favoriteFreelancers.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4">Chưa có Freelancer nào</p>
-                ) : (
-                  favoriteFreelancers.map((free) => (
-                    <div key={free.freelancer_id} className="flex items-center justify-between gap-3 p-3 bg-slate-50/70 hover:bg-slate-50 rounded-xl border border-slate-200/70 transition">
-                      <div className="flex items-center gap-3 min-w-0">
+              {filteredFavoriteFreelancers.length === 0 ? (
+                <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-600">Không tìm thấy Freelancer phù hợp</p>
+                  <p className="text-xs text-slate-400 mt-1">Thử thay đổi bộ lọc đánh giá hoặc tìm kiếm thêm ứng viên mới.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredFavoriteFreelancers.map((free) => (
+                    <div key={free.freelancer_id} className="bg-slate-50/70 hover:bg-slate-50 transition rounded-xl p-4 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div 
+                        className="flex items-center gap-3.5 cursor-pointer hover:opacity-90 transition min-w-0 flex-1"
+                        onClick={() => onNavigate('view_profile', { targetRole: 'FREELANCER', targetUserId: free.freelancer_id })}
+                      >
                         <img
                           src={getImageUrl(free.avatar_url)}
                           alt={free.display_name}
-                          className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
-                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(free.display_name); }}
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/20 shrink-0"
+                          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(free.display_name || 'Freelancer'); }}
                         />
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-xs text-slate-900 truncate hover:text-indigo-600 cursor-pointer" onClick={() => onNavigate('freelancer_profile', { freelancerId: free.freelancer_id })}>
-                            {free.display_name}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 truncate">{free.professional_title || 'Freelancer Professional'}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="flex items-center gap-0.5 text-[11px] font-bold text-amber-600">
-                              ★ {free.average_rating ? Number(free.average_rating).toFixed(1) : '5.0'}
-                            </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900 truncate hover:text-purple-600 transition">{free.display_name}</h4>
+                            {free.average_rating ? (
+                              <span className="flex items-center gap-0.5 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                {Number(free.average_rating).toFixed(1)}
+                              </span>
+                            ) : null}
                             {free.total_contracts > 0 && (
-                              <span className="text-[10px] text-slate-400">• {free.total_contracts} hợp đồng</span>
+                              <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs border border-purple-100">
+                                {free.total_contracts} hợp đồng
+                              </span>
                             )}
                           </div>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">{free.professional_title || 'Freelancer tự do'}</p>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => onNavigate('messenger', { id: free.freelancer_id, role: 'FREELANCER', name: free.display_name, avatarUrl: free.avatar_url })}
-                        title="Gửi tin nhắn"
-                        className="p-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg border border-slate-200 transition shadow-sm shrink-0"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 justify-end">
+                        <button
+                          onClick={() => onNavigate('messenger', { id: free.freelancer_id, role: 'FREELANCER', name: free.display_name, avatarUrl: free.avatar_url })}
+                          className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs border border-slate-200 flex items-center gap-1.5 transition"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Nhắn tin</span>
+                        </button>
+                        <button
+                          onClick={() => onNavigate('view_profile', { targetRole: 'FREELANCER', targetUserId: free.freelancer_id })}
+                          className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded-xl text-xs border border-purple-200 transition"
+                        >
+                          Xem hồ sơ
+                        </button>
+                      </div>
                     </div>
-                  ))
-                )}
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column (1 Col): Gói cước & Chi tiêu gần đây */}
+          <div className="space-y-6">
+
+            {/* Package Summary Widget */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">Gói cước dịch vụ</h2>
+                    <p className="text-[10px] text-slate-500">Thông tin gói & quyền lợi bài đăng</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onNavigate('employer_packages')}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5"
+                >
+                  Chi tiết <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
+
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/70 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">Gói hiện tại:</span>
+                  <span className="text-xs font-extrabold text-indigo-600">{packageInfo?.currentPackageName || (tier !== 'ĐỒNG' ? `Hạng ${tier}` : 'Tiêu Chuẩn')}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
+                  <span className="text-xs text-slate-500 font-medium">Đăng bài còn lại:</span>
+                  <span className="text-xs font-extrabold text-emerald-600">{packageInfo?.remainingPostsDisplay || 'Không giới hạn'}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-200/60 pt-2 text-[11px]">
+                  <span className="text-slate-400">Hạn dùng:</span>
+                  <span className="font-semibold text-slate-700">{packageInfo?.currentPackageExpiry || 'Không giới hạn'}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigate('employer_packages')}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Quản lý & Lịch sử gói cước</span>
+              </button>
             </div>
 
             {/* Recent Transactions Log */}
@@ -648,7 +735,6 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
 
           </div>
         </div>
-
       </div>
 
       {/* Review Deliverable Modal */}
@@ -725,6 +811,8 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
           </div>
         </div>
       )}
+
+
     </div>
   );
 }

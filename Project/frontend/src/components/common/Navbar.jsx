@@ -5,6 +5,7 @@ import {
   Shield,
   LogOut,
   User,
+  UserCog,
   MessageCircle,
   Building2,
   Plus,
@@ -469,8 +470,7 @@ export default function Navbar({
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                         >
-                          <Building2 className="w-4 h-4" /> Thông tin doanh
-                          nghiệp
+                          <UserCog className="w-4 h-4" /> Quản lý tài khoản
                         </button>
                         <button
                           onClick={() => {
@@ -480,24 +480,6 @@ export default function Navbar({
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all mt-1"
                         >
                           <Bookmark className="w-4 h-4" /> Quản lý dự án
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("employer_invoices");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all mt-1"
-                        >
-                          <FileText className="w-4 h-4 text-emerald-600" /> Hóa đơn & Chứng từ
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("employer_support");
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-xl transition-all mt-1"
-                        >
-                          <LifeBuoy className="w-4 h-4 text-cyan-600" /> Gửi Ticket Hỗ trợ
                         </button>
                       </>
                     )}
@@ -746,9 +728,9 @@ export default function Navbar({
                     setIsOpen(false);
                     if (onNavigate) onNavigate("employer_profile");
                   }}
-                  className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                  className="w-full text-center bg-blue-50 text-blue-700 border border-blue-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
                 >
-                  <Building2 className="w-4 h-4" /> Thông tin
+                  <UserCog className="w-4 h-4" /> Quản lý tài khoản
                 </button>
                 <button
                   onClick={() => {
@@ -758,24 +740,6 @@ export default function Navbar({
                   className="w-full text-center bg-amber-50 text-amber-700 border border-amber-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
                   <Bookmark className="w-4 h-4" /> Quản lý dự án
-                </button>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigate) onNavigate("employer_invoices");
-                  }}
-                  className="w-full text-center bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                >
-                  <FileText className="w-4 h-4 text-emerald-600" /> Hóa đơn & Chứng từ
-                </button>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigate) onNavigate("employer_support");
-                  }}
-                  className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                >
-                  <LifeBuoy className="w-4 h-4 text-cyan-600" /> Gửi Ticket Hỗ trợ
                 </button>
               </>
             )}
