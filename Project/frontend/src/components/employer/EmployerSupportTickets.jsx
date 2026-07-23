@@ -525,15 +525,6 @@ export default function EmployerSupportTickets({ user, defaultOpenModal = false 
 
                 <div className="flex items-center flex-wrap gap-4 text-xs text-slate-400 font-medium pt-1">
                   <span>Tạo ngày: {new Date(ticket.created_at || Date.now()).toLocaleString('vi-VN')}</span>
-                  <span>•</span>
-                  <span>
-                    Staff phụ trách:{' '}
-                    {ticket.staff_name ? (
-                      <strong className="text-slate-700 font-bold">{ticket.staff_name}</strong>
-                    ) : (
-                      <em className="text-amber-600 font-semibold">Chờ Staff nhận duyệt</em>
-                    )}
-                  </span>
                 </div>
               </div>
 

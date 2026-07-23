@@ -166,11 +166,11 @@ export default function App() {
       setCurrentPage("home");
       return;
     }
-    if (["employer_profile", "employer_invoices", "employer_support", "employer_jobs", "employer_dashboard", "dashboard"].includes(page) && user?.role !== "EMPLOYER") {
+    if (["employer_profile", "employer_invoices", "employer_support", "employer_jobs", "employer_dashboard", "dashboard"].includes(page) && user?.role && !["EMPLOYER", "CLIENT"].includes(user.role)) {
       setCurrentPage("home");
       return;
     }
-    if (page === "employer_jobs" && user?.role !== "EMPLOYER") {
+    if (page === "employer_jobs" && user?.role && !["EMPLOYER", "CLIENT"].includes(user.role)) {
       setCurrentPage("home");
       return;
     }

@@ -29,6 +29,7 @@ import {
     Search
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
+import { api } from '../api/apiClient';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
 import MilestoneSetupModal from '../components/MilestoneSetupModal.jsx';
 
@@ -52,6 +53,7 @@ const emptyForm = {
 };
 
 export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUserUpdate, initialStatusFilter}) {
+    const projectListRef = useRef(null);
     const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -117,14 +119,12 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
 
 
     
+    const employerId = user?.employerId || user?.id || user?.userId;
+
     useEffect(() => {
-        fetch('http://localhost:8080/api/categories')
-            .then((res) => {
-                if (!res.ok) throw new Error('Không thể tải danh mục.');
-                return res.json();
-            })
+        api.get('/categories')
             .then((data) => {
-                setCategories(data.filter(c => c.isActive !== false));
+                setCategories((data || []).filter(c => c.isActive !== false));
             })
             .catch((err) => console.error('Error fetching categories:', err));
     }, []);
@@ -197,13 +197,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         };
 
         try {
-            const response = await fetch(`http://localhost:8080/api/projects/${editingProject.projectId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error('Cập nhật dự án thất bại.');
-            const data = await response.json();
-
-            
+            const data = await api.put(`/projects/${editingProject.projectId}`, payload);
             setProjects(prev => prev.map(p => p.projectId === data.projectId ? data : p));
             setNotice({type: 'success', message: 'Cập nhật dự án thành công.'});
             setEditingProject(null);
@@ -217,12 +211,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const handleCloseProject = async (projectId) => {
         if (!window.confirm('Bạn có chắc chắn muốn dừng tuyển dụng dự án này?')) return;
         try {
-            const response = await fetch(`http://localhost:8080/api/projects/${projectId}/close`, {
-                method: 'PUT'
-            });
-            if (!response.ok) throw new Error('Đóng dự án thất bại.');
-
-            
+            await api.put(`/projects/${projectId}/close`, {});
             setProjects(prev => prev.map(p => p.projectId === projectId ? {...p, status: 'CLOSED'} : p));
             setNotice({type: 'success', message: 'Đã đóng tuyển dụng dự án thành công.'});
         } catch (err) {
@@ -233,12 +222,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const handleDeleteProject = async (projectId) => {
         if (!window.confirm('Bạn có chắc chắn muốn xóa dự án này?')) return;
         try {
-            const response = await fetch(`http://localhost:8080/api/projects/${projectId}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok) throw new Error('Xóa dự án thất bại.');
-
-            
+            await api.delete(`/projects/${projectId}`);
             setProjects(prev => prev.filter(p => p.projectId !== projectId));
             setNotice({type: 'success', message: 'Đã xóa dự án thành công.'});
         } catch (err) {
@@ -249,15 +233,8 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const handlePayProject = async (projectId) => {
         try {
             const project = projects.find(p => p.projectId === projectId);
-            const response = await fetch(`http://localhost:8080/payment/create-url?projectId=${projectId}`, {
-                method: 'POST'
-            });
-            if (!response.ok) {
-                const payErr = await response.text();
-                throw new Error(payErr || 'Không thể tạo cổng thanh toán.');
-            }
-            const payData = await response.json();
-            if (payData.paymentUrl) {
+            const payData = await api.post(`/payment/create-url?projectId=${projectId}`, {});
+            if (payData && payData.paymentUrl) {
                 if (onNavigate) {
                     onNavigate('checkout', { 
                       projectId: projectId, 
@@ -283,7 +260,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
 
     const handleManageProgress = async (projectId) => {
         try {
-            const contractDetails = await contractApi.getContractByProjectId(projectId, user.id);
+            const contractDetails = await contractApi.getContractByProjectId(projectId, employerId);
             if (contractDetails && contractDetails.contractId) {
                 onNavigate('contract_details', { contractId: contractDetails.contractId });
             } else {
@@ -295,47 +272,16 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     const handleProjectTitleClick = async (proj) => {
-        try {
-            const contractDetails = await contractApi.getContractByProjectId(proj.projectId, user.id);
-            if (contractDetails && contractDetails.contractId) {
-                onNavigate('contract_details', { contractId: contractDetails.contractId });
-                return;
-            }
-        } catch (err) {
-            console.error("Error fetching contract details:", err);
+        if (onNavigate) {
+            onNavigate('employer_project_details', { projectId: proj.projectId });
         }
-
-        // Hiển thị thông báo rõ ràng nếu dự án chưa bắt đầu (chưa có Freelancer nhận việc)
-        if (proj.status === 'PUBLISHED' || proj.status === 'PENDING' || proj.status === 'DRAFT' || proj.status === 'PENDING_PAYMENT') {
-            const statusLabel = proj.status === 'PUBLISHED' ? 'Đang tuyển' : proj.status === 'PENDING' ? 'Chờ duyệt' : proj.status === 'PENDING_PAYMENT' ? 'Chờ thanh toán' : 'Bản nháp';
-            const confirmViewDetails = window.confirm(
-                `Dự án này chưa được giao cho Freelancer (Trạng thái: ${statusLabel}), nên chưa có tiến độ công việc để hiển thị.\n\nBạn có muốn chuyển sang trang xem Chi tiết công việc tuyển dụng của dự án không?`
-            );
-            if (!confirmViewDetails) return;
-        } else {
-            alert("Không tìm thấy thông tin hợp đồng / tiến độ công việc cho dự án này trên hệ thống.");
-            return;
-        }
-
-        const mappedJob = {
-            ...proj,
-            id: proj.projectId,
-            employerId: proj.client?.employerId || user?.id,
-            employerName: proj.client?.displayName || user?.name
-        };
-        if (onNavigate) onNavigate('job_details', { job: mappedJob });
     };
 
     const handleViewProposals = (projectId) => {
         setSelectedProjectForProposals(projectId);
         setLoadingProposals(true);
-        const userId = user?.id || user?.employerId || user?.userId;
         const role = user?.role || 'EMPLOYER';
-        fetch(`http://localhost:8080/api/proposals/project/${projectId}?userId=${userId}&role=${role}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Không thể tải danh sách báo giá.');
-                return res.json();
-            })
+        api.get(`/proposals/project/${projectId}?userId=${employerId}&role=${role}`)
             .then((data) => {
                 setProposals(data || []);
             })
@@ -349,13 +295,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const handleAcceptProposal = async (proposalId) => {
         if (!window.confirm('Bạn có chắc chắn muốn tuyển dụng Freelancer này? Trạng thái dự án sẽ chuyển sang Đang thực hiện.')) return;
         try {
-            const response = await fetch(`http://localhost:8080/api/proposals/${proposalId}/accept?employerId=${user.id}`, {
-                method: 'POST'
-            });
-            if (!response.ok) {
-                const msg = await response.text();
-                throw new Error(msg || 'Chấp nhận báo giá thất bại.');
-            }
+            await api.post(`/proposals/${proposalId}/accept?employerId=${employerId}`, {});
             alert('Tuyển dụng Freelancer thành công! Hợp đồng đã được ký kết và bắt đầu thực hiện.');
             setSelectedProjectForProposals(null);
             fetchProjects();
@@ -366,69 +306,63 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
 
     // Fetch employer's projects
     const fetchProjects = () => {
-        if (!user?.id) return;
+        if (!employerId) return;
         setLoadingProjects(true);
-        fetch(`http://localhost:8080/api/projects/employer/${user.id}/paginated?page=${currentPage - 1}&size=${PAGE_SIZE}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Không thể tải danh sách dự án.');
-                return res.json();
-            })
+        api.get(`/projects/employer/${employerId}/paginated?page=${currentPage - 1}&size=${PAGE_SIZE}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`)
             .then((data) => {
-                setProjects(data.content || []);
-                setTotalPages(data.totalPages || 1);
-                setTotalElements(data.totalElements || 0);
+                setProjects(data?.content || []);
+                setTotalPages(data?.totalPages || 1);
+                setTotalElements(data?.totalElements || 0);
             })
             .catch((err) => {
-                console.error(err);
+                console.error("Error fetching projects:", err);
             })
             .finally(() => setLoadingProjects(false));
     };
 
     useEffect(() => {
-        if (user?.id && user?.role === 'EMPLOYER') {
+        if (employerId) {
             fetchProjects();
         }
-    }, [user, currentPage, statusFilter, searchQuery]);
+    }, [employerId, currentPage, statusFilter, searchQuery]);
 
     useEffect(() => {
-        if (!user?.id || user?.role !== 'EMPLOYER') {
+        if (!employerId) {
             setLoading(false);
             return;
         }
 
-        fetch(`http://localhost:8080/api/employers/${user.id}/profile`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Không tìm thấy hồ sơ employer.');
-                return res.json();
-            })
+        api.get(`/employers/${employerId}/profile`)
             .then((data) => {
-                setForm({
-                    displayName: data.displayName || user.name || '',
-                    fullName: data.fullName || '',
-                    phone: data.phone || '',
-                    companyName: data.companyName || '',
-                    companyLogoUrl: data.companyLogoUrl || '',
-                    companyDescription: data.companyDescription || '',
-                    website: data.website || '',
-                    address: data.address || '',
-                    city: data.city || '',
-                    country: data.country || '',
-                    companySize: data.companySize || '',
-                    industry: data.industry || '',
-                    taxCode: data.taxCode || '',
-                    billing: {
-                        bankName: data.billing?.bank_name || data.billing?.bankName || '',
-                        accountNumber: data.billing?.account_number || data.billing?.accountNumber || '',
-                        accountHolder: data.billing?.account_holder || data.billing?.accountHolder || '',
-                        branch: data.billing?.branch || ''
-                    }
-                });
+                if (data) {
+                    setForm({
+                        displayName: data.displayName || user?.name || '',
+                        fullName: data.fullName || '',
+                        phone: data.phone || '',
+                        companyName: data.companyName || '',
+                        companyLogoUrl: data.companyLogoUrl || '',
+                        companyDescription: data.companyDescription || '',
+                        website: data.website || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        country: data.country || '',
+                        companySize: data.companySize || '',
+                        industry: data.industry || '',
+                        taxCode: data.taxCode || '',
+                        billing: {
+                            bankName: data.billing?.bank_name || data.billing?.bankName || '',
+                            accountNumber: data.billing?.account_number || data.billing?.accountNumber || '',
+                            accountHolder: data.billing?.account_holder || data.billing?.accountHolder || '',
+                            branch: data.billing?.branch || ''
+                        }
+                    });
+                }
             })
-            .catch((error) => {
-                setNotice({type: 'error', message: error.message || 'Không thể tải hồ sơ công ty.'});
+            .catch((err) => {
+                console.error('Error fetching employer profile:', err);
             })
             .finally(() => setLoading(false));
-    }, [user]);
+    }, [employerId]);
 
     const updateField = (field, value) => {
         setForm((prev) => ({...prev, [field]: value}));
@@ -534,23 +468,9 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
         setNotice(null);
 
         try {
-            const response = await fetch(`http://localhost:8080/api/employers/${user.id}/profile`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(form)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || data.success === false) {
-                throw new Error(data.message || 'Cập nhật thất bại.');
-            }
-
-            // 2. Không cần gọi onUserUpdate ở đây vì thông tin mới chưa được Admin duyệt.
-            // Chỉ cần hiển thị thông báo thành công và cuộn lên đầu trang.
-            setNotice({type: 'success', message: data.message});
+            const data = await api.put(`/employers/${employerId}/profile`, form);
+            setNotice({type: 'success', message: data?.message || 'Cập nhật thông tin thành công.'});
             window.scrollTo({top: 0, behavior: 'smooth'});
-
         } catch (error) {
             setNotice({type: 'error', message: error.message || 'Không thể lưu thay đổi.'});
         } finally {
@@ -559,7 +479,7 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
 
-    if (user?.role !== 'EMPLOYER') {
+    if (user?.role && user.role !== 'EMPLOYER' && user.role !== 'CLIENT') {
         return (<div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md text-center shadow-level-1">
                 <XCircle className="w-12 h-12 text-rose-500 mx-auto mb-4"/>

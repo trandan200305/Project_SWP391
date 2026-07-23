@@ -15,6 +15,7 @@ import {
   Loader2,
   Sparkles,
   ArrowUpRight,
+  MessageSquare,
 } from 'lucide-react';
 import { api } from '../api/apiClient';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper';
@@ -32,10 +33,13 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
 
 
 
-  const employerId = user?.employerId || user?.id;
+  const employerId = user?.employerId || user?.id || user?.userId;
 
   const fetchDashboardData = async () => {
-    if (!employerId) return;
+    if (!employerId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -85,11 +89,24 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
   };
 
   const getTierColor = (tier) => {
-    switch (tier) {
+    switch (tier?.toUpperCase()) {
+      case 'PLATINUM':
       case 'KIM CƯƠNG': return 'from-cyan-500 to-blue-600 text-white';
+      case 'GOLD':
       case 'VÀNG': return 'from-amber-400 to-yellow-600 text-white';
+      case 'SILVER':
       case 'BẠC': return 'from-slate-300 to-slate-500 text-white';
       default: return 'from-amber-700 to-amber-900 text-white'; // ĐỒNG
+    }
+  };
+
+  const getTierDisplayName = (tier) => {
+    switch (tier?.toUpperCase()) {
+      case 'PLATINUM': return 'KIM CƯƠNG';
+      case 'GOLD': return 'VÀNG';
+      case 'SILVER': return 'BẠC';
+      case 'BRONZE': return 'ĐỒNG';
+      default: return tier || 'ĐỒNG';
     }
   };
 
@@ -176,7 +193,7 @@ export default function EmployerDashboardPage({ user, onNavigate }) {
                     Chào mừng, {companyName || displayName}!
                   </h1>
                   <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${getTierColor(tier)} shadow-sm border border-white/20`}>
-                    Hạng {tier}
+                    Hạng {getTierDisplayName(tier)}
                   </span>
                 </div>
                 <p className="text-slate-300 text-sm mt-1 flex items-center gap-2">

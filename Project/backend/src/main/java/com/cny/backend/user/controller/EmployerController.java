@@ -136,7 +136,7 @@ public class EmployerController {
                 "SELECT COUNT(DISTINCT p.project_id) AS completed_count, COALESCE(SUM(c.agreed_amount), 0) AS completed_spent " +
                 "FROM projects p " +
                 "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status = 'COMPLETED' " +
-                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status = 'COMPLETED' OR c.status = 'COMPLETED')",
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('COMPLETED', 'CLOSED') OR c.status = 'COMPLETED')",
                 employerId
             );
             if (completedStats != null) {
@@ -165,7 +165,7 @@ public class EmployerController {
                 "FROM projects p " +
                 "LEFT JOIN contracts c ON p.project_id = c.project_id AND c.status IN ('ACTIVE', 'IN_PROGRESS', 'PENDING_SIGN') " +
                 "LEFT JOIN freelancers f ON c.freelancer_id = f.freelancer_id " +
-                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('APPROVED', 'IN_PROGRESS', 'HIRED', 'ACTIVE') OR c.contract_id IS NOT NULL) " +
+                "WHERE p.client_id = ? AND p.is_deleted = 0 AND (p.status IN ('APPROVED', 'OPEN', 'IN_PROGRESS', 'HIRED', 'ACTIVE') OR c.contract_id IS NOT NULL) " +
                 "ORDER BY p.project_id DESC",
                 employerId
             );
@@ -323,9 +323,9 @@ public class EmployerController {
                 maxPosts = 15;
             }
         } else {
-            if ("KIM CƯƠNG".equalsIgnoreCase(currentTier)) maxPosts = 50;
-            else if ("VÀNG".equalsIgnoreCase(currentTier)) maxPosts = 20;
-            else if ("BẠC".equalsIgnoreCase(currentTier)) maxPosts = 10;
+            if ("KIM CƯƠNG".equalsIgnoreCase(currentTier) || "PLATINUM".equalsIgnoreCase(currentTier)) maxPosts = 50;
+            else if ("VÀNG".equalsIgnoreCase(currentTier) || "GOLD".equalsIgnoreCase(currentTier)) maxPosts = 20;
+            else if ("BẠC".equalsIgnoreCase(currentTier) || "SILVER".equalsIgnoreCase(currentTier)) maxPosts = 10;
             else maxPosts = 5;
         }
 

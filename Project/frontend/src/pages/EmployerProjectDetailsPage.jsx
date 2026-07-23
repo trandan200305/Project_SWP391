@@ -69,7 +69,8 @@ export default function EmployerProjectDetailsPage({ projectId, initialTab, user
     const fetchContractDetails = async () => {
         try {
             setLoadingContract(true);
-            const data = await contractApi.getContractByProjectId(projectId, user.id);
+            const employerId = user?.id || user?.employerId || user?.userId;
+            const data = await contractApi.getContractByProjectId(projectId, employerId);
             setContract(data);
         } catch (err) {
             console.error("Error fetching contract:", err);
