@@ -2960,6 +2960,19 @@ public class AdminService {
                 
                 com.cny.backend.notification.entity.SystemNotification savedNotif = systemNotificationRepository.save(notif);
 
+                com.cny.backend.notification.entity.SystemNotification notifAdmin = com.cny.backend.notification.entity.SystemNotification.builder()
+                    .recipientId(0L)
+                    .recipientRole("ADMIN")
+                    .title(notifTitle)
+                    .message(notifMsg)
+                    .type("TRANSFER_REQUEST")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .referenceId(String.valueOf(req.getRequestId()))
+                    .build();
+                
+                com.cny.backend.notification.entity.SystemNotification savedNotifAdmin = systemNotificationRepository.save(notifAdmin);
+
                 // Send websocket notification directly
                 try {
                     messagingTemplate.convertAndSend("/topic/notifications/MANAGER/0", Map.of(
@@ -2973,11 +2986,22 @@ public class AdminService {
                         "createdAt", savedNotif.getCreatedAt().toString(),
                         "referenceId", String.valueOf(req.getRequestId())
                     ));
+                    messagingTemplate.convertAndSend("/topic/notifications/ADMIN/0", Map.of(
+                        "id", savedNotifAdmin.getId(),
+                        "recipientId", 0L,
+                        "recipientRole", "ADMIN",
+                        "title", notifTitle,
+                        "message", notifMsg,
+                        "type", "TRANSFER_REQUEST",
+                        "isRead", false,
+                        "createdAt", savedNotifAdmin.getCreatedAt().toString(),
+                        "referenceId", String.valueOf(req.getRequestId())
+                    ));
                 } catch (Exception wsEx2) {
-                    System.err.println("Failed to send websocket notification for manager: " + wsEx2.getMessage());
+                    System.err.println("Failed to send websocket notification for manager/admin: " + wsEx2.getMessage());
                 }
             } catch (Exception notifEx) {
-                System.err.println("Failed to create system notification for manager: " + notifEx.getMessage());
+                System.err.println("Failed to create system notification for manager/admin: " + notifEx.getMessage());
                 notifEx.printStackTrace();
             }
 
