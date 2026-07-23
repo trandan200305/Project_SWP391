@@ -74,6 +74,10 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [showCreateDeptModal, setShowCreateDeptModal] = useState(false);
   const [deptForm, setDeptForm] = useState({ name: '', code: '', description: '' });
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferRequests, setTransferRequests] = useState([]);
+  const [selectedTransferRequest, setSelectedTransferRequest] = useState(null);
+  const [showTransferDetailModal, setShowTransferDetailModal] = useState(false);
+
   const [transferTargetMember, setTransferTargetMember] = useState(null);
   const [transferForm, setTransferForm] = useState({ toDepartmentId: '', reason: '' });
   const [departmentTransfers, setDepartmentTransfers] = useState([]);
