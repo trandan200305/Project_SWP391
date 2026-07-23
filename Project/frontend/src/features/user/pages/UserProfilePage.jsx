@@ -5,7 +5,7 @@ import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
 import EmployerExpensesTab from '../components/EmployerExpensesTab.jsx';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
-import RevenueDashboard from './RevenueDashboard.jsx';
+
 
 export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate, targetRole, targetUserId }) {
   const initialRole = (targetRole || user?.role || 'employer').toLowerCase();
@@ -1032,7 +1032,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
               )}
 
                {activeTab === 'preferences' && <UserSettings {...allProps} />}
-               {activeTab === 'revenue' && <RevenueDashboard {...allProps} />}
+
             </div>
           </div>
         </main>
