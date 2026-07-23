@@ -55,10 +55,16 @@ public class FreelancerController {
     private ContractRepository contractRepository;
 
     @Autowired
+    private DisputeRepository disputeRepository;
+
+    @Autowired
     private com.cny.backend.notification.service.NotificationService notificationService;
 
     @Autowired
     private com.cny.backend.project.repository.JobCategoryRepository jobCategoryRepository;
+
+    @Autowired
+    private com.cny.backend.project.repository.SkillRepository skillRepository;
 
     /** Lấy danh sách tất cả freelancer (mặc định không filter) */
     @GetMapping
@@ -68,16 +74,46 @@ public class FreelancerController {
             @RequestParam(value = "experienceLevel", required = false) String experienceLevel,
             @RequestParam(value = "minRate", required = false) java.math.BigDecimal minRate,
             @RequestParam(value = "maxRate", required = false) java.math.BigDecimal maxRate,
-            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating) {
+            @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating,
+            @RequestParam(value = "skillIds", required = false) String skillIds) {
         
+        // Parse skillIds and find matching skill names from database
+        java.util.List<String> targetSkillNames = new java.util.ArrayList<>();
+        if (skillIds != null && !skillIds.trim().isEmpty()) {
+            try {
+                java.util.List<Integer> ids = java.util.Arrays.stream(skillIds.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(Integer::parseInt)
+                        .collect(Collectors.toList());
+                for (Integer id : ids) {
+                    skillRepository.findById(id).ifPresent(s -> {
+                        if (s.getSkillName() != null) {
+                            targetSkillNames.add(s.getSkillName().toLowerCase().trim());
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                // ignore parsing exceptions
+            }
+        }
+
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
-        List<FreelancerDto> dtos = freelancers.stream().map(this::mapToDto).collect(Collectors.toList());
+        List<FreelancerDto> dtos = freelancers.stream().map(f -> {
+            FreelancerDto dto = mapToDto(f);
+            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+            dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+            dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+            return dto;
+        }).collect(Collectors.toList());
         
         // Filter in memory
         if ((keyword != null && !keyword.trim().isEmpty()) || 
             (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) ||
             (experienceLevel != null && !experienceLevel.trim().isEmpty()) ||
-            minRate != null || maxRate != null || minRating != null) {
+            minRate != null || maxRate != null || minRating != null ||
+            !targetSkillNames.isEmpty()) {
             
             dtos = dtos.stream().filter(f -> {
                 boolean matches = true;
@@ -144,11 +180,35 @@ public class FreelancerController {
                         matches = false;
                     }
                 }
+
+                // Skill match (at least one matching skill, case-insensitive)
+                if (matches && !targetSkillNames.isEmpty()) {
+                    String flSkillsStr = f.getPrimarySkills();
+                    if (flSkillsStr != null) {
+                        java.util.List<String> flSkills = java.util.Arrays.stream(flSkillsStr.split("[,;|\\n\\r]+"))
+                                .map(String::trim)
+                                .map(String::toLowerCase)
+                                .filter(s -> !s.isEmpty())
+                                .collect(Collectors.toList());
+                        boolean hasMatchingSkill = false;
+                        for (String targetSkill : targetSkillNames) {
+                            if (flSkills.stream().anyMatch(fs -> fs.contains(targetSkill) || targetSkill.contains(fs))) {
+                                hasMatchingSkill = true;
+                                break;
+                            }
+                        }
+                        if (!hasMatchingSkill) {
+                            matches = false;
+                        }
+                    } else {
+                        matches = false;
+                    }
+                }
                 
                 return matches;
             }).collect(Collectors.toList());
         }
-        
+
         return ResponseEntity.ok(dtos);
     }
 
@@ -158,7 +218,14 @@ public class FreelancerController {
         List<Freelancer> freelancers = freelancerRepository.findTopRatedFreelancers();
         List<FreelancerDto> topFreelancers = freelancers.stream()
                 .limit(4)
-                .map(this::mapToDto)
+                .map(f -> {
+                    FreelancerDto dto = mapToDto(f);
+                    java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+                    Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+                    return dto;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(topFreelancers);
     }
@@ -228,7 +295,14 @@ public class FreelancerController {
     @GetMapping("/{id}")
     public ResponseEntity<FreelancerDto> getFreelancerById(@PathVariable Integer id) {
         return freelancerRepository.findById(id)
-                .map(this::mapToDto)
+                .map(f -> {
+                    FreelancerDto dto = mapToDto(f);
+                    java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+                    Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(f.getProfileId(), "COMPLETED");
+                    dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+                    return dto;
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -262,6 +336,21 @@ public class FreelancerController {
     @PutMapping("/{id}/profile")
     public ResponseEntity<?> updateProfile(@PathVariable Integer id, @RequestBody FreelancerDto updated) {
         return freelancerRepository.findById(id).map(f -> {
+            if (updated.getEmail() != null) {
+                String email = updated.getEmail().trim();
+                if (!email.isEmpty()) {
+                    if (!email.equals(f.getEmail())) {
+                        if (freelancerRepository.countByEmail(email) > 0 ||
+                                employerRepository.countByEmail(email) > 0) {
+                            java.util.Map<String, Object> errResponse = new java.util.HashMap<>();
+                            errResponse.put("success", false);
+                            errResponse.put("message", "Email này đã được sử dụng trên hệ thống. Vui lòng nhập email khác!");
+                            return ResponseEntity.badRequest().body(errResponse);
+                        }
+                        f.setEmail(email);
+                    }
+                }
+            }
             if (updated.getPhone() != null) {
                 String phone = updated.getPhone().trim();
                 if (!phone.isEmpty()) {
@@ -312,21 +401,41 @@ public class FreelancerController {
             if(updated.getAddress() != null) profile.setAddress(updated.getAddress());
             if(updated.getCity() != null) profile.setCity(updated.getCity());
             if(updated.getCountry() != null) profile.setCountry(updated.getCountry());
+            if(updated.getPrimarySkills() != null) profile.setPrimarySkills(updated.getPrimarySkills());
+            profile.setUpdatedAt(java.time.LocalDateTime.now());
             freelancerProfileRepository.save(profile);
 
-            return ResponseEntity.ok(mapToDto(saved));
+            saved.setProfileCompleteness(calculateCompleteness(saved));
+            Freelancer savedAgain = freelancerRepository.save(saved);
+
+            FreelancerDto dto = mapToDto(savedAgain);
+            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(savedAgain.getProfileId(), "COMPLETED");
+            dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
+            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(savedAgain.getProfileId(), "COMPLETED");
+            dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
+
+            return ResponseEntity.ok(dto);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id) {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        if (confirmationText == null || !confirmationText.equals("DELETE")) {
-            response.put("success", false);
-            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
-            return ResponseEntity.badRequest().body(response);
-        }
         return freelancerRepository.findById(id).map(f -> {
+            int activeContracts = contractRepository.countActiveContractsByFreelancerId(id);
+            if (activeContracts > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeContracts + " dự án/hợp đồng đang thực hiện hoặc chờ xử lý.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            int activeDisputes = disputeRepository.countActiveDisputesByFreelancerId(id);
+            if (activeDisputes > 0) {
+                response.put("success", false);
+                response.put("message", "Không thể xóa tài khoản vì bạn đang có " + activeDisputes + " tranh chấp/khiếu nại đang mở.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             f.setIsDeleted(true);
             f.setUpdatedAt(java.time.LocalDateTime.now());
             freelancerRepository.save(f);
@@ -350,6 +459,7 @@ public class FreelancerController {
             f.setKycStatus("PENDING");
             f.setKycSubmittedAt(java.time.LocalDateTime.now());
             f.setUpdatedAt(java.time.LocalDateTime.now());
+            f.setProfileCompleteness(calculateCompleteness(f));
             
             System.out.println("Auto approving KYC for freelancer " + id);
             f.setKycStatus("APPROVED"); // Mock auto approve
@@ -397,17 +507,9 @@ public class FreelancerController {
 
     private FreelancerDto mapToDto(Freelancer f) {
         FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
-        
-        java.util.List<Contract> contracts = contractRepository.findByFreelancerProfileId(f.getProfileId());
-        java.util.Map<String, Long> counts = new java.util.HashMap<>();
-        if (contracts != null) {
-            counts = contracts.stream()
-                    .filter(c -> "COMPLETED".equals(c.getStatus()) && c.getProject() != null && c.getProject().getCategory() != null)
-                    .collect(Collectors.groupingBy(
-                            c -> c.getProject().getCategory().getCategoryName(),
-                            Collectors.counting()
-                    ));
-        }
+        String primarySkills = profile != null ? profile.getPrimarySkills() : null;
+        String expertiseField = profile != null ? profile.getExpertiseField() : null;
+        String experienceLevel = profile != null ? profile.getExperienceLevel() : null;
 
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -427,11 +529,11 @@ public class FreelancerController {
                 .hideEmail(f.getHideEmail())
                 .hidePhone(f.getHidePhone())
                 .hideLocation(f.getHideLocation())
-                .profileCompleteness(profile != null && profile.getProfileCompleteness() != null ? profile.getProfileCompleteness() : f.getProfileCompleteness())
-                .totalEarnings(profile != null && profile.getTotalEarnings() != null ? profile.getTotalEarnings() : f.getTotalEarnings())
-                .projectsCompleted(profile != null && profile.getProjectsCompleted() != null ? profile.getProjectsCompleted() : f.getProjectsCompleted())
-                .averageRating(profile != null && profile.getAverageRating() != null ? profile.getAverageRating() : f.getAverageRating())
-                .isAvailable(profile != null && profile.getIsAvailable() != null ? profile.getIsAvailable() : f.getIsAvailable())
+                .profileCompleteness(calculateCompleteness(f))
+                .totalEarnings(f.getTotalEarnings())
+                .projectsCompleted(f.getProjectsCompleted())
+                .averageRating(f.getAverageRating())
+                .isAvailable(f.getIsAvailable())
                 .createdAt(f.getCreatedAt() != null ? f.getCreatedAt().toString() : null)
                 .updatedAt(f.getUpdatedAt() != null ? f.getUpdatedAt().toString() : null)
                 .lastLoginAt(f.getLastLoginAt() != null ? f.getLastLoginAt().toString() : null)
@@ -444,11 +546,32 @@ public class FreelancerController {
                 .kycReviewedByStaffId(f.getKycReviewedByStaffId())
                 .kycRejectedReason(f.getKycRejectedReason())
                 .isVerified(f.getIsVerified())
-                .expertiseField(profile != null ? profile.getExpertiseField() : null)
-                .experienceLevel(profile != null ? profile.getExperienceLevel() : null)
-                .primarySkills(profile != null ? profile.getPrimarySkills() : null)
-                .servicesOffered(profile != null ? profile.getServicesOffered() : null)
-                .categoryProjectCounts(counts)
+                .primarySkills(primarySkills)
+                .expertiseField(expertiseField)
+                .experienceLevel(experienceLevel)
                 .build();
+    }
+
+    private int calculateCompleteness(Freelancer f) {
+        int score = 0;
+        
+        if ("APPROVED".equals(f.getKycStatus())) score += 20;
+        if (f.getEmailVerified() != null && f.getEmailVerified()) score += 15;
+        if (f.getPhone() != null && !f.getPhone().trim().isEmpty()) score += 10;
+        if (f.getAddress() != null && !f.getAddress().trim().isEmpty()) score += 10;
+        
+        if (f.getBio() != null && f.getBio().trim().length() >= 30) score += 10;
+        
+        FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
+        if (profile != null) {
+            if (profile.getExpertiseField() != null && !profile.getExpertiseField().trim().isEmpty()) score += 10;
+            if (profile.getPrimarySkills() != null && !profile.getPrimarySkills().trim().isEmpty()) score += 10;
+        }
+
+        if (f.getAvatarUrl() != null && !f.getAvatarUrl().trim().isEmpty()) score += 5;
+        if (f.getProfessionalTitle() != null && !f.getProfessionalTitle().trim().isEmpty()) score += 5;
+        if (f.getHourlyRate() != null && f.getHourlyRate().compareTo(java.math.BigDecimal.ZERO) > 0) score += 5;
+
+        return Math.min(score, 100);
     }
 }
