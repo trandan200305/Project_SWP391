@@ -8,10 +8,11 @@ import {
   ArrowUpRight, ArrowDownRight, Calendar, Info, Sliders, Sparkles, RefreshCw, Download, FileText,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Home, Clock, XCircle, History, ArrowRight,
   User, Edit3, MessageSquare, Shield, ChevronDown, QrCode, Save, Zap, Plus, MoreHorizontal, Activity,
-  PieChart, Landmark, Receipt, ChevronUp, Filter
+  PieChart, Landmark, Receipt, ChevronUp, Filter, Briefcase
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import AdminOperationsHub from './AdminOperationsHub.jsx';
 
 const VIETQR_BANKS = [
   { code: 'Techcombank', name: 'Ngân hàng Kỹ Thương Việt Nam', short: 'Techcombank' },
@@ -2857,7 +2858,8 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 {[
                   { id: 'users', icon: Users, label: 'Người dùng' },
                   { id: 'kyc', icon: UserCheck, label: 'Xác thực eKYC (VNPT)' },
-                  { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' }
+                  { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' },
+                  { id: 'operations_hub', icon: Briefcase, label: 'Trung tâm Nghiệp vụ' }
                 ].map(item => (
                   <div 
                     key={item.id}
@@ -2960,6 +2962,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeTab === 'dashboard_activity' && <><Activity className="w-6 h-6 text-blue-600" /> Nhật ký Hoạt động</>}
               {activeTab === 'users' && <><Users className="w-6 h-6 text-indigo-600" /> User Account Control</>}
               {activeTab === 'departments' && <><Sliders className="w-6 h-6 text-indigo-600" /> Quản lý Khoa / Phòng Ban</>}
+              {activeTab === 'operations_hub' && <><Briefcase className="w-6 h-6 text-indigo-600" /> Trung tâm Nghiệp vụ</>}
               {activeTab === 'cms' && <><Settings className="w-6 h-6 text-cyan-600" /> SEO & Policy Config</>}
               {activeTab === 'finance_dashboard' && <><PieChart className="w-6 h-6 text-emerald-600" /> Dashboard Tài chính</>}
               {activeTab === 'finance_banking' && <><Landmark className="w-6 h-6 text-emerald-600" /> Cấu hình Ngân hàng</>}
@@ -2971,6 +2974,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               {activeTab === 'dashboard_activity' && 'Theo dõi các hoạt động mới nhất trên hệ thống theo thời gian thực.'}
               {activeTab === 'users' && 'Lock, ban, or unlock system user accounts.'}
               {activeTab === 'departments' && 'Quản lý các khoa chuyên môn, giám sát phiên làm việc và nhật ký thao tác.'}
+              {activeTab === 'operations_hub' && 'Điều hành và xử lý các hàng đợi phê duyệt nghiệp vụ hệ thống.'}
               {activeTab === 'cms' && 'Manage policy pages, SEO metadata, and system flags.'}
               {activeTab === 'finance_dashboard' && 'Báo cáo doanh thu và đối soát các giao dịch phân bổ dòng tiền.'}
               {activeTab === 'finance_banking' && 'Cài đặt tham số kết nối PayOS / VietQR và cấu hình Gói Dịch vụ.'}
@@ -3127,7 +3131,15 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
           </div>
         </header>
 
-        {}
+        {/* Scrollable Content Area */}
+        {activeTab === 'operations_hub' ? (
+          <AdminOperationsHub 
+            user={user} 
+            onNavigateToHome={onNavigateToHome} 
+            onNavigate={onNavigate} 
+            onLogout={onLogout} 
+          />
+        ) : (
         <div className="flex-grow p-8 overflow-y-auto overflow-x-hidden space-y-8 min-w-0">
           
           {}
@@ -5443,6 +5455,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
             </div>
           )}
         </div>
+        )}
 
       </main>
 

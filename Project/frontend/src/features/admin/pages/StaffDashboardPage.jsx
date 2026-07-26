@@ -52,7 +52,16 @@ const getActionLabel = (action) => {
   }[action] || String(action || '').replace(/_/g, ' ') || 'Hành động khác';
 };
 
-export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate, onLogout }) {
+export default function StaffDashboardPage({ 
+  user, 
+  onNavigateToHome, 
+  onNavigate, 
+  onLogout,
+  // NEW PROPS FOR EMBEDDED MODE
+  isEmbeddedAdminMode = false,
+  initialTab = 'Dashboard',
+  onBackToHub = null
+}) {
   // Styles & Brand Settings
   const brandName = "FelanPro";
   const brandSub = "Admin Console";
@@ -80,7 +89,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
   };
   
   // Tab states
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [sectionsOpen, setSectionsOpen] = useState({
     moderation: true,
     disputeResolution: true,
@@ -1995,6 +2004,7 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
       )}
 
       {/* ---------------- SIDEBAR (260px Fixed) ---------------- */}
+      {!isEmbeddedAdminMode && (
       <aside className="w-[260px] bg-white border-r border-[#e1e8fd] flex flex-col justify-between shrink-0 h-full">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo Section */}
@@ -2026,11 +2036,13 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
 
 
       </aside>
+      )}
 
       {/* ---------------- MAIN CONTAINER ---------------- */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         
         {/* HEADER (64px Height) */}
+        {!isEmbeddedAdminMode && (
         <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-end shrink-0 z-10">
           
           {/* User profile & Actions */}
@@ -2141,6 +2153,23 @@ export default function StaffDashboardPage({ user, onNavigateToHome, onNavigate,
             </div>
           </div>
         </header>
+        )}
+
+        {isEmbeddedAdminMode && (
+          <header className="h-[64px] bg-white border-b border-[#e1e8fd] px-6 flex items-center justify-between shrink-0 z-10 shadow-sm">
+            <h2 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-emerald-600" />
+              Nghiệp vụ: {getActionLabel(activeTab)}
+            </h2>
+            <button 
+              onClick={onBackToHub} 
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-all border border-slate-200"
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              Quay lại Trung tâm Nghiệp vụ
+            </button>
+          </header>
+        )}
 
         {/* CONTENT BODY */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#f9f9ff]">
