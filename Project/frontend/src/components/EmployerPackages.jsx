@@ -109,6 +109,7 @@ export default function EmployerPackages({ user }) {
             const isPremium = pkg.packageType === 'PREMIUM';
             const isMedium = pkg.packageType === 'MEDIUM';
             const isRegular = pkg.packageType === 'REGULAR';
+            const isSingle = pkg.packageType === 'SINGLE';
             
             let label = 'Trung bình';
             let description = 'Hiển thị tối đa 10 ngày. Phù hợp tin tuyển dụng quy mô nhỏ.';
@@ -122,6 +123,10 @@ export default function EmployerPackages({ user }) {
               label = 'Cao cấp';
               description = 'Hiển thị tối đa 30 ngày. Đóng dấu nổi bật thu hút Freelancer chuyên nghiệp nhất.';
               iconColor = 'text-amber-500 bg-amber-50';
+            } else if (isSingle) {
+              label = 'Gói Lẻ';
+              description = 'Đăng 1 bài tuyển dụng. Không giới hạn thời gian hiển thị.';
+              iconColor = 'text-rose-500 bg-rose-50';
             }
 
             return (
@@ -130,7 +135,7 @@ export default function EmployerPackages({ user }) {
                 onMouseEnter={() => handleMouseEnter(pkg.packageType)}
                 onMouseLeave={() => handleMouseLeave(pkg.packageType)}
                 className={`relative rounded-2xl p-6 flex flex-col transition-all duration-200 bg-white border ${
-                  isMedium ? 'border-cyan-400 shadow-sm' : 'border-slate-200 hover:border-slate-300'
+                  isMedium ? 'border-cyan-400 shadow-sm' : isSingle ? 'border-rose-400 shadow-sm' : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 {isPremium && (
@@ -146,7 +151,7 @@ export default function EmployerPackages({ user }) {
                     <Briefcase className="w-6 h-6" />
                   </div>
                   <div className="px-3 py-1.5 rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide">
-                    Hạn {pkg.durationDays} ngày
+                    {isSingle ? 'Không giới hạn' : `Hạn ${pkg.durationDays} ngày`}
                   </div>
                 </div>
 
@@ -180,7 +185,9 @@ export default function EmployerPackages({ user }) {
                         ? 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
                         : isPremium
                           ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          : isSingle
+                            ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   {processingPkg === pkg.packageType ? (
