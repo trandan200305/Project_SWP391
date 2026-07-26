@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminApi } from '../../../api/adminApi.js';
+import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, Search, FileText, Calendar, Gavel, User, HelpCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
