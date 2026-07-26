@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, XCircle, Search, FileText, ArrowRightLeft, Calendar, User, Briefcase, Building2 } from 'lucide-react';
 import AdminDepartmentManagement from '../AdminDepartmentManagement.jsx';
@@ -205,14 +206,15 @@ export default function AdminTransfersQueue({ adminId }) {
         </div>
       </div>
 
-      {/* Slide-over Panel cho Phòng ban */}
-      {showDeptModal && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowDeptModal(false)}></div>
+      {/* Slide-over Panel cho Phòng ban - Đưa ra ngoài Portal để phủ toàn màn hình */}
+      {showDeptModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setShowDeptModal(false)}></div>
           <div className="relative w-full max-w-4xl bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
             <AdminDepartmentManagement onClose={() => setShowDeptModal(false)} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
