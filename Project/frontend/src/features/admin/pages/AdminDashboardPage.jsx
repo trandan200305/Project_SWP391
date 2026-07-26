@@ -4016,27 +4016,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                       >
                                         <Lock className="w-3.5 h-3.5" /> Suspend
                                       </button>
-                                      {(user.role === 'MANAGER' || user.role === 'STAFF') && (
-                                        <button 
-                                          onClick={() => {
-                                            if (window.confirm("Bạn có chắc chắn muốn chuyển đổi vai trò của tài khoản này? Tài khoản sẽ bị tạm ngưng hoạt động để cấu hình.")) {
-                                              adminApi.convertRole(user.id, user.role, admin?.adminId || 1).then(res => {
-                                                if(res.success) {
-                                                  toast.success(res.message || "Chuyển đổi thành công.");
-                                                  fetchUsers();
-                                                } else {
-                                                  toast.error(res.message || "Lỗi chuyển đổi.");
-                                                }
-                                              }).catch(err => {
-                                                toast.error(err.message || "Lỗi mạng hoặc máy chủ.");
-                                              });
-                                            }
-                                          }}
-                                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm ml-1"
-                                        >
-                                          <RefreshCw className="w-3.5 h-3.5" /> Convert Role
-                                        </button>
-                                      )}
                                       <button 
                                         onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
                                         className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm ml-1"
@@ -4051,27 +4030,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     >
                                       <Unlock className="w-3.5 h-3.5" /> Kích hoạt
                                     </button>
-                                    {(user.role === 'MANAGER' || user.role === 'STAFF') && user.status !== 'DELETED' && (
-                                      <button 
-                                        onClick={() => {
-                                          if (window.confirm("Bạn có chắc chắn muốn chuyển đổi vai trò của tài khoản này? Tài khoản sẽ bị tạm ngưng hoạt động để cấu hình.")) {
-                                            adminApi.convertRole(user.id, user.role, admin?.adminId || 1).then(res => {
-                                              if(res.success) {
-                                                toast.success(res.message || "Chuyển đổi thành công.");
-                                                fetchUsers();
-                                              } else {
-                                                toast.error(res.message || "Lỗi chuyển đổi.");
-                                              }
-                                            }).catch(err => {
-                                              toast.error(err.message || "Lỗi mạng hoặc máy chủ.");
-                                            });
-                                          }
-                                        }}
-                                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 hover:shadow-sm ml-1"
-                                      >
-                                        <RefreshCw className="w-3.5 h-3.5" /> Convert Role
-                                      </button>
-                                    )}
+
                                     {user.status !== 'DELETED' && (
                                       <button 
                                         onClick={() => { setActiveUserForAction(user); setActionType('delete_gmail'); }}
