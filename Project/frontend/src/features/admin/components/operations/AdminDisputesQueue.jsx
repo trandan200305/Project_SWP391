@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, Search, FileText, Calendar, Gavel, User, HelpCircle } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminDisputesQueue({ adminId }) {
   const [data, setData] = useState([]);
@@ -26,7 +25,7 @@ export default function AdminDisputesQueue({ adminId }) {
       })
       .catch(err => {
         console.error(err);
-        toast.error('Lỗi khi tải dữ liệu tranh chấp');
+        alert('Lỗi khi tải dữ liệu tranh chấp');
       })
       .finally(() => setLoading(false));
   };
@@ -38,18 +37,18 @@ export default function AdminDisputesQueue({ adminId }) {
     
     const note = window.prompt("Nhập ghi chú giải quyết tranh chấp (Bắt buộc):");
     if (!note || !note.trim()) {
-      toast.error('Bạn phải nhập ghi chú giải quyết');
+      alert('Bạn phải nhập ghi chú giải quyết');
       return;
     }
 
     setProcessingId(id);
     try {
       await adminApi.resolveDispute(id, 'RESOLVED', note, adminId);
-      toast.success('Đã giải quyết tranh chấp');
+      alert('Đã giải quyết tranh chấp');
       fetchData();
     } catch (err) {
       console.error(err);
-      toast.error('Có lỗi xảy ra khi xử lý tranh chấp');
+      alert('Có lỗi xảy ra khi xử lý tranh chấp');
     } finally {
       setProcessingId(null);
     }

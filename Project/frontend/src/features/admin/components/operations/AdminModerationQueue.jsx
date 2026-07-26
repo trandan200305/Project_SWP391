@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, XCircle, Search, FileText, Calendar, ShieldCheck, Briefcase, UserCheck, Sparkles } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminModerationQueue({ adminId }) {
   const [data, setData] = useState([]);
@@ -65,7 +64,7 @@ export default function AdminModerationQueue({ adminId }) {
     })
     .catch(err => {
       console.error(err);
-      toast.error('Lỗi khi tải dữ liệu kiểm duyệt');
+      alert('Lỗi khi tải dữ liệu kiểm duyệt');
     })
     .finally(() => setLoading(false));
   };
@@ -76,7 +75,7 @@ export default function AdminModerationQueue({ adminId }) {
       reason = window.prompt('Nhập lý do từ chối (bắt buộc):');
       if (reason === null) return;
       if (!reason.trim()) {
-        toast.error('Vui lòng nhập lý do từ chối');
+        alert('Vui lòng nhập lý do từ chối');
         return;
       }
     } else {
@@ -92,11 +91,11 @@ export default function AdminModerationQueue({ adminId }) {
       } else if (item.type === 'GIG') {
         await adminApi.moderateGig(item.rawId, approve, reason, adminId);
       }
-      toast.success(approve ? 'Đã duyệt thành công' : 'Đã từ chối thành công');
+      alert(approve ? 'Đã duyệt thành công' : 'Đã từ chối thành công');
       fetchData();
     } catch (err) {
       console.error(err);
-      toast.error('Có lỗi xảy ra khi xử lý');
+      alert('Có lỗi xảy ra khi xử lý');
     } finally {
       setProcessingId(null);
     }

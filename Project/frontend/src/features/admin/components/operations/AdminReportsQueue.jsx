@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, Search, AlertTriangle, Calendar, Flag, User, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminReportsQueue({ adminId }) {
   const [data, setData] = useState([]);
@@ -26,7 +25,7 @@ export default function AdminReportsQueue({ adminId }) {
       })
       .catch(err => {
         console.error(err);
-        toast.error('Lỗi khi tải dữ liệu báo cáo vi phạm');
+        alert('Lỗi khi tải dữ liệu báo cáo vi phạm');
       })
       .finally(() => setLoading(false));
   };
@@ -37,11 +36,11 @@ export default function AdminReportsQueue({ adminId }) {
     setProcessingId(id);
     try {
       await adminApi.resolveReport(id, actionStatus, adminId);
-      toast.success('Đã xử lý báo cáo vi phạm');
+      alert('Đã xử lý báo cáo vi phạm');
       fetchData();
     } catch (err) {
       console.error(err);
-      toast.error('Có lỗi xảy ra khi xử lý báo cáo');
+      alert('Có lỗi xảy ra khi xử lý báo cáo');
     } finally {
       setProcessingId(null);
     }

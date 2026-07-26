@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, XCircle, Search, FileText, BadgeDollarSign, Calendar } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminWithdrawalsQueue({ adminId }) {
   const [data, setData] = useState([]);
@@ -27,7 +26,7 @@ export default function AdminWithdrawalsQueue({ adminId }) {
       })
       .catch(err => {
         console.error(err);
-        toast.error('Lỗi khi tải dữ liệu rút tiền');
+        alert('Lỗi khi tải dữ liệu rút tiền');
       })
       .finally(() => setLoading(false));
   };
@@ -38,7 +37,7 @@ export default function AdminWithdrawalsQueue({ adminId }) {
       reason = window.prompt('Nhập lý do từ chối:');
       if (reason === null) return; // User cancelled
       if (!reason.trim()) {
-        toast.error('Vui lòng nhập lý do từ chối');
+        alert('Vui lòng nhập lý do từ chối');
         return;
       }
     } else {
@@ -48,11 +47,11 @@ export default function AdminWithdrawalsQueue({ adminId }) {
     setProcessingId(id);
     try {
       await adminApi.processWithdrawal(id, status, adminId, reason);
-      toast.success(status === 'APPROVED' ? 'Đã duyệt lệnh rút tiền' : 'Đã từ chối lệnh rút tiền');
+      alert(status === 'APPROVED' ? 'Đã duyệt lệnh rút tiền' : 'Đã từ chối lệnh rút tiền');
       fetchData(); // Refresh list
     } catch (err) {
       console.error(err);
-      toast.error('Có lỗi xảy ra khi xử lý lệnh');
+      alert('Có lỗi xảy ra khi xử lý lệnh');
     } finally {
       setProcessingId(null);
     }
