@@ -64,7 +64,7 @@ export default function AdminDepartmentManagement({ onClose }) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-800">Cấu trúc Phòng Ban</h2>
-            <p className="text-xs text-slate-500 font-medium">Xem phân bổ nhân sự và hoạt động</p>
+                      <p className="text-xs text-slate-500 font-medium">Xem phân bổ nhân sự và hoạt động</p>
           </div>
         </div>
         <button 
@@ -103,7 +103,7 @@ export default function AdminDepartmentManagement({ onClose }) {
                       <div className="flex flex-col items-end text-slate-500 font-bold text-[11px] gap-1">
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-purple-500" />
-                          <span>{managersCount}/5 Managers</span>
+                          <span>{managersCount} Managers</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-sky-500" />
@@ -116,20 +116,6 @@ export default function AdminDepartmentManagement({ onClose }) {
                       <p className="text-[12px] text-slate-500 mt-1.5 line-clamp-2 min-h-[36px]">
                         {dept.description || 'Chưa có mô tả chi tiết cho khoa này.'}
                       </p>
-                    </div>
-                    <div className="space-y-1.5 pt-2 border-t border-slate-50">
-                      {managersCount === 1 && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-bold">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>Cảnh báo: Chỉ còn 1 Manager!</span>
-                        </div>
-                      )}
-                      {staffCount === 1 && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-rose-600 bg-rose-50 px-2 py-1 rounded-lg font-bold">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>Cảnh báo: Chỉ còn 1 Staff!</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
