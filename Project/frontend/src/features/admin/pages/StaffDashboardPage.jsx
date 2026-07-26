@@ -49,6 +49,30 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import NotificationDropdown from "../components/NotificationDropdown.jsx";
 
+const getDisputeCategory = (esc) => {
+  if (esc.raw?.category) return esc.raw.category;
+  
+  const text = (
+    (esc.title || "") + " " + 
+    (esc.raw?.reason || "") + " " + 
+    (esc.raw?.projectTitle || "")
+  ).toLowerCase();
+  
+  if (text.includes("chất lượng") || text.includes("sản phẩm") || text.includes("lỗi") || text.includes("sập") || text.includes("mất dữ liệu") || text.includes("code") || text.includes("kịch bản") || text.includes("copy") || text.includes("sao chép") || text.includes("paste")) {
+    return "Chất lượng sản phẩm";
+  }
+  if (text.includes("tiến độ") || text.includes("trễ") || text.includes("chậm") || text.includes("hạn") || text.includes("giao") || text.includes("bỏ dở")) {
+    return "Tiến độ & Cam kết";
+  }
+  if (text.includes("liên lạc") || text.includes("phản hồi") || text.includes("trả lời") || text.includes("giao tiếp") || text.includes("biến mất")) {
+    return "Giao tiếp & Liên lạc";
+  }
+  if (text.includes("thỏa thuận") || text.includes("thêm việc") || text.includes("thêm tiền") || text.includes("đòi") || text.includes("yêu cầu")) {
+    return "Thay đổi thỏa thuận";
+  }
+  return "Khác";
+};
+
 const getTargetUser = (description) => {
   if (!description) return "N/A";
   const kycMatch = description.match(
@@ -251,6 +275,7 @@ export default function StaffDashboardPage({
   const [selectedAssignStaffEmail, setSelectedAssignStaffEmail] = useState("");
   const [showAssignStaffDrawer, setShowAssignStaffDrawer] = useState(false);
   const [disputeNote, setDisputeNote] = useState("");
+  const [selectedDisputeCategoryFilter, setSelectedDisputeCategoryFilter] = useState("ALL");
 
   const [moderationHistory, setModerationHistory] = useState([]);
   const [moderationView, setModerationView] = useState("queue");
@@ -860,12 +885,23 @@ export default function StaffDashboardPage({
     if (!selectedDispute) return;
     const userStr = localStorage.getItem("user");
     const user = userStr ? JSON.parse(userStr) : null;
-    const adminId = user?.adminId || 1;
+    const adminId = user?.adminId || user?.id || 1;
+    const rawId = selectedDispute.raw?.id || selectedDispute.id;
 
     adminApi
-      .resolveDispute(selectedDispute.raw.id, status, disputeNote, adminId)
+      .resolveDispute(rawId, status, disputeNote, adminId)
       .then((res) => {
         if (res.success) {
+          // Find and complete associated task
+          const associatedTask = tasks.find(
+            (t) =>
+              t.taskType === "DISPUTE_RESOLUTION" &&
+              Number(t.referenceId) === Number(rawId)
+          );
+          if (associatedTask) {
+            handleUpdateTaskStatus(associatedTask.taskId, "Completed");
+          }
+
           setToast({ message: res.message, type: "success", show: true });
           setTimeout(
             () => setToast((prev) => ({ ...prev, show: false })),
@@ -875,6 +911,7 @@ export default function StaffDashboardPage({
           setSelectedDispute(null);
           setDisputeNote("");
           fetchModerationData(); // Refresh list
+          fetchTasks(); // Refresh tasks
         } else {
           setToast({ message: res.message, type: "error", show: true });
           setTimeout(
@@ -890,10 +927,10 @@ export default function StaffDashboardPage({
     if (!selectedDispute) return;
     const actionLabel =
       status === "RESOLVED_CLIENT_FAVOR"
-        ? "Hoàn tiền cho Khách hàng (Client)"
+        ? "Giải quyết cho Employer (Khách hàng)"
         : status === "RESOLVED_FREELANCER_FAVOR"
-          ? "Thanh toán cho Freelancer"
-          : "Đóng tranh chấp (Không hoàn tiền)";
+          ? "Giải quyết cho Freelancer"
+          : "Đóng khiếu nại";
     const confirmType = status === "CLOSED" ? "warning" : "danger";
 
     setConfirmConfig({
@@ -909,6 +946,106 @@ export default function StaffDashboardPage({
       },
     });
     setConfirmCountdown(null);
+    setShowConfirmModal(true);
+  };
+
+  const executeResolveDisputeFromTask = (status) => {
+    const rawId = selectedTask.referenceId;
+    if (!rawId) return;
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? JSON.parse(userStr) : null;
+    const adminId = user?.id || user?.adminId || 1;
+
+    adminApi
+      .resolveDispute(Number(rawId), status, disputeNote, adminId)
+      .then((res) => {
+        if (res.success) {
+          handleUpdateTaskStatus(selectedTask.id, "Completed");
+          setToast({ message: res.message, type: "success", show: true });
+          setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+          setDisputeNote("");
+          setShowManageModal(false);
+          fetchModerationData(); // Refresh list
+          fetchTasks(); // Refresh tasks
+        } else {
+          setToast({ message: res.message, type: "error", show: true });
+          setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+        }
+      })
+      .catch((err) => {
+        console.error("Error resolving dispute from task:", err);
+        setToast({ message: "Lỗi kết nối máy chủ.", type: "error", show: true });
+        setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+      });
+  };
+
+  const handleResolveDisputeFromTask = (status) => {
+    if (!selectedTask) return;
+    if (!disputeNote.trim()) {
+      setToast({ message: "Vui lòng nhập ghi chú phân xử!", type: "error", show: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+      return;
+    }
+    const actionLabel =
+      status === "RESOLVED_CLIENT_FAVOR"
+        ? "Giải quyết cho Employer (Khách hàng)"
+        : status === "RESOLVED_FREELANCER_FAVOR"
+          ? "Giải quyết cho Freelancer"
+          : "Đóng khiếu nại";
+    const confirmType = status === "CLOSED" ? "warning" : "danger";
+
+    setConfirmConfig({
+      title: "Xác nhận giải quyết tranh chấp",
+      message: `Bạn có chắc chắn muốn thực hiện hành động: "${actionLabel}"? Hành động này sẽ thay đổi số dư ví của các bên và không thể hoàn tác!`,
+      type: confirmType,
+      confirmText: "Đồng ý",
+      cancelText: "Hủy",
+      onConfirm: () => {
+        setShowConfirmModal(false);
+        setConfirmCountdown(null);
+        executeResolveDisputeFromTask(status);
+      },
+    });
+    setConfirmCountdown(null);
+    setShowConfirmModal(true);
+  };
+
+  const handleReconcileFromTask = () => {
+    if (!selectedTask) return;
+    const refId = selectedTask.referenceId;
+    const taskId = selectedTask.id;
+    
+    setConfirmConfig({
+      title: "Xác nhận đối soát giao dịch",
+      message: `Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${refId} từ công việc này?`,
+      type: "warning",
+      confirmText: "Đồng ý",
+      cancelText: "Hủy",
+      onConfirm: () => {
+        setShowConfirmModal(false);
+        const adminId = user?.id || user?.adminId || 1;
+        setIsLoading(true);
+        adminApi
+          .reconcileVnpayTransaction(refId, adminId)
+          .then((res) => {
+            setIsLoading(false);
+            if (res.success) {
+              showToast(res.message || "Đối soát thành công!", "success");
+              handleUpdateTaskStatus(taskId, "Completed");
+              fetchVnpayTransactions();
+              setShowManageModal(false);
+              setSelectedTask(null);
+            } else {
+              showToast(res.message || "Đối soát thất bại.", "error");
+            }
+          })
+          .catch((err) => {
+            setIsLoading(false);
+            console.error(err);
+            showToast("Có lỗi xảy ra khi thực hiện đối soát.", "error");
+          });
+      },
+    });
     setShowConfirmModal(true);
   };
 
@@ -1292,24 +1429,23 @@ export default function StaffDashboardPage({
 
   const fetchVnpayTransactions = () => {
     adminApi
-      .getVnpayTransactions()
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setVnpayTxns(
-            data.map((t) => ({
-              id: t.id,
-              txnRef: t.txnRef,
-              amount: t.amount,
-              status: t.status, // SUCCESS, FAILED, PENDING
-              vnpTxnNo: t.vnpTransactionNo || "N/A",
-              date: t.createdAt
-                ? new Date(t.createdAt).toLocaleString("vi-VN")
-                : "",
-              employerId: t.employerId,
-              projectId: t.projectId,
-            })),
-          );
-        }
+      .getVnpayTransactions(0, 1000)
+      .then((res) => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
+        setVnpayTxns(
+          list.map((t) => ({
+            id: t.id,
+            txnRef: t.txnRef,
+            amount: t.amount,
+            status: t.status, // SUCCESS, FAILED, PENDING
+            vnpTxnNo: t.vnpTransactionNo || "N/A",
+            date: t.createdAt
+              ? new Date(t.createdAt).toLocaleString("vi-VN")
+              : "",
+            employerId: t.employerId,
+            projectId: t.projectId,
+          })),
+        );
       })
       .catch(console.error);
   };
@@ -2420,14 +2556,6 @@ export default function StaffDashboardPage({
           icon: Gavel,
           badge: pendingModerationCount,
         },
-        // nut gui khieu nai
-        {
-          id: "Disputes",
-          label: "Gửi khiếu nại",
-          icon: ShieldAlert,
-          badge: openDisputeCount,
-        },
-
         // nut lich su hoat dong
         { id: "ModHistory", label: "Lịch sử hoạt động", icon: FileText },
       ],
@@ -2448,11 +2576,6 @@ export default function StaffDashboardPage({
           label: "Gửi khiếu nại",
           icon: ShieldAlert,
           badge: openDisputeCount,
-        },
-        {
-          id: "PaymentComplaints",
-          label: "Khiếu nại thanh toán",
-          icon: BadgeDollarSign,
         },
       ],
     },
@@ -5144,101 +5267,138 @@ export default function StaffDashboardPage({
                   </div>
 
                   <div className="bg-white border border-[#e1e8fd] rounded-xl p-5">
-                    <h2 className="text-title-md font-extrabold text-[#141b2b] mb-4">
-                      Danh sách Tranh chấp ({escalationCases.length})
-                    </h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                      <h2 className="text-title-md font-extrabold text-[#141b2b]">
+                        Danh sách Tranh chấp ({
+                          escalationCases.filter(esc => {
+                            if (selectedDisputeCategoryFilter === "ALL") return true;
+                            return getDisputeCategory(esc) === selectedDisputeCategoryFilter;
+                          }).length
+                        })
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500">Lọc theo danh mục:</span>
+                        <select
+                          value={selectedDisputeCategoryFilter}
+                          onChange={(e) => setSelectedDisputeCategoryFilter(e.target.value)}
+                          className="bg-[#f1f4f0] border border-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none"
+                        >
+                          <option value="ALL">Tất cả danh mục</option>
+                          <option value="Chất lượng sản phẩm">Chất lượng sản phẩm</option>
+                          <option value="Tiến độ & Cam kết">Tiến độ & Cam kết</option>
+                          <option value="Giao tiếp & Liên lạc">Giao tiếp & Liên lạc</option>
+                          <option value="Thay đổi thỏa thuận">Thay đổi thỏa thuận</option>
+                          <option value="Khác">Khác</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {escalationCases.map((esc) => {
-                        const isPending =
-                          esc.raw?.status === "OPEN" ||
-                          esc.raw?.status === "PENDING";
-                        return (
-                          <div
-                            key={esc.id}
-                            className={`border rounded-xl p-4 transition-all hover:shadow-md ${
-                              isPending
-                                ? "border-rose-200 bg-rose-50/50"
-                                : "border-[#e1e8fd] bg-white"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  esc.priority === "Khẩn cấp" ||
-                                  esc.priority === "HIGH"
-                                    ? "bg-rose-200 text-rose-800"
-                                    : "bg-amber-100 text-amber-800"
-                                }`}
-                              >
-                                {esc.priority}
-                              </span>
-                              <span className="text-xs text-[#6e7b6c] font-semibold">
-                                {esc.id}
-                              </span>
-                            </div>
-                            <h3 className="text-body-md font-bold text-[#141b2b] mb-1">
-                              {esc.title}
-                            </h3>
-                            <div className="text-xs text-[#3e4a3d] space-y-1 mb-4">
-                              <p>
-                                Dự án:{" "}
-                                <strong className="text-[#141b2b]">
-                                  {esc.raw?.projectTitle}
-                                </strong>
-                              </p>
-                              <p>
-                                Client: <strong>{esc.raw?.clientName}</strong> |
-                                Freelancer:{" "}
-                                <strong>{esc.raw?.freelancerName}</strong>
-                              </p>
-                              <p>
-                                Số tiền:{" "}
-                                <strong className="text-rose-600">
-                                  {(esc.raw?.amount || 0).toLocaleString(
-                                    "vi-VN",
-                                  )}{" "}
-                                  VND
-                                </strong>
-                              </p>
-                              <p>
-                                Trạng thái:{" "}
-                                <strong
-                                  className={
-                                    isPending
-                                      ? "text-rose-600"
-                                      : "text-[#006b2c]"
-                                  }
-                                >
-                                  {isPending
-                                    ? "Chưa giải quyết"
-                                    : "Đã giải quyết"}
-                                </strong>
-                              </p>
-                            </div>
-                            {isPending ? (
-                              <button
-                                className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
-                                onClick={() => {
-                                  setSelectedDispute(esc);
-                                  setShowDisputeModal(true);
-                                }}
-                              >
-                                Xem chi tiết & Xử lý
-                              </button>
-                            ) : (
-                              <div className="w-full py-2 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs rounded-lg text-center">
-                                Kết quả:{" "}
-                                {esc.raw?.status === "RESOLVED_CLIENT_FAVOR"
-                                  ? "Hoàn tiền Client"
-                                  : "Thanh toán Freelancer"}
+                      {escalationCases
+                        .filter(esc => {
+                          if (selectedDisputeCategoryFilter === "ALL") return true;
+                          return getDisputeCategory(esc) === selectedDisputeCategoryFilter;
+                        })
+                        .map((esc) => {
+                          const isPending =
+                            esc.raw?.status === "OPEN" ||
+                            esc.raw?.status === "PENDING";
+                          return (
+                            <div
+                              key={esc.id}
+                              className={`border rounded-xl p-4 transition-all hover:shadow-md ${
+                                isPending
+                                  ? "border-rose-200 bg-rose-50/50"
+                                  : "border-[#e1e8fd] bg-white"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex gap-2">
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                      esc.priority === "Khẩn cấp" ||
+                                      esc.priority === "HIGH"
+                                        ? "bg-rose-200 text-rose-800"
+                                        : "bg-amber-100 text-amber-800"
+                                    }`}
+                                  >
+                                    {esc.priority}
+                                  </span>
+                                  {getDisputeCategory(esc) && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                      {getDisputeCategory(esc)}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-[#6e7b6c] font-semibold">
+                                  {esc.id}
+                                </span>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {escalationCases.length === 0 && (
+                              <h3 className="text-body-md font-bold text-[#141b2b] mb-1">
+                                {esc.title}
+                              </h3>
+                              <div className="text-xs text-[#3e4a3d] space-y-1 mb-4">
+                                <p>
+                                  Dự án:{" "}
+                                  <strong className="text-[#141b2b]">
+                                    {esc.raw?.projectTitle}
+                                  </strong>
+                                </p>
+                                <p>
+                                  Client: <strong>{esc.raw?.clientName}</strong> |
+                                  Freelancer:{" "}
+                                  <strong>{esc.raw?.freelancerName}</strong>
+                                </p>
+                                <p>
+                                  Số tiền:{" "}
+                                  <strong className="text-rose-600">
+                                    {(esc.raw?.amount || 0).toLocaleString(
+                                      "vi-VN",
+                                    )}{" "}
+                                    VND
+                                  </strong>
+                                </p>
+                                <p>
+                                  Trạng thái:{" "}
+                                  <strong
+                                    className={
+                                      isPending
+                                        ? "text-rose-600"
+                                        : "text-[#006b2c]"
+                                    }
+                                  >
+                                    {isPending
+                                      ? "Chưa giải quyết"
+                                      : "Đã giải quyết"}
+                                  </strong>
+                                </p>
+                              </div>
+                              {isPending ? (
+                                <button
+                                  className="w-full py-2 bg-white border border-rose-200 text-rose-700 font-bold text-sm rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
+                                  onClick={() => {
+                                    setSelectedDispute(esc);
+                                    setShowDisputeModal(true);
+                                  }}
+                                >
+                                  Xem chi tiết & Xử lý
+                                </button>
+                              ) : (
+                                <div className="w-full py-2 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs rounded-lg text-center">
+                                  Kết quả:{" "}
+                                  {esc.raw?.status === "RESOLVED_CLIENT_FAVOR"
+                                    ? "Giải quyết cho Employer"
+                                    : "Giải quyết cho Freelancer"}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      {escalationCases.filter(esc => {
+                        if (selectedDisputeCategoryFilter === "ALL") return true;
+                        return getDisputeCategory(esc) === selectedDisputeCategoryFilter;
+                      }).length === 0 && (
                         <div className="col-span-2 text-center py-12 text-[#6e7b6c]">
-                          Chưa có tranh chấp nào được ghi nhận.
+                          Chưa có tranh chấp nào thuộc danh mục này được ghi nhận.
                         </div>
                       )}
                     </div>
@@ -5810,30 +5970,32 @@ export default function StaffDashboardPage({
               });
 
               const handleReconcile = (id) => {
-                const adminId = user?.id || 1;
-                if (
-                  window.confirm(
-                    `Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${id}?`,
-                  )
-                ) {
-                  adminApi
-                    .reconcileVnpayTransaction(id, adminId)
-                    .then((res) => {
-                      if (res.success) {
-                        showToast(res.message, "success");
-                        fetchVnpayTransactions();
-                      } else {
-                        showToast(res.message, "error");
-                      }
-                    })
-                    .catch((err) => {
-                      console.error(err);
-                      showToast(
-                        "Có lỗi xảy ra khi đối soát giao dịch.",
-                        "error",
-                      );
-                    });
-                }
+                const adminId = user?.id || user?.adminId || 1;
+                setConfirmConfig({
+                  title: "Xác nhận đối soát giao dịch",
+                  message: `Bạn có chắc muốn tiến hành đối soát và xử lý lại giao dịch #${id}?`,
+                  type: "warning",
+                  confirmText: "Đồng ý",
+                  cancelText: "Hủy",
+                  onConfirm: () => {
+                    setShowConfirmModal(false);
+                    adminApi
+                      .reconcileVnpayTransaction(id, adminId)
+                      .then((res) => {
+                        if (res.success) {
+                          showToast(res.message, "success");
+                          fetchVnpayTransactions();
+                        } else {
+                          showToast(res.message, "error");
+                        }
+                      })
+                      .catch((err) => {
+                        console.error(err);
+                        showToast("Có lỗi xảy ra khi đối soát giao dịch.", "error");
+                      });
+                  },
+                });
+                setShowConfirmModal(true);
               };
 
               return (
@@ -6102,110 +6264,7 @@ export default function StaffDashboardPage({
             </div>
           )}
 
-          {/* ---------------- TAB: PAYMENT COMPLAINTS (Khiếu nại thanh toán) ---------------- */}
-          {activeTab === "PaymentComplaints" && (
-            <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
-              <div>
-                <h1 className="text-headline-lg font-extrabold text-[#141b2b]">
-                  Khiếu nại thanh toán & Nạp/Rút ví
-                </h1>
-                <p className="text-body-sm text-[#3e4a3d] mt-1">
-                  Quản lý các sự cố giao dịch, khiếu nại hoàn tiền và rút tiền
-                  của người dùng.
-                </p>
-              </div>
 
-              <div className="bg-white border border-[#e1e8fd] rounded-xl p-5 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between pb-4 border-b border-[#e1e8fd]">
-                  <h2 className="text-title-md font-extrabold text-[#141b2b]">
-                    Danh sách Khiếu nại thanh toán ({withdrawals.length})
-                  </h2>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-[#e9edff] text-left">
-                    <thead>
-                      <tr className="bg-[#f9f9ff]">
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">
-                          Mã Yêu Cầu
-                        </th>
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">
-                          Người gửi
-                        </th>
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">
-                          Loại giao dịch
-                        </th>
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">
-                          Số tiền
-                        </th>
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold">
-                          Trạng thái
-                        </th>
-                        <th className="px-5 py-3 text-label-md text-[#6e7b6c] uppercase font-extrabold text-right">
-                          Thao tác
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e9edff] bg-white">
-                      {withdrawals.map((w) => (
-                        <tr key={`w-${w.id}`} className="hover:bg-[#f9f9ff]">
-                          <td className="px-5 py-4 font-mono font-bold text-xs text-[#006b2c]">
-                            WDR-{w.id}
-                          </td>
-                          <td className="px-5 py-4">
-                            <p className="font-bold text-sm text-[#141b2b]">
-                              {w.user}
-                            </p>
-                            <p className="text-xs text-[#6e7b6c]">{w.email}</p>
-                          </td>
-                          <td className="px-5 py-4 text-xs font-bold text-slate-700">
-                            Rút tiền về {w.bank}
-                          </td>
-                          <td className="px-5 py-4 text-sm font-extrabold text-rose-600">
-                            {w.amount?.toLocaleString("vi-VN")} VND
-                          </td>
-                          <td className="px-5 py-4">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                w.statusRaw === "APPROVED"
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : w.statusRaw === "REJECTED"
-                                    ? "bg-rose-100 text-rose-800"
-                                    : "bg-amber-100 text-amber-800"
-                              }`}
-                            >
-                              {w.status}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedWithdrawal(w);
-                                setShowWithdrawalModal(true);
-                              }}
-                              className="px-3 py-1.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
-                            >
-                              Xem chi tiết
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {withdrawals.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan="6"
-                            className="text-center py-8 text-sm text-[#6e7b6c]"
-                          >
-                            Chưa có khiếu nại thanh toán nào cần xử lý.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ---------------- TAB: DISPUTE HISTORY (Lịch sử xử lý tranh chấp) ---------------- */}
           {activeTab === "DisputeHistory" && (
@@ -6471,47 +6530,91 @@ export default function StaffDashboardPage({
                   {selectedTask.status === "In Progress" &&
                     selectedTask.assignedToEmail ===
                       (user?.email || "staff@gmail.com") && (
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            if (
-                              selectedTask.taskType === "DISPUTE_RESOLUTION"
-                            ) {
-                              const foundDispute = escalationCases.find(
-                                (c) =>
-                                  String(c.id) ===
-                                  String(selectedTask.referenceId),
-                              );
-                              if (foundDispute) {
-                                setSelectedDispute(foundDispute);
-                                setShowDisputeModal(true);
-                                setShowManageModal(false);
-                              } else {
-                                handleUpdateTaskStatus(
-                                  selectedTask.id,
-                                  "Completed",
-                                );
-                              }
-                            } else {
+                      (selectedTask.type === "DISPUTE_RESOLUTION" || selectedTask.taskType === "DISPUTE_RESOLUTION") ? (
+                        <div className="w-full space-y-3">
+                          <div className="w-full space-y-2">
+                            <p className="text-xs font-bold text-slate-700">Quyết định / Ghi chú giải quyết (Bắt buộc):</p>
+                            <textarea
+                              value={disputeNote}
+                              onChange={(e) => setDisputeNote(e.target.value)}
+                              placeholder="Nhập lý do phân xử hoặc chi tiết quyết định giải quyết tranh chấp để gửi mail..."
+                              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[75px] resize-none font-medium text-slate-800"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleResolveDisputeFromTask("RESOLVED_CLIENT_FAVOR")}
+                              disabled={!disputeNote.trim()}
+                              className={`py-2 px-3 font-extrabold text-[11px] rounded-lg shadow transition-all cursor-pointer text-center ${
+                                disputeNote.trim()
+                                  ? "bg-rose-600 hover:bg-rose-700 text-white"
+                                  : "bg-rose-100 text-rose-450 cursor-not-allowed border border-rose-200"
+                              }`}
+                            >
+                              Giải quyết cho Employer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleResolveDisputeFromTask("RESOLVED_FREELANCER_FAVOR")}
+                              disabled={!disputeNote.trim()}
+                              className={`py-2 px-3 font-extrabold text-[11px] rounded-lg shadow transition-all cursor-pointer text-center ${
+                                disputeNote.trim()
+                                  ? "bg-[#006b2c] hover:bg-[#005221] text-white"
+                                  : "bg-emerald-100 text-emerald-450 cursor-not-allowed border border-emerald-250"
+                              }`}
+                            >
+                              Giải quyết cho Freelancer
+                            </button>
+                          </div>
+                        </div>
+                      ) : (selectedTask.type === "FAILED_TRANSACTION" || selectedTask.taskType === "FAILED_TRANSACTION") ? (
+                        <div className="w-full space-y-3 text-center">
+                          <p className="text-xs text-slate-650 font-bold bg-[#f1f3ff] border border-blue-200 rounded-lg p-3 text-left leading-relaxed">
+                            Nhiệm vụ xử lý đối soát giao dịch lỗi #{selectedTask.referenceId} được phân công bởi Manager.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleReconcileFromTask}
+                              className="flex-1 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
+                            >
+                              Thực hiện đối soát & hoàn thành
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleUpdateTaskStatus(selectedTask.id, "Rejected");
+                              }}
+                              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
+                            >
+                              Từ chối
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
                               handleUpdateTaskStatus(
                                 selectedTask.id,
                                 "Completed",
                               );
-                            }
-                          }}
-                          className="flex-1 py-2.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
-                        >
-                          Duyệt / Hoàn thành
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleUpdateTaskStatus(selectedTask.id, "Rejected");
-                          }}
-                          className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
-                        >
-                          Từ chối
-                        </button>
-                      </div>
+                            }}
+                            className="flex-1 py-2.5 bg-[#006b2c] hover:bg-[#00873a] text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
+                          >
+                            Duyệt / Hoàn thành
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleUpdateTaskStatus(selectedTask.id, "Rejected");
+                            }}
+                            className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-extrabold text-body-sm shadow transition-all cursor-pointer text-center"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      )
                     )}
                   {!showEscalateReasons ? (
                     <button
@@ -6768,29 +6871,93 @@ export default function StaffDashboardPage({
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-3 w-full">
-                    {!isReadOnlyHistory && !showDisputeEscalateForm && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setShowDisputeEscalateForm(true)}
-                          className="py-2.5 px-6 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          Chuyển cấp
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const myEmail = user?.email || "staff.dispute@gmail.com";
-                            handleAssignDisputeToStaff(myEmail);
-                          }}
-                          className="py-2.5 px-6 bg-[#006b2c] hover:bg-[#005221] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          Tiếp nhận khiếu nại
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {(() => {
+                    const rawId = selectedDispute?.raw?.id || selectedDispute?.idRaw || selectedDispute?.id;
+                    const associatedTask = tasks.find(
+                      (t) =>
+                        t.taskType === "DISPUTE_RESOLUTION" &&
+                        Number(t.referenceId) === Number(rawId)
+                    );
+                    const isAssignedToMe = associatedTask && associatedTask.assignedToEmail === (user?.email || "staff.dispute@gmail.com");
+
+                    return (
+                      <div className="flex flex-col gap-3 w-full">
+                        {!isReadOnlyHistory && !showDisputeEscalateForm && isAssignedToMe && (
+                          <div className="w-full space-y-2 mb-2">
+                            <p className="text-xs font-bold text-slate-700">Quyết định / Ghi chú giải quyết (Bắt buộc):</p>
+                            <textarea
+                              value={disputeNote}
+                              onChange={(e) => setDisputeNote(e.target.value)}
+                              placeholder="Nhập lý do phân xử hoặc chi tiết quyết định giải quyết tranh chấp..."
+                              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[70px] resize-none text-slate-800"
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap justify-end gap-2 w-full">
+                          {!isReadOnlyHistory && !showDisputeEscalateForm && (
+                            <>
+                              {isAssignedToMe ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResolveDispute("RESOLVED_CLIENT_FAVOR")}
+                                    disabled={!disputeNote.trim()}
+                                    className={`py-2.5 px-4 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer ${
+                                      disputeNote.trim()
+                                        ? "bg-rose-600 hover:bg-rose-700 text-white"
+                                        : "bg-rose-200 text-rose-450 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    Giải quyết cho Employer
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResolveDispute("RESOLVED_FREELANCER_FAVOR")}
+                                    disabled={!disputeNote.trim()}
+                                    className={`py-2.5 px-4 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer ${
+                                      disputeNote.trim()
+                                        ? "bg-[#006b2c] hover:bg-[#005221] text-white"
+                                        : "bg-emerald-250 text-emerald-450 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    Giải quyết cho Freelancer
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDisputeEscalateForm(true)}
+                                    className="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                                  >
+                                    Chuyển cấp
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDisputeEscalateForm(true)}
+                                    className="py-2.5 px-6 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                  >
+                                    Chuyển cấp
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const myEmail = user?.email || "staff.dispute@gmail.com";
+                                      handleAssignDisputeToStaff(myEmail);
+                                    }}
+                                    className="py-2.5 px-6 bg-[#006b2c] hover:bg-[#005221] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                  >
+                                    Tiếp nhận khiếu nại
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}

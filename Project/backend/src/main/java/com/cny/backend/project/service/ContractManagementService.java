@@ -206,6 +206,7 @@ public class ContractManagementService {
                 .freelancerName(freelancerName)
                 .amount(contract.getAgreedAmount())
                 .reason(dto.getReason().trim())
+                .category(dto.getCategory())
                 .priority(priority)
                 .status("OPEN")
                 .build();
@@ -248,7 +249,7 @@ public class ContractManagementService {
     }
 
     @Transactional
-    public void fileDispute(Integer contractId, Integer freelancerId, String reason) {
+    public void fileDispute(Integer contractId, Integer freelancerId, String reason, String category) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng ID: " + contractId));
 
@@ -271,6 +272,7 @@ public class ContractManagementService {
                 .freelancerName(contract.getFreelancer().getDisplayName() != null ? contract.getFreelancer().getDisplayName() : contract.getFreelancer().getFullName())
                 .amount(contract.getAgreedAmount())
                 .reason(reason)
+                .category(category)
                 .priority("HIGH")
                 .status("OPEN")
                 .build();

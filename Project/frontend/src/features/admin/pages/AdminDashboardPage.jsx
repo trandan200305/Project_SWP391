@@ -30,6 +30,29 @@ const VIETQR_BANKS = [
   { code: 'MSB', name: 'Ngân hàng TMCP Hàng Hải Việt Nam', short: 'MSB' }
 ];
 
+const getDisputeCategory = (esc) => {
+  if (esc.category) return esc.category;
+  
+  const text = (
+    (esc.projectTitle || "") + " " + 
+    (esc.reason || "")
+  ).toLowerCase();
+  
+  if (text.includes("chất lượng") || text.includes("sản phẩm") || text.includes("lỗi") || text.includes("sập") || text.includes("mất dữ liệu") || text.includes("code") || text.includes("kịch bản") || text.includes("copy") || text.includes("sao chép") || text.includes("paste")) {
+    return "Chất lượng sản phẩm";
+  }
+  if (text.includes("tiến độ") || text.includes("trễ") || text.includes("chậm") || text.includes("hạn") || text.includes("giao") || text.includes("bỏ dở")) {
+    return "Tiến độ & Cam kết";
+  }
+  if (text.includes("liên lạc") || text.includes("phản hồi") || text.includes("trả lời") || text.includes("giao tiếp") || text.includes("biến mất")) {
+    return "Giao tiếp & Liên lạc";
+  }
+  if (text.includes("thỏa thuận") || text.includes("thêm việc") || text.includes("thêm tiền") || text.includes("đòi") || text.includes("yêu cầu")) {
+    return "Thay đổi thỏa thuận";
+  }
+  return "Khác";
+};
+
 export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onLogout }) {
   
   const [activeTab, setActiveTab] = useState('home');
@@ -127,6 +150,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
   const [kycRequests, setKycRequests] = useState([]);
   const [profileRequests, setProfileRequests] = useState([]);
   const [disputes, setDisputes] = useState([]);
+  const [selectedDisputeCategoryFilter, setSelectedDisputeCategoryFilter] = useState('ALL');
   const [reports, setReports] = useState([]);
   const [articles, setArticles] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -4223,19 +4247,43 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
 
               {activeCmsTab !== 'seo' && activeCmsTab !== 'profileRequests' && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-200 bg-slate-50">
+                  <div className="p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h3 className="font-bold text-primary text-body-md uppercase tracking-wider">
                       Database Records: {activeCmsTab}
                     </h3>
+                    {activeCmsTab === 'disputes' && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 font-bold uppercase shrink-0">Danh mục:</span>
+                        <select
+                          value={selectedDisputeCategoryFilter}
+                          onChange={(e) => setSelectedDisputeCategoryFilter(e.target.value)}
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 transition"
+                        >
+                          <option value="ALL">Tất cả danh mục</option>
+                          <option value="Chất lượng sản phẩm">Chất lượng sản phẩm</option>
+                          <option value="Tiến độ & Cam kết">Tiến độ & Cam kết</option>
+                          <option value="Giao tiếp & Liên lạc">Giao tiếp & Liên lạc</option>
+                          <option value="Thay đổi thỏa thuận">Thay đổi thỏa thuận</option>
+                          <option value="Khác">Khác / Loại khác</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div className="p-6">
                     {(() => {
-                      const data = 
+                      const rawData = 
                         activeCmsTab === 'categories' ? jobCategories :
                         activeCmsTab === 'kyc' ? kycRequests :
                         activeCmsTab === 'disputes' ? disputes :
                         activeCmsTab === 'reports' ? reports :
                         activeCmsTab === 'articles' ? articles : tickets;
+                      
+                      const data = activeCmsTab === 'disputes'
+                        ? rawData.filter(esc => {
+                            if (selectedDisputeCategoryFilter === "ALL") return true;
+                            return getDisputeCategory(esc) === selectedDisputeCategoryFilter;
+                          })
+                        : rawData;
                       
                       if (data.length === 0) {
                         return <p className="text-center text-slate-400 py-8">Chưa có dữ liệu trong Database cho mục này.</p>;
@@ -4252,7 +4300,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   <th className="p-3">Dự án</th>
                                   <th className="p-3">Khách hàng</th>
                                   <th className="p-3">Freelancer</th>
-                                  <th className="p-3 text-right">Số tiền</th>
+                                  <th className="p-3">Danh mục</th>
                                   <th className="p-3 text-center">Trạng thái</th>
                                   <th className="p-3 text-center pr-6">Thao tác</th>
                                 </tr>
@@ -4264,7 +4312,7 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                     <td className="p-3 truncate max-w-[200px] text-slate-800 font-medium" title={row.projectTitle}>{row.projectTitle}</td>
                                     <td className="p-3 text-slate-600">{row.clientName}</td>
                                     <td className="p-3 text-slate-600">{row.freelancerName}</td>
-                                    <td className="p-3 font-bold text-rose-600 text-right">{row.amount?.toLocaleString('vi-VN')} đ</td>
+                                    <td className="p-3 text-slate-600 font-medium">{getDisputeCategory(row) || 'N/A'}</td>
                                     <td className="p-3 text-center">
                                       <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                                         row.status === 'OPEN' || row.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
@@ -6520,10 +6568,16 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                   </div>
                 </div>
 
-                <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-xl flex justify-between items-center">
-                  <span className="text-sm font-bold text-slate-700">Giá trị tranh chấp:</span>
-                  <span className="text-lg text-rose-600 font-extrabold">{selectedDispute.amount?.toLocaleString('vi-VN')} VND</span>
-                </div>
+
+
+                {getDisputeCategory(selectedDispute) && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold text-slate-700">Danh mục khiếu nại:</p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-800 rounded-xl text-xs font-bold">
+                      {getDisputeCategory(selectedDispute)}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <p className="text-sm font-bold text-slate-700">Lý do tranh chấp:</p>

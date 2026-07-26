@@ -41,6 +41,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputePriority, setDisputePriority] = useState('HIGH');
+  const [disputeCategory, setDisputeCategory] = useState('Chất lượng sản phẩm');
   const [submittingDispute, setSubmittingDispute] = useState(false);
 
   // Freelancer Review state
@@ -204,11 +205,13 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       setActionError(null);
 
       await api.post(`/contracts/${contractId}/dispute?freelancerId=${user.id}`, {
-        reason: disputeReason.trim()
+        reason: disputeReason.trim(),
+        category: disputeCategory
       });
 
       setShowDisputeModal(false);
       setDisputeReason('');
+      setDisputeCategory('Chất lượng sản phẩm');
       showSuccess('Gửi khiếu nại tranh chấp lên Admin thành công! Dự án hiện ở trạng thái TRANH CHẤP.');
       fetchContractDetails();
     } catch (err) {
@@ -254,10 +257,12 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       setActionError(null);
       await contractApi.createDispute(contract.contractId, user.id, {
         reason: disputeReason,
-        priority: disputePriority
+        priority: disputePriority,
+        category: disputeCategory
       });
       setShowDisputeModal(false);
       setDisputeReason('');
+      setDisputeCategory('Chất lượng sản phẩm');
       showSuccess('Đã gửi khiếu nại thành công! Bộ phận Nhân viên (Staff) sẽ giải quyết và liên hệ lại.');
     } catch (err) {
       setActionError(err.message || 'Lỗi khi gửi khiếu nại.');
@@ -841,7 +846,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
         )}
 
         {/* Dispute Modal */}
-        {showDisputeModal && (
+        {showDisputeModal && isFreelancer && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md border border-slate-200 shadow-xl p-6 animate-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
@@ -857,6 +862,23 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                 Bạn đang gửi yêu cầu tranh chấp lên Admin cho dự án này. Hãy ghi rõ lý do (ví dụ: Khách hàng không phản hồi, không duyệt sản phẩm dù đã đạt yêu cầu...).
               </p>
               <form onSubmit={handleFileDispute} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-650 mb-1.5">
+                    Danh mục khiếu nại <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={disputeCategory}
+                    onChange={(e) => setDisputeCategory(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition"
+                  >
+                    <option value="Chất lượng sản phẩm">Chất lượng sản phẩm (Làm lỗi, copy bài, code hỏng...)</option>
+                    <option value="Tiến độ & Cam kết">Tiến độ & Cam kết (Trễ hẹn, bàn giao chậm trễ...)</option>
+                    <option value="Giao tiếp & Liên lạc">Giao tiếp & Liên lạc (Không phản hồi, mất liên lạc...)</option>
+                    <option value="Thay đổi thỏa thuận">Thay đổi thỏa thuận (Phát sinh yêu cầu vô lý...)</option>
+                    <option value="Khác">Khác / Khác hạng mục trên</option>
+                  </select>
+                </div>
+
                 <label className="block">
                   <span className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Lý do khiếu nại *</span>
                   <textarea 
@@ -891,7 +913,7 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
       </div>
 
       {/* Dispute Modal */}
-      {showDisputeModal && (
+      {showDisputeModal && isClient && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl p-6 sm:p-8 animate-in zoom-in-95 duration-200 relative">
             <button 
@@ -929,6 +951,23 @@ export default function ContractDetailPage({ contractId, user, onNavigate }) {
                   <option value="HIGH">Gấp / Nghiêm trọng (Scam, lừa đảo, thái độ vi phạm nghiêm trọng)</option>
                   <option value="MEDIUM">Trung bình (Bỏ dở công việc, tiến độ quá chậm)</option>
                   <option value="LOW">Bình thường (Mâu thuẫn nhỏ về yêu cầu công việc)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-650 mb-1.5">
+                  Danh mục khiếu nại <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={disputeCategory}
+                  onChange={(e) => setDisputeCategory(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition"
+                >
+                  <option value="Chất lượng sản phẩm">Chất lượng sản phẩm (Làm lỗi, copy bài, code hỏng...)</option>
+                  <option value="Tiến độ & Cam kết">Tiến độ & Cam kết (Trễ hẹn, bàn giao chậm trễ...)</option>
+                  <option value="Giao tiếp & Liên lạc">Giao tiếp & Liên lạc (Không phản hồi, mất liên lạc...)</option>
+                  <option value="Thay đổi thỏa thuận">Thay đổi thỏa thuận (Phát sinh yêu cầu vô lý...)</option>
+                  <option value="Khác">Khác / Khác hạng mục trên</option>
                 </select>
               </div>
 

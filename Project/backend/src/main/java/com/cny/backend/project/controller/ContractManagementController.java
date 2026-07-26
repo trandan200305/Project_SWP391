@@ -93,14 +93,19 @@ public class ContractManagementController {
         try {
             if (freelancerId != null) {
                 String reason = (String) payload.get("reason");
+                String category = (String) payload.get("category");
                 if (reason == null || reason.trim().isEmpty()) {
                     return ResponseEntity.badRequest().body("Lý do tranh chấp không được để trống.");
                 }
-                contractManagementService.fileDispute(contractId, freelancerId, reason);
+                if (category == null || category.trim().isEmpty()) {
+                    category = "Khác";
+                }
+                contractManagementService.fileDispute(contractId, freelancerId, reason, category);
                 return ResponseEntity.ok().build();
             } else if (employerId != null) {
                 CreateDisputeDto dto = new CreateDisputeDto();
                 dto.setReason((String) payload.get("reason"));
+                dto.setCategory((String) payload.get("category"));
                 dto.setPriority((String) payload.get("priority"));
                 contractManagementService.createDispute(contractId, employerId, dto);
                 return ResponseEntity.ok().build();

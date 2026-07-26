@@ -17,6 +17,7 @@ public class DisputeDto {
     private double amount;
     private String status;
     private String reason;
+    private String category;
     private String priority;
     private String createdAt;
 }

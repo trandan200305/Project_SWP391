@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateDisputeDto {
     private String reason;
+    private String category;
     private String priority; // 'HIGH', 'MEDIUM', 'LOW'
 }

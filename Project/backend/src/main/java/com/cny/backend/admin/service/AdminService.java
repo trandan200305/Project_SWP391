@@ -809,9 +809,9 @@ public class AdminService {
 
     public void writeAuditLog(int adminId, String action, String module, String description) {
         int validAdminId = getValidAdminId(adminId);
-        String resolvedEmail = resolveEmailFromId(adminId);
-        if (resolvedEmail == null) {
-            resolvedEmail = getCurrentAdminEmail();
+        String resolvedEmail = getCurrentAdminEmail();
+        if (resolvedEmail == null || resolvedEmail.trim().isEmpty()) {
+            resolvedEmail = resolveEmailFromId(adminId);
         }
         dashboardRepository.logAudit(validAdminId, resolvedEmail, action, module, description);
     }
@@ -1133,6 +1133,7 @@ public class AdminService {
                 .amount(d.getAmount() != null ? d.getAmount().doubleValue() : 0.0)
                 .status(d.getStatus())
                 .reason(d.getReason())
+                .category(d.getCategory())
                 .priority(d.getPriority())
                 .createdAt(d.getCreatedAt() != null ? d.getCreatedAt().toString() : "")
                 .build()).collect(Collectors.toList());
@@ -1154,10 +1155,74 @@ public class AdminService {
                     contract.setStatus("RESOLVED");
                     contractRepository.save(contract);
                     
-                    if (contract.getProject() != null) {
-                        com.cny.backend.project.entity.Project project = contract.getProject();
+                    com.cny.backend.project.entity.Project project = contract.getProject();
+                    if (project != null) {
                         project.setStatus("CLOSED");
                         projectRepository.save(project);
+                    }
+
+                    // Send email notifications to both parties
+                    try {
+                        String projectTitle = project != null ? project.getTitle() : contract.getTitle();
+                        String clientEmail = contract.getClient().getEmail();
+                        String clientName = contract.getClient().getFullName();
+                        String freelancerEmail = contract.getFreelancer().getEmail();
+                        String freelancerName = contract.getFreelancer().getFullName();
+                        String resolutionNote = note != null ? note : "Không có ghi chú thêm.";
+
+                        if ("RESOLVED_CLIENT_FAVOR".equals(status)) {
+                            // Client wins, Freelancer loses
+                            String winContent = "Xin chào " + clientName + ",\n\n" +
+                                    "Bộ phận giải quyết tranh chấp LancerPro xin thông báo kết quả phân xử khiếu nại tranh chấp cho dự án: \"" + projectTitle + "\" (Hợp đồng #" + contract.getContractId() + ").\n\n" +
+                                    "Sau khi xem xét kỹ bằng chứng và thông tin từ hai bên, chúng tôi đã đưa ra quyết định phân xử với kết quả: BẠN ĐÃ THẮNG cuộc khiếu nại.\n" +
+                                    "Lý do / Ghi chú phân xử: " + resolutionNote + "\n\n" +
+                                    "Số tiền ký quỹ (Escrow) sẽ được hoàn trả về ví của bạn trên hệ thống.\n\n" +
+                                    "Trân trọng,\n" +
+                                    "LancerPro Dispute Resolution Team";
+                            emailService.sendEmailAsync(clientEmail, "[LancerPro] Kết quả phân xử khiếu nại tranh chấp - Bạn đã THẮNG cuộc", winContent);
+
+                            String loseContent = "Xin chào " + freelancerName + ",\n\n" +
+                                    "Bộ phận giải quyết tranh chấp LancerPro xin thông báo kết quả phân xử khiếu nại tranh chấp cho dự án: \"" + projectTitle + "\" (Hợp đồng #" + contract.getContractId() + ").\n\n" +
+                                    "Sau khi xem xét kỹ bằng chứng và thông tin từ hai bên, chúng tôi đã đưa ra quyết định phân xử với kết quả: BẠN THUA cuộc khiếu nại.\n" +
+                                    "Lý do / Ghi chú phân xử: " + resolutionNote + "\n\n" +
+                                    "Số tiền ký quỹ (Escrow) đã được hoàn trả cho Client theo đúng quyết định của ban trọng tài.\n\n" +
+                                    "Trân trọng,\n" +
+                                    "LancerPro Dispute Resolution Team";
+                            emailService.sendEmailAsync(freelancerEmail, "[LancerPro] Kết quả phân xử khiếu nại tranh chấp - Yêu cầu phân xử kết thúc", loseContent);
+
+                        } else if ("RESOLVED_FREELANCER_FAVOR".equals(status)) {
+                            // Freelancer wins, Client loses
+                            String winContent = "Xin chào " + freelancerName + ",\n\n" +
+                                    "Bộ phận giải quyết tranh chấp LancerPro xin thông báo kết quả phân xử khiếu nại tranh chấp cho dự án: \"" + projectTitle + "\" (Hợp đồng #" + contract.getContractId() + ").\n\n" +
+                                    "Sau khi xem xét kỹ bằng chứng và thông tin từ hai bên, chúng tôi đã đưa ra quyết định phân xử với kết quả: BẠN ĐÃ THẮNG cuộc khiếu nại.\n" +
+                                    "Lý do / Ghi chú phân xử: " + resolutionNote + "\n\n" +
+                                    "Số tiền ký quỹ (Escrow) sẽ được thanh toán giải ngân về ví của bạn trên hệ thống.\n\n" +
+                                    "Trân trọng,\n" +
+                                    "LancerPro Dispute Resolution Team";
+                            emailService.sendEmailAsync(freelancerEmail, "[LancerPro] Kết quả phân xử khiếu nại tranh chấp - Bạn đã THẮNG cuộc", winContent);
+
+                            String loseContent = "Xin chào " + clientName + ",\n\n" +
+                                    "Bộ phận giải quyết tranh chấp LancerPro xin thông báo kết quả phân xử khiếu nại tranh chấp cho dự án: \"" + projectTitle + "\" (Hợp đồng #" + contract.getContractId() + ").\n\n" +
+                                    "Sau khi xem xét kỹ bằng chứng và thông tin từ hai bên, chúng tôi đã đưa ra quyết định phân xử với kết quả: BẠN THUA cuộc khiếu nại.\n" +
+                                    "Lý do / Ghi chú phân xử: " + resolutionNote + "\n\n" +
+                                    "Số tiền ký quỹ (Escrow) đã được thanh toán giải ngân cho Freelancer theo đúng quyết định của ban trọng tài.\n\n" +
+                                    "Trân trọng,\n" +
+                                    "LancerPro Dispute Resolution Team";
+                            emailService.sendEmailAsync(clientEmail, "[LancerPro] Kết quả phân xử khiếu nại tranh chấp - Yêu cầu phân xử kết thúc", loseContent);
+
+                        } else {
+                            // Closed / settled
+                            String closeContent = "Xin chào %s,\n\n" +
+                                    "Bộ phận giải quyết tranh chấp LancerPro xin thông báo kết quả phân xử khiếu nại tranh chấp cho dự án: \"" + projectTitle + "\" (Hợp đồng #" + contract.getContractId() + ").\n\n" +
+                                    "Tranh chấp đã được đóng thành công với lý do hòa giải hoặc thỏa thuận chung giữa hai bên.\n" +
+                                    "Lý do / Ghi chú phân xử: " + resolutionNote + "\n\n" +
+                                    "Trân trọng,\n" +
+                                    "LancerPro Dispute Resolution Team";
+                            emailService.sendEmailAsync(clientEmail, "[LancerPro] Thông báo đóng khiếu nại tranh chấp", String.format(closeContent, clientName));
+                            emailService.sendEmailAsync(freelancerEmail, "[LancerPro] Thông báo đóng khiếu nại tranh chấp", String.format(closeContent, freelancerName));
+                        }
+                    } catch (Exception mailEx) {
+                        System.err.println("Failed to send dispute resolution emails: " + mailEx.getMessage());
                     }
                 }
             }

@@ -46,6 +46,9 @@ public class Dispute {
     @Column(name = "reason", columnDefinition = "NVARCHAR(MAX)")
     private String reason;
 
+    @Column(name = "category", columnDefinition = "NVARCHAR(100)")
+    private String category;
+
     @Column(name = "priority")
     private String priority; 
 
