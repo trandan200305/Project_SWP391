@@ -4,12 +4,14 @@ import {
   BadgeDollarSign, 
   Gavel, 
   AlertTriangle,
-  Briefcase
+  Briefcase,
+  ArrowRightLeft
 } from 'lucide-react';
 import AdminWithdrawalsQueue from '../components/operations/AdminWithdrawalsQueue.jsx';
 import AdminDisputesQueue from '../components/operations/AdminDisputesQueue.jsx';
 import AdminModerationQueue from '../components/operations/AdminModerationQueue.jsx';
 import AdminReportsQueue from '../components/operations/AdminReportsQueue.jsx';
+import AdminTransfersQueue from '../components/operations/AdminTransfersQueue.jsx';
 
 export default function AdminOperationsHub({ user }) {
   const [activeTab, setActiveTab] = useState('withdrawals');
@@ -18,7 +20,8 @@ export default function AdminOperationsHub({ user }) {
     { id: 'withdrawals', label: 'Lệnh Rút tiền', icon: BadgeDollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
     { id: 'disputes', label: 'Xử lý Tranh chấp', icon: Gavel, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
     { id: 'moderation', label: 'Kiểm duyệt Nội dung', icon: ShieldCheck, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-    { id: 'reports', label: 'Báo cáo vi phạm', icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' }
+    { id: 'reports', label: 'Báo cáo vi phạm', icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+    { id: 'transfers', label: 'Điều chuyển nhân sự', icon: ArrowRightLeft, color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' }
   ];
 
   return (
@@ -60,6 +63,7 @@ export default function AdminOperationsHub({ user }) {
         {activeTab === 'disputes' && <AdminDisputesQueue adminId={user?.id || 1} />}
         {activeTab === 'moderation' && <AdminModerationQueue adminId={user?.id || 1} />}
         {activeTab === 'reports' && <AdminReportsQueue adminId={user?.id || 1} />}
+        {activeTab === 'transfers' && <AdminTransfersQueue adminId={user?.id || 1} />}
       </div>
     </div>
   );
