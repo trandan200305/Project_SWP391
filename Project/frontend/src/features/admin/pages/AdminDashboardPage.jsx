@@ -2912,37 +2912,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
               </div>
             </div>
             
-            {/* SYSTEM Section */}
-            <div className="space-y-1">
-              <div 
-                className="flex justify-between items-center px-3 py-1 cursor-pointer group"
-                onClick={() => setExpandedMenus(prev => prev.includes('system') ? prev.filter(m => m !== 'system') : [...prev, 'system'])}
-              >
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors">
-                  System
-                </p>
-                {expandedMenus.includes('system') ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-              </div>
-              
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ${expandedMenus.includes('system') ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {[
-                  { id: 'cms', icon: Settings, label: 'Cấu hình (CMS)' }
-                ].map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`px-3 py-2 flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                      activeTab === item.id ? 'bg-[#0f4c5c]/10' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-[#0f4c5c]' : 'text-slate-400'}`} />
-                    <span className={`text-[13px] ${activeTab === item.id ? 'font-semibold text-[#0f4c5c]' : 'font-medium text-slate-600'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
         </div>
