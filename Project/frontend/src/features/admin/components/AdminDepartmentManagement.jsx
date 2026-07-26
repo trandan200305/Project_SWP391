@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../api/adminApi.js';
 import { Loader2, Users, AlertTriangle, Building2, UserCircle, Activity, ChevronLeft, Calendar } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminDepartmentManagement({ onClose }) {
   const [departmentsList, setDepartmentsList] = useState([]);
@@ -34,7 +33,7 @@ export default function AdminDepartmentManagement({ onClose }) {
       setUsers(allUsers);
     } catch (err) {
       console.error(err);
-      toast.error('Lỗi khi tải thông tin phòng ban.');
+      alert('Lỗi khi tải thông tin phòng ban.');
     } finally {
       setLoading(false);
     }
