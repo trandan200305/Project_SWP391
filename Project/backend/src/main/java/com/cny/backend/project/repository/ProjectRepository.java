@@ -33,8 +33,17 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR EXISTS (SELECT ps FROM ProjectSkill ps WHERE ps.project = p AND LOWER(ps.skill.skillName) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
     List<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword);
+
+    @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
+           "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR EXISTS (SELECT ps FROM ProjectSkill ps WHERE ps.project = p AND LOWER(ps.skill.skillName) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+    Page<Project> searchProjectsByKeyword(@Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
+
     @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
            "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
            "AND (:workForm IS NULL OR p.workForm = :workForm) " +
@@ -55,7 +64,7 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
            "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.client.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Project> searchProjectsByFilters(
             @Param("status") String status, 
             @Param("keyword") String keyword, 
@@ -72,8 +81,32 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
 
     @Query(value = "SELECT DISTINCT project_type FROM projects WHERE project_type IS NOT NULL", nativeQuery = true)
     List<String> findDistinctProjectTypes();
+
+    @Query("SELECT p FROM Project p WHERE p.isDeleted = false AND p.status = :status " +
+           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "AND (:minSalary IS NULL OR " +
+           "    (p.budgetMax IS NOT NULL AND p.budgetMax >= :minSalary) OR " +
+           "    (p.budgetFixed IS NOT NULL AND p.budgetFixed >= :minSalary) OR " +
+           "    (p.budgetMax IS NULL AND p.budgetFixed IS NULL AND p.budgetMin IS NOT NULL AND p.budgetMin >= :minSalary)" +
+           ") " +
+           "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.category.categoryName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.client.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.client.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.client.displayName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR EXISTS (SELECT ps FROM ProjectSkill ps WHERE ps.project = p AND LOWER(ps.skill.skillName) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+    Page<Project> searchProjectsByKeywordAndCategory(@Param("status") String status, @Param("keyword") String keyword, @Param("categoryId") Integer categoryId, @Param("minSalary") java.math.BigDecimal minSalary, Pageable pageable);
     
     List<Project> findByClientEmployerIdAndIsDeletedFalse(Integer employerId);
+    
+    @Query("SELECT p FROM Project p WHERE p.client.employerId = :employerId AND p.isDeleted = false " +
+           "AND (:status IS NULL OR :status = 'ALL' OR p.status = :status) " +
+           "AND (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Project> findEmployerProjectsPaginated(@Param("employerId") Integer employerId,
+                                                @Param("status") String status,
+                                                @Param("keyword") String keyword,
+                                                Pageable pageable);
     
     int countByCategoryCategoryIdAndStatusAndIsDeletedFalse(Integer categoryId, String status);
     

@@ -36,4 +36,9 @@ public class AdminStatsDto {
     private double projectsGrowthPercent;
     private double revenueGrowthPercent;
     private double instantRevenue;
+    private double totalGmv;
+    private double escrowBalance;
+    private int pendingKyc;
+    private int pendingVerificationTasks;
+    private java.util.List<String> recentActivities;
 }

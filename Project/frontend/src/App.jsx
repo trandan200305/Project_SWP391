@@ -131,6 +131,9 @@ export default function App() {
       "post_job",
       "find_freelancers",
       "employer_profile",
+      "employer_invoices",
+      "employer_support",
+      "freelancer_support",
       "employer_jobs",
       "profile",
       "checkout",
@@ -161,11 +164,19 @@ export default function App() {
       setCurrentPage("home");
       return;
     }
-    if (page === "employer_profile" && user?.role !== "EMPLOYER") {
+    if (["employer_profile", "employer_invoices", "employer_support"].includes(page) && user?.role !== "EMPLOYER") {
+      setCurrentPage("home");
+      return;
+    }
+    if (page === "freelancer_support" && user?.role !== "FREELANCER") {
       setCurrentPage("home");
       return;
     }
     if (page === "employer_jobs" && user?.role !== "EMPLOYER") {
+      setCurrentPage("home");
+      return;
+    }
+    if (page === "your_jobs" && user?.role !== "FREELANCER") {
       setCurrentPage("home");
       return;
     }
@@ -214,6 +225,8 @@ export default function App() {
     "messenger",
     "onboard",
     "employer_profile",
+    "employer_invoices",
+    "employer_support",
   ].includes(currentPage);
 
   const routesContent = (

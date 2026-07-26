@@ -369,21 +369,6 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
                            userProposal?.status === 'REJECTED' ? 'Từ chối' : 'Chờ phản hồi'}
                         </span>
                       </div>
-
-                      <div className="pt-2">
-                        <button
-                          onClick={() => onNavigate('messenger', {
-                            id: job.employerId,
-                            role: 'EMPLOYER',
-                            name: job.employerName || 'Khách hàng',
-                            avatar: job.employerAvatar
-                          })}
-                          className="w-full py-2 bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <Send className="w-3 h-3 text-emerald-700 transform rotate-45 -translate-y-0.5" />
-                          Nhắn tin trao đổi
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ) : (
@@ -460,7 +445,14 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
                 )}
                 <div>
                   <div className="flex items-center gap-1">
-                    <button onClick={handleShowComingSoon} className="font-bold text-slate-900 hover:text-indigo-600 text-sm hover:underline text-left">
+                    <button 
+                      onClick={() => {
+                        if (job.employerId && onNavigate) {
+                          onNavigate('view_profile', { targetRole: 'EMPLOYER', targetUserId: job.employerId });
+                        }
+                      }} 
+                      className="font-bold text-slate-900 hover:text-indigo-600 text-sm hover:underline text-left"
+                    >
                       {job.employerName || 'Khách hàng'}
                     </button>
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -481,8 +473,17 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
               </div>
 
               <button 
-                onClick={handleShowComingSoon}
-                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition-all text-xs"
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate('messenger', {
+                      id: job.employerId,
+                      role: 'EMPLOYER',
+                      name: job.employerName || 'Khách hàng',
+                      avatar: job.employerAvatar
+                    });
+                  }
+                }}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5"
               >
                 Liên hệ trực tiếp
               </button>

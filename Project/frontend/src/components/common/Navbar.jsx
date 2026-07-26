@@ -13,6 +13,9 @@ import {
   Edit3,
   Settings,
   CheckCircle,
+  Sparkles,
+  LifeBuoy,
+  FileText,
   DollarSign,
 } from "lucide-react";
 import { authApi } from "../../features/auth/api/authApi.js";
@@ -472,12 +475,20 @@ export default function Navbar({
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
-                            if (onNavigate) onNavigate("find_freelancers");
+                            if (onNavigate) onNavigate("employer_invoices");
                           }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all mt-1"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all mt-1"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
-                          Tim kiem Freelancer
+                          <FileText className="w-4 h-4 text-emerald-600" /> Hóa đơn & Chứng từ
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("employer_support");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-xl transition-all mt-1"
+                        >
+                          <LifeBuoy className="w-4 h-4 text-cyan-600" /> Gửi Ticket Hỗ trợ
                         </button>
                       </>
                     )}
@@ -502,18 +513,29 @@ export default function Navbar({
                         >
                           <DollarSign className="w-4 h-4" /> Thống kê doanh thu
                         </button>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onNavigate) onNavigate("freelancer_support");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all mt-1"
+                        >
+                          <LifeBuoy className="w-4 h-4 text-emerald-600" /> Hỗ trợ kỹ thuật & Sự cố
+                        </button>
                       </>
                     )}
 
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        if (onNavigate) onNavigate("profile");
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
-                    >
-                      <User className="w-4 h-4" /> Hồ sơ cá nhân
-                    </button>
+                    {user?.role === "FREELANCER" && (
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onNavigate) onNavigate("profile");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-1"
+                      >
+                        <User className="w-4 h-4" /> Hồ sơ cá nhân
+                      </button>
+                    )}
 
                     {user?.role === "FREELANCER" && (
                       <button
@@ -746,27 +768,37 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    if (onNavigate) onNavigate("find_freelancers");
+                    if (onNavigate) onNavigate("employer_invoices");
                   }}
-                  className="w-full text-center bg-purple-50 text-purple-700 border border-purple-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                  className="w-full text-center bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
-                  Tim kiem Freelancer
+                  <FileText className="w-4 h-4 text-emerald-600" /> Hóa đơn & Chứng từ
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigate) onNavigate("employer_support");
+                  }}
+                  className="w-full text-center bg-cyan-50 text-cyan-700 border border-cyan-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                >
+                  <LifeBuoy className="w-4 h-4 text-cyan-600" /> Gửi Ticket Hỗ trợ
                 </button>
               </>
             )}
 
             {user && (
               <>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigate) onNavigate("profile");
-                  }}
-                  className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
-                >
-                  <User className="w-4 h-4" /> Hồ sơ cá nhân
-                </button>
+                {user?.role === "FREELANCER" && (
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (onNavigate) onNavigate("profile");
+                    }}
+                    className="w-full text-center bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                  >
+                    <User className="w-4 h-4" /> Hồ sơ cá nhân
+                  </button>
+                )}
                 {user?.role === "FREELANCER" && (
                   <>
                     <button
@@ -786,6 +818,15 @@ export default function Navbar({
                       className="w-full text-center bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
                     >
                       <DollarSign className="w-4 h-4" /> Thống kê doanh thu
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        if (onNavigate) onNavigate("freelancer_support");
+                      }}
+                      className="w-full text-center bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-large font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm mt-2"
+                    >
+                      <LifeBuoy className="w-4 h-4 text-emerald-600" /> Hỗ trợ kỹ thuật & Sự cố
                     </button>
                   </>
                 )}

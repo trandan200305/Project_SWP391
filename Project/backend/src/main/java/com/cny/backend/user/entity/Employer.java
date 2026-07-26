@@ -122,6 +122,13 @@ public class Employer {
     @Column(name = "total_spent", precision = 15, scale = 2)
     private BigDecimal totalSpent;
 
+    @Builder.Default
+    @Column(name = "tier", length = 20)
+    private String tier = "BRONZE";
+
+    @Column(name = "last_spent_at")
+    private LocalDateTime lastSpentAt;
+
     @Column(name = "projects_posted")
     private Integer projectsPosted;
 
@@ -169,7 +176,7 @@ public class Employer {
     @Column(name = "kyc_reviewed_by_staff_id")
     private Integer kycReviewedByStaffId;
 
-    @Column(name = "kyc_rejected_reason", length = 500)
+    @Column(name = "kyc_rejected_reason", length = 500, columnDefinition = "NVARCHAR(500)")
     private String kycRejectedReason;
 
     @Column(name = "is_verified", nullable = false)
@@ -199,6 +206,7 @@ public class Employer {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class TransientUser {
         private Integer userId;

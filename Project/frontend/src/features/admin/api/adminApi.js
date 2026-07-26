@@ -106,7 +106,7 @@ export const adminApi = {
       headers: getAdminHeaders(adminId)
     }).then(res => res.json());
   },
-  getVerificationTasks: () => api.get('/admin/verification-tasks'),
+  getVerificationTasks: (staffId) => api.get(staffId ? `/admin/verification-tasks?staffId=${staffId}` : '/admin/verification-tasks'),
   createVerificationTask: (payload) => api.post('/admin/verification-tasks', payload),
   moderateKycRequest: (requestId, approve, role, adminId) => {
     return fetch(`http://localhost:8080/api/admin/kyc/requests/${requestId}/moderate?approve=${approve}&role=${role}`, {
@@ -167,6 +167,9 @@ export const adminApi = {
     if (adminId) headers['X-Admin-Id'] = adminId.toString();
     return api.post('/admin/service-packages', prices, { headers });
   },
+  // BI & Analytics API
+  getTopSpenders: () => api.get('/admin/analytics/top-spenders'),
+  getChurnWarnings: () => api.get('/admin/analytics/churn-warnings'),
   // Notification API
   getNotifications: (role, userId) => api.get(`/notifications/${role}/${userId}`),
   markNotificationAsRead: (id) => api.put(`/notifications/${id}/read`),

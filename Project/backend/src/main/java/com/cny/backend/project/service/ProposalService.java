@@ -121,8 +121,8 @@ public class ProposalService {
         // Kiểm tra và validate các mốc thanh toán nếu nhà tuyển dụng chọn chia tiến độ
         boolean hasCustomMilestones = customMilestones != null && !customMilestones.isEmpty();
         if (hasCustomMilestones) {
-            if (customMilestones.size() < 3 || customMilestones.size() > 5) {
-                throw new IllegalArgumentException("Số lượng mốc thanh toán phải từ 3 đến 5.");
+            if (customMilestones.size() < 2 || customMilestones.size() > 5) {
+                throw new IllegalArgumentException("Số lượng mốc thanh toán phải từ 2 đến 5.");
             }
 
             java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
@@ -144,6 +144,9 @@ public class ProposalService {
                 }
                 if (m.getDueDate().isAfter(maxDueDate)) {
                     throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + (i + 1) + " (" + m.getDueDate() + ") không được vượt quá ngày hoàn thành dự kiến (" + maxDueDate + ").");
+                }
+                if (i > 0 && customMilestones.get(i - 1).getDueDate().isAfter(m.getDueDate())) {
+                    throw new IllegalArgumentException("Hạn hoàn thành mốc thứ " + i + " không được sau mốc thứ " + (i + 1) + ".");
                 }
                 totalAmount = totalAmount.add(m.getAmount());
             }

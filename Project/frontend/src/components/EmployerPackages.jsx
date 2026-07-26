@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Sparkles, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import PaymentCheckoutModal from './employer/PaymentCheckoutModal.jsx';
+import { api } from '../api/apiClient.js';
+
+const DEFAULT_PACKAGES = [
+  { packageType: 'MEDIUM', price: 250000, durationDays: 10 },
+  { packageType: 'REGULAR', price: 100000, durationDays: 20 },
+  { packageType: 'PREMIUM', price: 500000, durationDays: 30 }
+];
 
 export default function EmployerPackages({ user }) {
   const [packages, setPackages] = useState([]);
@@ -9,26 +16,35 @@ export default function EmployerPackages({ user }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/admin/service-packages')
-      .then(res => {
-        if (!res.ok) throw new Error('Không thể tải gói dịch vụ');
-        return res.json();
-      })
+    api.get('/admin/service-packages')
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          // Sắp xếp theo giá tăng dần
           data.sort((a, b) => a.price - b.price);
           setPackages(data);
+        } else {
+          setPackages(DEFAULT_PACKAGES);
         }
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error('Lỗi khi tải gói dịch vụ:', err);
+        setPackages(DEFAULT_PACKAGES);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const [selectedPkgForModal, setSelectedPkgForModal] = useState(null);
 
   const handleSubscribe = (pkg) => {
-    if (!user || user.role !== 'EMPLOYER') return;
+    if (!user) {
+      setErrorMsg('Vui lòng đăng nhập tài khoản Nhà tuyển dụng để mua gói dịch vụ.');
+      return;
+    }
+    const roleUpper = user.role?.toUpperCase();
+    if (roleUpper !== 'EMPLOYER' && roleUpper !== 'ADMIN') {
+      setErrorMsg('Tính năng mua gói dành cho Nhà tuyển dụng. Bạn đang đăng nhập bằng tài khoản ' + (user.role || 'khác') + '.');
+      return;
+    }
+    setErrorMsg(null);
     setSelectedPkgForModal(pkg);
   };
 
@@ -38,7 +54,22 @@ export default function EmployerPackages({ user }) {
     PREMIUM: new Audio('/premium.mp4')
   });
 
-  if (loading || packages.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="py-20 flex justify-center items-center">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (packages.length === 0) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-slate-500 font-semibold mb-2">Hệ thống đang bảo trì hoặc chưa cấu hình các gói dịch vụ.</p>
+        <p className="text-sm text-slate-400">Vui lòng liên hệ Admin để được hỗ trợ.</p>
+      </div>
+    );
+  }
 
   const handleMouseEnter = (pkgType) => {
     const audio = audioRefs.current[pkgType];
@@ -179,7 +210,7 @@ export default function EmployerPackages({ user }) {
           }
         }}
         selectedPackage={selectedPkgForModal}
-        employerId={user?.id}
+        employerId={user?.employerId || user?.id}
       />
     </div>
   );

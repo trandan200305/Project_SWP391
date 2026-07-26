@@ -25,10 +25,13 @@ import {
     X,
     Check,
     AlertCircle,
-    FileText
+    FileText,
+    LifeBuoy
 } from 'lucide-react';
 import { contractApi } from '../api/contractApi';
 import { getImageUrl, getFilenameFromUrl } from '../utils/imageHelper.js';
+import EmployerSupportTickets from './employer/EmployerSupportTickets.jsx';
+import EmployerInvoices from './employer/EmployerInvoices.jsx';
 
 const emptyForm = {
     displayName: '',
@@ -49,15 +52,24 @@ const emptyForm = {
     }
 };
 
-export default function EmployerProfileSettings({user, onNavigateHome, onNavigate, onUserUpdate}) {
+export default function EmployerProfileSettings({user, onNavigateHome, onNavigate, onUserUpdate, initialTab = 'company', openCreateTicketModal = false}) {
     const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notice, setNotice] = useState(null);
     const [proposalForAccept, setProposalForAccept] = useState(null);
 
+    // KYC Verification (GPKD & CCCD) States
+    const [gpkdUrl, setGpkdUrl] = useState('');
+    const [cccdUrl, setCccdUrl] = useState('');
+    const [kycStatus, setKycStatus] = useState('');
+    const [kycRejectedReason, setKycRejectedReason] = useState('');
+    const [submittingKyc, setSubmittingKyc] = useState(false);
+    const [uploadingGpkd, setUploadingGpkd] = useState(false);
+    const [uploadingCccd, setUploadingCccd] = useState(false);
+
     
-    const [activeTab, setActiveTab] = useState('company'); 
+    const [activeTab, setActiveTab] = useState(initialTab || 'company'); 
     const [projects, setProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -108,7 +120,7 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
     const [loadingProposals, setLoadingProposals] = useState(false);
 
     const completion = useMemo(() => {
-        const keys = ['displayName', 'fullName', 'phone', 'companyName', 'companyDescription', 'website', 'address', 'city', 'country', 'companySize', 'industry'];
+        const keys = ['displayName', 'fullName', 'phone', 'companyName', 'companyDescription', 'address', 'taxCode'];
         const filled = keys.filter((key) => String(form[key] || '').trim()).length;
         return Math.round((filled / keys.length) * 100);
     }, [form]);
@@ -388,12 +400,132 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         branch: data.billing?.branch || ''
                     }
                 });
+                setGpkdUrl(data.businessLicenseUrl || '');
+                setCccdUrl(data.representativeIdCardUrl || '');
+                setKycStatus(data.kycStatus || 'UNVERIFIED');
+                setKycRejectedReason(data.kycRejectedReason || '');
             })
             .catch((error) => {
                 setNotice({type: 'error', message: error.message || 'Không thể tải hồ sơ công ty.'});
             })
             .finally(() => setLoading(false));
     }, [user]);
+
+    // Validation helper for verification files (Allows any file type for Staff review)
+    const validateVerificationFile = (file, label) => {
+        if (!file) return { valid: false, message: 'Vui lòng chọn file đính kèm.' };
+        const maxMB = 50;
+        if (file.size > maxMB * 1024 * 1024) {
+            return {
+                valid: false,
+                message: `File ${label} dung lượng vượt quá ${maxMB}MB.`
+            };
+        }
+        return { valid: true };
+    };
+
+    const handleUploadGpkd = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const check = validateVerificationFile(file, 'Giấy phép kinh doanh (GPKD)');
+        if (!check.valid) {
+            setNotice({ type: 'error', message: check.message });
+            return;
+        }
+        setUploadingGpkd(true);
+        setNotice(null);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const filename = getFilenameFromUrl(data.fileUrl);
+                setGpkdUrl(filename);
+                setNotice({ type: 'success', message: 'Tải file Giấy phép kinh doanh (GPKD) lên thành công!' });
+            } else {
+                throw new Error('Không thể tải file GPKD lên máy chủ.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi hệ thống khi tải file GPKD.' });
+        } finally {
+            setUploadingGpkd(false);
+        }
+    };
+
+    const handleUploadCccd = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const check = validateVerificationFile(file, 'Căn cước công dân (CCCD)');
+        if (!check.valid) {
+            setNotice({ type: 'error', message: check.message });
+            return;
+        }
+        setUploadingCccd(true);
+        setNotice(null);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const filename = getFilenameFromUrl(data.fileUrl);
+                setCccdUrl(filename);
+                setNotice({ type: 'success', message: 'Tải file Căn cước công dân (CCCD) lên thành công!' });
+            } else {
+                throw new Error('Không thể tải file CCCD lên máy chủ.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi hệ thống khi tải file CCCD.' });
+        } finally {
+            setUploadingCccd(false);
+        }
+    };
+
+    const handleKycSubmit = async (e) => {
+        e.preventDefault();
+        if (!gpkdUrl || !cccdUrl) {
+            setNotice({
+                type: 'error',
+                message: 'Vui lòng đính kèm đầy đủ file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) hợp lệ trước khi nộp hồ sơ xác thực.'
+            });
+            return;
+        }
+        setSubmittingKyc(true);
+        setNotice(null);
+        try {
+            const res = await fetch(`http://localhost:8080/api/employers/${user.id}/kyc/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taxCode: form.taxCode,
+                    businessLicenseUrl: gpkdUrl,
+                    representativeIdCardUrl: cccdUrl
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success !== false) {
+                setKycStatus('PENDING');
+                setNotice({
+                    type: 'success',
+                    message: 'Đã gửi hồ sơ xác thực GPKD & CCCD thành công. Ban quản trị sẽ đối soát và phê duyệt.'
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                throw new Error(data.message || 'Nộp hồ sơ xác thực không thành công.');
+            }
+        } catch (err) {
+            setNotice({ type: 'error', message: err.message || 'Lỗi gửi hồ sơ xác thực.' });
+        } finally {
+            setSubmittingKyc(false);
+        }
+    };
 
     const updateField = (field, value) => {
         setForm((prev) => ({...prev, [field]: value}));
@@ -407,12 +539,8 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         }));
     };
     const validateForm = () => {
-        if (!form.displayName || form.displayName.trim().length < 3 || form.displayName.trim().length > 50) {
-            setNotice({type: 'error', message: 'Tên hiển thị phải từ 3 đến 50 ký tự.'});
-            return false;
-        }
-        if (form.fullName && (form.fullName.trim().length < 3 || form.fullName.trim().length > 50)) {
-            setNotice({type: 'error', message: 'Họ và tên người đại diện phải từ 3 đến 50 ký tự.'});
+        if (!form.fullName || form.fullName.trim().length < 2 || form.fullName.trim().length > 100) {
+            setNotice({type: 'error', message: 'Vui lòng nhập Họ tên thật của người đại diện (từ 2 đến 100 ký tự).'});
             return false;
         }
 
@@ -425,12 +553,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9]*\.)*[a-zA-Z0-9][-a-zA-Z0-9]*(:\d+)?(\/.*)?$/;
-        if (form.website && !urlRegex.test(form.website.trim())) {
-            setNotice({type: 'error', message: 'Địa chỉ Website không hợp lệ (ví dụ: https://company.com).'});
-            return false;
-        }
-
         // Validate MST (Tax Code)
         const taxCodeRegex = /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{10}-[0-9]{3}$/;
         if (form.taxCode && !taxCodeRegex.test(form.taxCode.trim())) {
@@ -438,52 +560,6 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
             return false;
         }
 
-        // Validate Quy mô công ty
-        const companySizeRegex = /^(Hơn\s+|Dưới\s+)?([1-9][0-9]*)(\s*-\s*[1-9][0-9]*)?(\s*\+)?(\s*(nhân viên|người))?$/i;
-        if (form.companySize && !companySizeRegex.test(form.companySize.trim())) {
-            setNotice({type: 'error', message: 'Quy mô công ty không hợp lệ (ví dụ: 10-50, 50+, Hơn 100 nhân viên).'});
-            return false;
-        }
-
-        // 6. Xác thực tài khoản ngân hàng (Nếu nhập 1 trường thì các trường chính khác bắt buộc nhập)
-        const {bankName, accountNumber, accountHolder, branch} = form.billing;
-        if (bankName || accountNumber || accountHolder || branch) {
-            if (!bankName.trim() || !accountNumber.trim() || !accountHolder.trim()) {
-                setNotice({
-                    type: 'error',
-                    message: 'Nếu cập nhật thông tin thanh toán, vui lòng điền đầy đủ: Ngân hàng, Số tài khoản và Chủ tài khoản.'
-                });
-                return false;
-            }
-
-            // Số tài khoản chỉ được phép chứa số và tối đa 30 ký tự
-            const numRegex = /^[0-9]+$/;
-            if (!numRegex.test(accountNumber.trim())) {
-                setNotice({type: 'error', message: 'Số tài khoản ngân hàng chỉ được phép chứa các chữ số.'});
-                return false;
-            }
-            if (accountNumber.trim().length > 30) {
-                setNotice({type: 'error', message: 'Số tài khoản ngân hàng tối đa 30 ký tự.'});
-                return false;
-            }
-
-            // Chủ tài khoản bắt buộc là chữ và tối đa 150 ký tự
-            const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠƯưăâêôơư\s]+$/;
-            if (!nameRegex.test(accountHolder.trim())) {
-                setNotice({type: 'error', message: 'Tên chủ tài khoản chỉ được phép chứa các chữ cái và khoảng trắng.'});
-                return false;
-            }
-            if (accountHolder.trim().length > 150) {
-                setNotice({type: 'error', message: 'Tên chủ tài khoản tối đa 150 ký tự.'});
-                return false;
-            }
-
-            // Chi nhánh tối đa 100 ký tự
-            if (branch && branch.trim().length > 100) {
-                setNotice({type: 'error', message: 'Chi nhánh ngân hàng tối đa 100 ký tự.'});
-                return false;
-            }
-        }
         return true; 
     };
     const handleSubmit = async (event) => {
@@ -543,75 +619,189 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
         </div>);
     }
 
-    return (<div className="min-h-screen bg-slate-100 text-slate-900">
-        <div className="bg-white border-b border-slate-200">
-            <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
+    return (<div className="h-screen flex flex-col bg-slate-100 text-slate-900 pt-16 overflow-hidden">
+        <div className="bg-white border-b border-slate-200 shadow-sm flex-none">
+            <div className="max-w-6xl mx-auto px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
                     type="button"
                     onClick={onNavigateHome}
-                    className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-950"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-950 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4"/>
                     Trang chủ
                 </button>
-                <div
-                    className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">
-                    <ShieldCheck className="w-4 h-4"/>
-                    Trust profile
+
+                {/* Top Tab Bar Switcher */}
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('company')}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'company'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
+                        }`}
+                    >
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>Thông tin công ty</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('invoices')}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'invoices'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
+                        }`}
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Hóa đơn & Chứng từ</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('support')}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'support'
+                                ? 'bg-cyan-600 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
+                        }`}
+                    >
+                        <LifeBuoy className="w-3.5 h-3.5" />
+                        <span>Hỗ trợ kỹ thuật</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <main className="max-w-6xl mx-auto px-6 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                <aside className="space-y-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div
-                            className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
-                            {form.companyLogoUrl ? (
-                                <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
-                            ) : (
-                                <Building2 className="w-7 h-7"/>
-                            )}
-                        </div>
-                        <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Cập nhật thông tin doanh nghiệp và tài khoản thanh toán để freelancer tin tưởng hơn khi
-                            nhận dự án.
-                        </p>
-                    </div>
+        <main className="max-w-6xl w-full mx-auto px-6 py-3 flex-1 overflow-y-auto">
+            {activeTab === 'invoices' ? (
+                <div className="w-full">
+                    <EmployerInvoices user={user} />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+                    <aside className="space-y-4">
+                        {activeTab === 'company' ? (
+                            <>
+                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
+                                    <div
+                                        className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700 mb-4 overflow-hidden">
+                                        {form.companyLogoUrl ? (
+                                            <img src={getImageUrl(form.companyLogoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Building2 className="w-7 h-7"/>
+                                        )}
+                                    </div>
+                                    <h1 className="text-xl font-extrabold tracking-tight">Hồ sơ công ty</h1>
+                                    <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                        Cập nhật thông tin doanh nghiệp và tài khoản thanh toán để freelancer tin tưởng hơn khi
+                                        nhận dự án.
+                                    </p>
+                                </div>
 
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-bold text-slate-700">Độ hoàn thiện</span>
-                            <span className="text-sm font-extrabold text-cyan-700">{completion}%</span>
-                        </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-cyan-500 rounded-full transition-all"
-                                 style={{width: `${completion}%`}}/>
-                        </div>
-                        <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4 text-emerald-500"/>
-                                Thông tin rõ ràng tăng độ tin cậy
+                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-sm font-bold text-slate-700">Độ hoàn thiện</span>
+                                        <span className="text-sm font-extrabold text-cyan-700">{completion}%</span>
+                                    </div>
+                                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-cyan-500 rounded-full transition-all"
+                                             style={{width: `${completion}%`}}/>
+                                    </div>
+                                    <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
+                                        <div className="flex items-center gap-2">
+                                            <BadgeCheck className="w-4 h-4 text-emerald-500"/>
+                                            Thông tin rõ ràng tăng độ tin cậy
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Banknote className="w-4 h-4 text-amber-500"/>
+                                            Billing dùng để đối soát thanh toán
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-level-1 space-y-4">
+                                <div className="w-12 h-12 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-700">
+                                    <LifeBuoy className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900">Trung tâm Hỗ trợ</h3>
+                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                        Gửi ticket khi bạn gặp sự cố nạp tiền, lỗi hệ thống hoặc cần giải đáp thắc mắc. Nhân viên Staff sẽ tiếp nhận và xử lý.
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 space-y-2">
+                                    <div className="flex items-center gap-2 font-bold text-slate-800">
+                                        <span>💡 Lưu ý quan trọng</span>
+                                    </div>
+                                    <p>• Sự cố nạp tiền: đính kèm hóa đơn hoặc mã giao dịch.</p>
+                                    <p>• Khiếu nại hợp đồng dự án cụ thể được xử lý tại mục Tranh chấp (Disputes).</p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Banknote className="w-4 h-4 text-amber-500"/>
-                                Billing dùng để đối soát thanh toán
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+                        )}
 
-                <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-level-1 space-y-1">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('company')}
+                                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                                    activeTab === 'company'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                                }`}
+                            >
+                                <Building2 className="w-4 h-4" />
+                                <span>Thông tin công ty</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('invoices')}
+                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                                    activeTab === 'invoices'
+                                        ? 'bg-emerald-600 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <FileText className="w-4 h-4" />
+                                    <span>Hóa đơn & Chứng từ</span>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('support')}
+                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                                    activeTab === 'support'
+                                        ? 'bg-cyan-600 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <LifeBuoy className="w-4 h-4" />
+                                    <span>Hỗ trợ kỹ thuật & Sự cố</span>
+                                </div>
+                                <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-full font-extrabold">NEW</span>
+                            </button>
+                        </div>
+                    </aside>
+
+                    {activeTab === 'support' ? (
+                        <section className="bg-transparent space-y-4">
+                            <EmployerSupportTickets user={user} defaultOpenModal={openCreateTicketModal} />
+                        </section>
+                    ) : (
+                        <section className="bg-white border border-slate-200 rounded-2xl shadow-level-1 overflow-hidden">
                     <div
                         className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-extrabold">
-                                {activeTab === 'company' ? 'Thông tin công ty' : 'Thông tin thanh toán'}
+                            <h2 className="text-lg font-extrabold text-slate-900">
+                                Thông tin công ty & Xác thực
                             </h2>
                             <p className="text-sm text-slate-500">
-                                {activeTab === 'company' ? 'Cập nhật thông tin doanh nghiệp và người đại diện.' : 'Chi tiết tài khoản ngân hàng để đối soát thanh toán.'}
+                                Cập nhật thông tin doanh nghiệp, người đại diện và đính kèm tài liệu xác thực.
                             </p>
                         </div>
                         {notice && (<div
@@ -622,35 +812,10 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                         </div>)}
                     </div>
 
-                    <div className="border-b border-slate-200 bg-slate-50/50 px-6 flex gap-6">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('company');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'company' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Building2 className="w-4 h-4"/>
-                            Thông tin công ty
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('billing');
-                                setNotice(null);
-                            }}
-                            className={`py-3.5 text-sm font-extrabold border-b-2 transition-all flex items-center gap-2 outline-none ${activeTab === 'billing' ? 'border-cyan-500 text-cyan-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                        >
-                            <Banknote className="w-4 h-4"/>
-                            Thông tin thanh toán
-                        </button>
-                    </div>
-
                     {loading ? (<div className="h-[520px] flex items-center justify-center text-slate-500">
                             <Loader2 className="w-6 h-6 animate-spin mr-2"/>
                             Đang tải dữ liệu...
-                        </div>) : activeTab === 'company' ? (
+                        </div>) : (
                         <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
                             <FormSection icon={<Building2 className="w-5 h-5"/>} title="Thông tin công ty">
                                 {/* Company Logo Upload Area */}
@@ -710,42 +875,151 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <TextInput label="Tên công ty" value={form.companyName}
                                                onChange={(value) => updateField('companyName', value)} required/>
-                                    <TextInput label="Mã số thuế" value={form.taxCode}
-                                               onChange={(value) => updateField('taxCode', value)}
-                                               placeholder="VD: 0102030405"/>
-                                    <TextInput label="Ngành nghề" value={form.industry}
-                                               onChange={(value) => updateField('industry', value)}
-                                               placeholder="VD: Software, Marketing, Design"/>
-                                    <TextInput label="Quy mô công ty" value={form.companySize}
-                                               onChange={(value) => updateField('companySize', value)}
-                                               placeholder="VD: 11-50"/>
-                                    <TextInput label="Website" value={form.website}
-                                               onChange={(value) => updateField('website', value)}
-                                               icon={<Globe2 className="w-4 h-4"/>}
-                                               placeholder="https://company.com"/>
-
-                                    <TextInput label="Quốc gia" value={form.country}
-                                               onChange={(value) => updateField('country', value)}
-                                               icon={<MapPin className="w-4 h-4"/>}/>
-                                    <TextInput label="Thành phố" value={form.city}
-                                               onChange={(value) => updateField('city', value)}/>
-                                    <TextInput label="Địa chỉ" value={form.address}
-                                               onChange={(value) => updateField('address', value)}/>
                                 </div>
-                                <TextArea label="Mô tả công ty" value={form.companyDescription}
+                                <TextArea label="Mô tả ngắn về công ty" value={form.companyDescription}
                                           onChange={(value) => updateField('companyDescription', value)}/>
                             </FormSection>
 
                             <FormSection icon={<UserRound className="w-5 h-5"/>} title="Người đại diện">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <TextInput label="Tên hiển thị" value={form.displayName}
-                                               onChange={(value) => updateField('displayName', value)} required/>
-                                    <TextInput label="Họ tên" value={form.fullName}
-                                               onChange={(value) => updateField('fullName', value)}/>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <TextInput label="Họ tên thật (người đại diện)" value={form.fullName}
+                                               onChange={(value) => updateField('fullName', value)} required
+                                               placeholder="VD: Nguyễn Văn A"/>
                                     <TextInput label="Số điện thoại" value={form.phone}
                                                onChange={(value) => updateField('phone', value)}
-                                               icon={<Phone className="w-4 h-4"/>}/>
+                                               icon={<Phone className="w-4 h-4"/>}
+                                               placeholder="VD: 0987654321"/>
                                 </div>
+                            </FormSection>
+
+                            {/* Section Xác thực doanh nghiệp (GPKD & CCCD) */}
+                            <FormSection icon={<ShieldCheck className="w-5 h-5 text-emerald-600"/>} title="Xác thực doanh nghiệp (Giấy phép KD & CCCD)">
+                                <div className="mb-4">
+                                    {kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' ? (
+                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold shadow-sm">
+                                            <BadgeCheck className="w-6 h-6 text-emerald-600 shrink-0 fill-emerald-100" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-emerald-900 flex items-center gap-1.5">
+                                                    🟢 Đã xác thực doanh nghiệp (Verified)
+                                                </p>
+                                                <p className="font-medium text-emerald-700 mt-0.5">Giấy phép kinh doanh và CCCD người đại diện đã được kiểm duyệt thành công.</p>
+                                            </div>
+                                        </div>
+                                    ) : kycStatus === 'PENDING' ? (
+                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-xs font-bold shadow-sm">
+                                            <Clock className="w-6 h-6 text-amber-600 shrink-0 animate-pulse" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-amber-900 flex items-center gap-1.5">
+                                                    🟡 Đang chờ Staff duyệt (Pending)
+                                                </p>
+                                                <p className="font-medium text-amber-700 mt-0.5">Tài liệu GPKD & CCCD đã được tải lên cơ sở dữ liệu. Hồ sơ của bạn đang được Nhân viên (Staff) xem xét và đối soát.</p>
+                                            </div>
+                                        </div>
+                                    ) : kycStatus === 'REJECTED' ? (
+                                        <div className="p-4.5 rounded-xl bg-rose-50 border border-rose-200 space-y-2 text-rose-800 text-xs font-bold shadow-sm">
+                                            <div className="flex items-center gap-2 text-rose-900">
+                                                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                                                <p className="font-extrabold text-sm">🔴 Hồ sơ xác thực bị từ chối (Rejected)</p>
+                                            </div>
+                                            <div className="text-xs font-semibold text-rose-800 bg-white/80 p-3 rounded-lg border border-rose-200 shadow-2xs">
+                                                <span className="font-extrabold text-rose-950">Lý do từ chối từ Staff: </span>
+                                                <span className="text-rose-900 italic font-bold">{kycRejectedReason || 'File đính kèm không hợp lệ hoặc thông tin chưa đầy đủ. Vui lòng kiểm tra lại tài liệu và gửi lại yêu cầu.'}</span>
+                                            </div>
+                                            <p className="text-[11px] text-rose-700 font-medium">
+                                                * Bạn có thể thay đổi hoặc giữ nguyên tài liệu GPKD / CCCD bên dưới và bấm nút <strong>"Gửi lại hồ sơ xác thực"</strong> để gửi lại cho Staff duyệt.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-slate-700 text-xs font-bold">
+                                            <ShieldCheck className="w-5 h-5 text-slate-400 shrink-0" />
+                                            <div>
+                                                <p className="font-extrabold text-sm text-slate-800">Chưa gửi hồ sơ xác thực doanh nghiệp</p>
+                                                <p className="font-medium text-slate-500 mt-0.5">Tải lên file Giấy phép kinh doanh (GPKD) và Căn cước công dân (CCCD) để lưu database gửi Nhân viên (Staff) duyệt.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <TextInput label="Mã số thuế" value={form.taxCode}
+                                               onChange={(value) => updateField('taxCode', value)}
+                                               placeholder="VD: 0102030405"
+                                               disabled={kycStatus === 'VERIFIED' || kycStatus === 'APPROVED'} />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* GPKD Upload */}
+                                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-extrabold uppercase text-slate-700 flex items-center gap-1.5">
+                                                <FileText className="w-4 h-4 text-cyan-600" />
+                                                1. Giấy phép kinh doanh (GPKD) *
+                                            </label>
+                                            <span className="text-[10px] font-bold text-slate-500">Hỗ trợ PDF, Ảnh, Word, ZIP (Max 50MB)</span>
+                                        </div>
+
+                                        {gpkdUrl ? (
+                                            <div className="flex items-center justify-between p-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+                                                <a href={getImageUrl(gpkdUrl)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline text-cyan-700 font-bold flex items-center gap-1.5">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                    {gpkdUrl}
+                                                </a>
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
+                                                    <button type="button" onClick={() => setGpkdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
+                                                {uploadingGpkd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <FileText className="w-4 h-4 text-slate-400" />}
+                                                <span>{uploadingGpkd ? 'Đang tải file GPKD lên DB...' : 'Chọn file GPKD (PDF, Ảnh, Word...)'}</span>
+                                                <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.zip,.rar" onChange={handleUploadGpkd} disabled={uploadingGpkd || kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' || kycStatus === 'PENDING'} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+
+                                    {/* CCCD Upload */}
+                                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-extrabold uppercase text-slate-700 flex items-center gap-1.5">
+                                                <UserRound className="w-4 h-4 text-cyan-600" />
+                                                2. Căn cước công dân (CCCD) *
+                                            </label>
+                                            <span className="text-[10px] font-bold text-slate-500">Hỗ trợ PNG, JPG, WEBP, PDF (Max 50MB)</span>
+                                        </div>
+
+                                        {cccdUrl ? (
+                                            <div className="flex items-center justify-between p-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+                                                <a href={getImageUrl(cccdUrl)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline text-cyan-700 font-bold flex items-center gap-1.5">
+                                                    <UserRound className="w-3.5 h-3.5" />
+                                                    {cccdUrl}
+                                                </a>
+                                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
+                                                    <button type="button" onClick={() => setCccdUrl('')} className="text-rose-500 hover:text-rose-700 font-bold text-xs">Xóa</button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-cyan-500 bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition-all">
+                                                {uploadingCccd ? <Loader2 className="w-4 h-4 animate-spin text-cyan-600" /> : <UserRound className="w-4 h-4 text-slate-400" />}
+                                                <span>{uploadingCccd ? 'Đang tải file CCCD lên DB...' : 'Chọn file CCCD (PNG, JPG, PDF...)'}</span>
+                                                <input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.heic" onChange={handleUploadCccd} disabled={uploadingCccd || kycStatus === 'VERIFIED' || kycStatus === 'APPROVED' || kycStatus === 'PENDING'} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {kycStatus !== 'VERIFIED' && kycStatus !== 'APPROVED' && kycStatus !== 'PENDING' && (
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleKycSubmit}
+                                            disabled={submittingKyc || !gpkdUrl || !cccdUrl}
+                                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm"
+                                        >
+                                            {submittingKyc ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                            {submittingKyc ? 'Đang gửi...' : kycStatus === 'REJECTED' ? 'Gửi lại hồ sơ xác thực (GPKD & CCCD)' : 'Gửi hồ sơ xác thực (GPKD & CCCD)'}
+                                        </button>
+                                    </div>
+                                )}
                             </FormSection>
 
                             <div className="flex justify-end border-t border-slate-200 pt-5">
@@ -759,36 +1033,11 @@ export default function EmployerProfileSettings({user, onNavigateHome, onNavigat
                                 </button>
                             </div>
                         </form>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="p-6 space-y-8 animate-fade-in">
-                            <FormSection icon={<Banknote className="w-5 h-5"/>} title="Chi tiết thanh toán">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <TextInput label="Ngân hàng" value={form.billing.bankName}
-                                               onChange={(value) => updateBilling('bankName', value)}
-                                               placeholder="VD: Vietcombank"/>
-                                    <TextInput label="Số tài khoản" value={form.billing.accountNumber}
-                                               onChange={(value) => updateBilling('accountNumber', value)}/>
-                                    <TextInput label="Chủ tài khoản" value={form.billing.accountHolder}
-                                               onChange={(value) => updateBilling('accountHolder', value)}/>
-                                    <TextInput label="Chi nhánh" value={form.billing.branch}
-                                               onChange={(value) => updateBilling('branch', value)}/>
-                                </div>
-                            </FormSection>
-
-                            <div className="flex justify-end border-t border-slate-200 pt-5">
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-extrabold text-sm hover:bg-slate-800 disabled:opacity-70 shadow-level-1 transition-all hover:scale-[1.02]"
-                                >
-                                    {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
-                                    {saving ? 'Đang lưu...' : 'Lưu thông tin thanh toán'}
-                                </button>
-                            </div>
-                        </form>
                     )}
                 </section>
+                )}
             </div>
+            )}
         </main>
 
         
@@ -1096,7 +1345,7 @@ function FormSection({icon, title, children}) {
     </section>);
 }
 
-function TextInput({label, value, onChange, placeholder, icon, required}) {
+function TextInput({label, value, onChange, placeholder, icon, required, disabled}) {
     return (<label className="block">
       <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-1.5">
         {label}{required ? ' *' : ''}
@@ -1109,9 +1358,10 @@ function TextInput({label, value, onChange, placeholder, icon, required}) {
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className={`w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
+                disabled={disabled}
+                className={`w-full rounded-xl border border-slate-200 pr-3 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 ${
                     icon ? 'pl-10' : 'pl-3'
-                }`}
+                } ${disabled ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-70' : 'bg-slate-50'}`}
             />
         </div>
     </label>);
@@ -1133,9 +1383,8 @@ function TextArea({label, value, onChange}) {
 function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
     const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
     const [milestones, setMilestones] = useState([
-        { title: 'Giai đoạn 1: Bản vẽ thiết kế & Giao diện', amount: '', dueDate: '', description: 'Freelancer hoàn thiện thiết kế giao diện chi tiết' },
-        { title: 'Giai đoạn 2: Lập trình frontend & Tích hợp', amount: '', dueDate: '', description: 'Freelancer lập trình giao diện và kết nối dữ liệu' },
-        { title: 'Giai đoạn 3: Bàn giao sản phẩm & Hướng dẫn', amount: '', dueDate: '', description: 'Freelancer hoàn thiện kiểm thử và bàn giao sản phẩm hoàn chỉnh' },
+        { title: '', amount: '', dueDate: '', description: '' },
+        { title: '', amount: '', dueDate: '', description: '' },
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -1155,11 +1404,11 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
     const handleAddMilestone = () => {
         if (milestones.length >= 5) return;
-        setMilestones([...milestones, { title: `Giai đoạn ${milestones.length + 1}: `, amount: '', dueDate: '', description: '' }]);
+        setMilestones([...milestones, { title: '', amount: '', dueDate: '', description: '' }]);
     };
 
     const handleRemoveMilestone = (index) => {
-        if (milestones.length <= 3) return;
+        if (milestones.length <= 2) return;
         setMilestones(milestones.filter((_, idx) => idx !== index));
     };
 
@@ -1184,8 +1433,8 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
         let customMilestones = null;
         if (payOption === 'split') {
-            if (milestones.length < 3 || milestones.length > 5) {
-                setError('Số lượng mốc thanh toán phải từ 3 đến 5.');
+            if (milestones.length < 2 || milestones.length > 5) {
+                setError('Số lượng mốc thanh toán phải từ 2 đến 5.');
                 return;
             }
             if (!isSumMatch) {
@@ -1212,6 +1461,10 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                 }
                 if (m.dueDate > maxDeadlineIso) {
                     setError(`Hạn hoàn thành mốc thứ ${i + 1} (${m.dueDate}) không được vượt quá ngày hoàn thành dự án dự kiến (${maxDeadlineStr}).`);
+                    return;
+                }
+                if (i > 0 && milestones[i - 1].dueDate > m.dueDate) {
+                    setError(`Hạn hoàn thành mốc thứ ${i} không được sau mốc thứ ${i + 1}.`);
                     return;
                 }
             }
@@ -1329,7 +1582,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                         onChange={() => setPayOption('split')}
                                         className="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (3 - 5 mốc)</span>
+                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (2 - 5 mốc)</span>
                                 </div>
                                 <span className="text-slate-500 text-xs pl-5 leading-normal">
                                     Giải ngân tiền theo từng giai đoạn hoàn thành công việc.
@@ -1358,7 +1611,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                     <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 relative space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-slate-700 text-xs">Mốc số {idx + 1}</span>
-                                            {milestones.length > 3 && (
+                                            {milestones.length > 2 && (
                                                 <button 
                                                     type="button" 
                                                     onClick={() => handleRemoveMilestone(idx)}

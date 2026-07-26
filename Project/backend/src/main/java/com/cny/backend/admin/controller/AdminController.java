@@ -10,10 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.cny.backend.admin.entity.Admin;
 import com.cny.backend.admin.entity.PaymentTransaction;
-import com.cny.backend.admin.entity.VnpayConfig;
 import com.cny.backend.admin.repository.AdminRepository;
 import com.cny.backend.admin.service.AdminService;
-import com.cny.backend.admin.service.VNPayService;
 import com.cny.backend.project.dto.ArticleDto;
 import com.cny.backend.project.dto.JobCategoryDto;
 import com.cny.backend.user.entity.EmployerProfileRequest;
@@ -22,12 +20,23 @@ import com.cny.backend.user.entity.EmployerProfileRequest;
 @RequestMapping("/admin")
 @CrossOrigin(origins = "*")
 public class AdminController {
+    
+    @GetMapping("/vnpay-transactions")
+    public ResponseEntity<org.springframework.data.domain.Page<PaymentTransaction>> getVnpayTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(adminService.getVnpayTransactions(page, size));
+    }
+
+    @PostMapping("/vnpay-transactions/{id}/reconcile")
+    public ResponseEntity<Map<String, Object>> reconcileVnpayTransaction(@PathVariable int id) {
+        return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, 1));
+    }
+
 
     @Autowired
     private AdminService adminService;
 
-    @Autowired
-    private VNPayService vnpayService;
 
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsDto> getStats(@RequestParam(value = "period", defaultValue = "30days") String period) {
@@ -205,8 +214,8 @@ public class AdminController {
     }
 
     @GetMapping("/verification-tasks")
-    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks() {
-        return ResponseEntity.ok(adminService.getVerificationTasks());
+    public ResponseEntity<List<Map<String, Object>>> getVerificationTasks(@RequestParam(name = "staffId", required = false) Integer staffId) {
+        return ResponseEntity.ok(adminService.getVerificationTasks(staffId));
     }
 
     @PostMapping("/verification-tasks")
@@ -289,111 +298,20 @@ public class AdminController {
     }
 
 
-    @GetMapping("/vnpay-config")
-    public ResponseEntity<VnpayConfig> getVnpayConfig() {
-        VnpayConfig config = adminService.getVnpayConfig();
-        // Create a safe copy to prevent sending the actual secret to the frontend
-        VnpayConfig safeConfig = VnpayConfig.builder()
-                .id(config.getId())
-                .tmnCode("********") // MASKED
-                .hashSecret("********") // MASKED
-                .vnpUrl(config.getVnpUrl())
-                .returnUrl(config.getReturnUrl())
-                .bankName(config.getBankName())
-                .bankAccountNo(config.getBankAccountNo())
-                .bankAccountName(config.getBankAccountName())
-                .isActive(config.getIsActive())
-                .sessionTimeout(config.getSessionTimeout())
-                .updatedAt(config.getUpdatedAt())
-                .build();
-        return ResponseEntity.ok(safeConfig);
-    }
-
-    @PostMapping("/vnpay-config")
-    public ResponseEntity<VnpayConfig> saveVnpayConfig(
-            @RequestBody VnpayConfig config,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.saveVnpayConfig(config, adminId));
-    }
-
-    @GetMapping("/vnpay-transactions")
-    public ResponseEntity<org.springframework.data.domain.Page<PaymentTransaction>> getVnpayTransactions(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(adminService.getVnpayTransactions(page, size));
-    }
-
-    @PostMapping("/vnpay-transactions/{id}/reconcile")
-    public ResponseEntity<Map<String, Object>> reconcileVnpayTransaction(
-            @PathVariable("id") int id,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId) {
-        return ResponseEntity.ok(adminService.reconcileVnpayTransaction(id, adminId));
-    }
 
     @GetMapping("/payment-gateways/status")
     public ResponseEntity<Map<String, Object>> getPaymentGatewaysStatus() {
         return ResponseEntity.ok(adminService.checkGatewayStatus());
     }
 
-    @PostMapping("/vnpay-transactions/{id}/query")
-    public ResponseEntity<Map<String, Object>> queryVnpayTransaction(
-            @PathVariable("id") int transactionId,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
-            jakarta.servlet.http.HttpServletRequest request) {
-        
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null) {
-            ipAddress = request.getRemoteAddr();
-        }
-        
-        Map<String, Object> response = vnpayService.queryTransactionStatus(transactionId, ipAddress);
-        adminService.writeAuditLog(adminId, "QUERY_VNPAY_TRANSACTION", "FINANCE", 
-            "Truy vấn giao dịch VNPay ID: " + transactionId + ", kết quả: " + response.get("message"));
-        
-        return ResponseEntity.ok(response);
+
+    @GetMapping("/analytics/top-spenders")
+    public ResponseEntity<List<Map<String, Object>>> getTopSpenders() {
+        return ResponseEntity.ok(adminService.getTopSpenders());
     }
 
-    @PostMapping("/vnpay-transactions/{id}/refund")
-    public ResponseEntity<Map<String, Object>> refundVnpayTransaction(
-            @PathVariable("id") int transactionId,
-            @RequestBody Map<String, Object> payload,
-            @RequestHeader(value = "X-Admin-Id", required = false, defaultValue = "1") int adminId,
-            jakarta.servlet.http.HttpServletRequest request) {
-        
-        java.math.BigDecimal amount = null;
-        if (payload.get("amount") != null) {
-            amount = new java.math.BigDecimal(payload.get("amount").toString());
-        }
-        String reason = (String) payload.get("reason");
-        String createBy = "admin_" + adminId;
-        
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null) {
-            ipAddress = request.getRemoteAddr();
-        }
-
-        Map<String, Object> response = vnpayService.refundTransaction(transactionId, amount, reason, createBy, ipAddress);
-        adminService.writeAuditLog(adminId, "REFUND_VNPAY_TRANSACTION", "FINANCE", 
-            "Hoàn tiền giao dịch VNPay ID: " + transactionId + ", Lý do: " + reason + ", kết quả: " + response.get("message"));
-        
-        return ResponseEntity.ok(response);
+    @GetMapping("/analytics/churn-warnings")
+    public ResponseEntity<List<Map<String, Object>>> getChurnWarnings() {
+        return ResponseEntity.ok(adminService.getChurnWarnings());
     }
-
-    @PostMapping("/payment/lookup-account")
-    public ResponseEntity<Map<String, Object>> lookupBankAccount(
-            @RequestBody Map<String, Object> body) {
-        String bankCode = (String) body.get("bankCode");
-        String accountNumber = (String) body.get("accountNumber");
-
-        if (bankCode == null || bankCode.isBlank() || accountNumber == null || accountNumber.isBlank()) {
-            Map<String, Object> err = new java.util.HashMap<>();
-            err.put("success", false);
-            err.put("message", "Thiếu mã ngân hàng hoặc số tài khoản");
-            return ResponseEntity.badRequest().body(err);
-        }
-
-        Map<String, Object> result = vnpayService.lookupBankAccount(bankCode.trim(), accountNumber.trim());
-        return ResponseEntity.ok(result);
-    }
-
 }

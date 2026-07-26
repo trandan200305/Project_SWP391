@@ -1,6 +1,7 @@
 package com.cny.backend.project.controller;
 
 import com.cny.backend.project.dto.ContractDetailDto;
+import com.cny.backend.project.dto.CreateDisputeDto;
 import com.cny.backend.project.service.ContractManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -82,19 +83,37 @@ public class ContractManagementController {
         }
     }
 
-    // Freelancer khiếu nại tranh chấp hợp đồng
+    // Tranh chấp hợp đồng (gửi bởi Freelancer hoặc Nhà tuyển dụng)
     @PostMapping("/{contractId}/dispute")
-    public ResponseEntity<?> fileDispute(
+    public ResponseEntity<?> handleDispute(
             @PathVariable Integer contractId,
-            @RequestParam Integer freelancerId,
-            @RequestBody java.util.Map<String, String> payload) {
+            @RequestParam(required = false) Integer freelancerId,
+            @RequestParam(required = false) Integer employerId,
+            @RequestBody java.util.Map<String, Object> payload) {
         try {
-            String reason = payload.get("reason");
-            if (reason == null || reason.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Lý do tranh chấp không được để trống.");
+            if (freelancerId != null) {
+                CreateDisputeDto dto = new CreateDisputeDto();
+                dto.setReason((String) payload.get("reason"));
+                dto.setPriority((String) payload.get("priority"));
+                Object amountObj = payload.get("amount");
+                if (amountObj != null) {
+                    dto.setAmount(new java.math.BigDecimal(amountObj.toString()));
+                }
+                
+                if (dto.getReason() == null || dto.getReason().trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body("Lý do tranh chấp không được để trống.");
+                }
+                contractManagementService.fileDispute(contractId, freelancerId, dto);
+                return ResponseEntity.ok().build();
+            } else if (employerId != null) {
+                CreateDisputeDto dto = new CreateDisputeDto();
+                dto.setReason((String) payload.get("reason"));
+                dto.setPriority((String) payload.get("priority"));
+                contractManagementService.createDispute(contractId, employerId, dto);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body("Thiếu thông tin người gửi tranh chấp (freelancerId hoặc employerId).");
             }
-            contractManagementService.fileDispute(contractId, freelancerId, reason);
-            return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {

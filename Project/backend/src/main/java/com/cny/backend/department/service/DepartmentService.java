@@ -25,7 +25,7 @@ import java.util.Set;
 
 @Service
 public class DepartmentService {
-    private static final Set<String> ACTIVE_DEPARTMENT_CODES = Set.of("FIN", "MOD", "DIS", "CS", "IT");
+    private static final Set<String> ACTIVE_DEPARTMENT_CODES = Set.of("MOD", "DIS", "CS", "IT");
 
     @Autowired
     private DepartmentRepository departmentRepository;

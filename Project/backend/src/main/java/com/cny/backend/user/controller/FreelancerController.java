@@ -69,7 +69,6 @@ public class FreelancerController {
             @RequestParam(value = "minRate", required = false) java.math.BigDecimal minRate,
             @RequestParam(value = "maxRate", required = false) java.math.BigDecimal maxRate,
             @RequestParam(value = "minRating", required = false) java.math.BigDecimal minRating) {
-        
         List<Freelancer> freelancers = freelancerRepository.findByIsAvailableTrueOrderByAverageRatingDescProjectsCompletedDesc();
         List<FreelancerDto> dtos = freelancers.stream().map(f -> {
             FreelancerDto dto = mapToDto(f);
@@ -79,6 +78,83 @@ public class FreelancerController {
             dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
             return dto;
         }).collect(Collectors.toList());
+        
+        // Filter in memory
+        if ((keyword != null && !keyword.trim().isEmpty()) || 
+            (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) ||
+            (experienceLevel != null && !experienceLevel.trim().isEmpty()) ||
+            minRate != null || maxRate != null || minRating != null) {
+            
+            dtos = dtos.stream().filter(f -> {
+                boolean matches = true;
+                
+                // Category match (expertiseField - list of IDs)
+                if (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) {
+                    String catId = category.trim();
+                    String expField = f.getExpertiseField();
+                    if (expField != null) {
+                        java.util.List<String> ids = java.util.Arrays.asList(expField.split(",\\s*"));
+                        if (!ids.contains(catId)) {
+                            matches = false;
+                        }
+                    } else {
+                        matches = false;
+                    }
+                }
+                
+                // Keyword match (name, bio, professional title, primary skills)
+                if (matches && keyword != null && !keyword.trim().isEmpty()) {
+                    String kwLower = keyword.trim().toLowerCase();
+                    boolean nameMatch = f.getDisplayName() != null && f.getDisplayName().toLowerCase().contains(kwLower);
+                    boolean fullNameMatch = f.getFullName() != null && f.getFullName().toLowerCase().contains(kwLower);
+                    boolean bioMatch = f.getBio() != null && f.getBio().toLowerCase().contains(kwLower);
+                    boolean titleMatch = f.getProfessionalTitle() != null && f.getProfessionalTitle().toLowerCase().contains(kwLower);
+                    boolean skillsMatch = f.getPrimarySkills() != null && f.getPrimarySkills().toLowerCase().contains(kwLower);
+                    
+                    if (!nameMatch && !fullNameMatch && !bioMatch && !titleMatch && !skillsMatch) {
+                        matches = false;
+                    }
+                }
+                
+                // Experience level match
+                if (matches && experienceLevel != null && !experienceLevel.trim().isEmpty()) {
+                    String expLower = experienceLevel.trim().toLowerCase();
+                    String flExp = f.getExperienceLevel();
+                    if (flExp == null || !flExp.toLowerCase().contains(expLower)) {
+                        matches = false;
+                    }
+                }
+                
+                // Hourly rate match
+                if (matches) {
+                    java.math.BigDecimal rate = f.getHourlyRate();
+                    if (rate != null) {
+                        if (minRate != null && rate.compareTo(minRate) < 0) {
+                            matches = false;
+                        }
+                        if (maxRate != null && rate.compareTo(maxRate) > 0) {
+                            matches = false;
+                        }
+                    } else {
+                        // if rate is null, exclude if min/max filters are active
+                        if (minRate != null || maxRate != null) {
+                            matches = false;
+                        }
+                    }
+                }
+                
+                // Rating filter (averageRating)
+                if (matches && minRating != null) {
+                    java.math.BigDecimal rating = f.getAverageRating();
+                    if (rating == null || rating.compareTo(minRating) < 0) {
+                        matches = false;
+                    }
+                }
+                
+                return matches;
+            }).collect(Collectors.toList());
+        }
+
         return ResponseEntity.ok(dtos);
     }
 
@@ -257,26 +333,31 @@ public class FreelancerController {
             f.setUpdatedAt(java.time.LocalDateTime.now());
             Freelancer saved = freelancerRepository.save(f);
 
-            if (updated.getPrimarySkills() != null || updated.getExpertiseField() != null) {
-                FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(id)
-                        .orElseGet(() -> {
-                            FreelancerProfile newProfile = new FreelancerProfile();
-                            newProfile.setFreelancer(saved);
-                            return newProfile;
-                        });
-                if (updated.getPrimarySkills() != null) profile.setPrimarySkills(updated.getPrimarySkills());
-                if (updated.getExpertiseField() != null) profile.setExpertiseField(updated.getExpertiseField());
-                profile.setUpdatedAt(java.time.LocalDateTime.now());
-                freelancerProfileRepository.save(profile);
-            }
+            // Synchronize with FreelancerProfile
+            FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId())
+                    .orElseGet(() -> {
+                        FreelancerProfile newProfile = new FreelancerProfile();
+                        newProfile.setFreelancer(f);
+                        return newProfile;
+                    });
+            if(updated.getProfessionalTitle() != null) profile.setProfessionalTitle(updated.getProfessionalTitle());
+            if(updated.getExpertiseField() != null) profile.setExpertiseField(updated.getExpertiseField());
+            if(updated.getBio() != null) profile.setBio(updated.getBio());
+            if(updated.getHourlyRate() != null) profile.setHourlyRate(updated.getHourlyRate());
+            if(updated.getAddress() != null) profile.setAddress(updated.getAddress());
+            if(updated.getCity() != null) profile.setCity(updated.getCity());
+            if(updated.getCountry() != null) profile.setCountry(updated.getCountry());
+            if(updated.getPrimarySkills() != null) profile.setPrimarySkills(updated.getPrimarySkills());
+            profile.setUpdatedAt(java.time.LocalDateTime.now());
+            freelancerProfileRepository.save(profile);
 
             saved.setProfileCompleteness(calculateCompleteness(saved));
-            freelancerRepository.save(saved);
+            Freelancer savedAgain = freelancerRepository.save(saved);
 
-            FreelancerDto dto = mapToDto(saved);
-            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(saved.getProfileId(), "COMPLETED");
+            FreelancerDto dto = mapToDto(savedAgain);
+            java.math.BigDecimal total = contractRepository.sumEarningsByFreelancerAndStatus(savedAgain.getProfileId(), "COMPLETED");
             dto.setTotalEarnings(total != null ? total : java.math.BigDecimal.ZERO);
-            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(saved.getProfileId(), "COMPLETED");
+            Integer completedCount = contractRepository.countContractsByFreelancerAndStatus(savedAgain.getProfileId(), "COMPLETED");
             dto.setProjectsCompleted(completedCount != null ? completedCount : 0);
 
             return ResponseEntity.ok(dto);
@@ -284,13 +365,8 @@ public class FreelancerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id, @RequestParam(required = false) String confirmationText) {
+    public ResponseEntity<java.util.Map<String, Object>> deleteAccount(@PathVariable Integer id) {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        if (confirmationText == null || !confirmationText.equals("DELETE")) {
-            response.put("success", false);
-            response.put("message", "Chữ xác nhận không hợp lệ. Vui lòng nhập đúng chữ 'DELETE'.");
-            return ResponseEntity.badRequest().body(response);
-        }
         return freelancerRepository.findById(id).map(f -> {
             int activeContracts = contractRepository.countActiveContractsByFreelancerId(id);
             if (activeContracts > 0) {
@@ -357,6 +433,7 @@ public class FreelancerController {
         FreelancerProfile profile = freelancerProfileRepository.findByFreelancer_ProfileId(f.getProfileId()).orElse(null);
         String primarySkills = profile != null ? profile.getPrimarySkills() : null;
         String expertiseField = profile != null ? profile.getExpertiseField() : null;
+        String experienceLevel = profile != null ? profile.getExperienceLevel() : null;
 
         return FreelancerDto.builder()
                 .profileId(f.getProfileId())
@@ -395,6 +472,7 @@ public class FreelancerController {
                 .isVerified(f.getIsVerified())
                 .primarySkills(primarySkills)
                 .expertiseField(expertiseField)
+                .experienceLevel(experienceLevel)
                 .build();
     }
 

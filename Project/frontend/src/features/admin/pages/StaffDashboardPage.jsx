@@ -13,6 +13,7 @@ import {
   Search,
   HelpCircle,
   Plus,
+  Terminal,
   ArrowUpRight,
   ArrowDownRight,
   MoreVertical,
@@ -140,7 +141,6 @@ export default function StaffDashboardPage({
   // Tab states
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [sectionsOpen, setSectionsOpen] = useState({
-    finance: true,
     moderation: true,
     disputeResolution: true,
     customerSupport: true,
@@ -313,7 +313,7 @@ export default function StaffDashboardPage({
       })
       .catch((err) => console.error("Error fetching staff profile:", err));
   };
-
+  // ly do tu choi
   const fetchMyTransferRequests = () => {
     adminApi
       .getTransferRequests()
@@ -417,6 +417,15 @@ export default function StaffDashboardPage({
           }
         })
         .catch((err) => console.error("Error fetching departments:", err));
+      // chon nhan vien ban giao
+      adminApi
+        .getStaff()
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setStaffList(data);
+          }
+        })
+        .catch((err) => console.error("Error fetching staff list:", err));
     }
   }, [showTransferRequestModal]);
 
@@ -652,7 +661,7 @@ export default function StaffDashboardPage({
       })
       .catch((err) => console.error("Error fetching stats:", err));
   };
-  // my tasks
+  // my tasks don ban dao
   const fetchTasks = () => {
     adminApi
       .getVerificationTasks()
@@ -2165,23 +2174,27 @@ export default function StaffDashboardPage({
     return "";
   };
 
-  const staffDepartmentCode =
-    normalizeDepartmentCode(myProfile?.departmentCode) ||
-    normalizeDepartmentCode(user?.departmentCode) ||
-    normalizeDepartmentCode(user?.department) ||
-    normalizeDepartmentCode(myProfile?.departmentName) ||
-    normalizeDepartmentCode(user?.departmentName) ||
-    normalizeDepartmentCode(myProfile?.specialization) ||
-    normalizeDepartmentCode(user?.specialization) ||
-    (() => {
-      const email = String(user?.email || "").toLowerCase();
-      if (email.includes("moderation") || email.includes("mod")) return "MOD";
-      if (email.includes("finance") || email.includes("fin")) return "FIN";
-      if (email.includes("dispute") || email.includes("dis")) return "DIS";
-      if (email.includes("support") || email.includes("cs")) return "CS";
-      if (email.includes("it") || email.includes("tech")) return "IT";
-      return "CS";
-    })();
+  const staffDepartmentCode = (() => {
+    return (
+      normalizeDepartmentCode(myProfile?.departmentCode) ||
+      normalizeDepartmentCode(user?.departmentCode) ||
+      normalizeDepartmentCode(user?.department) ||
+      normalizeDepartmentCode(myProfile?.departmentName) ||
+      normalizeDepartmentCode(user?.departmentName) ||
+      normalizeDepartmentCode(myProfile?.specialization) ||
+      normalizeDepartmentCode(user?.specialization) ||
+      (() => {
+        const email = String(user?.email || "").toLowerCase();
+        if (email.includes("moderation") || email.includes("mod")) return "MOD";
+        if (email.includes("finance") || email.includes("fin")) return "FIN";
+        if (email.includes("dispute") || email.includes("dis")) return "DIS";
+        if (email.includes("support") || email.includes("cs")) return "CS";
+        if (email.includes("it") || email.includes("tech")) return "IT";
+        return "CS";
+      })()
+    );
+  })();
+
   // phan quyen hien thi theo staff
   const taskBelongsToCurrentStaff = (task) => {
     if (
@@ -2190,13 +2203,24 @@ export default function StaffDashboardPage({
     )
       return true;
 
-    // If the task has been assigned to someone, only show it to the assignee
+    // If the task has been assigned to someone, check if it matches current staff email or username prefix
     if (task.assignedToEmail) {
-      return (
-        user?.email &&
-        String(task.assignedToEmail).toLowerCase().trim() ===
-          String(user.email).toLowerCase().trim()
-      );
+      const assigned = String(task.assignedToEmail).toLowerCase().trim();
+      const myEmail = String(user?.email || "")
+        .toLowerCase()
+        .trim();
+      if (!myEmail) return false;
+      const myUserPrefix = myEmail.split("@")[0];
+      const assignedPrefix = assigned.split("@")[0];
+
+      if (
+        assigned === myEmail ||
+        assignedPrefix === myUserPrefix ||
+        assigned === myUserPrefix ||
+        assignedPrefix === myEmail
+      ) {
+        return true;
+      }
     }
 
     // If the task is not assigned yet, show it to anyone in the required department
@@ -2341,18 +2365,21 @@ export default function StaffDashboardPage({
       title: "MODERATION",
       icon: Gavel,
       items: [
+        // nut cong viec cua toi
         {
           id: "Tasks",
           label: "Công việc của tôi",
           icon: CheckSquare,
           badge: pendingTasksCount,
         },
+        // nut kiem duyet
         {
           id: "Moderation",
           label: "Kiểm duyệt",
           icon: Gavel,
           badge: pendingModerationCount,
         },
+        // nut bao cao vi pham
         {
           id: "Reports",
           label: "Báo cáo vi phạm",
@@ -2364,12 +2391,14 @@ export default function StaffDashboardPage({
               r.status === "Pending",
           ).length,
         },
+        // nut xac thuc kyc
         {
           id: "KYC",
           label: "Xác thực KYC",
           icon: UserCheck,
           badge: pendingKycCount,
         },
+        // nut lich su hoat dong
         { id: "ModHistory", label: "Lịch sử hoạt động", icon: FileText },
       ],
     },
@@ -2413,6 +2442,25 @@ export default function StaffDashboardPage({
           label: "Ticket hỗ trợ",
           icon: MessageSquare,
           badge: unreadSupportCount,
+        },
+      ],
+    },
+    IT: {
+      key: "itDevelopment",
+      title: "IT & DEVELOPMENT",
+      icon: Terminal,
+      items: [
+        {
+          id: "Tasks",
+          label: "Công việc của tôi",
+          icon: CheckSquare,
+          badge: pendingTasksCount,
+        },
+        {
+          id: "FailedTransactions",
+          label: "Sự cố & Giao dịch kỹ thuật",
+          icon: AlertTriangle,
+          badge: failedTransactionCount,
         },
       ],
     },
@@ -4398,6 +4446,7 @@ export default function StaffDashboardPage({
                 </div>
               </div>
 
+              {/* loc hang doi chuyen cap */}
               <div className="bg-white border border-[#e1e8fd] rounded-xl p-3">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   {[
@@ -4466,6 +4515,7 @@ export default function StaffDashboardPage({
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e9edff] pb-2">
+                      {/* nut bam kiem duyet */}
                       <div className="flex gap-2 overflow-x-auto">
                         {[
                           { id: "ALL", label: "Tất cả" },
@@ -4664,9 +4714,24 @@ export default function StaffDashboardPage({
             </div>
           )}
 
-          {/* ---------------- TAB: KYC ---------------- */}
           {activeTab === "KYC" &&
             (() => {
+              {
+                /* loc xac thuc kyc */
+              }
+              const filteredKyc = kycRequests.filter((req) => {
+                if (kycRoleFilter !== "ALL" && req.role !== kycRoleFilter)
+                  return false;
+                if (kycSearch) {
+                  const query = kycSearch.toLowerCase();
+                  const matchesName = req.name?.toLowerCase().includes(query);
+                  const matchesEmail = req.email?.toLowerCase().includes(query);
+                  const matchesId = req.id?.toLowerCase().includes(query);
+                  return matchesName || matchesEmail || matchesId;
+                }
+                return true;
+              });
+
               return (
                 <div className="space-y-6 max-w-7xl mx-auto">
                   <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -4679,6 +4744,7 @@ export default function StaffDashboardPage({
                         nhà tuyển dụng để duy trì hệ sinh thái an toàn.
                       </p>
                     </div>
+                    {/* nut bam xac thuc kyc */}
                     {/* Filters & Search */}
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <select
@@ -4690,7 +4756,6 @@ export default function StaffDashboardPage({
                         <option value="FREELANCER">Freelancer</option>
                         <option value="EMPLOYER">Nhà tuyển dụng</option>
                       </select>
-
 
                       <div className="w-full sm:w-72 relative">
                         <span className="absolute inset-y-0 left-3 flex items-center text-[#6e7b6c]">
@@ -4822,6 +4887,7 @@ export default function StaffDashboardPage({
 
                             {req.status === "Pending" ? (
                               <div className="flex items-center gap-3">
+                                {/* nut bam tu choi phe duyet kyc */}
                                 <button
                                   onClick={() =>
                                     handleKycAction(
@@ -4908,104 +4974,111 @@ export default function StaffDashboardPage({
                   </div>
 
                   <div className="bg-white border border-[#e1e8fd] rounded-xl p-6">
-                    <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
-                      {filteredHistory.map((log) => {
-                        const isRejected =
-                          log.target &&
-                          (log.target.includes("REJECTED") ||
-                            log.target.includes("Từ chối") ||
-                            log.target
-                              .toLowerCase()
-                              .includes("yêu cầu bổ sung") ||
-                            (log.action && log.action.includes("REJECT")));
-                        return (
-                          <div
-                            key={log.id}
-                            className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? "md:flex-row" : "md:flex-row-reverse"}`}
-                          >
+                    {filteredHistory.length === 0 ? (
+                      <div className="text-center py-10 text-[#6e7b6c] text-sm">
+                        Chưa có lịch sử hoạt động kiểm duyệt nào.
+                      </div>
+                    ) : (
+                      <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#bdcaba] before:to-transparent">
+                        {filteredHistory.map((log) => {
+                          const isRejected =
+                            log.target &&
+                            (log.target.includes("REJECTED") ||
+                              log.target.includes("Từ chối") ||
+                              log.target
+                                .toLowerCase()
+                                .includes("yêu cầu bổ sung") ||
+                              (log.action && log.action.includes("REJECT")));
+                          return (
                             <div
-                              onClick={() => setSelectedHistoryLog(log)}
-                              className={`w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
-                                isRejected
-                                  ? "bg-rose-50/80 border-rose-200 text-rose-900 hover:border-rose-300"
-                                  : "bg-emerald-50/80 border-emerald-200 text-emerald-900 hover:border-emerald-300"
-                              }`}
+                              key={log.id}
+                              className={`relative flex items-center justify-between md:justify-normal group is-active ${isRejected ? "md:flex-row" : "md:flex-row-reverse"}`}
                             >
                               <div
-                                className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? "border-rose-100" : "border-emerald-100"}`}
+                                onClick={() => setSelectedHistoryLog(log)}
+                                className={`w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-4 rounded-xl border shadow-sm mb-4 hover:shadow-md cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
+                                  isRejected
+                                    ? "bg-rose-50/80 border-rose-200 text-rose-900 hover:border-rose-300"
+                                    : "bg-emerald-50/80 border-emerald-200 text-emerald-900 hover:border-emerald-300"
+                                }`}
                               >
-                                <div className="flex flex-col">
-                                  <h4
-                                    className={`font-bold text-[13px] tracking-wide ${isRejected ? "text-rose-800" : "text-emerald-800"}`}
-                                  >
-                                    {getActionLabel(log.action)}
-                                  </h4>
-                                  <span
-                                    className={`text-[10px] ${isRejected ? "text-rose-500" : "text-[#6e7b6c]"} mt-0.5 font-medium`}
-                                  >
-                                    Người đăng/gửi: {getTargetUser(log.target)}
-                                  </span>
-                                </div>
-                                <time
-                                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                                    isRejected
-                                      ? "text-rose-600 bg-rose-100/60"
-                                      : "text-emerald-600 bg-emerald-100/60"
-                                  }`}
+                                <div
+                                  className={`flex items-center justify-between mb-1.5 border-b pb-2 ${isRejected ? "border-rose-100" : "border-emerald-100"}`}
                                 >
-                                  {log.time}
-                                </time>
+                                  <div className="flex flex-col">
+                                    <h4
+                                      className={`font-bold text-[13px] tracking-wide ${isRejected ? "text-rose-800" : "text-emerald-800"}`}
+                                    >
+                                      {getActionLabel(log.action)}
+                                    </h4>
+                                    <span
+                                      className={`text-[10px] ${isRejected ? "text-rose-500" : "text-[#6e7b6c]"} mt-0.5 font-medium`}
+                                    >
+                                      Người đăng/gửi:{" "}
+                                      {getTargetUser(log.target)}
+                                    </span>
+                                  </div>
+                                  <time
+                                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                      isRejected
+                                        ? "text-rose-600 bg-rose-100/60"
+                                        : "text-emerald-600 bg-emerald-100/60"
+                                    }`}
+                                  >
+                                    {log.time}
+                                  </time>
+                                </div>
+                                <p
+                                  className={`text-[13px] leading-relaxed mt-2 ${isRejected ? "text-rose-700" : "text-emerald-700"}`}
+                                >
+                                  {log.target
+                                    .split(
+                                      /(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi,
+                                    )
+                                    .map((part, i) => {
+                                      const upperPart = part.toUpperCase();
+                                      if (
+                                        upperPart === "REJECTED" ||
+                                        upperPart === "TỪ CHỐI"
+                                      ) {
+                                        return (
+                                          <span
+                                            key={i}
+                                            className="font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded"
+                                          >
+                                            {part}
+                                          </span>
+                                        );
+                                      } else if (upperPart === "PUBLISHED") {
+                                        return (
+                                          <span
+                                            key={i}
+                                            className="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded"
+                                          >
+                                            {part}
+                                          </span>
+                                        );
+                                      } else if (
+                                        upperPart === "YÊU CẦU BỔ SUNG"
+                                      ) {
+                                        return (
+                                          <span
+                                            key={i}
+                                            className="font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded"
+                                          >
+                                            {part}
+                                          </span>
+                                        );
+                                      }
+                                      return part;
+                                    })}
+                                </p>
                               </div>
-                              <p
-                                className={`text-[13px] leading-relaxed mt-2 ${isRejected ? "text-rose-700" : "text-emerald-700"}`}
-                              >
-                                {log.target
-                                  .split(
-                                    /(REJECTED|PUBLISHED|Từ chối|yêu cầu bổ sung)/gi,
-                                  )
-                                  .map((part, i) => {
-                                    const upperPart = part.toUpperCase();
-                                    if (
-                                      upperPart === "REJECTED" ||
-                                      upperPart === "TỪ CHỐI"
-                                    ) {
-                                      return (
-                                        <span
-                                          key={i}
-                                          className="font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded"
-                                        >
-                                          {part}
-                                        </span>
-                                      );
-                                    } else if (upperPart === "PUBLISHED") {
-                                      return (
-                                        <span
-                                          key={i}
-                                          className="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded"
-                                        >
-                                          {part}
-                                        </span>
-                                      );
-                                    } else if (
-                                      upperPart === "YÊU CẦU BỔ SUNG"
-                                    ) {
-                                      return (
-                                        <span
-                                          key={i}
-                                          className="font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded"
-                                        >
-                                          {part}
-                                        </span>
-                                      );
-                                    }
-                                    return part;
-                                  })}
-                              </p>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -5169,6 +5242,46 @@ export default function StaffDashboardPage({
                   ? "bg-[#ffdad6] text-[#ba1a1a] border-[#ffdad6]"
                   : "bg-amber-50 text-amber-700 border-amber-200";
 
+              {
+                /* logic loc bao cao vi pham */
+              }
+              const filteredReports = violationReports.filter((r) => {
+                if (reportFilter !== "ALL") {
+                  const isPending =
+                    r.status === "Chờ xử lý" || r.status === "PENDING";
+                  const isEscalated =
+                    r.status === "Đã chuyển cấp" || r.status === "ESCALATED";
+                  if (reportFilter === "PENDING" && !isPending) return false;
+                  if (reportFilter === "ESCALATED" && !isEscalated)
+                    return false;
+                }
+                if (reportTypeFilter !== "ALL" && r.type !== reportTypeFilter)
+                  return false;
+                if (reportSearch) {
+                  const searchLower = reportSearch.toLowerCase();
+                  const matchesTarget = r.target
+                    ?.toLowerCase()
+                    .includes(searchLower);
+                  const matchesReporter = r.reporter
+                    ?.toLowerCase()
+                    .includes(searchLower);
+                  const matchesAccused = r.accused
+                    ?.toLowerCase()
+                    .includes(searchLower);
+                  const matchesEvidence = r.evidence
+                    ?.toLowerCase()
+                    .includes(searchLower);
+                  if (
+                    !matchesTarget &&
+                    !matchesReporter &&
+                    !matchesAccused &&
+                    !matchesEvidence
+                  )
+                    return false;
+                }
+                return true;
+              });
+
               return (
                 <div className="space-y-6 max-w-7xl mx-auto">
                   <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
@@ -5177,7 +5290,8 @@ export default function StaffDashboardPage({
                         Báo cáo vi phạm
                       </h1>
                       <p className="text-body-sm text-[#3e4a3d] mt-1">
-                        Xử lý các báo cáo vi phạm bài đăng, hồ sơ và người dùng từ hệ thống.
+                        Xử lý các báo cáo vi phạm bài đăng, hồ sơ và người dùng
+                        từ hệ thống.
                       </p>
                     </div>
                   </div>
@@ -5186,6 +5300,7 @@ export default function StaffDashboardPage({
                     {/* Filter controls */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#e1e8fd] gap-4">
                       <div className="flex flex-wrap items-center gap-3">
+                        {/* nut bam bao cao vi pham */}
                         {/* Status filter buttons */}
                         <div className="flex bg-[#f1f3ff] p-1 rounded-lg">
                           {[
@@ -5710,10 +5825,10 @@ export default function StaffDashboardPage({
                 <div className="space-y-6 max-w-7xl mx-auto">
                   <div>
                     <h1 className="text-headline-lg font-extrabold text-[#141b2b]">
-                      Đối soát giao dịch VNPay
+                      Đối soát giao dịch PayOS
                     </h1>
                     <p className="text-body-sm text-[#3e4a3d] mt-1">
-                      Quản lý và đối soát các giao dịch thanh toán từ ví VNPay.
+                      Quản lý và đối soát các giao dịch thanh toán từ ví PayOS.
                     </p>
                   </div>
 
@@ -6349,8 +6464,8 @@ export default function StaffDashboardPage({
                             ) {
                               const foundDispute = escalationCases.find(
                                 (c) =>
-                                  String(c.id) ===
-                                  String(selectedTask.referenceId),
+                                  String(c.id) === String(selectedTask.referenceId) || 
+                                  String(c.id) === `ESC-${selectedTask.referenceId}`
                               );
                               if (foundDispute) {
                                 setSelectedDispute(foundDispute);
@@ -7115,6 +7230,7 @@ export default function StaffDashboardPage({
                           Báo cáo sự cố / Trì hoãn
                         </button>
                       )}
+                    {/* nut tiep nhan */}
                     <button
                       onClick={() => {
                         handleModAction(selectedModerationItem, true);
@@ -7557,6 +7673,68 @@ export default function StaffDashboardPage({
 
                             <div>
                               <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                                Nhân viên tiếp nhận bàn giao công việc{" "}
+                                <span className="text-rose-500">*</span>
+                              </label>
+                              <select
+                                disabled={handoverSubmitted}
+                                value={handoverAssignee}
+                                onChange={(e) =>
+                                  setHandoverAssignee(e.target.value)
+                                }
+                                className="w-full p-3.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 outline-none focus:border-[#006b2c] mb-3"
+                              >
+                                <option value="">
+                                  -- Chọn nhân viên tiếp nhận bàn giao --
+                                </option>
+                                {staffList
+                                  .filter((s) => {
+                                    if (s.email === user?.email) return false;
+                                    const sDeptCode =
+                                      normalizeDepartmentCode(
+                                        s.departmentCode,
+                                      ) ||
+                                      normalizeDepartmentCode(s.department) ||
+                                      normalizeDepartmentCode(
+                                        s.departmentName,
+                                      ) ||
+                                      (s.email?.includes("moderation") ||
+                                      s.email?.includes("mod")
+                                        ? "MOD"
+                                        : s.email?.includes("dispute") ||
+                                            s.email?.includes("dis")
+                                          ? "DIS"
+                                          : s.email?.includes("support") ||
+                                              s.email?.includes("cs")
+                                            ? "CS"
+                                            : s.email?.includes("finance") ||
+                                                s.email?.includes("fin")
+                                              ? "FIN"
+                                              : s.email?.includes("it") ||
+                                                  s.email?.includes("tech")
+                                                ? "IT"
+                                                : "");
+                                    return (
+                                      !staffDepartmentCode ||
+                                      !sDeptCode ||
+                                      sDeptCode === staffDepartmentCode
+                                    );
+                                  })
+                                  .map((s) => (
+                                    <option
+                                      key={s.id || s.email}
+                                      value={s.email}
+                                    >
+                                      {s.fullName || s.name || s.email} (
+                                      {s.email})
+                                      {s.department || s.departmentName
+                                        ? ` - ${s.department || s.departmentName}`
+                                        : ""}
+                                    </option>
+                                  ))}
+                              </select>
+
+                              <label className="text-xs font-bold text-slate-700 block mb-1.5">
                                 Nội dung chi tiết & Ghi chú bàn giao công việc{" "}
                                 <span className="text-rose-500">*</span>
                               </label>
@@ -7574,6 +7752,7 @@ export default function StaffDashboardPage({
 
                             {!handoverSubmitted ? (
                               <div className="flex flex-col sm:flex-row gap-3">
+                                {/* nut khong ban giao */}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -7587,6 +7766,7 @@ export default function StaffDashboardPage({
                                       cancelText: "Không",
                                       onConfirm: () => {
                                         setShowConfirmModal(false);
+                                        // khong ban giao: huy don dieu chuyen
                                         adminApi
                                           .approveTransferRequest(
                                             targetRequest.requestId,
@@ -7624,9 +7804,20 @@ export default function StaffDashboardPage({
                                   <XCircle className="w-4 h-4" /> Hủy bàn giao &
                                   Hủy đơn
                                 </button>
+                                {/* nut xac nhan ban giao */}
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    if (
+                                      staffUnfinishedTasks.length > 0 &&
+                                      !handoverAssignee
+                                    ) {
+                                      showToast(
+                                        "Vui lòng chọn nhân viên tiếp nhận bàn giao công việc.",
+                                        "error",
+                                      );
+                                      return;
+                                    }
                                     if (!handoverNotes.trim()) {
                                       showToast(
                                         "Vui lòng điền chi tiết nội dung & ghi chú bàn giao.",
@@ -7634,10 +7825,14 @@ export default function StaffDashboardPage({
                                       );
                                       return;
                                     }
+                                    const fullNotes = handoverAssignee
+                                      ? `[Bàn giao cho: ${handoverAssignee}] ${handoverNotes}`
+                                      : handoverNotes;
+                                    // xac nhan ban giao: hoan tat dieu chuyen
                                     adminApi
                                       .completeTransferHandover(
                                         targetRequest.requestId,
-                                        handoverNotes,
+                                        fullNotes,
                                         user?.id || 1,
                                       )
                                       .then((res) => {
@@ -8344,6 +8539,7 @@ export default function StaffDashboardPage({
                           Báo cáo sự cố / Trì hoãn
                         </button>
                       )}
+                    {/* nut tiep nhan */}
                     <button
                       onClick={() => handleModAction(selectedReport, true)}
                       className="flex-1 py-2 px-4 bg-[#006b2c] hover:bg-[#00873a] text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center justify-center gap-2"

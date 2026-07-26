@@ -68,49 +68,17 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
 
     // Pagination states for projects
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
     const PAGE_SIZE = 5;
 
-    // Filter projects based on status and search query
-    const filteredProjects = useMemo(() => {
-        return projects.filter((proj) => {
-            // Status match
-            let matchesStatus = true;
-            if (statusFilter !== 'ALL') {
-                if (statusFilter === 'PENDING_ALL') {
-                    matchesStatus = proj.status === 'PENDING' || proj.status === 'PENDING_REVIEW';
-                } else {
-                    matchesStatus = proj.status === statusFilter;
-                }
-            }
-
-            // Search query match (title, category name, or description)
-            let matchesQuery = true;
-            if (searchQuery.trim() !== '') {
-                const query = searchQuery.toLowerCase().trim();
-                const titleMatch = proj.title?.toLowerCase().includes(query);
-                const descMatch = proj.description?.toLowerCase().includes(query);
-                const categoryMatch = proj.category?.categoryName?.toLowerCase().includes(query);
-                matchesQuery = titleMatch || descMatch || categoryMatch;
-            }
-
-            return matchesStatus && matchesQuery;
-        });
-    }, [projects, statusFilter, searchQuery]);
+    const filteredProjects = projects;
+    const paginatedProjects = projects;
 
     // Reset currentPage when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [statusFilter, searchQuery]);
-
-    // Adjust currentPage if it goes out of range due to project count changes
-    useEffect(() => {
-        const maxPage = Math.ceil(filteredProjects.length / PAGE_SIZE);
-        if (maxPage > 0 && currentPage > maxPage) {
-            setCurrentPage(maxPage);
-        } else if (filteredProjects.length === 0) {
-            setCurrentPage(1);
-        }
-    }, [filteredProjects.length, currentPage]);
 
     // Reset page to 1 and clear filters when changing activeTab to projects
     useEffect(() => {
@@ -120,11 +88,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
             setSearchQuery('');
         }
     }, [activeTab]);
-
-    const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
-    const paginatedProjects = useMemo(() => {
-        return filteredProjects.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-    }, [filteredProjects, currentPage]);
 
     // States for managing projects (edit, close, delete)
     const [editingProject, setEditingProject] = useState(null);
@@ -392,13 +355,15 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     const fetchProjects = () => {
         if (!user?.id) return;
         setLoadingProjects(true);
-        fetch(`http://localhost:8080/api/projects/employer/${user.id}`)
+        fetch(`http://localhost:8080/api/projects/employer/${user.id}/paginated?page=${currentPage - 1}&size=${PAGE_SIZE}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`)
             .then((res) => {
                 if (!res.ok) throw new Error('Không thể tải danh sách dự án.');
                 return res.json();
             })
             .then((data) => {
-                setProjects(data);
+                setProjects(data.content || []);
+                setTotalPages(data.totalPages || 1);
+                setTotalElements(data.totalElements || 0);
             })
             .catch((err) => {
                 console.error(err);
@@ -407,10 +372,10 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
     };
 
     useEffect(() => {
-        if (user?.id && user?.role === 'EMPLOYER') {
+        if (user?.id && user?.role === 'EMPLOYER' && activeTab === 'projects') {
             fetchProjects();
         }
-    }, [user]);
+    }, [user, activeTab, currentPage, statusFilter, searchQuery]);
 
     useEffect(() => {
         if (!user?.id || user?.role !== 'EMPLOYER') {
@@ -684,16 +649,15 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                     <div className="flex flex-wrap gap-2 items-center">
                                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-2">Trạng thái:</span>
                                         {[
-                                            { value: 'ALL', label: 'Tất cả', count: projects.length },
-                                            { value: 'PUBLISHED', label: 'Đang tuyển', count: projects.filter(p => p.status === 'PUBLISHED').length },
-                                            { value: 'IN_PROGRESS', label: 'Đang làm', count: projects.filter(p => p.status === 'IN_PROGRESS').length },
-                                            { value: 'PENDING_ALL', label: 'Chờ duyệt', count: projects.filter(p => p.status === 'PENDING' || p.status === 'PENDING_REVIEW').length },
-                                            { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán', count: projects.filter(p => p.status === 'PENDING_PAYMENT').length },
-                                            { value: 'CLOSED', label: 'Đã đóng', count: projects.filter(p => p.status === 'CLOSED').length },
-                                            { value: 'REJECTED', label: 'Từ chối', count: projects.filter(p => p.status === 'REJECTED').length },
-                                            { value: 'DRAFT', label: 'Bản nháp', count: projects.filter(p => p.status === 'DRAFT').length },
+                                            { value: 'ALL', label: 'Tất cả' },
+                                            { value: 'PUBLISHED', label: 'Đang tuyển' },
+                                            { value: 'IN_PROGRESS', label: 'Đang làm' },
+                                            { value: 'PENDING_ALL', label: 'Chờ duyệt' },
+                                            { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
+                                            { value: 'CLOSED', label: 'Đã đóng' },
+                                            { value: 'REJECTED', label: 'Từ chối' },
+                                            { value: 'DRAFT', label: 'Bản nháp' },
                                         ].map(item => {
-                                            if (item.count === 0 && item.value !== 'ALL') return null; // Only show status with items, but always show 'All'
                                             const isActive = statusFilter === item.value;
                                             return (
                                                 <button
@@ -707,11 +671,6 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                                     }`}
                                                 >
                                                     <span>{item.label}</span>
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                                        isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-650'
-                                                    }`}>
-                                                        {item.count}
-                                                    </span>
                                                 </button>
                                             );
                                         })}
@@ -883,9 +842,9 @@ export default function EmployerJobsPage({user, onNavigateHome, onNavigate, onUs
                                         {totalPages > 1 && (
                                             <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6 flex-wrap gap-4">
                                                 <span className="text-xs text-slate-500 font-medium">
-                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{(currentPage - 1) * PAGE_SIZE + 1}</span> đến{' '}
-                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, filteredProjects.length)}</span> trong tổng số{' '}
-                                                    <span className="font-extrabold text-slate-800">{filteredProjects.length}</span> dự án
+                                                    Hiển thị từ <span className="font-extrabold text-slate-800">{totalElements > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0}</span> đến{' '}
+                                                    <span className="font-extrabold text-slate-800">{Math.min(currentPage * PAGE_SIZE, totalElements)}</span> trong tổng số{' '}
+                                                    <span className="font-extrabold text-slate-800">{totalElements}</span> dự án
                                                 </span>
                                                 <div className="flex items-center gap-1.5">
                                                     <button
@@ -1264,9 +1223,8 @@ function TextArea({label, value, onChange}) {
 function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
     const [payOption, setPayOption] = useState('single'); // 'single' or 'split'
     const [milestones, setMilestones] = useState([
-        { title: 'Giai đoạn 1: Bản vẽ thiết kế & Giao diện', amount: '', dueDate: '', description: 'Freelancer hoàn thiện thiết kế giao diện chi tiết' },
-        { title: 'Giai đoạn 2: Lập trình frontend & Tích hợp', amount: '', dueDate: '', description: 'Freelancer lập trình giao diện và kết nối dữ liệu' },
-        { title: 'Giai đoạn 3: Bàn giao sản phẩm & Hướng dẫn', amount: '', dueDate: '', description: 'Freelancer hoàn thiện kiểm thử và bàn giao sản phẩm hoàn chỉnh' },
+        { title: '', amount: '', dueDate: '', description: '' },
+        { title: '', amount: '', dueDate: '', description: '' },
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -1286,11 +1244,11 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
     const handleAddMilestone = () => {
         if (milestones.length >= 5) return;
-        setMilestones([...milestones, { title: `Giai đoạn ${milestones.length + 1}: `, amount: '', dueDate: '', description: '' }]);
+        setMilestones([...milestones, { title: '', amount: '', dueDate: '', description: '' }]);
     };
 
     const handleRemoveMilestone = (index) => {
-        if (milestones.length <= 3) return;
+        if (milestones.length <= 2) return;
         setMilestones(milestones.filter((_, idx) => idx !== index));
     };
 
@@ -1315,8 +1273,8 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
 
         let customMilestones = null;
         if (payOption === 'split') {
-            if (milestones.length < 3 || milestones.length > 5) {
-                setError('Số lượng mốc thanh toán phải từ 3 đến 5.');
+            if (milestones.length < 2 || milestones.length > 5) {
+                setError('Số lượng mốc thanh toán phải từ 2 đến 5.');
                 return;
             }
             if (!isSumMatch) {
@@ -1343,6 +1301,10 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                 }
                 if (m.dueDate > maxDeadlineIso) {
                     setError(`Hạn hoàn thành mốc thứ ${i + 1} (${m.dueDate}) không được vượt quá ngày hoàn thành dự án dự kiến (${maxDeadlineStr}).`);
+                    return;
+                }
+                if (i > 0 && milestones[i - 1].dueDate > m.dueDate) {
+                    setError(`Hạn hoàn thành mốc thứ ${i} không được sau mốc thứ ${i + 1}.`);
                     return;
                 }
             }
@@ -1460,7 +1422,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                         onChange={() => setPayOption('split')}
                                         className="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (3 - 5 mốc)</span>
+                                    <span className="font-extrabold text-slate-800 text-xs">Chia theo tiến độ (2 - 5 mốc)</span>
                                 </div>
                                 <span className="text-slate-500 text-xs pl-5 leading-normal">
                                     Giải ngân tiền theo từng giai đoạn hoàn thành công việc.
@@ -1489,7 +1451,7 @@ function MilestoneSetupModal({ proposal, employerId, onClose, onSuccess }) {
                                     <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 relative space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-slate-700 text-xs">Mốc số {idx + 1}</span>
-                                            {milestones.length > 3 && (
+                                            {milestones.length > 2 && (
                                                 <button 
                                                     type="button" 
                                                     onClick={() => handleRemoveMilestone(idx)}

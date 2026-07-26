@@ -96,8 +96,18 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getProjectsByEmployer(employerId));
     }
 
+    @GetMapping("/employer/{employerId}/paginated")
+    public ResponseEntity<?> getProjectsByEmployerPaginated(
+            @PathVariable Integer employerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(projectService.getProjectsByEmployerPaginated(employerId, status, search, page, size));
+    }
+
     @PostMapping
-    public ResponseEntity<?> createProject(@RequestBody ProjectCreateDto dto) {
+    public ResponseEntity<?> createProject(@jakarta.validation.Valid @RequestBody ProjectCreateDto dto) {
         try {
             Project saved = projectService.createProject(dto);
             return ResponseEntity.ok(saved);
@@ -107,9 +117,12 @@ public class ProjectController {
     }
 
     @PutMapping("/{projectId}")
-    public ResponseEntity<?> updateProject(@PathVariable Integer projectId, @RequestBody ProjectUpdateDto dto) {
+    public ResponseEntity<?> updateProject(
+            @PathVariable Integer projectId,
+            @RequestParam(required = false) Integer requesterId,
+            @RequestBody ProjectUpdateDto dto) {
         try {
-            Project updated = projectService.updateProject(projectId, dto);
+            Project updated = projectService.updateProject(projectId, dto, requesterId);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -117,9 +130,11 @@ public class ProjectController {
     }
 
     @PutMapping("/{projectId}/close")
-    public ResponseEntity<?> closeProject(@PathVariable Integer projectId) {
+    public ResponseEntity<?> closeProject(
+            @PathVariable Integer projectId,
+            @RequestParam(required = false) Integer requesterId) {
         try {
-            Project closed = projectService.closeProject(projectId);
+            Project closed = projectService.closeProject(projectId, requesterId);
             return ResponseEntity.ok(closed);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -127,9 +142,11 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{projectId}")
-    public ResponseEntity<?> deleteProject(@PathVariable Integer projectId) {
+    public ResponseEntity<?> deleteProject(
+            @PathVariable Integer projectId,
+            @RequestParam(required = false) Integer requesterId) {
         try {
-            Project deleted = projectService.deleteProject(projectId);
+            Project deleted = projectService.deleteProject(projectId, requesterId);
             return ResponseEntity.ok(deleted);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -111,4 +111,109 @@ public class ChatRestController {
         chatService.claimTicket(ticketId, staffId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/tickets/employer/{employerId}")
+    public ResponseEntity<?> getEmployerTickets(
+            @PathVariable("employerId") Integer employerId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
+        try {
+            if (page != null && size != null) {
+                return ResponseEntity.ok(chatService.getTicketsByEmployerIdPaginated(employerId, page, size));
+            }
+            return ResponseEntity.ok(chatService.getTicketsByEmployerId(employerId));
+        } catch (Exception e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    @GetMapping("/tickets/freelancer/{freelancerId}")
+    public ResponseEntity<?> getFreelancerTickets(
+            @PathVariable("freelancerId") Integer freelancerId) {
+        try {
+            return ResponseEntity.ok(chatService.getTicketsByFreelancerId(freelancerId));
+        } catch (Exception e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    @PostMapping("/tickets/employer")
+    public ResponseEntity<Map<String, Object>> createEmployerTicket(@RequestBody Map<String, Object> payload) {
+        try {
+            Integer employerId = payload.get("employerId") != null ? ((Number) payload.get("employerId")).intValue() : null;
+            String subject = (String) payload.get("subject");
+            String description = (String) payload.get("description");
+            String priority = (String) payload.get("priority");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> attachments = (List<Map<String, Object>>) payload.get("attachments");
+
+            Integer ticketId = chatService.createEmployerTicket(employerId, subject, description, priority, attachments);
+            Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
+            res.put("ticketId", ticketId);
+            res.put("message", "Tạo ticket hỗ trợ thành công. Staff sẽ tiếp nhận và xử lý.");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    @PostMapping("/tickets/freelancer")
+    public ResponseEntity<Map<String, Object>> createFreelancerTicket(@RequestBody Map<String, Object> payload) {
+        try {
+            Integer freelancerId = payload.get("freelancerId") != null ? ((Number) payload.get("freelancerId")).intValue() : null;
+            String subject = (String) payload.get("subject");
+            String description = (String) payload.get("description");
+            String priority = (String) payload.get("priority");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> attachments = (List<Map<String, Object>>) payload.get("attachments");
+
+            Integer ticketId = chatService.createFreelancerTicket(freelancerId, subject, description, priority, attachments);
+            Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
+            res.put("ticketId", ticketId);
+            res.put("message", "Tạo ticket hỗ trợ thành công. Staff sẽ tiếp nhận và xử lý.");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    @PutMapping("/tickets/{ticketId}/status-employer")
+    public ResponseEntity<?> updateTicketStatusByEmployer(
+            @PathVariable("ticketId") Integer ticketId,
+            @RequestParam("status") String status) {
+        try {
+            chatService.updateTicketStatusByEmployer(ticketId, status);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Cập nhật trạng thái ticket thành công."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/send-message")
+    public ResponseEntity<?> sendMessage(@RequestBody ChatMessageDto payload) {
+        try {
+            ChatMessageDto saved = chatService.saveMessage(payload);
+            if (saved.getTicketId() != null) {
+                messagingTemplate.convertAndSend("/topic/ticket." + saved.getTicketId(), saved);
+            }
+            return ResponseEntity.ok(Map.of("success", true, "message", "Gửi phản hồi thành công.", "data", saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
 }
+

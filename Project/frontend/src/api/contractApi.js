@@ -51,5 +51,10 @@ export const contractApi = {
   reviewDeliverable: (deliverableId, employerId, approve, feedback = '') => {
     const encodedFeedback = encodeURIComponent(feedback);
     return api.post(`/deliverables/${deliverableId}/review?employerId=${employerId}&approve=${approve}&feedback=${encodedFeedback}`);
+  },
+
+  // Nhà tuyển dụng gửi khiếu nại về Freelancer
+  createDispute: (contractId, employerId, payload) => {
+    return api.post(`/contracts/${contractId}/dispute?employerId=${employerId}`, payload);
   }
 };

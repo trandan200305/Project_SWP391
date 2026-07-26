@@ -3,12 +3,14 @@ import { Camera, CheckCircle, Star, MapPin } from 'lucide-react';
 import UserProfile from '../components/UserProfile.jsx';
 import EditProfileForm from '../components/EditProfileForm.jsx';
 import UserSettings from '../components/UserSettings.jsx';
+import EmployerExpensesTab from '../components/EmployerExpensesTab.jsx';
+import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
 import RevenueDashboard from './RevenueDashboard.jsx';
 
-export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate }) {
-  const [role, setRole] = useState(user.role.toLowerCase());
-  const [targetId, setTargetId] = useState(user.id);
-  const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences'
+export default function UserProfilePage({ user, onLogout, defaultTab = 'profile', onNavigate, targetRole, targetUserId }) {
+  const [role, setRole] = useState(targetRole ? targetRole.toLowerCase() : user?.role?.toLowerCase() || 'freelancer');
+  const [targetId, setTargetId] = useState(targetUserId || user?.id);
+  const [activeTab, setActiveTab] = useState(defaultTab); // 'profile', 'edit_profile', 'preferences', 'revenue'
   const [prefTab, setPrefTab] = useState('privacy'); // 'privacy', 'security', 'danger'
 
   useEffect(() => {
@@ -53,12 +55,12 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   // ================= FREELANCER STATE =================
   const [fullName, setFullName] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
+  const [expertiseField, setExpertiseField] = useState('');
   const [bio, setBio] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   const [primarySkills, setPrimarySkills] = useState('');
-  const [expertiseField, setExpertiseField] = useState('Khác');
   const [hourlyRate, setHourlyRate] = useState(0);
 
   // Freelancer Read-only Stats
@@ -78,10 +80,84 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
   const [totalSpent, setTotalSpent] = useState(0);
   const [projectsPosted, setProjectsPosted] = useState(0);
 
+  // Additional Missing States
+  const [adminLevel, setAdminLevel] = useState('STANDARD');
+  const [categories, setCategories] = useState([]);
+  const isOwnProfile = !targetUserId || String(targetUserId) === String(user?.id);
+
+  // Work Profile & Portfolio States
+  const [isEditingWorkProfile, setIsEditingWorkProfile] = useState(false);
+  const [workProfile, setWorkProfile] = useState({
+    expertiseField: '',
+    professionalTitle: '',
+    bio: '',
+    personalWebsite: '',
+    experienceLevel: '',
+    primarySkills: '',
+    servicesOffered: '',
+    isAvailable: true,
+    availabilityType: 'Toàn thời gian (trên 40h/tuần)'
+  });
+  const [portfolios, setPortfolios] = useState([]);
+  const [isAddingPortfolio, setIsAddingPortfolio] = useState(false);
+  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [attachmentType, setAttachmentType] = useState('url');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [newPortfolio, setNewPortfolio] = useState({
+    title: '',
+    attachmentUrl: '',
+    description: '',
+    relatedService: '',
+    productLink: ''
+  });
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setFilePreview({
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      format: file.name.split('.').pop().toUpperCase(),
+      dimensions: 'N/A'
+    });
+  };
+
+  const handleSaveWorkProfile = () => {
+    handleSaveProfile();
+    setIsEditingWorkProfile(false);
+  };
+
+  const handleSavePortfolio = async () => {
+    if (!newPortfolio.title.trim()) {
+      alert('Vui lòng nhập tiêu đề hồ sơ năng lực!');
+      return;
+    }
+    setPortfolios((prev) => [...prev, { ...newPortfolio, id: Date.now() }]);
+    setNewPortfolio({ title: '', attachmentUrl: '', description: '', relatedService: '', productLink: '' });
+    setIsAddingPortfolio(false);
+    setSelectedFile(null);
+    setFilePreview(null);
+    alert('Đã thêm hồ sơ năng lực!');
+  };
+
+  const handleDeletePortfolio = (portfolioId) => {
+    setPortfolios((prev) => prev.filter((p) => (p.id || p.portfolioId) !== portfolioId));
+  };
+
 
 
   const fetchProfileData = React.useCallback(() => {
     const endpoint = role === 'freelancer' ? `http://localhost:8080/api/freelancers/${targetId}` : `http://localhost:8080/api/employers/${targetId}`;
+    setDisplayName(''); setFullName(''); setCompanyName(''); setEmail(''); setPhone('');
+    setBio(''); setCompanyDescription(''); setAvatarUrl(''); setStatus('');
+    setProfessionalTitle(''); setExpertiseField(''); setAddress(''); setCity(''); setCountry('');
+    setHideEmail(false); setHidePhone(false); setHideLocation(false);
+    setProfileCompleteness(0); setTotalEarnings(0); setProjectsCompleted(0); setAverageRating(0);
+    setTotalSpent(0); setProjectsPosted(0);
+    setKycStatus('UNVERIFIED'); setKycRejectedReason('');
+    setIdCardFrontUrl(''); setIdCardBackUrl(''); setPortraitUrl('');
     fetch(endpoint)
       .then(res => res.text())
       .then(text => {
@@ -115,6 +191,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
         if (role === 'freelancer') {
           if (data.fullName) setFullName(data.fullName);
           if (data.professionalTitle) setProfessionalTitle(data.professionalTitle);
+          if (data.expertiseField) setExpertiseField(data.expertiseField);
           if (data.bio) setBio(data.bio);
           if (data.address) setAddress(data.address);
           if (data.city) setCity(data.city);
@@ -173,7 +250,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     let payload = {};
     if (role === 'freelancer') {
       const parsedHourlyRate = hourlyRate ? Number(hourlyRate) : null;
-      payload = { email, displayName, fullName, phone, professionalTitle, bio, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills, expertiseField, hourlyRate: parsedHourlyRate };
+      payload = { email, displayName, fullName, phone, professionalTitle, expertiseField, bio, hourlyRate: parsedHourlyRate, address, city, country, language, timezone, avatarUrl, hideEmail, hidePhone, hideLocation, primarySkills };
     } else if (role === 'employer') {
       payload = { email, displayName, fullName, phone, companyName, companyDescription, website, companySize, industry, address, city, country, language, avatarUrl, hideEmail, hidePhone, hideLocation };
     }
@@ -206,7 +283,7 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     if (!window.confirm("Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác!")) {
       return;
     }
-    const endpoint = `http://localhost:8080/api/${role}s/${targetId}?confirmationText=DELETE`;
+    const endpoint = `http://localhost:8080/api/${role}s/${targetId}`;
     fetch(endpoint, {
       method: 'DELETE'
     })
@@ -242,7 +319,8 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
           userId: targetId,
           role: role.toUpperCase(),
           currentPassword,
-          newPassword
+          newPassword,
+          confirmPassword
         })
       });
       const data = await res.json();
@@ -314,15 +392,47 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
     hideEmail, setHideEmail, hidePhone, setHidePhone, hideLocation, setHideLocation,
     kycStatus, setKycStatus, kycRejectedReason, setKycRejectedReason, idCardFrontUrl, setIdCardFrontUrl, idCardBackUrl, setIdCardBackUrl, portraitUrl, setPortraitUrl, isUploadingKyc, setIsUploadingKyc,
     status, setStatus, emailVerified, setEmailVerified, createdAt, setCreatedAt, lastLoginAt, setLastLoginAt,
-    fullName, setFullName, professionalTitle, setProfessionalTitle, bio, setBio, address, setAddress, city, setCity, country, setCountry, primarySkills, setPrimarySkills, expertiseField, setExpertiseField, hourlyRate, setHourlyRate,
+    fullName, setFullName, professionalTitle, setProfessionalTitle, expertiseField, setExpertiseField, bio, setBio, hourlyRate, setHourlyRate, address, setAddress, city, setCity, country, setCountry,
     profileCompleteness, setProfileCompleteness, totalEarnings, setTotalEarnings, projectsCompleted, setProjectsCompleted, averageRating, setAverageRating,
     companyName, setCompanyName, companyDescription, setCompanyDescription, website, setWebsite, companySize, setCompanySize, industry, setIndustry,
     totalSpent, setTotalSpent, projectsPosted, setProjectsPosted,
-    handleSaveProfile, handleSavePrivacy, formatDate, formatDateTime, formatCurrency, formatCompactCurrency, handleDeleteAccount,
-    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, handleSavePassword,
+    adminLevel, setAdminLevel,
+    handleSaveProfile, handleSavePassword, handleDeleteAccount, formatDate, formatDateTime, formatCurrency, formatCompactCurrency,
+    isOwnProfile, categories,
+    primarySkills, setPrimarySkills, handleSavePrivacy,
+    currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword,
     fetchProfileData
   };
 
+  const tabs = isOwnProfile
+    ? (role === 'freelancer' 
+      ? [
+          { id: 'profile', label: 'Hồ sơ cá nhân' },
+          { id: 'edit_profile', label: 'Sửa hồ sơ' },
+          { id: 'work_profile', label: 'Hồ sơ làm việc' },
+          { id: 'portfolio', label: 'Hồ sơ năng lực' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ]
+      : role === 'employer'
+      ? [
+          { id: 'profile', label: 'Thông tin chung' },
+          { id: 'expenses', label: 'Hóa đơn & Lịch sử gói' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ]
+      : [
+          { id: 'edit_profile', label: 'Sửa hồ sơ' },
+          { id: 'preferences', label: 'Cài đặt chung' }
+        ])
+    : (role === 'freelancer'
+      ? [
+          { id: 'profile', label: 'Hồ sơ cá nhân' },
+          { id: 'portfolio', label: 'Hồ sơ năng lực' }
+        ]
+      : role === 'employer'
+      ? [
+          { id: 'profile', label: 'Thông tin chung' }
+        ]
+      : []);
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans antialiased text-gray-800">
 
@@ -432,11 +542,451 @@ export default function UserProfilePage({ user, onLogout, defaultTab = 'profile'
             </div>
 
             {/* Tab Contents Area */}
+
             <div className="p-6 sm:px-10 py-8 border-t border-gray-100">
-              {activeTab === 'profile' && <UserProfile {...allProps} />}
-              {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
-              {activeTab === 'preferences' && <UserSettings {...allProps} />}
-              {activeTab === 'revenue' && <RevenueDashboard {...allProps} />}
+
+               {activeTab === 'profile' && <UserProfile {...allProps} />}
+               {activeTab === 'edit_profile' && <EditProfileForm {...allProps} />}
+               {activeTab === 'expenses' && <EmployerExpensesTab employerId={targetId} />}
+               
+               {activeTab === 'work_profile' && (
+                  <div className="max-w-4xl space-y-10">
+                    <div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                          1
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-800 uppercase">Giới thiệu chung</h2>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Chức danh / Lĩnh vực <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            {isEditingWorkProfile ? (
+                              <div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border border-slate-300 rounded-lg p-4 bg-white">
+                                  {((categories && categories.length > 0) ? categories : [
+                                    { categoryId: 1, categoryName: "Lập trình & Công nghệ" },
+                                    { categoryId: 2, categoryName: "Thiết kế & Đồ họa" },
+                                    { categoryId: 3, categoryName: "Marketing & Bán hàng" },
+                                    { categoryId: 4, categoryName: "Viết lách & Dịch thuật" },
+                                    { categoryId: 5, categoryName: "Video, Ảnh & Âm thanh" },
+                                    { categoryId: 6, categoryName: "Hành chính & Trợ lý ảo" },
+                                    { categoryId: 7, categoryName: "Kế toán & Tư vấn" }
+                                  ]).map(cat => {
+                                    const catId = String(cat.categoryId || cat.id);
+                                    const catName = cat.categoryName || cat.name;
+                                    const isChecked = workProfile.expertiseField && workProfile.expertiseField.split(/,\s*/).includes(catId);
+                                    return (
+                                      <label key={catId} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm font-medium text-slate-700 transition-colors">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={!!isChecked}
+                                          onChange={(e) => {
+                                            let currentIds = workProfile.expertiseField ? workProfile.expertiseField.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                                            let currentNames = workProfile.professionalTitle ? workProfile.professionalTitle.split(/,\s*/).map(s => s.trim()).filter(Boolean) : [];
+                                            if (e.target.checked) {
+                                              if (!currentIds.includes(catId)) {
+                                                currentIds.push(catId);
+                                                currentNames.push(catName);
+                                              }
+                                            } else {
+                                              currentIds = currentIds.filter(id => id !== catId);
+                                              currentNames = currentNames.filter(name => name !== catName);
+                                            }
+                                            setWorkProfile({
+                                              ...workProfile, 
+                                              expertiseField: currentIds.join(','),
+                                              professionalTitle: currentNames.join(', ')
+                                            });
+                                          }}
+                                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span>{catName}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">Chọn những lĩnh vực hoạt động chính của bạn.</p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2 pt-1.5">
+                                {workProfile.professionalTitle ? (
+                                  workProfile.professionalTitle.split(/,\s*/).map((title, index) => (
+                                    <span key={index} className="bg-blue-50 text-blue-600 font-semibold px-3 py-1 rounded-lg text-xs border border-blue-100">
+                                      {title}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-slate-400 text-sm italic">Chưa cập nhật</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Giới thiệu bản thân <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-slate-500 mb-2 font-medium">Giới thiệu đầy đủ</p>
+                            <p className="text-xs text-slate-400 mb-2">Vui lòng không điền các thông tin liên lạc như email, số điện thoại, skype... trong nội dung bên dưới.</p>
+                            <textarea 
+                              rows={8} 
+                              placeholder="Bản giới thiệu đầy đủ này sẽ giúp người xem hiểu rõ hơn về bạn..."
+                              value={workProfile.bio}
+                              onChange={(e) => setWorkProfile({...workProfile, bio: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Website cá nhân</div>
+                          <div className="flex-1">
+                            <input 
+                              type="text" 
+                              placeholder="Điền link website ở đây (nếu có)" 
+                              value={workProfile.personalWebsite}
+                              onChange={(e) => setWorkProfile({...workProfile, personalWebsite: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Trình độ <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <select 
+                              value={workProfile.experienceLevel}
+                              onChange={(e) => setWorkProfile({...workProfile, experienceLevel: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
+                            >
+                              <option value="">Chọn mức kinh nghiệm phù hợp</option>
+                              <option value="Mới đi làm">Mới đi làm</option>
+                              <option value="Đã có kinh nghiệm">Đã có kinh nghiệm</option>
+                              <option value="Chuyên gia">Chuyên gia</option>
+                            </select>
+                            <div className="text-xs text-slate-400 mt-2 space-y-1">
+                              <p>Hãy chọn mức "Trình độ" đúng với năng lực của bạn để được nhận những công việc phù hợp:</p>
+                              <p>- <strong>Mới đi làm</strong> (dưới 2 năm kinh nghiệm)</p>
+                              <p>- <strong>Đã có kinh nghiệm</strong> (từ 2-5 năm kinh nghiệm)</p>
+                              <p>- <strong>Chuyên gia</strong> (trên 5 năm kinh nghiệm)</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Kỹ năng chính <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <input 
+                              type="text" 
+                              placeholder="Kỹ năng bạn có" 
+                              value={workProfile.primarySkills}
+                              onChange={(e) => setWorkProfile({...workProfile, primarySkills: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-px bg-slate-100"></div>
+
+                    <div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                          3
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-800 uppercase">Hồ sơ dịch vụ</h2>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-48 font-semibold text-slate-700 pt-2">Danh sách dịch vụ <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <input 
+                              type="text" 
+                              placeholder="Tên dịch vụ (VD: Thiết kế banner facebook,...)" 
+                              value={workProfile.servicesOffered}
+                              onChange={(e) => setWorkProfile({...workProfile, servicesOffered: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : ''}`} 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6 items-center">
+                          <div className="w-48 font-semibold text-slate-700">Muốn nhận việc? <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <select 
+                              value={workProfile.isAvailable ? 'Có' : 'Không'}
+                              onChange={(e) => setWorkProfile({...workProfile, isAvailable: e.target.value === 'Có'})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
+                            >
+                              <option value="Có">Có</option>
+                              <option value="Không">Không</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-6 items-center">
+                          <div className="w-48 font-semibold text-slate-700">Tôi có thể làm <span className="text-red-500">*</span></div>
+                          <div className="flex-1">
+                            <select 
+                              value={workProfile.availabilityType}
+                              onChange={(e) => setWorkProfile({...workProfile, availabilityType: e.target.value})}
+                              disabled={!isEditingWorkProfile}
+                              className={`w-1/2 border border-slate-300 rounded-lg px-4 py-2 text-slate-700 outline-none focus:border-blue-500 ${!isEditingWorkProfile ? 'bg-slate-50' : 'bg-white'}`}
+                            >
+                              <option value="Bán thời gian (dưới 40h/tuần)">Bán thời gian (dưới 40h/tuần)</option>
+                              <option value="Toàn thời gian (trên 40h/tuần)">Toàn thời gian (trên 40h/tuần)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex justify-start gap-4">
+                      {!isEditingWorkProfile ? (
+                        <button 
+                          onClick={() => setIsEditingWorkProfile(true)} 
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
+                        >
+                          Chỉnh sửa hồ sơ
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={handleSaveWorkProfile} 
+                          className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
+                        >
+                          Lưu các thay đổi
+                        </button>
+                      )}
+                    </div>
+                  </div>
+               )}
+               
+               {activeTab === 'portfolio' && (
+                  <div className="max-w-4xl space-y-10">
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                          1
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-800 uppercase">Hồ sơ năng lực</h2>
+                      </div>
+                      
+                      <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                        Hồ sơ năng lực là các dự án cũ hoặc các công việc bạn đã từng làm trước đây (bao gồm cả các khách hàng bên ngoài vLance). Khách hàng trước khi giao việc thường xem qua các hồ sơ năng lực của freelancer rồi mới quyết định thuê.
+                      </p>
+
+                      {portfolios.length === 0 ? (
+                        <p className="text-sm text-slate-800 font-medium bg-slate-100 p-4 rounded-lg">
+                          Hiện tại bạn <strong className="text-red-500">chưa có hồ sơ năng lực nào</strong>. Hãy dùng form dưới đây để bắt đầu đăng hồ sơ đầu tiên ngay bây giờ nhé.
+                        </p>
+                      ) : (
+                        <div className="space-y-4 mb-6">
+                          {portfolios.map((pf, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-4 border border-slate-200 rounded-lg hover:border-blue-300 transition-colors">
+                              <div>
+                                <h3 className="font-bold text-slate-800 text-lg">{pf.title}</h3>
+                                <p className="text-sm text-slate-500 mt-1">{pf.description?.length > 100 ? pf.description.substring(0, 100) + '...' : pf.description}</p>
+                              </div>
+                              <div className="flex gap-4">
+                                <button 
+                                  onClick={() => setSelectedPortfolio(pf)}
+                                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  Xem chi tiết
+                                </button>
+                                <button 
+                                  onClick={() => handleDeletePortfolio(pf.portfolioId || pf.id)}
+                                  className="text-sm font-semibold text-red-500 hover:text-red-700 hover:underline"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {!isAddingPortfolio && (
+                            <button 
+                              onClick={() => setIsAddingPortfolio(true)}
+                              className="flex items-center gap-2 mt-4 px-6 py-2.5 bg-emerald-50 text-emerald-600 font-bold border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" /> Thêm hồ sơ
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {(portfolios.length === 0 || isAddingPortfolio) && (
+                        <>
+                          <div className="w-full h-px bg-slate-100"></div>
+
+                          <div>
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                2
+                              </div>
+                              <h2 className="text-lg font-bold text-slate-800 uppercase">Thêm hồ sơ</h2>
+                            </div>
+
+                            <div className="space-y-6">
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Tiêu đề <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tiêu đề" 
+                                    value={newPortfolio.title}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, title: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">Tên dự án hoặc tên sản phẩm bạn đã thực hiện</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Hình thức tải lên <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <select 
+                                    value={attachmentType} 
+                                    onChange={(e) => setAttachmentType(e.target.value)}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2"
+                                  >
+                                    <option value="url">Nhập URL</option>
+                                    <option value="file">Tải tệp lên</option>
+                                  </select>
+                                  <p className="text-xs text-slate-400">Chọn phương thức bạn muốn sử dụng để cung cấp file hồ sơ năng lực.</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">File đính kèm <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  {attachmentType === 'url' ? (
+                                    <>
+                                      <input 
+                                        type="text" 
+                                        placeholder="Nhập URL file đính kèm..."
+                                        value={newPortfolio.attachmentUrl}
+                                        onChange={(e) => setNewPortfolio({...newPortfolio, attachmentUrl: e.target.value})}
+                                        className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500 mb-2" 
+                                      />
+                                      <p className="text-xs text-slate-400">Vui lòng cung cấp đường dẫn truy cập trực tiếp đến sản phẩm hoặc dự án của bạn (ví dụ: Google Drive, Github, Figma...).</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <input 
+                                        type="file" 
+                                        onChange={handleFileChange}
+                                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-white mb-2" 
+                                      />
+                                      {filePreview && (
+                                        <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                                          <div className="font-semibold mb-1">Thông tin tệp:</div>
+                                          <div><span className="font-medium">Định dạng:</span> {filePreview.format}</div>
+                                          <div><span className="font-medium">Dung lượng:</span> {filePreview.size}</div>
+                                          {filePreview.dimensions !== 'N/A' && (
+                                            <div><span className="font-medium">Kích thước ảnh:</span> {filePreview.dimensions}</div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="text-xs text-slate-400 space-y-1">
+                                        <p>1. Kích thước không quá 5 MB</p>
+                                        <p>2. Định dạng được hỗ trợ</p>
+                                        <p className="pl-2">- Tài liệu: .doc, .docx, .pdf</p>
+                                        <p className="pl-2">- Hình ảnh: .jpg, .jpeg, .png, .gif</p>
+                                        <p>3. Nếu là ảnh:</p>
+                                        <p className="pl-2">- Kích thước tối đa: 1920 x 1080 (16:9) hoặc 1080 x 1920 (9:16) (Chuẩn FHD)</p>
+                                        <p className="pl-2">- Kích thước tối thiểu: 380 x 214</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Mô tả chi tiết <span className="text-red-500">*</span></div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-slate-600 mb-1">Mô tả về dự án</p>
+                                  <p className="text-xs text-slate-400 mb-2">Vui lòng không điền các thông tin liên lạc như email, số điện thoại... trong nội dung bên dưới.</p>
+                                  <textarea 
+                                    rows={8} 
+                                    placeholder="Mô tả"
+                                    value={newPortfolio.description}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, description: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 outline-none focus:border-blue-500 resize-y mb-1"
+                                  />
+                                  <p className="text-xs text-slate-400">Hãy viết thật chi tiết về sản phẩm hoặc dự án này để người xem có thể hiểu được những công việc thực sự bạn đã làm.</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Dịch vụ liên quan</div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tên dịch vụ (VD : Thiết kế banner facebook,...)" 
+                                    value={newPortfolio.relatedService}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, relatedService: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Bạn cần nhập 1 dịch vụ mà bạn có thể cung cấp cho khách hàng...</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-48 font-semibold text-slate-700 pt-2">Link sản phẩm</div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Link web dẫn đến dự án hoặc sản phẩm này" 
+                                    value={newPortfolio.productLink}
+                                    onChange={(e) => setNewPortfolio({...newPortfolio, productLink: e.target.value})}
+                                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 outline-none focus:border-blue-500" 
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-6 flex justify-start">
+                              <button 
+                                onClick={handleSavePortfolio} 
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-sm transition-colors"
+                              >
+                                Lưu hồ sơ
+                              </button>
+                              {portfolios.length > 0 && (
+                                <button 
+                                  onClick={() => {
+                                    setIsAddingPortfolio(false);
+                                    setNewPortfolio({ title: '', attachmentUrl: '', description: '', relatedService: '', productLink: '' });
+                                    setSelectedFile(null);
+                                    setFilePreview(null);
+                                  }}
+                                  className="ml-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-6 rounded-lg transition-colors"
+                                >
+                                  Hủy bỏ
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+               {activeTab === 'preferences' && <UserSettings {...allProps} />}
+               {activeTab === 'revenue' && <RevenueDashboard {...allProps} />}
             </div>
           </div>
         </main>

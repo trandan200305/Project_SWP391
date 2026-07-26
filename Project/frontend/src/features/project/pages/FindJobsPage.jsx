@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Loader2, RefreshCw } from 'lucide-react';
+import { Bookmark, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import ComingSoon from '../../../pages/ComingSoon.jsx';
 import { useSavedJobs } from '../../../hooks/useSavedJobs.js';
 
@@ -17,6 +17,7 @@ export default function FindJobsPage({ onNavigate, user }) {
   const [skills, setSkills] = useState([]);
 
   // State các tiêu chí lọc
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeWorkForm, setActiveWorkForm] = useState('');
   const [activeProjectType, setActiveProjectType] = useState('');
@@ -60,19 +61,22 @@ export default function FindJobsPage({ onNavigate, user }) {
       .catch(e => console.error('Error fetching skills:', e));
   };
 
-  // Gọi API tìm kiếm mỗi khi phân trang hoặc bộ lọc thay đổi (Debounce 400ms đối với nhập lương)
+  // Gọi API tìm kiếm mỗi khi phân trang hoặc bộ lọc thay đổi (Debounce 400ms đối với nhập từ khóa/lương)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchJobs(page, size);
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [page, size, activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillIds]);
+  }, [page, size, searchQuery, activeCategory, activeWorkForm, activeProjectType, minSalary, maxSalary, activeSkillIds]);
 
   const fetchJobs = async (currentPage, currentSize) => {
     setIsLoading(true);
     try {
       let url = `http://localhost:8080/api/projects/search?page=${currentPage}&size=${currentSize}`;
+      if (searchQuery && searchQuery.trim()) {
+        url += `&keyword=${encodeURIComponent(searchQuery.trim())}`;
+      }
       if (activeCategory && activeCategory !== 'all') {
         url += `&categoryId=${activeCategory}`;
       }
@@ -136,6 +140,7 @@ export default function FindJobsPage({ onNavigate, user }) {
   };
 
   const handleResetFilters = () => {
+    setSearchQuery('');
     setActiveCategory('all');
     setActiveWorkForm('');
     setActiveProjectType('');
@@ -408,7 +413,7 @@ export default function FindJobsPage({ onNavigate, user }) {
         <div className="md:col-span-3 flex flex-col gap-6">
           
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
               Tìm việc làm tự do
               {activeSkillIds.length > 0 && (
@@ -417,7 +422,35 @@ export default function FindJobsPage({ onNavigate, user }) {
                 </span>
               )}
             </h1>
-            <span className="text-xs font-semibold text-slate-400">Trang {page + 1} của {totalPages || 1}</span>
+            <span className="text-xs font-semibold text-slate-400 shrink-0">Trang {page + 1} của {totalPages || 1}</span>
+          </div>
+
+          {/* Ô Tìm kiếm dự án */}
+          <div className="relative">
+            <Search className="w-4.5 h-4.5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Nhập tên dự án, từ khóa công việc hoặc nội dung tìm kiếm..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(0);
+              }}
+              className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 outline-none shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100/60 transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Danh sách công việc */}
