@@ -9,6 +9,19 @@ export default function AdminTransfersQueue({ adminId }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [processingId, setProcessingId] = useState(null);
   const [showDeptModal, setShowDeptModal] = useState(false);
+  const [isDeptModalMounted, setIsDeptModalMounted] = useState(false);
+  const [isDeptModalVisible, setIsDeptModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (showDeptModal) {
+      setIsDeptModalMounted(true);
+      setTimeout(() => setIsDeptModalVisible(true), 10);
+    } else {
+      setIsDeptModalVisible(false);
+      const timer = setTimeout(() => setIsDeptModalMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showDeptModal]);
 
   useEffect(() => {
     fetchData();
@@ -207,10 +220,18 @@ export default function AdminTransfersQueue({ adminId }) {
       </div>
 
       {/* Slide-over Panel cho Phòng ban - Đưa ra ngoài Portal để phủ toàn màn hình */}
-      {showDeptModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setShowDeptModal(false)}></div>
-          <div className="relative w-full max-w-4xl bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
+      {isDeptModalMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden">
+          {/* Backdrop */}
+          <div 
+            className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isDeptModalVisible ? 'opacity-100' : 'opacity-0'}`} 
+            onClick={() => setShowDeptModal(false)}
+          ></div>
+          
+          {/* Slide Panel */}
+          <div 
+            className={`relative w-full max-w-4xl bg-white shadow-2xl h-full flex flex-col transform transition-transform duration-300 ease-out ${isDeptModalVisible ? 'translate-x-0' : 'translate-x-full'}`}
+          >
             <AdminDepartmentManagement onClose={() => setShowDeptModal(false)} />
           </div>
         </div>,
