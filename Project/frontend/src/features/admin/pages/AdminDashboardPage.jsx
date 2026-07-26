@@ -2858,7 +2858,6 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                 {[
                   { id: 'users', icon: Users, label: 'Người dùng' },
                   { id: 'kyc', icon: UserCheck, label: 'Xác thực eKYC (VNPT)' },
-                  { id: 'departments', icon: Sliders, label: 'Phòng ban / Khoa' },
                   { id: 'operations_hub', icon: Briefcase, label: 'Trung tâm Nghiệp vụ' }
                 ].map(item => (
                   <div 

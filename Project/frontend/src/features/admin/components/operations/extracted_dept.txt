@@ -1,0 +1,423 @@
+          {activeTab === 'departments' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              
+              
+              {!selectedDepartment ? (
+                <div className="space-y-6">
+                  
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h3 className="font-bold text-primary text-[18px]">Danh Sách Khoa / Phòng Ban</h3>
+                      <p className="text-body-sm text-slate-500 mt-1">Danh sách phòng ban trực thuộc hệ thống. Mỗi phòng ban hỗ trợ tối đa 5 Managers và bắt buộc có tối thiểu 1 Manager & 1 Staff.</p>
+                    </div>
+                  </div>
+
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {departmentsList.map(dept => {
+
+                      const deptUsers = users.filter(u => u.departmentId === dept.departmentId && !u.isDeleted);
+                      const managersCount = deptUsers.filter(u => u.role === 'MANAGER').length;
+                      const staffCount = deptUsers.filter(u => u.role === 'STAFF').length;
+
+                      return (
+                        <div 
+                          key={dept.departmentId}
+                          className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between"
+                        >
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-start">
+                              <span className="bg-indigo-50 text-indigo-700 font-extrabold text-[12px] px-3 py-1 rounded-lg">
+                                {dept.code}
+                              </span>
+                              <div className="flex flex-col items-end text-slate-500 font-bold text-[12px] gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-purple-500" />
+                                  <span>{managersCount}/5 Managers</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-blue-500" />
+                                  <span>{staffCount} Staffs</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="font-display font-bold text-lg text-primary">{dept.name}</h4>
+                              <p className="text-body-sm text-slate-500 mt-2 line-clamp-2 min-h-[40px]">
+                                {dept.description || 'Chưa có mô tả chi tiết cho khoa này.'}
+                              </p>
+                            </div>
+
+                            
+                            <div className="space-y-1.5 pt-2">
+                              {managersCount === 1 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Cảnh báo: Chỉ còn 1 Manager!</span>
+                                </div>
+                              )}
+                              {staffCount === 1 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Cảnh báo: Chỉ còn 1 Staff!</span>
+                                </div>
+                              )}
+                              {managersCount === 0 && (
+                                <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 px-2 py-1 rounded-lg font-semibold animate-pulse">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>Lỗi: Thiếu Manager! (Cần tối thiểu 1)</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-6 border-t border-slate-100 mt-6 flex justify-between items-center">
+                            <span className="text-[12px] text-slate-400">ID Khoa: {dept.departmentId}</span>
+                            <button
+                              onClick={() => handleSelectDepartment(dept)}
+                              className="text-indigo-600 hover:text-indigo-700 font-bold text-body-sm flex items-center gap-1 group"
+                            >
+                              Xem chi tiết <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 mt-8">
+                    <div>
+                      <h3 className="font-bold text-primary text-[18px] flex items-center gap-2">
+                        <ShieldAlert className="w-5 h-5 text-indigo-650" /> Liên Kết Kiểm Chứng Liên Khoa
+                      </h3>
+                      <p className="text-body-sm text-slate-500 mt-1">
+                        Quy trình phê duyệt liên kết giữa các khoa chuyên môn đối với các giao dịch tài chính và yêu cầu nhạy cảm.
+                      </p>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider">
+                            <th className="p-4">Tác Vụ</th>
+                            <th className="p-4">Loại Tác Vụ</th>
+                            <th className="p-4">Trạng Thái</th>
+                            <th className="p-4">Tiến Độ Ký Duyệt</th>
+                            <th className="p-4 text-center">Hành Động</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {verificationTasksList.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="text-center text-slate-400 py-8 text-body-sm">
+                                Không có tác vụ kiểm chứng liên khoa nào đang chờ duyệt.
+                              </td>
+                            </tr>
+                          ) : (
+                            verificationTasksList.map(task => {
+                              const reqDepts = task.requiredDepartments.split(',');
+                              return (
+                                <tr key={task.taskId} className="hover:bg-slate-55 transition-all duration-200 text-body-sm">
+                                  <td className="p-4">
+                                    <div className="font-bold text-slate-800">{task.title}</div>
+                                    <div className="text-[12px] text-slate-400 mt-0.5">{task.description}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono mt-1">ID Tác vụ: #{task.taskId} | Ref ID: #{task.referenceId}</div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="font-mono text-[11.5px] bg-slate-150 text-slate-700 px-2 py-0.5 rounded font-bold">
+                                      {task.taskType}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full ${
+                                      task.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
+                                      task.status === 'REJECTED' ? 'bg-rose-50 text-rose-700' :
+                                      'bg-amber-50 text-amber-700'
+                                    }`}>
+                                      {task.status === 'APPROVED' ? 'Đã thông qua' :
+                                       task.status === 'REJECTED' ? 'Bị từ chối' : 'Đang xử lý'}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="flex flex-wrap gap-2.5">
+                                      {reqDepts.map(dept => {
+                                        const signoff = task.signoffs?.find(s => s.departmentCode === dept);
+                                        let badgeColor = 'bg-slate-50 text-slate-500 border border-slate-200';
+                                        let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
+                                        let statusText = 'Chờ duyệt';
+                                        
+                                        if (signoff) {
+                                          if (signoff.status === 'APPROVED') {
+                                            badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                                            icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
+                                            statusText = `Duyệt bởi ${signoff.verifierEmail}`;
+                                          } else {
+                                            badgeColor = 'bg-rose-50 text-rose-700 border border-rose-100';
+                                            icon = <XCircle className="w-3.5 h-3.5 text-rose-600" />;
+                                            statusText = `Từ chối bởi ${signoff.verifierEmail}`;
+                                          }
+                                        }
+
+                                        return (
+                                          <div 
+                                            key={dept} 
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold ${badgeColor}`}
+                                            title={statusText}
+                                          >
+                                            {icon}
+                                            <span>{dept}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    {task.status === 'PENDING' ? (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedVerificationTask(task);
+                                          setShowSignoffModal(true);
+                                        }}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-bold px-4 py-2 rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-sm"
+                                      >
+                                        Ký duyệt
+                                      </button>
+                                    ) : (
+                                      <span className="text-slate-400 text-[12px] font-medium">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                
+                <div className="space-y-6">
+                  
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => handleSelectDepartment(null)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all duration-200 active:scale-95"
+                        title="Quay lại danh sách"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-primary text-[20px]">{selectedDepartment.name}</h3>
+                          <span className="bg-indigo-100 text-indigo-700 font-extrabold text-[12px] px-2.5 py-0.5 rounded-md">
+                            {selectedDepartment.code}
+                          </span>
+                        </div>
+                        <p className="text-body-sm text-slate-500 mt-1">{selectedDepartment.description || 'Không có mô tả.'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => handleSelectDepartment(selectedDepartment)}
+                        className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 p-2.5 rounded-xl text-body-sm font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Làm mới dữ liệu
+                      </button>
+                    </div>
+                  </div>
+
+                  
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    
+                    
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-indigo-650" /> Thành Viên Khoa ({users.filter(u => u.departmentId === selectedDepartment.departmentId).length})
+                      </h4>
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {users.filter(u => u.departmentId === selectedDepartment.departmentId).length === 0 ? (
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Khoa này chưa có Manager hay Staff nào.</p>
+                        ) : (
+                          users.filter(u => u.departmentId === selectedDepartment.departmentId).map(member => (
+                            <div key={member.id} className="py-3.5 flex justify-between items-start gap-4">
+                              <div className="min-w-0 space-y-1">
+                                <p className="font-bold text-slate-800 text-body-sm truncate">{member.name}</p>
+                                <p className="text-[12px] text-slate-400 truncate">{member.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                    member.role === 'MANAGER' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {member.role}
+                                  </span>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                    member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' :
+                                    member.status === 'INVITED' ? 'bg-amber-50 text-amber-700' :
+                                    'bg-rose-50 text-rose-700'
+                                  }`}>
+                                    {member.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">Gia nhập: {member.joined || 'N/A'}</span>
+                                <button
+                                  onClick={() => handleOpenTransferModal(member)}
+                                  className="text-indigo-600 hover:text-white hover:bg-indigo-600 text-[11px] font-bold border border-indigo-200 hover:border-indigo-600 px-2.5 py-1 rounded-lg transition-all active:scale-95 flex items-center gap-1 bg-indigo-50/50 shadow-sm"
+                                >
+                                  <RefreshCw className="w-3 h-3" /> Điều chuyển
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setDeptDetailTab('sessions')}
+                            className={`px-3 py-1 rounded-xl text-body-sm font-bold transition-all ${
+                              deptDetailTab === 'sessions' 
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            Phiên Làm Việc ({departmentSessions.length})
+                          </button>
+                          <button
+                            onClick={() => setDeptDetailTab('logs')}
+                            className={`px-3 py-1 rounded-xl text-body-sm font-bold transition-all ${
+                              deptDetailTab === 'logs' 
+                                ? 'bg-amber-50 text-amber-700 border border-amber-100 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            Nhật Ký Thao Tác ({departmentLogs.length})
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {deptDetailTab === 'sessions' ? (
+                          departmentSessions.length === 0 ? (
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có phiên làm việc nào được ghi nhận.</p>
+                          ) : (
+                            departmentSessions.map(session => (
+                              <div key={session.sessionId} className="py-3.5 space-y-1">
+                                <div className="flex justify-between items-start gap-4">
+                                  <span className="font-bold text-slate-800 text-body-sm truncate">{session.userEmail}</span>
+                                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                    session.userRole === 'MANAGER' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {session.userRole}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[12px] text-slate-500">
+                                  <span>IP: <span className="font-mono">{session.ipAddress || 'N/A'}</span></span>
+                                  <span className={`font-bold ${session.status === 'ACTIVE' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                    {session.status}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 flex flex-col gap-0.5 pt-1">
+                                  <div>Bắt đầu: {new Date(session.loginAt).toLocaleString('vi-VN')}</div>
+                                  {session.logoutAt && <div>Kết thúc: {new Date(session.logoutAt).toLocaleString('vi-VN')}</div>}
+                                </div>
+                              </div>
+                            ))
+                          )
+                        ) : (
+                          departmentLogs.length === 0 ? (
+                            <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có nhật ký hoạt động nào.</p>
+                          ) : (
+                            departmentLogs.map(log => (
+                              <div key={log.logId} className="py-3.5 space-y-1.5">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{log.userEmail}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Role: {log.userRole}</span>
+                                  </div>
+                                  <span className="text-[11px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded">
+                                    {log.action}
+                                  </span>
+                                </div>
+                                <p className="text-body-sm text-slate-650 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                  {log.description}
+                                </p>
+                                <div className="text-[10px] text-slate-400 text-right">
+                                  {new Date(log.timestamp).toLocaleString('vi-VN')}
+                                </div>
+                              </div>
+                            ))
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col min-h-[400px]">
+                      <h4 className="font-bold text-primary text-body-md border-b border-slate-100 pb-3 flex items-center gap-2">
+                        <History className="w-5 h-5 text-indigo-650" /> Lịch Sử Điều Chuyển ({departmentTransfers.length})
+                      </h4>
+                      <div className="divide-y divide-slate-100 overflow-y-auto flex-grow max-h-[500px] mt-4 pr-1">
+                        {departmentTransfers.length === 0 ? (
+                          <p className="text-center text-slate-400 py-12 text-body-sm">Chưa có lịch sử điều chuyển nào.</p>
+                        ) : (
+                          departmentTransfers.map(transfer => {
+                            const isIncoming = transfer.toDepartment.departmentId === selectedDepartment.departmentId;
+                            return (
+                              <div key={transfer.transferId} className="py-3.5 space-y-1.5">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-slate-800 text-[12.5px] block truncate">{transfer.userDisplayName || 'Không rõ tên'}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono block truncate">{transfer.userEmail}</span>
+                                    <span className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                      {transfer.userType}
+                                    </span>
+                                  </div>
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                    isIncoming 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                      : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                  }`}>
+                                    {isIncoming ? 'Nhận vào' : 'Chuyển đi'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700 bg-slate-50 px-2 py-1 rounded-md">
+                                  <span>{transfer.fromDepartment.code}</span>
+                                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                                  <span>{transfer.toDepartment.code}</span>
+                                </div>
+
+                                {transfer.reason && (
+                                  <p className="text-body-sm text-slate-600 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 italic">
+                                    "{transfer.reason}"
+                                  </p>
+                                )}
+
+                                <div className="text-[10px] text-slate-400 text-right">
+                                  {new Date(transfer.transferredAt).toLocaleString('vi-VN')}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+        </div>
+        )}
+

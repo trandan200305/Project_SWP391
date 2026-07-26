@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
-import { Loader2, CheckCircle2, XCircle, Search, FileText, ArrowRightLeft, Calendar, User, Briefcase } from 'lucide-react';
-
+import { Loader2, CheckCircle2, XCircle, Search, FileText, ArrowRightLeft, Calendar, User, Briefcase, Building2 } from 'lucide-react';
+import AdminDepartmentManagement from '../AdminDepartmentManagement.jsx';
 export default function AdminTransfersQueue({ adminId }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [showDeptModal, setShowDeptModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -82,6 +83,13 @@ export default function AdminTransfersQueue({ adminId }) {
           <span className="text-sm font-semibold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100">
             Chờ duyệt: {data.filter(x => x.status === 'PENDING').length}
           </span>
+          <button
+            onClick={() => setShowDeptModal(true)}
+            className="flex items-center gap-2 text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors ml-2"
+          >
+            <Building2 className="w-4 h-4" />
+            Cấu trúc Phòng Ban
+          </button>
         </div>
       </div>
 
@@ -196,6 +204,16 @@ export default function AdminTransfersQueue({ adminId }) {
           </table>
         </div>
       </div>
+
+      {/* Slide-over Panel cho Phòng ban */}
+      {showDeptModal && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowDeptModal(false)}></div>
+          <div className="relative w-full max-w-4xl bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
+            <AdminDepartmentManagement onClose={() => setShowDeptModal(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
