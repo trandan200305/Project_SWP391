@@ -261,6 +261,9 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
   const employerJobsPosted = job.employerJobsPosted !== undefined ? `${job.employerJobsPosted} việc đã đăng` : '1 việc đã đăng';
   const skills = job.skills || [];
 
+  const categoryId = job.categoryId || (job.category && typeof job.category === 'object' ? job.category.categoryId : 'all');
+  const categoryName = job.categoryName || (job.category && typeof job.category === 'object' ? job.category.categoryName : 'Thiết kế');
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 pt-20">
       {/* Breadcrumb Header */}
@@ -272,10 +275,10 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
             </button>
             <span>›</span>
             <button 
-              onClick={() => onNavigate('find_jobs', { category: job.categoryId || 'all' })} 
+              onClick={() => onNavigate('find_jobs', { category: categoryId })} 
               className="font-bold text-slate-600 hover:text-slate-900"
             >
-              {job.categoryName || 'Thiết kế'}
+              {categoryName}
             </button>
           </div>
         </div>
@@ -302,7 +305,7 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-sm text-slate-600 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
-              <span>Lĩnh vực: <strong className="text-slate-900">{job.categoryName || 'Thiết kế'}</strong>. Bạn muốn ứng tuyển dự án này? Hãy chào giá ở cột bên phải.</span>
+              <span>Lĩnh vực: <strong className="text-slate-900">{categoryName}</strong>. Bạn muốn ứng tuyển dự án này? Hãy chào giá ở cột bên phải.</span>
             </div>
 
             <div className="text-slate-700 leading-relaxed mb-8 whitespace-pre-line text-sm">
@@ -314,11 +317,14 @@ export default function JobDetailPage({ job: initialJob, onNavigate, user }) {
               <div className="mb-8 pt-6 border-t border-slate-200">
                 <h3 className="font-bold text-slate-800 text-sm mb-3">Kỹ năng yêu cầu</h3>
                 <div className="flex flex-wrap gap-2">
-                  {skills.map(skill => (
-                    <span key={skill} className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold uppercase">
-                      {skill}
-                    </span>
-                  ))}
+                  {skills.map(skill => {
+                    const skillName = typeof skill === 'object' && skill !== null ? skill.skillName : skill;
+                    return (
+                      <span key={skillName} className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold uppercase">
+                        {skillName}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -21,6 +21,6 @@ Start-Sleep -Seconds 2
 Write-Host ""
 Write-Host "[2/2] Launching Spring Boot App..."
 Write-Host "============================================"
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-17_disabled"
 & .\mvnw clean spring-boot:run
 

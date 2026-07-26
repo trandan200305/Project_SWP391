@@ -733,6 +733,80 @@ public class AdminService {
         return response;
     }
 
+    @Transactional
+    public Map<String, Object> convertRole(int id, String currentRole, int adminId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if ("STAFF".equalsIgnoreCase(currentRole)) {
+                Optional<com.cny.backend.admin.entity.Staff> staffOpt = staffRepository.findById(id);
+                if (staffOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Staff stf = staffOpt.get();
+                    stf.setIsDeleted(true);
+                    stf.setStatus("DELETED");
+                    staffRepository.save(stf);
+
+                    com.cny.backend.admin.entity.Manager mgr = com.cny.backend.admin.entity.Manager.builder()
+                            .email(stf.getEmail())
+                            .passwordHash(stf.getPasswordHash())
+                            .displayName(stf.getDisplayName())
+                            .fullName(stf.getFullName())
+                            .phone(stf.getPhone())
+                            .status("LOCKED")
+                            .department(stf.getDepartmentEntity() != null ? stf.getDepartmentEntity().getName() : null)
+                            .departmentEntity(stf.getDepartmentEntity())
+                            .managedByAdmin(adminId)
+                            .isDeleted(false)
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build();
+                    managerRepository.save(mgr);
+
+                    writeAuditLog(adminId, "CONVERT_ROLE", "USER_MANAGEMENT", "Chuyển đổi Staff #" + id + " (" + stf.getEmail() + ") thành Manager (Tài khoản đang bị tạm ngưng).");
+                    
+                    response.put("success", true);
+                    response.put("message", "Chuyển đổi thành công. Tài khoản Manager mới đang bị tạm ngưng.");
+                    return response;
+                }
+            } else if ("MANAGER".equalsIgnoreCase(currentRole)) {
+                Optional<com.cny.backend.admin.entity.Manager> mgrOpt = managerRepository.findById(id);
+                if (mgrOpt.isPresent()) {
+                    com.cny.backend.admin.entity.Manager mgr = mgrOpt.get();
+                    mgr.setIsDeleted(true);
+                    mgr.setStatus("DELETED");
+                    managerRepository.save(mgr);
+
+                    com.cny.backend.admin.entity.Staff stf = com.cny.backend.admin.entity.Staff.builder()
+                            .email(mgr.getEmail())
+                            .passwordHash(mgr.getPasswordHash())
+                            .displayName(mgr.getDisplayName())
+                            .fullName(mgr.getFullName())
+                            .phone(mgr.getPhone())
+                            .status("LOCKED")
+                            .specialization("General")
+                            .departmentEntity(mgr.getDepartmentEntity())
+                            .createdByAdmin(adminId)
+                            .isDeleted(false)
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build();
+                    staffRepository.save(stf);
+
+                    writeAuditLog(adminId, "CONVERT_ROLE", "USER_MANAGEMENT", "Chuyển đổi Manager #" + id + " (" + mgr.getEmail() + ") thành Staff (Tài khoản đang bị tạm ngưng).");
+                    
+                    response.put("success", true);
+                    response.put("message", "Chuyển đổi thành công. Tài khoản Staff mới đang bị tạm ngưng.");
+                    return response;
+                }
+            }
+            response.put("success", false);
+            response.put("message", "Không tìm thấy người dùng hoặc vai trò không hợp lệ.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi chuyển đổi vai trò: " + e.getMessage());
+        }
+        return response;
+    }
+
     private void sendNotification(int id, String role, String status, String reason) {
         String notifTitle = "";
         String notifContent = "";
@@ -3016,6 +3090,19 @@ public class AdminService {
                 
                 com.cny.backend.notification.entity.SystemNotification savedNotif = systemNotificationRepository.save(notif);
 
+                com.cny.backend.notification.entity.SystemNotification notifAdmin = com.cny.backend.notification.entity.SystemNotification.builder()
+                    .recipientId(0L)
+                    .recipientRole("ADMIN")
+                    .title(notifTitle)
+                    .message(notifMsg)
+                    .type("TRANSFER_REQUEST")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .referenceId(String.valueOf(req.getRequestId()))
+                    .build();
+                
+                com.cny.backend.notification.entity.SystemNotification savedNotifAdmin = systemNotificationRepository.save(notifAdmin);
+
                 // Send websocket notification directly
                 try {
                     messagingTemplate.convertAndSend("/topic/notifications/MANAGER/0", Map.of(
@@ -3029,11 +3116,22 @@ public class AdminService {
                         "createdAt", savedNotif.getCreatedAt().toString(),
                         "referenceId", String.valueOf(req.getRequestId())
                     ));
+                    messagingTemplate.convertAndSend("/topic/notifications/ADMIN/0", Map.of(
+                        "id", savedNotifAdmin.getId(),
+                        "recipientId", 0L,
+                        "recipientRole", "ADMIN",
+                        "title", notifTitle,
+                        "message", notifMsg,
+                        "type", "TRANSFER_REQUEST",
+                        "isRead", false,
+                        "createdAt", savedNotifAdmin.getCreatedAt().toString(),
+                        "referenceId", String.valueOf(req.getRequestId())
+                    ));
                 } catch (Exception wsEx2) {
-                    System.err.println("Failed to send websocket notification for manager: " + wsEx2.getMessage());
+                    System.err.println("Failed to send websocket notification for manager/admin: " + wsEx2.getMessage());
                 }
             } catch (Exception notifEx) {
-                System.err.println("Failed to create system notification for manager: " + notifEx.getMessage());
+                System.err.println("Failed to create system notification for manager/admin: " + notifEx.getMessage());
                 notifEx.printStackTrace();
             }
 

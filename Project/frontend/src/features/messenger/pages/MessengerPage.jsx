@@ -1206,26 +1206,52 @@ export default function Messenger({ user, onNavigateHome, initialPartner }) {
   };
 
   useEffect(() => {
-    if (initialPartner && initialPartner.id) {
-      const isOppositeRoles =
-        (user?.role === "EMPLOYER" && initialPartner.role === "FREELANCER") ||
-        (user?.role === "FREELANCER" && initialPartner.role === "EMPLOYER");
+    if (!initialPartner) return;
 
-      if (isOppositeRoles) {
-        handleStartDirectChat(
-          initialPartner.id,
-          initialPartner.role,
-          initialPartner.name,
-          initialPartner.avatarUrl || initialPartner.avatar,
-        );
-      } else {
-        handleViewProfile({
-          id: initialPartner.id,
-          role: initialPartner.role,
-          name: initialPartner.name,
-          avatarUrl: initialPartner.avatarUrl || initialPartner.avatar,
-        });
-      }
+    const partnerId =
+      initialPartner.id ||
+      initialPartner.partnerId ||
+      initialPartner.freelancerId ||
+      initialPartner.employerId ||
+      initialPartner.userId;
+
+    if (!partnerId) return;
+
+    const partnerRole =
+      initialPartner.role ||
+      initialPartner.partnerRole ||
+      (user?.role === "EMPLOYER" ? "FREELANCER" : "EMPLOYER");
+
+    const partnerName =
+      initialPartner.name ||
+      initialPartner.displayName ||
+      initialPartner.freelancerName ||
+      initialPartner.employerName ||
+      "Ứng viên";
+
+    const partnerAvatar =
+      initialPartner.avatarUrl ||
+      initialPartner.avatar ||
+      initialPartner.freelancerAvatar;
+
+    const isOppositeRoles =
+      (user?.role === "EMPLOYER" && partnerRole === "FREELANCER") ||
+      (user?.role === "FREELANCER" && partnerRole === "EMPLOYER");
+
+    if (isOppositeRoles) {
+      handleStartDirectChat(
+        partnerId,
+        partnerRole,
+        partnerName,
+        partnerAvatar
+      );
+    } else {
+      handleViewProfile({
+        id: partnerId,
+        role: partnerRole,
+        name: partnerName,
+        avatarUrl: partnerAvatar,
+      });
     }
   }, [initialPartner, user]);
 

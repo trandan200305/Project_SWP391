@@ -1,6 +1,7 @@
 import React from 'react';
 import { Briefcase, Building2, CheckCircle, Clock, Activity, BarChart2, DollarSign, Star, RefreshCw } from 'lucide-react';
 import { getImageUrl, getFilenameFromUrl } from '../../../utils/imageHelper.js';
+import { validateImageFile } from '../../../utils/fileValidation.js';
 
 const InputRow = ({ label, value, onChange, placeholder, type = 'text', prefix, suffix }) => (
   <div className="flex justify-between items-center sm:block">
@@ -381,6 +382,11 @@ export default function EditProfileForm({
                           onChange={async (e) => {
                             const file = e.target.files[0];
                             if(!file) return;
+                            const check = validateImageFile(file, 5);
+                            if(!check.valid) {
+                              alert(check.message);
+                              return;
+                            }
                             const formData = new FormData();
                             formData.append('file', file);
                             try {

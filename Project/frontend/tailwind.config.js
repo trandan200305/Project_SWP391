@@ -31,8 +31,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Manrope', 'sans-serif'],
+        sans: ['"Be Vietnam Pro"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Manrope', '"Be Vietnam Pro"', 'sans-serif'],
       },
       borderRadius: {
         'large': '1rem',
