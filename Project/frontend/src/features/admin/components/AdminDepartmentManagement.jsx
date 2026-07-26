@@ -202,37 +202,42 @@ export default function AdminDepartmentManagement({ onClose }) {
                   ) : departmentSessions.length === 0 ? (
                     <p className="text-center text-slate-400 py-12 text-sm font-medium">Chưa có phiên làm việc nào được ghi nhận.</p>
                   ) : (
-                    departmentSessions.map(session => (
-                      <div key={session.sessionId} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-800 text-sm">{session.userEmail}</span>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{session.userRole}</span>
+                    departmentSessions.map(session => {
+                      const user = users.find(u => u.id === session.userId);
+                      const userEmail = user ? user.email : `User #${session.userId}`;
+                      
+                      let parsedDate;
+                      if (Array.isArray(session.loginAt)) {
+                        parsedDate = new Date(session.loginAt[0], session.loginAt[1] - 1, session.loginAt[2], session.loginAt[3], session.loginAt[4]);
+                      } else {
+                        parsedDate = new Date(session.loginAt);
+                      }
+
+                      return (
+                        <div key={session.sessionId} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-slate-800 text-sm">{userEmail}</span>
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{session.userRole}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                session.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                              }`}>
+                                {session.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã kết thúc'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              session.logoutTime ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'
-                            }`}>
-                              {session.logoutTime ? 'Đã kết thúc' : 'Đang hoạt động'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mt-3 text-xs text-slate-600 font-medium">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="text-slate-500">Bắt đầu:</span> 
-                            {new Date(session.loginTime).toLocaleString('vi-VN')}
-                          </div>
-                          {session.logoutTime && (
+                          <div className="grid grid-cols-2 gap-4 mt-3 text-xs text-slate-600 font-medium">
                             <div className="flex items-center gap-1.5">
                               <Activity className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="text-slate-500">Kết thúc:</span>
-                              {new Date(session.logoutTime).toLocaleString('vi-VN')}
+                              <span className="text-slate-500">Bắt đầu:</span> 
+                              {parsedDate ? parsedDate.toLocaleString('vi-VN') : 'N/A'}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
