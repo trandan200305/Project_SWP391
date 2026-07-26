@@ -458,27 +458,27 @@ public class DataSeeder implements CommandLineRunner {
                 // 2. Withdrawal requests are managed purely by actual users and real system transactions. No dummy seeding.
 
                 // 3. Seed admin_audit_logs if empty
-                Integer auditLogCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM admin_audit_logs", Integer.class);
-                if (auditLogCount != null && auditLogCount == 0) {
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer', GETDATE())",
-                            adminId);
-                    jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
-                            adminId);
-                }
+                // Integer auditLogCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM admin_audit_logs", Integer.class);
+                // if (auditLogCount != null && auditLogCount == 0) {
+                //     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'VERIFY_USER', 'USER_MANAGEMENT', 'Đã xác thực thông tin KYC cho freelancer', GETDATE())",
+                //             adminId);
+                //     jdbcTemplate.update("INSERT INTO admin_audit_logs (admin_id, action, module, description, created_at) VALUES (?, 'UPDATE_SEO', 'CMS_SETTINGS', 'Cập nhật cấu hình meta title trang chủ', GETDATE())",
+                //             adminId);
+                // }
 
                 // 4. Seed support_tickets if empty
-                Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
-                if (ticketCount != null && ticketCount == 0) {
-                    jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
-                            "VALUES (?, NULL, N'Hỗ trợ tài khoản', N'Hỗ trợ xác thực tài khoản', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
-                }
+                // Integer ticketCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM support_tickets", Integer.class);
+                // if (ticketCount != null && ticketCount == 0) {
+                //     jdbcTemplate.update("INSERT INTO support_tickets (freelancer_id, employer_id, subject, description, status, priority, created_at, updated_at) " +
+                //             "VALUES (?, NULL, N'Hỗ trợ tài khoản', N'Hỗ trợ xác thực tài khoản', 'OPEN', 'MEDIUM', GETDATE(), GETDATE())", maFreelancerId);
+                // }
 
                 // 5. Seed violation_reports if empty
-                Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
-                if (reportCount != null && reportCount == 0) {
-                    jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
-                            "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
-                }
+                // Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM violation_reports", Integer.class);
+                // if (reportCount != null && reportCount == 0) {
+                //     jdbcTemplate.update("INSERT INTO violation_reports (target_type, target_id, reporter_name, accused_name, severity, status, reason, evidence, created_at, updated_at) " +
+                //             "VALUES ('PROJECT', 'PRJ-102', N'Trần Việt Hoàng', N'LancerPro Client', 'HIGH', 'PENDING', N'Spam bài đăng tuyển dụng nhiều lần cùng nội dung', N'https://example.com/evidence1.jpg', GETDATE(), GETDATE())");
+                // }
 
                 // 6. Financial disputes & transactions are created exclusively by real user activity. No dummy seeding.
 
