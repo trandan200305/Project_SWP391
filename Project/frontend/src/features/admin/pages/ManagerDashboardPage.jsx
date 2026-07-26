@@ -2115,63 +2115,25 @@ export default function ManagerDashboardPage({
     supportStats.total > 0 ? supportStats.inProgressPercent : 54;
   const displayPendingPercent =
     supportStats.total > 0 ? supportStats.pendingPercent : 28;
-  const displayStaffWorkload = staffList.map((s, idx) => {
-    const mockNames = ["Elena Kostic", "Marcus Webb", "Jia Song"];
-    const mockRoles = ["Senior Analyst", "Ops Lead", "Developer"];
-    const mockTasks = [12, 8, 15];
-    const mockProgress = [70, 50, 90];
-    const mockEfficiency = ["98%", "94%", "89%"];
-    const mockTrends = ["up", "up", "neutral"];
-
+  const displayStaffWorkload = staffList.map((s) => {
     return {
-      name: s.name || s.fullName || mockNames[idx % 3],
-      role: s.role || mockRoles[idx % 3],
+      name: s.name || s.fullName || s.email || 'N/A',
+      role: s.role || 'N/A',
       email: s.email,
-      activeTasks: mockTasks[idx % 3],
-      progress: mockProgress[idx % 3],
-      efficiency: mockEfficiency[idx % 3],
-      trend: mockTrends[idx % 3],
+      activeTasks: s.activeTasks ?? 0,
+      progress: s.progress ?? 0,
+      efficiency: s.efficiency || 'N/A',
+      trend: s.trend || 'neutral',
       avatar:
         s.avatar ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || s.email)}&background=${idx % 2 === 0 ? "006b2c" : "ba1a1a"}&color=fff`,
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || s.email || 'Staff')}&background=006b2c&color=fff`,
     };
   });
 
   const finalWorkloadList =
     displayStaffWorkload.length > 0
       ? displayStaffWorkload.slice(0, 3)
-      : [
-        {
-          name: "Elena Kostic",
-          role: "Senior Analyst",
-          activeTasks: 12,
-          progress: 70,
-          efficiency: "98%",
-          trend: "up",
-          avatar:
-            "https://ui-avatars.com/api/?name=Elena+Kostic&background=006b2c&color=fff",
-        },
-        {
-          name: "Marcus Webb",
-          role: "Ops Lead",
-          activeTasks: 8,
-          progress: 50,
-          efficiency: "94%",
-          trend: "up",
-          avatar:
-            "https://ui-avatars.com/api/?name=Marcus+Webb&background=006b2c&color=fff",
-        },
-        {
-          name: "Jia Song",
-          role: "Developer",
-          activeTasks: 15,
-          progress: 90,
-          efficiency: "89%",
-          trend: "neutral",
-          avatar:
-            "https://ui-avatars.com/api/?name=Jia+Song&background=ba1a1a&color=fff",
-        },
-      ];
+      : [];
   const selectedTaskMatchingItem = selectedTask
     ? moderationItems.find(
       (item) =>

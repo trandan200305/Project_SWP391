@@ -48,44 +48,7 @@ export default function EmployerInvoices({ user }) {
     const [totalPages, setTotalPages] = useState(1);
     const [totalElements, setTotalElements] = useState(0);
 
-    const getDemoInvoices = (empId) => [
-        {
-            invoiceId: 103,
-            invoiceNumber: `INV-20260720-${empId || 1}03`,
-            transactionId: 5003,
-            employerId: empId || 1,
-            description: "Thanh toán phí đăng tin dự án Nổi bật (Featured Job Post)",
-            amount: 500000,
-            taxAmount: 50000,
-            totalAmount: 550000,
-            issuedAt: new Date(Date.now() - 6 * 3600000).toISOString(),
-            status: "PAID"
-        },
-        {
-            invoiceId: 102,
-            invoiceNumber: `INV-20260718-${empId || 1}02`,
-            transactionId: 5002,
-            employerId: empId || 1,
-            description: "Nạp tiền vào tài khoản LancerPro (Ví Employer)",
-            amount: 5000000,
-            taxAmount: 0,
-            totalAmount: 5000000,
-            issuedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-            status: "PAID"
-        },
-        {
-            invoiceId: 101,
-            invoiceNumber: `INV-20260715-${empId || 1}01`,
-            transactionId: 5001,
-            employerId: empId || 1,
-            description: "Thanh toán gói dịch vụ Doanh nghiệp VIP (Enterprise Package)",
-            amount: 2500000,
-            taxAmount: 250000,
-            totalAmount: 2750000,
-            issuedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-            status: "PAID"
-        }
-    ];
+
 
     const fetchInvoices = async (targetPage = page) => {
         setLoading(true);
@@ -113,18 +76,17 @@ export default function EmployerInvoices({ user }) {
                     }
                 }
             }
-            // Fallback demo data (Newest First)
-            const demoData = getDemoInvoices(employerId);
-            setInvoices(demoData);
+            // API trả về rỗng hoặc không có employer — hiển thị empty state
+            setInvoices([]);
             setTotalPages(1);
-            setTotalElements(demoData.length);
+            setTotalElements(0);
             setPage(0);
         } catch (err) {
             console.error("Fetch invoices error:", err);
-            const demoData = getDemoInvoices(employerId);
-            setInvoices(demoData);
+            setError('Không thể tải danh sách hóa đơn. Vui lòng thử lại sau.');
+            setInvoices([]);
             setTotalPages(1);
-            setTotalElements(demoData.length);
+            setTotalElements(0);
             setPage(0);
         } finally {
             setLoading(false);
