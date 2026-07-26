@@ -2814,23 +2814,28 @@ public class AdminService {
 
     public List<com.cny.backend.admin.entity.ServicePackageConfig> getServicePackageConfigs() {
         List<com.cny.backend.admin.entity.ServicePackageConfig> configs = servicePackageConfigRepository.findAll();
-        if (configs.size() < 3) {
-            String[] packages = {"MEDIUM", "REGULAR", "PREMIUM"};
-            double[] defaultPrices = {100000.0, 200000.0, 500000.0};
-            for (int i = 0; i < packages.length; i++) {
-                final String pkg = packages[i];
-                final double price = defaultPrices[i];
-                boolean exists = configs.stream().anyMatch(c -> pkg.equalsIgnoreCase(c.getPackageType()));
-                if (!exists) {
-                    com.cny.backend.admin.entity.ServicePackageConfig newConfig = com.cny.backend.admin.entity.ServicePackageConfig.builder()
-                        .packageType(pkg)
-                        .price(price)
-                        .build();
-                    servicePackageConfigRepository.save(newConfig);
-                }
+        String[] packages = {"MEDIUM", "REGULAR", "PREMIUM", "SINGLE"};
+        double[] defaultPrices = {100000.0, 200000.0, 500000.0, 50000.0};
+        int[] defaultPostLimits = {10, 15, 25, 1};
+        int[] defaultDurations = {20, 15, 30, 36500};
+        
+        for (int i = 0; i < packages.length; i++) {
+            final String pkg = packages[i];
+            final double price = defaultPrices[i];
+            final int postLimit = defaultPostLimits[i];
+            final int duration = defaultDurations[i];
+            boolean exists = configs.stream().anyMatch(c -> pkg.equalsIgnoreCase(c.getPackageType()));
+            if (!exists) {
+                com.cny.backend.admin.entity.ServicePackageConfig newConfig = com.cny.backend.admin.entity.ServicePackageConfig.builder()
+                    .packageType(pkg)
+                    .price(price)
+                    .postLimit(postLimit)
+                    .durationDays(duration)
+                    .build();
+                servicePackageConfigRepository.save(newConfig);
             }
-            configs = servicePackageConfigRepository.findAll();
         }
+        configs = servicePackageConfigRepository.findAll();
         return configs;
     }
 

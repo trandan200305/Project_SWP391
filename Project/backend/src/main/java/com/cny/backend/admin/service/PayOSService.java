@@ -114,13 +114,18 @@ public class PayOSService {
             if (configOpt.isPresent()) {
                 price = configOpt.get().getPrice();
             } else {
-                double defaultPrice = "PREMIUM".equals(pkgUpper) ? 500000.0 : ("MEDIUM".equals(pkgUpper) ? 250000.0 : 100000.0);
-                int duration = "PREMIUM".equals(pkgUpper) ? 30 : ("MEDIUM".equals(pkgUpper) ? 10 : 20);
+                double defaultPrice = 100000.0;
+                int duration = 20;
+                int defaultPostLimit = 10;
+                if ("PREMIUM".equals(pkgUpper)) { defaultPrice = 500000.0; duration = 30; defaultPostLimit = 25; }
+                else if ("REGULAR".equals(pkgUpper)) { defaultPrice = 200000.0; duration = 15; defaultPostLimit = 15; }
+                else if ("SINGLE".equals(pkgUpper)) { defaultPrice = 50000.0; duration = 36500; defaultPostLimit = 1; }
+
                 ServicePackageConfig newCfg = ServicePackageConfig.builder()
                         .packageType(pkgUpper)
                         .price(defaultPrice)
                         .durationDays(duration)
-                        .postLimit(10)
+                        .postLimit(defaultPostLimit)
                         .build();
                 try {
                     servicePackageConfigRepository.save(newCfg);
@@ -176,6 +181,8 @@ public class PayOSService {
             friendlyPkgName = "Goi REGULAR";
         } else if ("PREMIUM".equals(pkgType)) {
             friendlyPkgName = "Goi PREMIUM";
+        } else if ("SINGLE".equals(pkgType)) {
+            friendlyPkgName = "Goi LE";
         } else {
             friendlyPkgName = "Goi " + pkgType;
         }
@@ -243,9 +250,9 @@ public class PayOSService {
                         if (configOpt.isPresent()) {
                             postLimit = configOpt.get().getPostLimit();
                             durationDays = configOpt.get().getDurationDays();
-                        } else {
-                            if ("REGULAR".equals(pkgUpper)) { postLimit = 5; durationDays = 15; }
-                            else if ("PREMIUM".equals(pkgUpper)) { postLimit = 20; durationDays = 30; }
+                            if ("REGULAR".equals(pkgUpper)) { postLimit = 15; durationDays = 15; }
+                            else if ("PREMIUM".equals(pkgUpper)) { postLimit = 25; durationDays = 30; }
+                            else if ("SINGLE".equals(pkgUpper)) { postLimit = 1; durationDays = 36500; }
                         }
 
                         int currentQuota = employer.getPackagePostQuota() != null && employer.getPackagePostQuota() > 0 ? employer.getPackagePostQuota() : 0;
@@ -311,8 +318,9 @@ public class PayOSService {
                                 postLimit = configOpt.get().getPostLimit();
                                 durationDays = configOpt.get().getDurationDays();
                             } else {
-                                if ("REGULAR".equals(pkgUpper)) { postLimit = 5; durationDays = 15; }
-                                else if ("PREMIUM".equals(pkgUpper)) { postLimit = 20; durationDays = 30; }
+                                if ("REGULAR".equals(pkgUpper)) { postLimit = 15; durationDays = 15; }
+                                else if ("PREMIUM".equals(pkgUpper)) { postLimit = 25; durationDays = 30; }
+                                else if ("SINGLE".equals(pkgUpper)) { postLimit = 1; durationDays = 36500; }
                             }
 
                             int currentQuota = employer.getPackagePostQuota() != null && employer.getPackagePostQuota() > 0 ? employer.getPackagePostQuota() : 0;

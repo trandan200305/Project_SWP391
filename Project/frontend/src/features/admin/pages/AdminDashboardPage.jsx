@@ -4438,6 +4438,13 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                         pkgClass = 'border-amber-500 bg-amber-50/10 ring-2 ring-amber-500/10';
                       }
                       badgeColor = 'bg-amber-50 text-amber-700';
+                    } else if (pkg.packageType === 'SINGLE') {
+                      pkgTitle = 'Gói Lẻ';
+                      pkgDuration = `${postLimit} bài / Không giới hạn`;
+                      if (isSelected) {
+                        pkgClass = 'border-rose-500 bg-rose-50/10 ring-2 ring-rose-500/10';
+                      }
+                      badgeColor = 'bg-rose-50 text-rose-700';
                     } else { // MEDIUM
                       if (isSelected) {
                         pkgClass = 'border-emerald-500 bg-emerald-50/10 ring-2 ring-emerald-500/10';
@@ -4469,19 +4476,23 @@ export default function AdminDashboard({ user, onNavigateToHome, onNavigate, onL
                                   onClick={(e) => e.stopPropagation()}
                                   title="Số bài"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">bài /</span>
-                                <input
-                                  type="number"
-                                  className="w-10 border border-slate-300 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-700 text-center focus:outline-none focus:border-blue-500"
-                                  value={tempPackages.find(p => p.packageType === pkg.packageType)?.durationDays || ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value === '' ? '' : Number(e.target.value);
-                                    setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, durationDays: val } : p));
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="Số ngày"
-                                />
-                                <span className="text-[10px] text-slate-400 font-semibold">ngày</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">bài {pkg.packageType !== 'SINGLE' && '/'}</span>
+                                {pkg.packageType !== 'SINGLE' && (
+                                  <>
+                                    <input
+                                      type="number"
+                                      className="w-10 border border-slate-300 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-700 text-center focus:outline-none focus:border-blue-500"
+                                      value={tempPackages.find(p => p.packageType === pkg.packageType)?.durationDays || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                                        setTempPackages(prev => prev.map(p => p.packageType === pkg.packageType ? { ...p, durationDays: val } : p));
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Số ngày"
+                                    />
+                                    <span className="text-[10px] text-slate-400 font-semibold">ngày</span>
+                                  </>
+                                )}
                               </div>
                             ) : (
                               <span className="text-[11px] text-slate-400 font-semibold">{pkgDuration}</span>
