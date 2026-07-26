@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi.js';
 import { Loader2, CheckCircle2, XCircle, Search, FileText, ArrowRightLeft, Calendar, User, Briefcase } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export default function AdminTransfersQueue({ adminId }) {
   const [data, setData] = useState([]);
