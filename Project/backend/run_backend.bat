@@ -1,5 +1,5 @@
 @echo off
-set JAVA_HOME=C:\Program Files\Java\jdk-17_disabled
+set JAVA_HOME=C:\Program Files\Java\jdk-17
 title LancerPro Backend
 echo =======================================================
 echo   Starting LancerPro Backend
